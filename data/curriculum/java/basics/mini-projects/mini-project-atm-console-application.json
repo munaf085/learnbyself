@@ -1,0 +1,895 @@
+{
+  "id": "les-mini-projects-mini-project-atm-console-application",
+  "slug": "mini-project-atm-console-application",
+  "sectionSlug": "basics",
+  "moduleSlug": "mini-projects",
+  "title": "ATM Console Application",
+  "summary": "Implement an interactive ATM simulator featuring secure PIN authentication, balance queries, deposits, and withdrawal limit validation.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 45,
+  "orderIndex": 4,
+  "prerequisites": [],
+  "subtopics": [
+    "Security PIN Verification (3 Attempts)",
+    "Account Balance State Management",
+    "Overdraft & Daily Limit Protection",
+    "Transaction History Logging",
+    "Multi-Step Session Flow"
+  ],
+  "learningOutcomes": [
+    "Enforce real-world financial validation and security state rules",
+    "Maintain account balance and transaction history across a multi-step user session",
+    "Decompose transaction business logic into reusable static methods without OOP",
+    "Publish an authentic, interview-ready banking CLI project to GitHub"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "mini-project-atm-console-application",
+    "slug": "mini-project-atm-console-application",
+    "title": "ATM Console Application",
+    "projectBrief": {
+      "whatAreWeBuilding": "You are building the core software engine for an automated teller machine (ATM). It manages real-world banking operations: 4-digit PIN authentication with security lockout after 3 failed attempts, checking account balance, depositing cash, withdrawing cash with overdraft and denomination validation, and reviewing a mini-statement of recent transactions.",
+      "problemItSolves": "Financial software requires zero tolerance for logic errors. An ATM application must enforce rigorous state consistency: balances cannot go negative, deposit amounts must be positive, withdrawals must conform to bill denominations (multiples of 100), and card security must be maintained.",
+      "finishedAppDescription": "A continuous, menu-driven terminal banking application. It prompts for security credentials, locks out attackers after 3 wrong tries, provides 5 standard banking options, manages a running account balance and a rolling transaction log array, and generates receipts upon exit.",
+      "estimatedTime": "45–60 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "State management variables (double balance, int userPin, boolean isLocked)",
+        "Security attempt counter loops",
+        "switch statement for ATM menu options",
+        "Financial validation guards (if balance >= amount, amount > 0, amount % 100 == 0)",
+        "1D array for transaction mini-statement history",
+        "Modular static methods with pass-by-value parameters and returns",
+        "Clean terminal formatting with currency symbols and alignment"
+      ],
+      "motivatingQuote": "ATM software is a classic rite of passage for software engineers. It demonstrates that you can build software where state transitions are reliable and critical business rules cannot be bypassed."
+    },
+    "realWorldScenario": {
+      "headline": "Core Terminal Logic for a Community Credit Union ATM",
+      "story": "A community credit union wants to modernize their kiosk teller software. The machine starts with an initial balance for the cardholder. The user must authenticate with their PIN. Once inside, they can deposit paychecks, withdraw spending cash, check their balance, and print a mini-statement of their last 5 transactions before taking their card back.",
+      "context": "Security is paramount: 3 incorrect PIN attempts must lock the card immediately and abort the program. Withdrawals cannot exceed the account balance or the daily limit of $1,000."
+    },
+    "requirements": {
+      "functional": [
+        "Initialize the ATM with a preset user PIN (e.g. 1234) and initial balance (e.g. $1,000.00).",
+        "PIN Authentication: Prompt for 4-digit PIN. Allow up to 3 attempts. If all 3 fail, print 'Card locked due to too many failed attempts. Please visit a branch.' and terminate.",
+        "Main Menu: Once authenticated, display options: 1. Check Balance, 2. Deposit Cash, 3. Withdraw Cash, 4. Mini-Statement (Recent Transactions), 5. Change PIN, 6. Exit.",
+        "Deposit: Prompt for deposit amount. Reject non-positive amounts (<= 0). Add to balance and record transaction in history.",
+        "Withdrawal: Prompt for withdrawal amount. Enforce 3 rules: 1) Amount must be positive, 2) Amount must be a multiple of 100 (currency bills), 3) Amount cannot exceed current balance, 4) Amount cannot exceed $1,000 per transaction.",
+        "Mini-Statement: Display the last 5 transactions (or all transactions if fewer than 5) with amount and type (e.g. '+ $200.00 Deposit', '- $100.00 Withdrawal').",
+        "Change PIN: Allow user to update their PIN by entering current PIN first, then entering and confirming new 4-digit PIN.",
+        "Exit: Print a thank-you receipt showing final balance and return the card."
+      ],
+      "technicalConstraints": [
+        "Do NOT use classes, objects, ArrayList, or OOP principles. Everything must be implemented in a single class using static state or method passing.",
+        "Maintain transaction history using a fixed-size array (e.g. String[] transactions = new String[5] or double[]).",
+        "Every banking operation must be a modular static method."
+      ],
+      "userDecisions": [
+        "Decide whether to pass balance as a parameter or manage it cleanly in main.",
+        "Design your ATM receipt layout."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "PIN entry (int)",
+        "Menu option (1-6)",
+        "Deposit / Withdrawal amounts (double)",
+        "New PIN confirmation (int)"
+      ],
+      "outputsRequired": [
+        "Authentication status (success or attempts remaining)",
+        "Balance display formatted as currency ($X,XXX.XX)",
+        "Transaction success or failure error reasons",
+        "Mini-statement transaction log table",
+        "Exit receipt"
+      ],
+      "variablesNeeded": [
+        "int currentPin = 1234",
+        "double balance = 1000.0",
+        "int attemptsLeft = 3",
+        "boolean authenticated = false",
+        "String[] history = new String[5]: stores last 5 transaction descriptions",
+        "int txCount = 0: tracks total transactions executed"
+      ],
+      "conditionalLogic": [
+        "if (enteredPin == currentPin) ... else attemptsLeft--",
+        "if (amount <= 0) reject deposit",
+        "if (amount % 100 != 0 || amount > balance || amount > 1000) reject withdrawal"
+      ],
+      "loopStructures": [
+        "Auth loop: while (attemptsLeft > 0 && !authenticated)",
+        "Session loop: while (sessionActive) presenting options 1-6"
+      ],
+      "recommendedMethods": [
+        "public static boolean authenticate(Scanner scanner, int correctPin)",
+        "public static void displayMenu()",
+        "public static double deposit(double currentBalance, double amount)",
+        "public static double withdraw(double currentBalance, double amount)",
+        "public static void addTransaction(String[] history, int count, String description)",
+        "public static void printMiniStatement(String[] history, int count)"
+      ],
+      "arrayUsage": "A 1D array is used as a rolling or chronological log of recent financial transactions."
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Security Authentication & Attempt Limiter",
+        "objective": "Build the 3-attempt PIN validation gate before allowing access to any banking functions.",
+        "tasks": [
+          "Prompt user for 4-digit PIN.",
+          "Compare against stored PIN.",
+          "If wrong, decrement attempts counter and display remaining tries.",
+          "If attempts reach 0, print lockout alert and exit immediately."
+        ],
+        "acceptanceCriteria": [
+          "Typing wrong PIN 3 times terminates the program; typing correct PIN proceeds to main menu."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "ATM Menu & Balance Inquiry",
+        "objective": "Construct the main banking menu loop and implement Option 1 (Check Balance).",
+        "tasks": [
+          "Display options 1 through 6.",
+          "Display balance formatted to 2 decimal places with currency symbol ($).",
+          "Handle option 6 (Exit) to break the loop."
+        ],
+        "acceptanceCriteria": [
+          "Selecting 1 displays '$1,000.00'; selecting 6 terminates with receipt."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Deposit & Withdrawal Operations",
+        "objective": "Implement money deposits and rule-enforced withdrawals.",
+        "tasks": [
+          "Write deposit method: adds positive amount to balance.",
+          "Write withdraw method: checks for positive, multiple of 100, <= balance, <= 1000.",
+          "Display new balance after each successful transaction."
+        ],
+        "acceptanceCriteria": [
+          "Withdrawing $250 fails (not multiple of 100); withdrawing $200 succeeds and updates balance to $800."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Mini-Statement Transaction Logging",
+        "objective": "Store recent transactions in an array and print the mini-statement upon request.",
+        "tasks": [
+          "Set up an array String[] history = new String[5].",
+          "Whenever a deposit or withdrawal occurs, log the description into the array.",
+          "Option 4 iterates through the logged records and prints them."
+        ],
+        "acceptanceCriteria": [
+          "Depositing $300 and withdrawing $200 displays both events in the mini-statement."
+        ]
+      },
+      {
+        "milestoneNumber": 5,
+        "title": "PIN Change & Terminal Polish",
+        "objective": "Implement Option 5 (Change PIN) and polish the console output with receipts.",
+        "tasks": [
+          "Prompt for current PIN to verify ownership.",
+          "Prompt for new 4-digit PIN twice to confirm.",
+          "Format exit receipt with date/session ID placeholder and final balance."
+        ],
+        "acceptanceCriteria": [
+          "PIN updates successfully; subsequent operations verify against the new PIN."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why must withdrawal validation check multiple conditions in a specific order?",
+        "mentorInsight": "If a user enters -500, checking if (-500 <= balance) is true, but it is a negative withdrawal! Always validate: 1) positive amount, 2) bill denomination (% 100 == 0), 3) account balance sufficiency, 4) daily ATM limits."
+      },
+      {
+        "question": "How do you manage a rolling log of 5 transactions without an ArrayList?",
+        "mentorInsight": "You can store up to 5 transactions in an array String[] history = new String[5]. If count >= 5, shift elements left: history[i] = history[i+1], then place the newest transaction at index 4!"
+      },
+      {
+        "question": "Why is keeping money variables as doubles acceptable for learning, but big decimal used in real banking?",
+        "mentorInsight": "In enterprise finance, binary floating point (double) has rounding inaccuracies (0.1 + 0.2 != 0.3). Real banks use BigDecimal or integer cents. In Java Basics, double with %.2f formatting teaches the logic clearly before introducing advanced classes."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Multiple of 100 Validation",
+        "level1Conceptual": "Use the remainder (modulo) operator to check if a number divides evenly.",
+        "level2Implementation": "Check if amount % 100 != 0. If so, it is not composed of whole $100 bills.",
+        "level3JavaSyntax": "if (amount % 100 != 0) {\n    System.out.println(\"Error: Withdrawal must be in multiples of $100.\");\n}"
+      },
+      {
+        "topic": "Rolling Transaction Array Shift",
+        "level1Conceptual": "When the history array is full, shift older transactions down to make room.",
+        "level2Implementation": "Loop from 0 to length-2, copy history[i+1] to history[i], then insert new item at history[4].",
+        "level3JavaSyntax": "if (count < 5) {\n    history[count] = entry;\n} else {\n    for (int i = 0; i < 4; i++) history[i] = history[i+1];\n    history[4] = entry;\n}"
+      },
+      {
+        "topic": "PIN Change Verification",
+        "level1Conceptual": "Verify the old PIN first, then ensure the new PIN matches its confirmation entry.",
+        "level2Implementation": "Read oldPin; if it matches, read newPin1 and newPin2. If newPin1 == newPin2, update currentPin.",
+        "level3JavaSyntax": "if (oldPin == currentPin && newPin1 == newPin2 && newPin1 >= 1000 && newPin1 <= 9999) {\n    currentPin = newPin1;\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Login with correct PIN 1234 on first attempt: Grants access to main menu",
+        "Deposit $500.00: Updates balance from $1,000.00 to $1,500.00",
+        "Withdraw $300.00: Updates balance from $1,500.00 to $1,200.00",
+        "Mini-Statement: Shows both the $500 deposit and $300 withdrawal",
+        "Exit option: Prints closing receipt with $1,200.00 final balance"
+      ],
+      "boundaryCases": [
+        "Withdraw exact entire balance: Leaves balance at $0.00",
+        "Withdraw exact maximum limit: Withdraw $1,000.00 succeeds if balance allows",
+        "Authenticating on the 3rd (final) allowed attempt succeeds without lockout"
+      ],
+      "invalidInputCases": [
+        "3 consecutive wrong PINs (e.g. 0000, 1111, 2222) locks card and exits immediately",
+        "Withdrawal not a multiple of 100 (e.g. $150 or $205) is rejected with clear message",
+        "Withdrawal exceeding balance (e.g. attempting to withdraw $2,000 with $1,000 balance) is rejected",
+        "Deposit of $0 or negative amount (e.g. -$50) is rejected"
+      ],
+      "edgeCases": [
+        "Changing PIN updates authentication: old PIN fails, new PIN works on subsequent logins",
+        "Executing more than 5 transactions rolls the history properly without ArrayOutOfBoundsException"
+      ]
+    },
+    "debuggingGuide": [
+      "Does withdrawal reduce balance even when invalid? Make sure all validation guards return or reject BEFORE updating the balance variable!",
+      "Did your PIN lockout terminate the program? Use return; in main() or System.exit(0) when attempts reach 0.",
+      "Are array indices overflowing in transaction history? Verify your count variable bounds."
+    ],
+    "projectPolish": [
+      "Mask the entered PIN visually or print standard security warnings.",
+      "Display transactions in a neat mini-statement receipt box with timestamps or transaction IDs.",
+      "Use clear, professional banking terminology: 'Funds credited', 'Cash dispensed', 'Available balance'."
+    ],
+    "gitHubReady": {
+      "readmeTemplate": "# ATM Console Application in Java\n\n## Description\nA secure, interactive Automated Teller Machine (ATM) simulator written in Java. Implements core banking operations including credential verification, balance tracking, deposits, denomination-restricted cash withdrawals, transaction history logging, and PIN modification.\n\n## Features\n- **Security Authentication**: 4-digit PIN verification with 3-attempt card lockout\n- **Financial Transaction Engine**: Cash deposits, withdrawals, and balance inquiries\n- **Denomination Enforcement**: Withdrawals restricted to valid bill multiples ($100s)\n- **Overdraft & Limit Guards**: Prevents negative balances and enforces $1,000 daily limits\n- **Mini-Statement Logging**: Rolling array tracking recent transactions\n- **Credential Management**: Secure PIN change workflow with confirmation validation\n\n## Java Concepts Used\n- State management with variables and loops\n- Nested conditionals for financial validation rules\n- `switch` statement for ATM transaction dispatch\n- 1D arrays for rolling transaction history logging\n- Modular static methods for transaction isolation\n- Formatted console output with currency symbols\n\n## How to Run\n1. Compile:\n   ```bash\n   javac ATMApplication.java\n   ```\n2. Run:\n   ```bash\n   java ATMApplication\n   ```\n3. Default PIN is `1234` with an initial balance of `$1,000.00`.\n\n## Example Session\n```text\n=========================================\n       WELCOME TO COMMUNITY BANK ATM      \n=========================================\nEnter your 4-digit PIN: 1234\n✓ Authentication Successful!\n\n1. Check Balance\n2. Deposit Cash\n3. Withdraw Cash\n4. Mini-Statement\n5. Change PIN\n6. Exit\nChoose option (1-6): 3\n\nEnter withdrawal amount (multiples of $100): 400\n>> Please take your cash: $400.00\n>> New Balance: $600.00\n```\n\n## What I Learned\n- How to enforce multi-tiered validation rules in financial logic\n- How to manage security lockout counters to prevent unauthorized access\n- How to maintain a rolling transaction log array without using advanced collections\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git tracking in your project directory."
+        },
+        {
+          "command": "git add ATMApplication.java README.md",
+          "explanation": "Stages the ATM source code and README."
+        },
+        {
+          "command": "git commit -m \"feat: complete ATM console application with security and transaction logging\"",
+          "explanation": "Creates a milestone commit in Git history."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Ensures the main branch is active."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/atm-console-java.git",
+          "explanation": "Links your local repository to GitHub."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Pushes the project to GitHub for portfolio display."
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "3 failed PIN attempts permanently locks card and terminates application",
+      "Correct PIN grants access to full banking menu",
+      "Deposits increase balance and reject zero/negative numbers",
+      "Withdrawals reject non-multiples of 100, overdrafts, and amounts > 1000",
+      "Mini-statement displays formatted recent transactions",
+      "PIN can be updated and verified successfully",
+      "Code uses clean static methods and zero OOP classes",
+      "README.md is customized and repository is pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "How does your program prevent an attacker from guessing PINs indefinitely?",
+      "What four checks does your withdraw method execute before dispensing cash?",
+      "How did you implement the transaction mini-statement using a basic array?",
+      "Why must withdrawal amounts be checked for multiples of 100 in an ATM?",
+      "How does your PIN change feature ensure the user doesn't make a typing mistake?",
+      "If you were asked to add a savings account and checking account transfer, how would you structure the variables?"
+    ],
+    "projectCompletion": {
+      "headline": "🏦 Impressive! You Built a Robust Financial Application!",
+      "congratulations": "You just implemented security authentication, state persistence, denomination validation, and transaction logging. Financial systems require disciplined logic and zero bugs—and your ATM application demonstrates that mastery.",
+      "skillsDemonstrated": [
+        "Security Authentication & Lockout Patterns",
+        "Financial Rule Validation & Overdraft Protection",
+        "Menu-Driven Session Flow (while, switch)",
+        "Rolling History Array Management",
+        "Modular Transaction Method Architecture",
+        "Defensive Terminal UI Formatting"
+      ],
+      "nextStepAction": "Publish this project to your GitHub portfolio and highlight your security and validation logic!"
+    },
+    "scaffoldingCode": "import java.util.Scanner;\n\npublic class ATMApplication {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int pin = 1234;\n        double balance = 1000.0;\n        String[] history = new String[5];\n        int txCount = 0;\n\n        System.out.println(\"=========================================\");\n        System.out.println(\"       WELCOME TO COMMUNITY BANK ATM      \");\n        System.out.println(\"=========================================\");\n\n        // TODO 1: Authenticate PIN (up to 3 attempts, lock card if all fail)\n        // TODO 2: While session is active, display 6 options\n        // TODO 3: Handle Balance, Deposit, Withdraw, Mini-Statement, Change PIN, Exit\n        // TODO 4: Print closing receipt\n\n        scanner.close();\n    }\n\n    public static void displayMenu() {\n        System.out.println(\"\\n1. Check Balance\");\n        System.out.println(\"2. Deposit Cash\");\n        System.out.println(\"3. Withdraw Cash\");\n        System.out.println(\"4. Mini-Statement\");\n        System.out.println(\"5. Change PIN\");\n        System.out.println(\"6. Exit & Return Card\");\n    }\n\n    // TODO: Write helper methods for deposit, withdraw, logTransaction, printMiniStatement\n}",
+    "sampleConsoleRun": "=========================================\n       WELCOME TO COMMUNITY BANK ATM      \n=========================================\nEnter 4-digit PIN: 1234\n✓ Authentication Successful!\n\n1. Check Balance\n2. Deposit Cash\n3. Withdraw Cash\n4. Mini-Statement\n5. Change PIN\n6. Exit & Return Card\nChoose option (1-6): 2\nEnter deposit amount: $500\n✓ Deposit Successful! New Balance: $1,500.00\n\nChoose option (1-6): 3\nEnter withdrawal amount (multiples of $100): 250\n>> Error: ATM only dispenses $100 bills. Please enter a multiple of 100.\n\nChoose option (1-6): 3\nEnter withdrawal amount (multiples of $100): 200\n✓ Please collect your cash: $200.00\n>> New Balance: $1,300.00\n\nChoose option (1-6): 4\n--- MINI-STATEMENT (LAST TRANSACTIONS) ---\n1. Deposit    : + $500.00\n2. Withdrawal : - $200.00\n------------------------------------------\nAvailable Balance: $1,300.00\n\nChoose option (1-6): 6\nThank you for banking with Community Bank!\nPlease take your receipt and ATM card."
+  },
+  "activities": [
+    {
+      "id": "act-mini-project-atm-console-application-project",
+      "orderIndex": 1,
+      "type": "mini_project",
+      "title": "ATM Console Application",
+      "project": {
+        "id": "mini-project-atm-console-application",
+        "slug": "mini-project-atm-console-application",
+        "title": "ATM Console Application",
+        "projectBrief": {
+          "whatAreWeBuilding": "You are building the core software engine for an automated teller machine (ATM). It manages real-world banking operations: 4-digit PIN authentication with security lockout after 3 failed attempts, checking account balance, depositing cash, withdrawing cash with overdraft and denomination validation, and reviewing a mini-statement of recent transactions.",
+          "problemItSolves": "Financial software requires zero tolerance for logic errors. An ATM application must enforce rigorous state consistency: balances cannot go negative, deposit amounts must be positive, withdrawals must conform to bill denominations (multiples of 100), and card security must be maintained.",
+          "finishedAppDescription": "A continuous, menu-driven terminal banking application. It prompts for security credentials, locks out attackers after 3 wrong tries, provides 5 standard banking options, manages a running account balance and a rolling transaction log array, and generates receipts upon exit.",
+          "estimatedTime": "45–60 minutes",
+          "difficulty": "intermediate",
+          "javaFundamentals": [
+            "State management variables (double balance, int userPin, boolean isLocked)",
+            "Security attempt counter loops",
+            "switch statement for ATM menu options",
+            "Financial validation guards (if balance >= amount, amount > 0, amount % 100 == 0)",
+            "1D array for transaction mini-statement history",
+            "Modular static methods with pass-by-value parameters and returns",
+            "Clean terminal formatting with currency symbols and alignment"
+          ],
+          "motivatingQuote": "ATM software is a classic rite of passage for software engineers. It demonstrates that you can build software where state transitions are reliable and critical business rules cannot be bypassed."
+        },
+        "realWorldScenario": {
+          "headline": "Core Terminal Logic for a Community Credit Union ATM",
+          "story": "A community credit union wants to modernize their kiosk teller software. The machine starts with an initial balance for the cardholder. The user must authenticate with their PIN. Once inside, they can deposit paychecks, withdraw spending cash, check their balance, and print a mini-statement of their last 5 transactions before taking their card back.",
+          "context": "Security is paramount: 3 incorrect PIN attempts must lock the card immediately and abort the program. Withdrawals cannot exceed the account balance or the daily limit of $1,000."
+        },
+        "requirements": {
+          "functional": [
+            "Initialize the ATM with a preset user PIN (e.g. 1234) and initial balance (e.g. $1,000.00).",
+            "PIN Authentication: Prompt for 4-digit PIN. Allow up to 3 attempts. If all 3 fail, print 'Card locked due to too many failed attempts. Please visit a branch.' and terminate.",
+            "Main Menu: Once authenticated, display options: 1. Check Balance, 2. Deposit Cash, 3. Withdraw Cash, 4. Mini-Statement (Recent Transactions), 5. Change PIN, 6. Exit.",
+            "Deposit: Prompt for deposit amount. Reject non-positive amounts (<= 0). Add to balance and record transaction in history.",
+            "Withdrawal: Prompt for withdrawal amount. Enforce 3 rules: 1) Amount must be positive, 2) Amount must be a multiple of 100 (currency bills), 3) Amount cannot exceed current balance, 4) Amount cannot exceed $1,000 per transaction.",
+            "Mini-Statement: Display the last 5 transactions (or all transactions if fewer than 5) with amount and type (e.g. '+ $200.00 Deposit', '- $100.00 Withdrawal').",
+            "Change PIN: Allow user to update their PIN by entering current PIN first, then entering and confirming new 4-digit PIN.",
+            "Exit: Print a thank-you receipt showing final balance and return the card."
+          ],
+          "technicalConstraints": [
+            "Do NOT use classes, objects, ArrayList, or OOP principles. Everything must be implemented in a single class using static state or method passing.",
+            "Maintain transaction history using a fixed-size array (e.g. String[] transactions = new String[5] or double[]).",
+            "Every banking operation must be a modular static method."
+          ],
+          "userDecisions": [
+            "Decide whether to pass balance as a parameter or manage it cleanly in main.",
+            "Design your ATM receipt layout."
+          ]
+        },
+        "beforeYouCode": {
+          "inputsRequired": [
+            "PIN entry (int)",
+            "Menu option (1-6)",
+            "Deposit / Withdrawal amounts (double)",
+            "New PIN confirmation (int)"
+          ],
+          "outputsRequired": [
+            "Authentication status (success or attempts remaining)",
+            "Balance display formatted as currency ($X,XXX.XX)",
+            "Transaction success or failure error reasons",
+            "Mini-statement transaction log table",
+            "Exit receipt"
+          ],
+          "variablesNeeded": [
+            "int currentPin = 1234",
+            "double balance = 1000.0",
+            "int attemptsLeft = 3",
+            "boolean authenticated = false",
+            "String[] history = new String[5]: stores last 5 transaction descriptions",
+            "int txCount = 0: tracks total transactions executed"
+          ],
+          "conditionalLogic": [
+            "if (enteredPin == currentPin) ... else attemptsLeft--",
+            "if (amount <= 0) reject deposit",
+            "if (amount % 100 != 0 || amount > balance || amount > 1000) reject withdrawal"
+          ],
+          "loopStructures": [
+            "Auth loop: while (attemptsLeft > 0 && !authenticated)",
+            "Session loop: while (sessionActive) presenting options 1-6"
+          ],
+          "recommendedMethods": [
+            "public static boolean authenticate(Scanner scanner, int correctPin)",
+            "public static void displayMenu()",
+            "public static double deposit(double currentBalance, double amount)",
+            "public static double withdraw(double currentBalance, double amount)",
+            "public static void addTransaction(String[] history, int count, String description)",
+            "public static void printMiniStatement(String[] history, int count)"
+          ],
+          "arrayUsage": "A 1D array is used as a rolling or chronological log of recent financial transactions."
+        },
+        "buildRoadmap": [
+          {
+            "milestoneNumber": 1,
+            "title": "Security Authentication & Attempt Limiter",
+            "objective": "Build the 3-attempt PIN validation gate before allowing access to any banking functions.",
+            "tasks": [
+              "Prompt user for 4-digit PIN.",
+              "Compare against stored PIN.",
+              "If wrong, decrement attempts counter and display remaining tries.",
+              "If attempts reach 0, print lockout alert and exit immediately."
+            ],
+            "acceptanceCriteria": [
+              "Typing wrong PIN 3 times terminates the program; typing correct PIN proceeds to main menu."
+            ]
+          },
+          {
+            "milestoneNumber": 2,
+            "title": "ATM Menu & Balance Inquiry",
+            "objective": "Construct the main banking menu loop and implement Option 1 (Check Balance).",
+            "tasks": [
+              "Display options 1 through 6.",
+              "Display balance formatted to 2 decimal places with currency symbol ($).",
+              "Handle option 6 (Exit) to break the loop."
+            ],
+            "acceptanceCriteria": [
+              "Selecting 1 displays '$1,000.00'; selecting 6 terminates with receipt."
+            ]
+          },
+          {
+            "milestoneNumber": 3,
+            "title": "Deposit & Withdrawal Operations",
+            "objective": "Implement money deposits and rule-enforced withdrawals.",
+            "tasks": [
+              "Write deposit method: adds positive amount to balance.",
+              "Write withdraw method: checks for positive, multiple of 100, <= balance, <= 1000.",
+              "Display new balance after each successful transaction."
+            ],
+            "acceptanceCriteria": [
+              "Withdrawing $250 fails (not multiple of 100); withdrawing $200 succeeds and updates balance to $800."
+            ]
+          },
+          {
+            "milestoneNumber": 4,
+            "title": "Mini-Statement Transaction Logging",
+            "objective": "Store recent transactions in an array and print the mini-statement upon request.",
+            "tasks": [
+              "Set up an array String[] history = new String[5].",
+              "Whenever a deposit or withdrawal occurs, log the description into the array.",
+              "Option 4 iterates through the logged records and prints them."
+            ],
+            "acceptanceCriteria": [
+              "Depositing $300 and withdrawing $200 displays both events in the mini-statement."
+            ]
+          },
+          {
+            "milestoneNumber": 5,
+            "title": "PIN Change & Terminal Polish",
+            "objective": "Implement Option 5 (Change PIN) and polish the console output with receipts.",
+            "tasks": [
+              "Prompt for current PIN to verify ownership.",
+              "Prompt for new 4-digit PIN twice to confirm.",
+              "Format exit receipt with date/session ID placeholder and final balance."
+            ],
+            "acceptanceCriteria": [
+              "PIN updates successfully; subsequent operations verify against the new PIN."
+            ]
+          }
+        ],
+        "thinkBeforeYouCode": [
+          {
+            "question": "Why must withdrawal validation check multiple conditions in a specific order?",
+            "mentorInsight": "If a user enters -500, checking if (-500 <= balance) is true, but it is a negative withdrawal! Always validate: 1) positive amount, 2) bill denomination (% 100 == 0), 3) account balance sufficiency, 4) daily ATM limits."
+          },
+          {
+            "question": "How do you manage a rolling log of 5 transactions without an ArrayList?",
+            "mentorInsight": "You can store up to 5 transactions in an array String[] history = new String[5]. If count >= 5, shift elements left: history[i] = history[i+1], then place the newest transaction at index 4!"
+          },
+          {
+            "question": "Why is keeping money variables as doubles acceptable for learning, but big decimal used in real banking?",
+            "mentorInsight": "In enterprise finance, binary floating point (double) has rounding inaccuracies (0.1 + 0.2 != 0.3). Real banks use BigDecimal or integer cents. In Java Basics, double with %.2f formatting teaches the logic clearly before introducing advanced classes."
+          }
+        ],
+        "hintSystem": [
+          {
+            "topic": "Multiple of 100 Validation",
+            "level1Conceptual": "Use the remainder (modulo) operator to check if a number divides evenly.",
+            "level2Implementation": "Check if amount % 100 != 0. If so, it is not composed of whole $100 bills.",
+            "level3JavaSyntax": "if (amount % 100 != 0) {\n    System.out.println(\"Error: Withdrawal must be in multiples of $100.\");\n}"
+          },
+          {
+            "topic": "Rolling Transaction Array Shift",
+            "level1Conceptual": "When the history array is full, shift older transactions down to make room.",
+            "level2Implementation": "Loop from 0 to length-2, copy history[i+1] to history[i], then insert new item at history[4].",
+            "level3JavaSyntax": "if (count < 5) {\n    history[count] = entry;\n} else {\n    for (int i = 0; i < 4; i++) history[i] = history[i+1];\n    history[4] = entry;\n}"
+          },
+          {
+            "topic": "PIN Change Verification",
+            "level1Conceptual": "Verify the old PIN first, then ensure the new PIN matches its confirmation entry.",
+            "level2Implementation": "Read oldPin; if it matches, read newPin1 and newPin2. If newPin1 == newPin2, update currentPin.",
+            "level3JavaSyntax": "if (oldPin == currentPin && newPin1 == newPin2 && newPin1 >= 1000 && newPin1 <= 9999) {\n    currentPin = newPin1;\n}"
+          }
+        ],
+        "testYourProject": {
+          "normalCases": [
+            "Login with correct PIN 1234 on first attempt: Grants access to main menu",
+            "Deposit $500.00: Updates balance from $1,000.00 to $1,500.00",
+            "Withdraw $300.00: Updates balance from $1,500.00 to $1,200.00",
+            "Mini-Statement: Shows both the $500 deposit and $300 withdrawal",
+            "Exit option: Prints closing receipt with $1,200.00 final balance"
+          ],
+          "boundaryCases": [
+            "Withdraw exact entire balance: Leaves balance at $0.00",
+            "Withdraw exact maximum limit: Withdraw $1,000.00 succeeds if balance allows",
+            "Authenticating on the 3rd (final) allowed attempt succeeds without lockout"
+          ],
+          "invalidInputCases": [
+            "3 consecutive wrong PINs (e.g. 0000, 1111, 2222) locks card and exits immediately",
+            "Withdrawal not a multiple of 100 (e.g. $150 or $205) is rejected with clear message",
+            "Withdrawal exceeding balance (e.g. attempting to withdraw $2,000 with $1,000 balance) is rejected",
+            "Deposit of $0 or negative amount (e.g. -$50) is rejected"
+          ],
+          "edgeCases": [
+            "Changing PIN updates authentication: old PIN fails, new PIN works on subsequent logins",
+            "Executing more than 5 transactions rolls the history properly without ArrayOutOfBoundsException"
+          ]
+        },
+        "debuggingGuide": [
+          "Does withdrawal reduce balance even when invalid? Make sure all validation guards return or reject BEFORE updating the balance variable!",
+          "Did your PIN lockout terminate the program? Use return; in main() or System.exit(0) when attempts reach 0.",
+          "Are array indices overflowing in transaction history? Verify your count variable bounds."
+        ],
+        "projectPolish": [
+          "Mask the entered PIN visually or print standard security warnings.",
+          "Display transactions in a neat mini-statement receipt box with timestamps or transaction IDs.",
+          "Use clear, professional banking terminology: 'Funds credited', 'Cash dispensed', 'Available balance'."
+        ],
+        "gitHubReady": {
+          "readmeTemplate": "# ATM Console Application in Java\n\n## Description\nA secure, interactive Automated Teller Machine (ATM) simulator written in Java. Implements core banking operations including credential verification, balance tracking, deposits, denomination-restricted cash withdrawals, transaction history logging, and PIN modification.\n\n## Features\n- **Security Authentication**: 4-digit PIN verification with 3-attempt card lockout\n- **Financial Transaction Engine**: Cash deposits, withdrawals, and balance inquiries\n- **Denomination Enforcement**: Withdrawals restricted to valid bill multiples ($100s)\n- **Overdraft & Limit Guards**: Prevents negative balances and enforces $1,000 daily limits\n- **Mini-Statement Logging**: Rolling array tracking recent transactions\n- **Credential Management**: Secure PIN change workflow with confirmation validation\n\n## Java Concepts Used\n- State management with variables and loops\n- Nested conditionals for financial validation rules\n- `switch` statement for ATM transaction dispatch\n- 1D arrays for rolling transaction history logging\n- Modular static methods for transaction isolation\n- Formatted console output with currency symbols\n\n## How to Run\n1. Compile:\n   ```bash\n   javac ATMApplication.java\n   ```\n2. Run:\n   ```bash\n   java ATMApplication\n   ```\n3. Default PIN is `1234` with an initial balance of `$1,000.00`.\n\n## Example Session\n```text\n=========================================\n       WELCOME TO COMMUNITY BANK ATM      \n=========================================\nEnter your 4-digit PIN: 1234\n✓ Authentication Successful!\n\n1. Check Balance\n2. Deposit Cash\n3. Withdraw Cash\n4. Mini-Statement\n5. Change PIN\n6. Exit\nChoose option (1-6): 3\n\nEnter withdrawal amount (multiples of $100): 400\n>> Please take your cash: $400.00\n>> New Balance: $600.00\n```\n\n## What I Learned\n- How to enforce multi-tiered validation rules in financial logic\n- How to manage security lockout counters to prevent unauthorized access\n- How to maintain a rolling transaction log array without using advanced collections\n",
+          "gitCommands": [
+            {
+              "command": "git init",
+              "explanation": "Initializes Git tracking in your project directory."
+            },
+            {
+              "command": "git add ATMApplication.java README.md",
+              "explanation": "Stages the ATM source code and README."
+            },
+            {
+              "command": "git commit -m \"feat: complete ATM console application with security and transaction logging\"",
+              "explanation": "Creates a milestone commit in Git history."
+            },
+            {
+              "command": "git branch -M main",
+              "explanation": "Ensures the main branch is active."
+            },
+            {
+              "command": "git remote add origin https://github.com/YOUR_USERNAME/atm-console-java.git",
+              "explanation": "Links your local repository to GitHub."
+            },
+            {
+              "command": "git push -u origin main",
+              "explanation": "Pushes the project to GitHub for portfolio display."
+            }
+          ]
+        },
+        "portfolioChecklist": [
+          "3 failed PIN attempts permanently locks card and terminates application",
+          "Correct PIN grants access to full banking menu",
+          "Deposits increase balance and reject zero/negative numbers",
+          "Withdrawals reject non-multiples of 100, overdrafts, and amounts > 1000",
+          "Mini-statement displays formatted recent transactions",
+          "PIN can be updated and verified successfully",
+          "Code uses clean static methods and zero OOP classes",
+          "README.md is customized and repository is pushed to GitHub"
+        ],
+        "explainYourProject": [
+          "How does your program prevent an attacker from guessing PINs indefinitely?",
+          "What four checks does your withdraw method execute before dispensing cash?",
+          "How did you implement the transaction mini-statement using a basic array?",
+          "Why must withdrawal amounts be checked for multiples of 100 in an ATM?",
+          "How does your PIN change feature ensure the user doesn't make a typing mistake?",
+          "If you were asked to add a savings account and checking account transfer, how would you structure the variables?"
+        ],
+        "projectCompletion": {
+          "headline": "🏦 Impressive! You Built a Robust Financial Application!",
+          "congratulations": "You just implemented security authentication, state persistence, denomination validation, and transaction logging. Financial systems require disciplined logic and zero bugs—and your ATM application demonstrates that mastery.",
+          "skillsDemonstrated": [
+            "Security Authentication & Lockout Patterns",
+            "Financial Rule Validation & Overdraft Protection",
+            "Menu-Driven Session Flow (while, switch)",
+            "Rolling History Array Management",
+            "Modular Transaction Method Architecture",
+            "Defensive Terminal UI Formatting"
+          ],
+          "nextStepAction": "Publish this project to your GitHub portfolio and highlight your security and validation logic!"
+        },
+        "scaffoldingCode": "import java.util.Scanner;\n\npublic class ATMApplication {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int pin = 1234;\n        double balance = 1000.0;\n        String[] history = new String[5];\n        int txCount = 0;\n\n        System.out.println(\"=========================================\");\n        System.out.println(\"       WELCOME TO COMMUNITY BANK ATM      \");\n        System.out.println(\"=========================================\");\n\n        // TODO 1: Authenticate PIN (up to 3 attempts, lock card if all fail)\n        // TODO 2: While session is active, display 6 options\n        // TODO 3: Handle Balance, Deposit, Withdraw, Mini-Statement, Change PIN, Exit\n        // TODO 4: Print closing receipt\n\n        scanner.close();\n    }\n\n    public static void displayMenu() {\n        System.out.println(\"\\n1. Check Balance\");\n        System.out.println(\"2. Deposit Cash\");\n        System.out.println(\"3. Withdraw Cash\");\n        System.out.println(\"4. Mini-Statement\");\n        System.out.println(\"5. Change PIN\");\n        System.out.println(\"6. Exit & Return Card\");\n    }\n\n    // TODO: Write helper methods for deposit, withdraw, logTransaction, printMiniStatement\n}",
+        "sampleConsoleRun": "=========================================\n       WELCOME TO COMMUNITY BANK ATM      \n=========================================\nEnter 4-digit PIN: 1234\n✓ Authentication Successful!\n\n1. Check Balance\n2. Deposit Cash\n3. Withdraw Cash\n4. Mini-Statement\n5. Change PIN\n6. Exit & Return Card\nChoose option (1-6): 2\nEnter deposit amount: $500\n✓ Deposit Successful! New Balance: $1,500.00\n\nChoose option (1-6): 3\nEnter withdrawal amount (multiples of $100): 250\n>> Error: ATM only dispenses $100 bills. Please enter a multiple of 100.\n\nChoose option (1-6): 3\nEnter withdrawal amount (multiples of $100): 200\n✓ Please collect your cash: $200.00\n>> New Balance: $1,300.00\n\nChoose option (1-6): 4\n--- MINI-STATEMENT (LAST TRANSACTIONS) ---\n1. Deposit    : + $500.00\n2. Withdrawal : - $200.00\n------------------------------------------\nAvailable Balance: $1,300.00\n\nChoose option (1-6): 6\nThank you for banking with Community Bank!\nPlease take your receipt and ATM card."
+      }
+    }
+  ],
+  "miniProject": {
+    "id": "mini-project-atm-console-application",
+    "slug": "mini-project-atm-console-application",
+    "title": "ATM Console Application",
+    "projectBrief": {
+      "whatAreWeBuilding": "You are building the core software engine for an automated teller machine (ATM). It manages real-world banking operations: 4-digit PIN authentication with security lockout after 3 failed attempts, checking account balance, depositing cash, withdrawing cash with overdraft and denomination validation, and reviewing a mini-statement of recent transactions.",
+      "problemItSolves": "Financial software requires zero tolerance for logic errors. An ATM application must enforce rigorous state consistency: balances cannot go negative, deposit amounts must be positive, withdrawals must conform to bill denominations (multiples of 100), and card security must be maintained.",
+      "finishedAppDescription": "A continuous, menu-driven terminal banking application. It prompts for security credentials, locks out attackers after 3 wrong tries, provides 5 standard banking options, manages a running account balance and a rolling transaction log array, and generates receipts upon exit.",
+      "estimatedTime": "45–60 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "State management variables (double balance, int userPin, boolean isLocked)",
+        "Security attempt counter loops",
+        "switch statement for ATM menu options",
+        "Financial validation guards (if balance >= amount, amount > 0, amount % 100 == 0)",
+        "1D array for transaction mini-statement history",
+        "Modular static methods with pass-by-value parameters and returns",
+        "Clean terminal formatting with currency symbols and alignment"
+      ],
+      "motivatingQuote": "ATM software is a classic rite of passage for software engineers. It demonstrates that you can build software where state transitions are reliable and critical business rules cannot be bypassed."
+    },
+    "realWorldScenario": {
+      "headline": "Core Terminal Logic for a Community Credit Union ATM",
+      "story": "A community credit union wants to modernize their kiosk teller software. The machine starts with an initial balance for the cardholder. The user must authenticate with their PIN. Once inside, they can deposit paychecks, withdraw spending cash, check their balance, and print a mini-statement of their last 5 transactions before taking their card back.",
+      "context": "Security is paramount: 3 incorrect PIN attempts must lock the card immediately and abort the program. Withdrawals cannot exceed the account balance or the daily limit of $1,000."
+    },
+    "requirements": {
+      "functional": [
+        "Initialize the ATM with a preset user PIN (e.g. 1234) and initial balance (e.g. $1,000.00).",
+        "PIN Authentication: Prompt for 4-digit PIN. Allow up to 3 attempts. If all 3 fail, print 'Card locked due to too many failed attempts. Please visit a branch.' and terminate.",
+        "Main Menu: Once authenticated, display options: 1. Check Balance, 2. Deposit Cash, 3. Withdraw Cash, 4. Mini-Statement (Recent Transactions), 5. Change PIN, 6. Exit.",
+        "Deposit: Prompt for deposit amount. Reject non-positive amounts (<= 0). Add to balance and record transaction in history.",
+        "Withdrawal: Prompt for withdrawal amount. Enforce 3 rules: 1) Amount must be positive, 2) Amount must be a multiple of 100 (currency bills), 3) Amount cannot exceed current balance, 4) Amount cannot exceed $1,000 per transaction.",
+        "Mini-Statement: Display the last 5 transactions (or all transactions if fewer than 5) with amount and type (e.g. '+ $200.00 Deposit', '- $100.00 Withdrawal').",
+        "Change PIN: Allow user to update their PIN by entering current PIN first, then entering and confirming new 4-digit PIN.",
+        "Exit: Print a thank-you receipt showing final balance and return the card."
+      ],
+      "technicalConstraints": [
+        "Do NOT use classes, objects, ArrayList, or OOP principles. Everything must be implemented in a single class using static state or method passing.",
+        "Maintain transaction history using a fixed-size array (e.g. String[] transactions = new String[5] or double[]).",
+        "Every banking operation must be a modular static method."
+      ],
+      "userDecisions": [
+        "Decide whether to pass balance as a parameter or manage it cleanly in main.",
+        "Design your ATM receipt layout."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "PIN entry (int)",
+        "Menu option (1-6)",
+        "Deposit / Withdrawal amounts (double)",
+        "New PIN confirmation (int)"
+      ],
+      "outputsRequired": [
+        "Authentication status (success or attempts remaining)",
+        "Balance display formatted as currency ($X,XXX.XX)",
+        "Transaction success or failure error reasons",
+        "Mini-statement transaction log table",
+        "Exit receipt"
+      ],
+      "variablesNeeded": [
+        "int currentPin = 1234",
+        "double balance = 1000.0",
+        "int attemptsLeft = 3",
+        "boolean authenticated = false",
+        "String[] history = new String[5]: stores last 5 transaction descriptions",
+        "int txCount = 0: tracks total transactions executed"
+      ],
+      "conditionalLogic": [
+        "if (enteredPin == currentPin) ... else attemptsLeft--",
+        "if (amount <= 0) reject deposit",
+        "if (amount % 100 != 0 || amount > balance || amount > 1000) reject withdrawal"
+      ],
+      "loopStructures": [
+        "Auth loop: while (attemptsLeft > 0 && !authenticated)",
+        "Session loop: while (sessionActive) presenting options 1-6"
+      ],
+      "recommendedMethods": [
+        "public static boolean authenticate(Scanner scanner, int correctPin)",
+        "public static void displayMenu()",
+        "public static double deposit(double currentBalance, double amount)",
+        "public static double withdraw(double currentBalance, double amount)",
+        "public static void addTransaction(String[] history, int count, String description)",
+        "public static void printMiniStatement(String[] history, int count)"
+      ],
+      "arrayUsage": "A 1D array is used as a rolling or chronological log of recent financial transactions."
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Security Authentication & Attempt Limiter",
+        "objective": "Build the 3-attempt PIN validation gate before allowing access to any banking functions.",
+        "tasks": [
+          "Prompt user for 4-digit PIN.",
+          "Compare against stored PIN.",
+          "If wrong, decrement attempts counter and display remaining tries.",
+          "If attempts reach 0, print lockout alert and exit immediately."
+        ],
+        "acceptanceCriteria": [
+          "Typing wrong PIN 3 times terminates the program; typing correct PIN proceeds to main menu."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "ATM Menu & Balance Inquiry",
+        "objective": "Construct the main banking menu loop and implement Option 1 (Check Balance).",
+        "tasks": [
+          "Display options 1 through 6.",
+          "Display balance formatted to 2 decimal places with currency symbol ($).",
+          "Handle option 6 (Exit) to break the loop."
+        ],
+        "acceptanceCriteria": [
+          "Selecting 1 displays '$1,000.00'; selecting 6 terminates with receipt."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Deposit & Withdrawal Operations",
+        "objective": "Implement money deposits and rule-enforced withdrawals.",
+        "tasks": [
+          "Write deposit method: adds positive amount to balance.",
+          "Write withdraw method: checks for positive, multiple of 100, <= balance, <= 1000.",
+          "Display new balance after each successful transaction."
+        ],
+        "acceptanceCriteria": [
+          "Withdrawing $250 fails (not multiple of 100); withdrawing $200 succeeds and updates balance to $800."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Mini-Statement Transaction Logging",
+        "objective": "Store recent transactions in an array and print the mini-statement upon request.",
+        "tasks": [
+          "Set up an array String[] history = new String[5].",
+          "Whenever a deposit or withdrawal occurs, log the description into the array.",
+          "Option 4 iterates through the logged records and prints them."
+        ],
+        "acceptanceCriteria": [
+          "Depositing $300 and withdrawing $200 displays both events in the mini-statement."
+        ]
+      },
+      {
+        "milestoneNumber": 5,
+        "title": "PIN Change & Terminal Polish",
+        "objective": "Implement Option 5 (Change PIN) and polish the console output with receipts.",
+        "tasks": [
+          "Prompt for current PIN to verify ownership.",
+          "Prompt for new 4-digit PIN twice to confirm.",
+          "Format exit receipt with date/session ID placeholder and final balance."
+        ],
+        "acceptanceCriteria": [
+          "PIN updates successfully; subsequent operations verify against the new PIN."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why must withdrawal validation check multiple conditions in a specific order?",
+        "mentorInsight": "If a user enters -500, checking if (-500 <= balance) is true, but it is a negative withdrawal! Always validate: 1) positive amount, 2) bill denomination (% 100 == 0), 3) account balance sufficiency, 4) daily ATM limits."
+      },
+      {
+        "question": "How do you manage a rolling log of 5 transactions without an ArrayList?",
+        "mentorInsight": "You can store up to 5 transactions in an array String[] history = new String[5]. If count >= 5, shift elements left: history[i] = history[i+1], then place the newest transaction at index 4!"
+      },
+      {
+        "question": "Why is keeping money variables as doubles acceptable for learning, but big decimal used in real banking?",
+        "mentorInsight": "In enterprise finance, binary floating point (double) has rounding inaccuracies (0.1 + 0.2 != 0.3). Real banks use BigDecimal or integer cents. In Java Basics, double with %.2f formatting teaches the logic clearly before introducing advanced classes."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Multiple of 100 Validation",
+        "level1Conceptual": "Use the remainder (modulo) operator to check if a number divides evenly.",
+        "level2Implementation": "Check if amount % 100 != 0. If so, it is not composed of whole $100 bills.",
+        "level3JavaSyntax": "if (amount % 100 != 0) {\n    System.out.println(\"Error: Withdrawal must be in multiples of $100.\");\n}"
+      },
+      {
+        "topic": "Rolling Transaction Array Shift",
+        "level1Conceptual": "When the history array is full, shift older transactions down to make room.",
+        "level2Implementation": "Loop from 0 to length-2, copy history[i+1] to history[i], then insert new item at history[4].",
+        "level3JavaSyntax": "if (count < 5) {\n    history[count] = entry;\n} else {\n    for (int i = 0; i < 4; i++) history[i] = history[i+1];\n    history[4] = entry;\n}"
+      },
+      {
+        "topic": "PIN Change Verification",
+        "level1Conceptual": "Verify the old PIN first, then ensure the new PIN matches its confirmation entry.",
+        "level2Implementation": "Read oldPin; if it matches, read newPin1 and newPin2. If newPin1 == newPin2, update currentPin.",
+        "level3JavaSyntax": "if (oldPin == currentPin && newPin1 == newPin2 && newPin1 >= 1000 && newPin1 <= 9999) {\n    currentPin = newPin1;\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Login with correct PIN 1234 on first attempt: Grants access to main menu",
+        "Deposit $500.00: Updates balance from $1,000.00 to $1,500.00",
+        "Withdraw $300.00: Updates balance from $1,500.00 to $1,200.00",
+        "Mini-Statement: Shows both the $500 deposit and $300 withdrawal",
+        "Exit option: Prints closing receipt with $1,200.00 final balance"
+      ],
+      "boundaryCases": [
+        "Withdraw exact entire balance: Leaves balance at $0.00",
+        "Withdraw exact maximum limit: Withdraw $1,000.00 succeeds if balance allows",
+        "Authenticating on the 3rd (final) allowed attempt succeeds without lockout"
+      ],
+      "invalidInputCases": [
+        "3 consecutive wrong PINs (e.g. 0000, 1111, 2222) locks card and exits immediately",
+        "Withdrawal not a multiple of 100 (e.g. $150 or $205) is rejected with clear message",
+        "Withdrawal exceeding balance (e.g. attempting to withdraw $2,000 with $1,000 balance) is rejected",
+        "Deposit of $0 or negative amount (e.g. -$50) is rejected"
+      ],
+      "edgeCases": [
+        "Changing PIN updates authentication: old PIN fails, new PIN works on subsequent logins",
+        "Executing more than 5 transactions rolls the history properly without ArrayOutOfBoundsException"
+      ]
+    },
+    "debuggingGuide": [
+      "Does withdrawal reduce balance even when invalid? Make sure all validation guards return or reject BEFORE updating the balance variable!",
+      "Did your PIN lockout terminate the program? Use return; in main() or System.exit(0) when attempts reach 0.",
+      "Are array indices overflowing in transaction history? Verify your count variable bounds."
+    ],
+    "projectPolish": [
+      "Mask the entered PIN visually or print standard security warnings.",
+      "Display transactions in a neat mini-statement receipt box with timestamps or transaction IDs.",
+      "Use clear, professional banking terminology: 'Funds credited', 'Cash dispensed', 'Available balance'."
+    ],
+    "gitHubReady": {
+      "readmeTemplate": "# ATM Console Application in Java\n\n## Description\nA secure, interactive Automated Teller Machine (ATM) simulator written in Java. Implements core banking operations including credential verification, balance tracking, deposits, denomination-restricted cash withdrawals, transaction history logging, and PIN modification.\n\n## Features\n- **Security Authentication**: 4-digit PIN verification with 3-attempt card lockout\n- **Financial Transaction Engine**: Cash deposits, withdrawals, and balance inquiries\n- **Denomination Enforcement**: Withdrawals restricted to valid bill multiples ($100s)\n- **Overdraft & Limit Guards**: Prevents negative balances and enforces $1,000 daily limits\n- **Mini-Statement Logging**: Rolling array tracking recent transactions\n- **Credential Management**: Secure PIN change workflow with confirmation validation\n\n## Java Concepts Used\n- State management with variables and loops\n- Nested conditionals for financial validation rules\n- `switch` statement for ATM transaction dispatch\n- 1D arrays for rolling transaction history logging\n- Modular static methods for transaction isolation\n- Formatted console output with currency symbols\n\n## How to Run\n1. Compile:\n   ```bash\n   javac ATMApplication.java\n   ```\n2. Run:\n   ```bash\n   java ATMApplication\n   ```\n3. Default PIN is `1234` with an initial balance of `$1,000.00`.\n\n## Example Session\n```text\n=========================================\n       WELCOME TO COMMUNITY BANK ATM      \n=========================================\nEnter your 4-digit PIN: 1234\n✓ Authentication Successful!\n\n1. Check Balance\n2. Deposit Cash\n3. Withdraw Cash\n4. Mini-Statement\n5. Change PIN\n6. Exit\nChoose option (1-6): 3\n\nEnter withdrawal amount (multiples of $100): 400\n>> Please take your cash: $400.00\n>> New Balance: $600.00\n```\n\n## What I Learned\n- How to enforce multi-tiered validation rules in financial logic\n- How to manage security lockout counters to prevent unauthorized access\n- How to maintain a rolling transaction log array without using advanced collections\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git tracking in your project directory."
+        },
+        {
+          "command": "git add ATMApplication.java README.md",
+          "explanation": "Stages the ATM source code and README."
+        },
+        {
+          "command": "git commit -m \"feat: complete ATM console application with security and transaction logging\"",
+          "explanation": "Creates a milestone commit in Git history."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Ensures the main branch is active."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/atm-console-java.git",
+          "explanation": "Links your local repository to GitHub."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Pushes the project to GitHub for portfolio display."
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "3 failed PIN attempts permanently locks card and terminates application",
+      "Correct PIN grants access to full banking menu",
+      "Deposits increase balance and reject zero/negative numbers",
+      "Withdrawals reject non-multiples of 100, overdrafts, and amounts > 1000",
+      "Mini-statement displays formatted recent transactions",
+      "PIN can be updated and verified successfully",
+      "Code uses clean static methods and zero OOP classes",
+      "README.md is customized and repository is pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "How does your program prevent an attacker from guessing PINs indefinitely?",
+      "What four checks does your withdraw method execute before dispensing cash?",
+      "How did you implement the transaction mini-statement using a basic array?",
+      "Why must withdrawal amounts be checked for multiples of 100 in an ATM?",
+      "How does your PIN change feature ensure the user doesn't make a typing mistake?",
+      "If you were asked to add a savings account and checking account transfer, how would you structure the variables?"
+    ],
+    "projectCompletion": {
+      "headline": "🏦 Impressive! You Built a Robust Financial Application!",
+      "congratulations": "You just implemented security authentication, state persistence, denomination validation, and transaction logging. Financial systems require disciplined logic and zero bugs—and your ATM application demonstrates that mastery.",
+      "skillsDemonstrated": [
+        "Security Authentication & Lockout Patterns",
+        "Financial Rule Validation & Overdraft Protection",
+        "Menu-Driven Session Flow (while, switch)",
+        "Rolling History Array Management",
+        "Modular Transaction Method Architecture",
+        "Defensive Terminal UI Formatting"
+      ],
+      "nextStepAction": "Publish this project to your GitHub portfolio and highlight your security and validation logic!"
+    },
+    "scaffoldingCode": "import java.util.Scanner;\n\npublic class ATMApplication {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int pin = 1234;\n        double balance = 1000.0;\n        String[] history = new String[5];\n        int txCount = 0;\n\n        System.out.println(\"=========================================\");\n        System.out.println(\"       WELCOME TO COMMUNITY BANK ATM      \");\n        System.out.println(\"=========================================\");\n\n        // TODO 1: Authenticate PIN (up to 3 attempts, lock card if all fail)\n        // TODO 2: While session is active, display 6 options\n        // TODO 3: Handle Balance, Deposit, Withdraw, Mini-Statement, Change PIN, Exit\n        // TODO 4: Print closing receipt\n\n        scanner.close();\n    }\n\n    public static void displayMenu() {\n        System.out.println(\"\\n1. Check Balance\");\n        System.out.println(\"2. Deposit Cash\");\n        System.out.println(\"3. Withdraw Cash\");\n        System.out.println(\"4. Mini-Statement\");\n        System.out.println(\"5. Change PIN\");\n        System.out.println(\"6. Exit & Return Card\");\n    }\n\n    // TODO: Write helper methods for deposit, withdraw, logTransaction, printMiniStatement\n}",
+    "sampleConsoleRun": "=========================================\n       WELCOME TO COMMUNITY BANK ATM      \n=========================================\nEnter 4-digit PIN: 1234\n✓ Authentication Successful!\n\n1. Check Balance\n2. Deposit Cash\n3. Withdraw Cash\n4. Mini-Statement\n5. Change PIN\n6. Exit & Return Card\nChoose option (1-6): 2\nEnter deposit amount: $500\n✓ Deposit Successful! New Balance: $1,500.00\n\nChoose option (1-6): 3\nEnter withdrawal amount (multiples of $100): 250\n>> Error: ATM only dispenses $100 bills. Please enter a multiple of 100.\n\nChoose option (1-6): 3\nEnter withdrawal amount (multiples of $100): 200\n✓ Please collect your cash: $200.00\n>> New Balance: $1,300.00\n\nChoose option (1-6): 4\n--- MINI-STATEMENT (LAST TRANSACTIONS) ---\n1. Deposit    : + $500.00\n2. Withdrawal : - $200.00\n------------------------------------------\nAvailable Balance: $1,300.00\n\nChoose option (1-6): 6\nThank you for banking with Community Bank!\nPlease take your receipt and ATM card."
+  }
+}

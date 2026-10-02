@@ -835,4 +835,144 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
       expect(lesson?.slug).toBe(expectedCanonical);
     }
   });
+
+  it('resolves the 6 canonical Java Basics Mini Projects with complete 14-section portfolio architecture', async () => {
+    const mod = await provider.getModule('java', 'basics', 'mini-projects');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(6);
+
+    const expectedSlugs = [
+      'mini-project-calculator',
+      'mini-project-number-guessing-game',
+      'mini-project-student-marks-analyzer',
+      'mini-project-atm-console-application',
+      'mini-project-billing-system',
+      'mini-project-final-java-basics-project'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'mini-projects', slug);
+      expect(lesson, `Mini project ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+      expect(lesson?.isMiniProject).toBe(true);
+
+      const mp = (lesson as any).miniProject || (lesson as any).project;
+      expect(mp, `${slug} must contain full miniProject detail`).toBeDefined();
+
+      // 1. Project Brief
+      expect(mp.projectBrief.whatAreWeBuilding.length).toBeGreaterThan(20);
+      expect(mp.projectBrief.problemItSolves.length).toBeGreaterThan(20);
+      expect(mp.projectBrief.finishedAppDescription.length).toBeGreaterThan(20);
+      expect(mp.projectBrief.estimatedTime).toBeDefined();
+      expect(mp.projectBrief.difficulty).toBeDefined();
+      expect(mp.projectBrief.javaFundamentals.length).toBeGreaterThanOrEqual(4);
+      expect(mp.projectBrief.motivatingQuote.length).toBeGreaterThan(10);
+
+      // 2. Real-World Scenario
+      expect(mp.realWorldScenario.headline.length).toBeGreaterThan(10);
+      expect(mp.realWorldScenario.story.length).toBeGreaterThan(50);
+      expect(mp.realWorldScenario.context.length).toBeGreaterThan(20);
+
+      // 3. Requirements
+      expect(mp.requirements.functional.length).toBeGreaterThanOrEqual(4);
+      expect(mp.requirements.technicalConstraints.length).toBeGreaterThanOrEqual(3);
+      expect(mp.requirements.userDecisions.length).toBeGreaterThanOrEqual(2);
+
+      // 4. Before You Code (Architecture Blueprint)
+      expect(mp.beforeYouCode.inputsRequired.length).toBeGreaterThanOrEqual(2);
+      expect(mp.beforeYouCode.outputsRequired.length).toBeGreaterThanOrEqual(2);
+      expect(mp.beforeYouCode.variablesNeeded.length).toBeGreaterThanOrEqual(3);
+      expect(mp.beforeYouCode.conditionalLogic.length).toBeGreaterThanOrEqual(2);
+      expect(mp.beforeYouCode.loopStructures.length).toBeGreaterThanOrEqual(1);
+      expect(mp.beforeYouCode.recommendedMethods.length).toBeGreaterThanOrEqual(3);
+
+      // 5. Build Roadmap
+      expect(mp.buildRoadmap.length).toBeGreaterThanOrEqual(4);
+      for (const milestone of mp.buildRoadmap) {
+        expect(milestone.title).toBeDefined();
+        expect(milestone.tasks.length).toBeGreaterThanOrEqual(2);
+        expect(milestone.acceptanceCriteria.length).toBeGreaterThanOrEqual(1);
+      }
+
+      // 6. Think Before You Code (Mentor Questions)
+      expect(mp.thinkBeforeYouCode.length).toBeGreaterThanOrEqual(2);
+      for (const mq of mp.thinkBeforeYouCode) {
+        expect(mq.question.length).toBeGreaterThan(10);
+        expect(mq.mentorInsight.length).toBeGreaterThan(20);
+      }
+
+      // 7. Hint System (3 Progressive Tiers)
+      expect(mp.hintSystem.length).toBeGreaterThanOrEqual(3);
+      for (const hint of mp.hintSystem) {
+        expect(hint.level1Conceptual.length).toBeGreaterThan(15);
+        expect(hint.level2Implementation.length).toBeGreaterThan(20);
+        expect(hint.level3JavaSyntax.length).toBeGreaterThan(20);
+      }
+
+      // 8. Test Your Project
+      expect(mp.testYourProject.normalCases.length).toBeGreaterThanOrEqual(2);
+      expect(mp.testYourProject.boundaryCases.length).toBeGreaterThanOrEqual(1);
+      expect(mp.testYourProject.invalidInputCases.length).toBeGreaterThanOrEqual(1);
+      expect(mp.testYourProject.edgeCases.length).toBeGreaterThanOrEqual(1);
+
+      // 9. Debugging Guide
+      expect(mp.debuggingGuide.length).toBeGreaterThanOrEqual(3);
+
+      // 10. Project Polish
+      expect(mp.projectPolish.length).toBeGreaterThanOrEqual(3);
+
+      // 11. GitHub Ready
+      expect(mp.gitHubReady.readmeTemplate.length).toBeGreaterThan(100);
+      expect(mp.gitHubReady.gitCommands.length).toBeGreaterThanOrEqual(5);
+
+      // 12. Portfolio Check
+      expect(mp.portfolioChecklist.length).toBeGreaterThanOrEqual(3);
+
+      // 13. Explain Your Project (Interview reflection)
+      expect(mp.explainYourProject.length).toBeGreaterThanOrEqual(3);
+
+      // 14. Project Completion
+      expect(mp.projectCompletion.headline.length).toBeGreaterThan(5);
+      expect(mp.projectCompletion.skillsDemonstrated.length).toBeGreaterThanOrEqual(3);
+
+      // Scaffolding and Sample Console Run
+      expect(mp.scaffoldingCode.length).toBeGreaterThan(50);
+      expect(mp.sampleConsoleRun.length).toBeGreaterThan(50);
+
+      // STRICT ZERO OOP CHECK: Verify no OOP keywords in constraints or scaffolding (no inheritance, polymorphism, interfaces, custom object classes)
+      expect(mp.scaffoldingCode).not.toContain('extends');
+      expect(mp.scaffoldingCode).not.toContain('implements');
+      expect(mp.scaffoldingCode).not.toContain('interface ');
+      expect(mp.scaffoldingCode).not.toContain('abstract class');
+      // Only one single class definition per project file
+      const classMatches = mp.scaffoldingCode.match(/(?:^|\n)\s*(?:public\s+)?class\s+[A-Z]\w+/g) || [];
+      expect(classMatches.length).toBe(1);
+    }
+  });
+
+  it('resolves mini-project slug aliases', async () => {
+    const aliasMap: Record<string, string> = {
+      'calculator': 'mini-project-calculator',
+      'guessing-game': 'mini-project-number-guessing-game',
+      'number-guessing-game': 'mini-project-number-guessing-game',
+      'student-marks-analyzer': 'mini-project-student-marks-analyzer',
+      'marks-analyzer': 'mini-project-student-marks-analyzer',
+      'atm': 'mini-project-atm-console-application',
+      'atm-application': 'mini-project-atm-console-application',
+      'billing-system': 'mini-project-billing-system',
+      'ecommerce-billing': 'mini-project-billing-system',
+      'employee-management': 'mini-project-final-java-basics-project',
+      'payroll-system': 'mini-project-final-java-basics-project',
+      'capstone': 'mini-project-final-java-basics-project'
+    };
+
+    for (const [alias, expected] of Object.entries(aliasMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'mini-projects', alias);
+      expect(lesson, `Mini project alias ${alias} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expected);
+    }
+  });
 });
+

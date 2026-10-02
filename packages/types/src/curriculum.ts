@@ -148,6 +148,104 @@ export interface ProjectDefinition {
   skillsDemonstrated: string[];
 }
 
+export interface MiniProjectBrief {
+  whatAreWeBuilding: string;
+  problemItSolves: string;
+  finishedAppDescription: string;
+  estimatedTime: string;
+  difficulty: 'easy' | 'intermediate' | 'advanced';
+  javaFundamentals: string[];
+  motivatingQuote: string;
+}
+
+export interface MiniProjectScenario {
+  headline: string;
+  story: string;
+  context: string;
+}
+
+export interface MiniProjectRequirements {
+  functional: string[];
+  technicalConstraints: string[];
+  userDecisions: string[];
+}
+
+export interface MiniProjectPlanning {
+  inputsRequired: string[];
+  outputsRequired: string[];
+  variablesNeeded: string[];
+  conditionalLogic: string[];
+  loopStructures: string[];
+  recommendedMethods: string[];
+  arrayUsage?: string;
+}
+
+export interface MiniProjectRoadmapMilestone {
+  milestoneNumber: number;
+  title: string;
+  objective: string;
+  tasks: string[];
+  acceptanceCriteria: string[];
+}
+
+export interface MiniProjectMentorQuestion {
+  question: string;
+  mentorInsight: string;
+}
+
+export interface ProgressiveHint {
+  topic: string;
+  level1Conceptual: string;
+  level2Implementation: string;
+  level3JavaSyntax: string;
+}
+
+export interface MiniProjectTestChecklist {
+  normalCases: string[];
+  boundaryCases: string[];
+  invalidInputCases: string[];
+  edgeCases: string[];
+}
+
+export interface GitCommandGuide {
+  command: string;
+  explanation: string;
+}
+
+export interface GitHubReadyGuide {
+  readmeTemplate: string;
+  gitCommands: GitCommandGuide[];
+}
+
+export interface MiniProjectCompletion {
+  headline: string;
+  congratulations: string;
+  skillsDemonstrated: string[];
+  nextStepAction: string;
+}
+
+export interface MiniProjectDetail {
+  id: string;
+  slug: string;
+  title: string;
+  projectBrief: MiniProjectBrief;
+  realWorldScenario: MiniProjectScenario;
+  requirements: MiniProjectRequirements;
+  beforeYouCode: MiniProjectPlanning;
+  buildRoadmap: MiniProjectRoadmapMilestone[];
+  thinkBeforeYouCode: MiniProjectMentorQuestion[];
+  hintSystem: ProgressiveHint[];
+  testYourProject: MiniProjectTestChecklist;
+  debuggingGuide: string[];
+  projectPolish: string[];
+  gitHubReady: GitHubReadyGuide;
+  portfolioChecklist: string[];
+  explainYourProject: string[];
+  projectCompletion: MiniProjectCompletion;
+  scaffoldingCode: string;
+  sampleConsoleRun: string;
+}
+
 export interface ConceptBreakdown {
   whatIsIt: string;
   whyItMatters: string;
@@ -173,6 +271,7 @@ export interface LearningActivity {
   questions?: Question[];
   interviewQA?: InterviewQA[];
   project?: ProjectDefinition;
+  miniProject?: MiniProjectDetail;
   checklist?: string[];
   practice?: {
     title?: string;
@@ -213,6 +312,9 @@ export interface LessonDetail {
   expectedOutcomes: string[];
   activities: LearningActivity[];
   practiceProblems?: PracticeProblem[];
+  isMiniProject?: boolean;
+  project?: MiniProjectDetail;
+  miniProject?: MiniProjectDetail;
   prevLesson?: LessonSummary | null;
   nextLesson?: LessonSummary | null;
   currentModule?: { slug: string; title: string; lessons: LessonSummary[] } | null;

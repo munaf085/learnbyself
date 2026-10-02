@@ -281,7 +281,26 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'package-naming': 'naming-and-project-organization',
       'project-structure': 'naming-and-project-organization',
       'packages-practice': 'packages-practice-and-interview-challenge',
-      'packages-final-challenge': 'packages-practice-and-interview-challenge'
+      'packages-final-challenge': 'packages-practice-and-interview-challenge',
+
+      // Mini Projects aliases:
+      'calculator': 'mini-project-calculator',
+      'scientific-calculator': 'mini-project-calculator',
+      'guessing-game': 'mini-project-number-guessing-game',
+      'number-guessing-game': 'mini-project-number-guessing-game',
+      'student-marks-analyzer': 'mini-project-student-marks-analyzer',
+      'marks-analyzer': 'mini-project-student-marks-analyzer',
+      'student-analyzer': 'mini-project-student-marks-analyzer',
+      'atm': 'mini-project-atm-console-application',
+      'atm-application': 'mini-project-atm-console-application',
+      'atm-console-application': 'mini-project-atm-console-application',
+      'billing-system': 'mini-project-billing-system',
+      'ecommerce-billing': 'mini-project-billing-system',
+      'employee-management': 'mini-project-final-java-basics-project',
+      'payroll-system': 'mini-project-final-java-basics-project',
+      'capstone-payroll': 'mini-project-final-java-basics-project',
+      'capstone': 'mini-project-final-java-basics-project',
+      'final-project': 'mini-project-final-java-basics-project'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

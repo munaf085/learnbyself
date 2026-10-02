@@ -17,6 +17,7 @@ import { OsSetupGuide } from './os-setup-guide';
 import { EditorialArticle } from './editorial-article';
 import { SummaryCheatSheet } from './summary-cheatsheet';
 import { PracticeProblemsList } from '../practice/practice-problems-list';
+import { MiniProjectStudio } from './mini-project-studio';
 import { storage } from '@/lib/storage';
 
 interface LearningStudioProps {
@@ -99,6 +100,11 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
   const interviewActivity = currentLesson.activities.find(a => a.type === 'interview_qa');
   const interviewCount = interviewActivity?.interviewQA?.length || 0;
   const checklistActivity = currentLesson.activities.find(a => a.type === 'self_evaluation');
+  const isMiniProject =
+    currentLesson.moduleSlug === 'mini-projects' ||
+    currentLesson.isMiniProject ||
+    !!currentLesson.miniProject ||
+    !!currentLesson.project;
 
   const hasPractice = practiceProblems.length > 0 || !!practiceActivity?.practice;
   const studioTabs: TabItem[] = [
@@ -182,8 +188,12 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
           onNextLesson={() => nextItem && handleSelectLesson(nextItem.moduleSlug, nextItem.lesson.slug)}
         />
 
-        {/* Navigation Tabs */}
-        <Tabs tabs={studioTabs} defaultTab={activeTab} onChange={setActiveTab} />
+        {isMiniProject ? (
+          <MiniProjectStudio lesson={currentLesson} />
+        ) : (
+          <>
+            {/* Navigation Tabs */}
+            <Tabs tabs={studioTabs} defaultTab={activeTab} onChange={setActiveTab} />
 
         {/* Tab 1: Concept & Core Understanding */}
         {activeTab === 'concept' && (
@@ -346,6 +356,8 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
               />
             )}
           </div>
+        )}
+          </>
         )}
 
         {/* Clean Bottom Navigation: Previous and Next only */}
