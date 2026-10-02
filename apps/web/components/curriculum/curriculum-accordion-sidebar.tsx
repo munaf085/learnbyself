@@ -282,9 +282,15 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                           {(() => {
                             const titleLower = lesson.title.toLowerCase();
                             const isFinal = titleLower.includes('final project') || titleLower.includes('capstone');
-                            const isProject = !isFinal && titleLower.includes('mini project');
-                            const isChallenge = titleLower.includes('challenge') || titleLower.includes('debugging');
-                            const isPractice = titleLower.includes('practice');
+                            const isProject = !isFinal && (
+                              titleLower.includes('mini project') ||
+                              titleLower.includes('guided build') ||
+                              titleLower.includes('requirement build') ||
+                              mod.slug === 'mini-projects' ||
+                              mod.slug === 'oop-mini-projects'
+                            );
+                            const isChallenge = !isProject && (titleLower.includes('challenge') || titleLower.includes('debugging'));
+                            const isPractice = !isProject && !isChallenge && titleLower.includes('practice');
 
                             return (
                               <div className="flex-1 min-w-0">

@@ -73,7 +73,11 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
   ): Promise<Module | null> {
     const section = await this.getSection(languageSlug, sectionSlug);
     if (!section) return null;
-    return section.modules.find(m => m.slug === moduleSlug) || null;
+    const resolvedSlug =
+      (sectionSlug === 'oop' && moduleSlug === 'oop-mini-projects')
+        ? 'mini-projects'
+        : moduleSlug;
+    return section.modules.find(m => m.slug === resolvedSlug || m.slug === moduleSlug) || null;
   }
 
   async getLesson(
@@ -82,6 +86,10 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
     moduleSlug: string,
     lessonSlug: string
   ): Promise<LessonDetail | null> {
+    const resolvedModuleSlug =
+      (sectionSlug === 'oop' && moduleSlug === 'oop-mini-projects')
+        ? 'mini-projects'
+        : moduleSlug;
     // Map legacy or alternative slugs to canonical merged lessons
     const slugAliases: Record<string, string> = {
       // Lesson 1 aliases:
@@ -330,15 +338,18 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
     } else {
       const course = await this.getCourse(languageSlug);
       const section = course?.sections.find(s => s.slug === sectionSlug);
-      const mod = section?.modules.find(m => m.slug === moduleSlug);
-      const summary = mod?.lessons.find(l => l.slug === lessonSlug);
+      const mod = section?.modules.find(m => m.slug === resolvedModuleSlug);
+      const summary = mod?.lessons.find(l => l.slug === targetSlug || l.slug === lessonSlug);
       if (!summary) return null;
 
       const isProjectLesson =
         (summary as any).isMiniProject ||
+        resolvedModuleSlug === 'mini-projects' ||
         summary.title.toLowerCase().includes('mini project') ||
         summary.title.toLowerCase().includes('capstone') ||
-        summary.title.toLowerCase().includes('final project');
+        summary.title.toLowerCase().includes('final project') ||
+        summary.title.toLowerCase().includes('guided build') ||
+        summary.title.toLowerCase().includes('requirement build');
 
       let miniProjectData: any = undefined;
       if (isProjectLesson) {
@@ -620,7 +631,7 @@ Mastering this concept ensures you avoid subtle bugs like NullPointerExceptions,
     if (course) {
       const section = course.sections.find(s => s.slug === sectionSlug);
       if (section) {
-        const mod = section.modules.find(m => m.slug === moduleSlug);
+        const mod = section.modules.find(m => m.slug === resolvedModuleSlug);
         if (mod && mod.lessons) {
           const currentIndex = mod.lessons.findIndex(l => l.slug === targetSlug || l.slug === lessonSlug);
           lesson.currentModule = {
@@ -643,7 +654,7 @@ Mastering this concept ensures you avoid subtle bugs like NullPointerExceptions,
             lesson.nextLesson = mod.lessons[currentIndex + 1];
           } else {
             // End of module: look for next module
-            const currentModIdx = section.modules.findIndex(m => m.slug === moduleSlug);
+            const currentModIdx = section.modules.findIndex(m => m.slug === resolvedModuleSlug);
             if (currentModIdx !== -1 && currentModIdx < section.modules.length - 1) {
               const nextMod = section.modules[currentModIdx + 1];
               if (nextMod) {

@@ -109,12 +109,15 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
   const checklistActivity = currentLesson.activities.find(a => a.type === 'self_evaluation');
   const isMiniProject =
     currentLesson.moduleSlug === 'mini-projects' ||
+    currentLesson.moduleSlug === 'oop-mini-projects' ||
     currentLesson.isMiniProject ||
     !!currentLesson.miniProject ||
     !!currentLesson.project ||
     currentLesson.title.toLowerCase().includes('mini project') ||
     currentLesson.title.toLowerCase().includes('capstone') ||
-    currentLesson.title.toLowerCase().includes('final project:');
+    currentLesson.title.toLowerCase().includes('final project') ||
+    currentLesson.title.toLowerCase().includes('guided build') ||
+    currentLesson.title.toLowerCase().includes('requirement build');
 
   const studioTabs: TabItem[] = [
     { id: 'concept', label: '1. Learn' },
