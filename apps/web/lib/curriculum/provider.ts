@@ -92,6 +92,10 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
         : moduleSlug;
     // Map legacy or alternative slugs to canonical merged lessons
     const slugAliases: Record<string, string> = {
+      // OOP Module 1 aliases:
+      'procedural-vs-oop-thinking': 'procedural-vs-object-oriented-thinking',
+      'creating-multiple-objects': 'creating-and-using-multiple-objects',
+
       // Lesson 1 aliases:
       'what-is-java-and-the-jvm': 'java-and-jvm',
       'what-is-java': 'java-and-jvm',
@@ -314,7 +318,7 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;
 
     // 1. Check hierarchical path: data/curriculum/{language}/{section}/{module}/{lesson}.json
-    const hierarchicalPath = path.join(this.rootPath, languageSlug, sectionSlug, moduleSlug, `${targetSlug}.json`);
+    const hierarchicalPath = path.join(this.rootPath, languageSlug, sectionSlug, resolvedModuleSlug, `${targetSlug}.json`);
     let rawContent: string | null = null;
 
     if (fs.existsSync(hierarchicalPath)) {
