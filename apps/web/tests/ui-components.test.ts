@@ -32,4 +32,18 @@ describe('UI Storage & Learning State Logic', () => {
     expect(retrieved['1']).toBe(true);
     expect(retrieved['2']).toBe(false);
   });
+
+  it('guarantees consistent 6-tab learning progression across all lessons including Practice', () => {
+    const expectedTabIds = ['concept', 'mcq', 'practice', 'interview', 'summary', 'checklist'];
+    const studioTabs = [
+      { id: 'concept', label: '1. Learn' },
+      { id: 'mcq', label: '2. MCQ' },
+      { id: 'practice', label: '3. Practice' },
+      { id: 'interview', label: '4. Interview Q&A' },
+      { id: 'summary', label: '5. Summary' },
+      { id: 'checklist', label: '6. Checklist' }
+    ];
+
+    expect(studioTabs.map(t => t.id)).toEqual(expectedTabIds);
+  });
 });

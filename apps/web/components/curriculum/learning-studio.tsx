@@ -113,14 +113,13 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     !!currentLesson.miniProject ||
     !!currentLesson.project;
 
-  const hasPractice = practiceProblems.length > 0 || !!practiceActivity?.practice;
   const studioTabs: TabItem[] = [
     { id: 'concept', label: '1. Learn' },
     { id: 'mcq', label: '2. MCQ', badge: totalQuestions > 0 ? `${totalQuestions}` : undefined },
-    ...(hasPractice ? [{ id: 'practice', label: '3. Practice', badge: practiceProblems.length > 0 ? `${practiceProblems.length}` : undefined }] : []),
-    { id: 'interview', label: `${hasPractice ? '4' : '3'}. Interview Q&A`, badge: interviewCount > 0 ? `${interviewCount}` : undefined },
-    { id: 'summary', label: `${hasPractice ? '5' : '4'}. Summary` },
-    { id: 'checklist', label: `${hasPractice ? '6' : '5'}. Checklist` }
+    { id: 'practice', label: '3. Practice', badge: practiceProblems.length > 0 ? `${practiceProblems.length}` : undefined },
+    { id: 'interview', label: '4. Interview Q&A', badge: interviewCount > 0 ? `${interviewCount}` : undefined },
+    { id: 'summary', label: '5. Summary' },
+    { id: 'checklist', label: '6. Checklist' }
   ];
 
   const handleNextLessonWithCelebration = () => {
