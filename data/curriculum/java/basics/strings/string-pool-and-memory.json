@@ -1,0 +1,674 @@
+{
+  "id": "les-strings-string-pool-and-memory",
+  "slug": "string-pool-and-memory",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "String Pool & Memory Model",
+  "summary": "Understand how the JVM String Constant Pool optimizes memory, how compile-time constant folding works, and how the .intern() method bridges heap objects and the pool.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 4,
+  "prerequisites": [
+    "les-strings-string-immutability"
+  ],
+  "subtopics": [
+    "String Constant Pool",
+    "Compile-Time Constant Folding",
+    "The .intern() Method",
+    "JVM Memory Architecture"
+  ],
+  "learningOutcomes": [
+    "Explain the memory model of the JVM String Constant Pool",
+    "Predict outcomes of compile-time vs runtime string concatenation",
+    "Apply .intern() to normalize and deduplicate heap strings"
+  ],
+  "activities": [
+    {
+      "id": "act-string-pool-and-memory-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: String Pool & Memory Model",
+      "content": "### 1. Concept: The String Constant Pool\nThe **String Constant Pool** (often called the String Intern Pool) is a special memory region maintained inside the **JVM Heap**. Its sole mission is to save RAM by storing **only one shared instance** of each unique String literal.\n\nWhen your Java code contains string literals (e.g. `\"Java\"`), the JVM consults this pool:\n- If `\"Java\"` is already in the pool, the JVM returns the memory reference to that existing object.\n- If `\"Java\"` is not yet present, the JVM creates a new object in the pool and registers it.\n\n### 2. Why It Matters\nIn enterprise enterprise applications, strings represent up to 25–40% of the total application memory footprint. Without the String Pool, if an e-commerce backend processes 100,000 orders each having `status = \"PENDING\"`, there would be 100,000 duplicate `\"PENDING\"` String objects occupying megabytes of RAM. With the String Pool, all 100,000 orders share the exact same single 7-character object in memory!\n\n### 3. Mental Model\nImagine a giant stamp collection album. \n- When someone brings a stamp labeled `\"PENDING\"`, you check if your album already has the `\"PENDING\"` stamp.\n- If it does, you don't keep the new stamp; you just tell the person: *\"Look at slot #42 in the album.\"*\n- Every person wanting to inspect `\"PENDING\"` looks at that exact same slot #42.\n\n### 4. Java Mechanics: Memory Layout\n```text\n+-----------------------------------------------------------------+\n|                           JVM HEAP                              |\n|                                                                 |\n|   +---------------------------------------------------------+   |\n|   |                  String Constant Pool                   |   |\n|   |                                                         |   |\n|   |   @Addr101: \"Hello\" <-------+ (s1)                      |   |\n|   |                             + (s2)                      |   |\n|   +---------------------------------------------------------+   |\n|                                                                 |\n|   General Heap:                                                 |\n|   @Addr505: \"Hello\" <------------- (s3 = new String(\"Hello\"))   |\n+-----------------------------------------------------------------+\n```\n1. `String s1 = \"Hello\";` -> Creates `\"Hello\"` at `@Addr101` in the Pool.\n2. `String s2 = \"Hello\";` -> Reuses `@Addr101` from the Pool (`s1 == s2` is `true`).\n3. `String s3 = new String(\"Hello\");` -> Allocates a new object at `@Addr505` on General Heap (`s1 == s3` is `false`).\n4. `String s4 = s3.intern();` -> Searches the pool, finds `@Addr101`, and returns it (`s1 == s4` is `true`!).\n\n### 5. Practical Java Example: The `intern()` Method\n```java\nString literal = \"Production\";\nString custom = new String(\"Production\");\n\nSystem.out.println(\"Before intern: \" + (literal == custom)); // false\n\n// Force custom to fetch its pooled equivalent\nString interned = custom.intern();\nSystem.out.println(\"After intern: \" + (literal == interned)); // true!\n```\n\n### 6. Common Beginner Mistakes\n- **Assuming `intern()` modifies the original string**: Calling `custom.intern();` does not redirect `custom`. It returns the pooled reference, which must be captured: `custom = custom.intern();`.\n- **Overusing `intern()` unnecessarily**: Calling `intern()` on thousands of dynamically generated random strings can bloat the pool and degrade hash table lookup speeds.\n\n### 7. Key Takeaways\n- The String Constant Pool is a hash map of unique string literals located in the JVM Heap.\n- Literals automatically participate in pooling; `new String(...)` allocates outside the pool.\n- The `.intern()` method retrieves or places the string into the String Constant Pool.\n- Pooling provides immense memory savings for recurring values like statuses, country codes, and keys.",
+      "breakdown": [
+        {
+          "topic": "String Constant Pool Location",
+          "details": "Lives inside JVM Heap memory (since Java 7). Managed as a native hash table of string references."
+        },
+        {
+          "topic": "Automatic Deduplication",
+          "details": "Identical String literals share the exact same heap memory address without manual intervention."
+        },
+        {
+          "topic": "The .intern() Method",
+          "details": "Explicitly queries the pool. Returns the pooled reference if present, or adds the string to the pool if absent."
+        },
+        {
+          "topic": "Garbage Collection of Pool",
+          "details": "Because the pool is in the regular Heap, unreferenced pooled strings can be garbage collected when no longer reachable."
+        }
+      ]
+    },
+    {
+      "id": "act-string-pool-and-memory-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: String Pool and Intern Mechanics",
+      "codeSnippet": "public class StringPoolMemoryDemo {\n    public static void main(String[] args) {\n        // String Literals share the pooled object\n        String s1 = \"LearnBySelf\";\n        String s2 = \"LearnBySelf\";\n        \n        // Explicit new allocation in general Heap\n        String s3 = new String(\"LearnBySelf\");\n        \n        System.out.println(\"s1 == s2 (both in pool): \" + (s1 == s2)); // true\n        System.out.println(\"s1 == s3 (pool vs heap): \" + (s1 == s3));  // false\n        \n        // Using intern() to retrieve the pooled reference\n        String s4 = s3.intern();\n        System.out.println(\"s1 == s4 (after intern): \" + (s1 == s4));  // true\n        \n        // Compile-time literal concatenation vs runtime concatenation\n        String c1 = \"Learn\" + \"BySelf\"; // Computed at compile-time into \"LearnBySelf\"\n        System.out.println(\"s1 == c1 (compile-time constant): \" + (s1 == c1)); // true\n        \n        String prefix = \"Learn\";\n        String c2 = prefix + \"BySelf\"; // Computed at runtime -> new Heap object!\n        System.out.println(\"s1 == c2 (runtime expression): \" + (s1 == c2)); // false\n    }\n}",
+      "description": "Demonstrates how the String Constant Pool operates, comparing literals, heap objects, and constant folding.",
+      "steps": [
+        {
+          "line": 4,
+          "description": "s1 points to 'LearnBySelf' in the String Constant Pool."
+        },
+        {
+          "line": 5,
+          "description": "s2 reuses the exact same reference from the pool."
+        },
+        {
+          "line": 8,
+          "description": "s3 creates a separate object in regular Heap memory."
+        },
+        {
+          "line": 14,
+          "description": "s3.intern() returns the address of 'LearnBySelf' from the pool, matching s1."
+        },
+        {
+          "line": 18,
+          "description": "Java compiler folds constant literals: 'Learn' + 'BySelf' becomes 'LearnBySelf' at compile time."
+        },
+        {
+          "line": 22,
+          "description": "prefix + 'BySelf' is evaluated at runtime with a variable, allocating a new Heap object."
+        }
+      ]
+    },
+    {
+      "id": "act-string-pool-and-memory-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: String Pool & Memory Model",
+      "questions": [
+        {
+          "id": "mcq-spm-1",
+          "question": "Where does the String Constant Pool reside in Java 8 and later versions?",
+          "options": [
+            "On the thread execution Stack",
+            "Inside the main JVM Heap memory",
+            "In PermGen outside the heap",
+            "Directly in operating system swap space"
+          ],
+          "correctOption": 1,
+          "explanation": "Since Java 7, the String Constant Pool was moved out of PermGen into the standard JVM Heap memory."
+        },
+        {
+          "id": "mcq-spm-2",
+          "question": "What is the primary purpose of the String Constant Pool?",
+          "options": [
+            "To make String execution run in multithreaded background cores",
+            "To save Heap memory by sharing identical string literal instances",
+            "To encrypt string contents for database storage",
+            "To allow strings to grow dynamically in size"
+          ],
+          "correctOption": 1,
+          "explanation": "The pool deduplicates identical string literals, drastically conserving memory by reusing a single shared instance."
+        },
+        {
+          "id": "mcq-spm-3",
+          "question": "What does the method `str.intern()` do?",
+          "options": [
+            "Converts a String to an integer",
+            "Returns the canonical reference from the String Constant Pool",
+            "Deletes the String from memory permanently",
+            "Converts the string into ASCII byte format"
+          ],
+          "correctOption": 1,
+          "explanation": "intern() checks the pool. If a string with equal content exists, its pooled reference is returned; otherwise, the string is added to the pool."
+        },
+        {
+          "id": "mcq-spm-4",
+          "question": "What will be printed by the following code?\n```java\nString s1 = \"Ja\" + \"va\";\nString s2 = \"Java\";\nSystem.out.println(s1 == s2);\n```",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "NullPointerException"
+          ],
+          "correctOption": 0,
+          "explanation": "Because \"Ja\" and \"va\" are compile-time literal constants, the Java compiler performs constant folding into \"Java\" during compilation. Both point to the same pooled object."
+        },
+        {
+          "id": "mcq-spm-5",
+          "question": "What will be printed by this code?\n```java\nString part = \"Ja\";\nString s1 = part + \"va\";\nString s2 = \"Java\";\nSystem.out.println(s1 == s2);\n```",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "ClassCastException"
+          ],
+          "correctOption": 1,
+          "explanation": "Because `part` is a variable, `part + \"va\"` is computed at runtime on the Heap (not folded at compile time). It creates a new object, so s1 == s2 is false."
+        },
+        {
+          "id": "mcq-spm-6",
+          "question": "How can you make `s1 == s2` evaluate to true in the previous question without changing the declaration of `part`?",
+          "options": [
+            "Use System.gc()",
+            "Use s1 = s1.intern(); before the comparison",
+            "Call part.lock()",
+            "Cast s1 to (char[])"
+          ],
+          "correctOption": 1,
+          "explanation": "Calling `s1 = s1.intern()` retrieves the canonical pooled reference, which matches the pooled literal `s2`."
+        },
+        {
+          "id": "mcq-spm-7",
+          "question": "Can pooled String objects in Java 8+ ever be garbage collected?",
+          "options": [
+            "No, pooled strings remain in memory permanently until the JVM process terminates",
+            "Yes, because the pool resides in Heap memory, unreferenced pooled strings can be garbage collected",
+            "Only if the operating system runs out of swap space",
+            "Only if the class is marked @Deprecated"
+          ],
+          "correctOption": 1,
+          "explanation": "Because the String pool was moved to the Heap, pooled strings that are no longer referenced by any reachable class or variable are eligible for garbage collection."
+        },
+        {
+          "id": "mcq-spm-8",
+          "question": "What happens if you declare `final String part = \"Ja\"; String s1 = part + \"va\"; String s2 = \"Java\";`?",
+          "options": [
+            "s1 == s2 is false",
+            "s1 == s2 is true because `part` is a compile-time constant",
+            "A compile error occurs",
+            "A runtime verification error occurs"
+          ],
+          "correctOption": 1,
+          "explanation": "Because `part` is declared `final` and initialized with a constant, the compiler treats it as a compile-time constant expression and folds `part + \"va\"` into \"Java\"."
+        },
+        {
+          "id": "mcq-spm-9",
+          "question": "In the following snippet, how many distinct String objects exist in total across both Pool and Heap?\n```java\nString a = \"Code\";\nString b = \"Code\";\nString c = new String(\"Code\");\nString d = new String(\"Code\");\n```",
+          "options": [
+            "1 object",
+            "2 objects",
+            "3 objects",
+            "4 objects"
+          ],
+          "correctOption": 2,
+          "explanation": "Three objects: 1 in the String Constant Pool (shared by a and b), 1 in general heap for c, and 1 in general heap for d."
+        },
+        {
+          "id": "mcq-spm-10",
+          "question": "What is the result of `(new String(\"A\") == new String(\"A\"))`?",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "Indeterminate"
+          ],
+          "correctOption": 1,
+          "explanation": "Each invocation of 'new' creates a distinct object at a unique memory address on the Heap. Comparing their addresses with == yields false."
+        },
+        {
+          "id": "mcq-spm-11",
+          "question": "Why would string pooling fail if Strings were mutable?",
+          "options": [
+            "It would cause memory leaks in CPU registers",
+            "If one variable modified the pooled string, every other variable referencing it would have its value corrupted",
+            "The JVM garbage collector would freeze",
+            "Strings could not be printed to the terminal"
+          ],
+          "correctOption": 1,
+          "explanation": "Sharing requires immutability. If string data could change, modifying one pooled instance would corrupt all other parts of the application sharing that reference."
+        },
+        {
+          "id": "mcq-spm-12",
+          "question": "What data structure does the JVM use internally to implement the String Constant Pool?",
+          "options": [
+            "A doubly linked list",
+            "A binary search tree",
+            "A fixed-capacity Hash Table (StringTable)",
+            "A circular queue"
+          ],
+          "correctOption": 2,
+          "explanation": "The JVM implements the pool as a specialized native hash table known as StringTable with configurable bucket size (-XX:StringTableSize)."
+        },
+        {
+          "id": "mcq-spm-13",
+          "question": "Predict the output:\n```java\nString s = new String(\"X\").intern();\nString t = \"X\";\nSystem.out.println(s == t);\n```",
+          "options": [
+            "true",
+            "false",
+            "NullPointerException",
+            "Compile error"
+          ],
+          "correctOption": 0,
+          "explanation": "new String(\"X\").intern() returns the pooled reference for \"X\", which is identical to the pooled literal reference assigned to t."
+        }
+      ]
+    },
+    {
+      "id": "act-string-pool-and-memory-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test String Interning and Constant Folding",
+      "practice": {
+        "id": "prac-act-spm",
+        "title": "Hands-On: Test String Interning and Constant Folding",
+        "description": "Construct a heap string, intern it, and verify that it equals the pooled literal using ==",
+        "starterCode": "public class PracticePoolMemory {\n    public static void main(String[] args) {\n        String pooled = \"LearnBySelf\";\n        String heapObj = new String(\"LearnBySelf\");\n        // TODO: Print heapObj == pooled before and after intern()\n    }\n}",
+        "solutionCode": "public class PracticePoolMemory {\n    public static void main(String[] args) {\n        String pooled = \"LearnBySelf\";\n        String heapObj = new String(\"LearnBySelf\");\n        System.out.println(\"Before intern: \" + (heapObj == pooled));\n        String interned = heapObj.intern();\n        System.out.println(\"After intern: \" + (interned == pooled));\n    }\n}",
+        "expectedOutput": "Before intern: false\nAfter intern: true"
+      }
+    },
+    {
+      "id": "act-string-pool-and-memory-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: String Pool & Memory Model",
+      "interviewQA": [
+        {
+          "id": "iq-spm-1",
+          "question": "What is the String Constant Pool and why was it introduced?",
+          "answer": "The String Constant Pool is a specialized storage area inside the JVM Heap dedicated to caching unique String literals. It was introduced to optimize memory utilization. Since applications frequently reuse common strings (keys, statuses, labels, configurations), caching and sharing a single immutable instance across the JVM eliminates massive memory redundancy."
+        },
+        {
+          "id": "iq-spm-2",
+          "question": "What is constant folding by the Java compiler?",
+          "answer": "Constant folding is a compiler optimization where constant expressions are evaluated at compile time rather than runtime. For example, `String s = \"A\" + \"B\";` is compiled directly into the bytecode constant `ldc \"AB\"`. Therefore, `s == \"AB\"` evaluates to `true` because no runtime concatenation occurs."
+        },
+        {
+          "id": "iq-spm-3",
+          "question": "Why does `String s1 = var + \"B\"; String s2 = \"AB\"; (s1 == s2)` evaluate to false?",
+          "answer": "Because `var` is a variable whose value cannot be guaranteed as an immutable constant at compile time, the Java compiler cannot perform constant folding. Instead, the concatenation is performed at runtime, which instantiates a brand new String object on the Heap. The addresses are different, so `==` returns `false`."
+        },
+        {
+          "id": "iq-spm-4",
+          "question": "What is the purpose of the intern() method in String?",
+          "answer": "The `intern()` method allows manual interaction with the String Constant Pool. When invoked on a String object, the JVM looks for an equal string in the pool. If found, it returns the pooled reference. If not, the current string is added to the pool and its reference is returned. This allows runtime-generated strings to share memory."
+        },
+        {
+          "id": "iq-spm-5",
+          "question": "Can excessive use of intern() cause memory or performance issues?",
+          "answer": "Yes. Interned strings are stored in a native JVM hash table (StringTable). If an application interns millions of dynamic, non-repeating strings (e.g. unique UUIDs), the hash table buckets become deeply populated, degrading lookup performance from $O(1)$ to $O(N)$ and consuming significant Heap memory."
+        },
+        {
+          "id": "iq-spm-6",
+          "question": "Where was the String pool located before Java 7, and why was it moved?",
+          "answer": "Before Java 7, the String Constant Pool was located in `PermGen` (Permanent Generation) space. PermGen had a fixed maximum size that was difficult to tune, frequently causing `java.lang.OutOfMemoryError: PermGen space`. In Java 7+, the pool was moved to the main JVM Heap, allowing pooled strings to be properly garbage collected."
+        },
+        {
+          "id": "iq-spm-7",
+          "question": "What is the tuning parameter for the JVM String pool?",
+          "answer": "The JVM parameter `-XX:StringTableSize=N` configures the number of buckets in the String Constant Pool hash table. Tuning this to a larger prime number (e.g., `-XX:StringTableSize=60013`) prevents bucket collisions in applications with hundreds of thousands of interned strings."
+        }
+      ]
+    },
+    {
+      "id": "act-string-pool-and-memory-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: String Pool & Memory Model",
+      "checklist": [
+        {
+          "id": "chk-spm-1",
+          "text": "I can visualize the String Constant Pool inside the JVM Heap."
+        },
+        {
+          "id": "chk-spm-2",
+          "text": "I understand how the Java compiler performs compile-time constant folding."
+        },
+        {
+          "id": "chk-spm-3",
+          "text": "I know why runtime concatenation with variables allocates new Heap objects."
+        },
+        {
+          "id": "chk-spm-4",
+          "text": "I know how and when to use the .intern() method."
+        },
+        {
+          "id": "chk-spm-5",
+          "text": "I understand that pooled strings can be garbage collected when unreachable in Java 8+."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-spm-1",
+      "question": "Where does the String Constant Pool reside in Java 8 and later versions?",
+      "options": [
+        "On the thread execution Stack",
+        "Inside the main JVM Heap memory",
+        "In PermGen outside the heap",
+        "Directly in operating system swap space"
+      ],
+      "correctOption": 1,
+      "explanation": "Since Java 7, the String Constant Pool was moved out of PermGen into the standard JVM Heap memory."
+    },
+    {
+      "id": "mcq-spm-2",
+      "question": "What is the primary purpose of the String Constant Pool?",
+      "options": [
+        "To make String execution run in multithreaded background cores",
+        "To save Heap memory by sharing identical string literal instances",
+        "To encrypt string contents for database storage",
+        "To allow strings to grow dynamically in size"
+      ],
+      "correctOption": 1,
+      "explanation": "The pool deduplicates identical string literals, drastically conserving memory by reusing a single shared instance."
+    },
+    {
+      "id": "mcq-spm-3",
+      "question": "What does the method `str.intern()` do?",
+      "options": [
+        "Converts a String to an integer",
+        "Returns the canonical reference from the String Constant Pool",
+        "Deletes the String from memory permanently",
+        "Converts the string into ASCII byte format"
+      ],
+      "correctOption": 1,
+      "explanation": "intern() checks the pool. If a string with equal content exists, its pooled reference is returned; otherwise, the string is added to the pool."
+    },
+    {
+      "id": "mcq-spm-4",
+      "question": "What will be printed by the following code?\n```java\nString s1 = \"Ja\" + \"va\";\nString s2 = \"Java\";\nSystem.out.println(s1 == s2);\n```",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "NullPointerException"
+      ],
+      "correctOption": 0,
+      "explanation": "Because \"Ja\" and \"va\" are compile-time literal constants, the Java compiler performs constant folding into \"Java\" during compilation. Both point to the same pooled object."
+    },
+    {
+      "id": "mcq-spm-5",
+      "question": "What will be printed by this code?\n```java\nString part = \"Ja\";\nString s1 = part + \"va\";\nString s2 = \"Java\";\nSystem.out.println(s1 == s2);\n```",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "ClassCastException"
+      ],
+      "correctOption": 1,
+      "explanation": "Because `part` is a variable, `part + \"va\"` is computed at runtime on the Heap (not folded at compile time). It creates a new object, so s1 == s2 is false."
+    },
+    {
+      "id": "mcq-spm-6",
+      "question": "How can you make `s1 == s2` evaluate to true in the previous question without changing the declaration of `part`?",
+      "options": [
+        "Use System.gc()",
+        "Use s1 = s1.intern(); before the comparison",
+        "Call part.lock()",
+        "Cast s1 to (char[])"
+      ],
+      "correctOption": 1,
+      "explanation": "Calling `s1 = s1.intern()` retrieves the canonical pooled reference, which matches the pooled literal `s2`."
+    },
+    {
+      "id": "mcq-spm-7",
+      "question": "Can pooled String objects in Java 8+ ever be garbage collected?",
+      "options": [
+        "No, pooled strings remain in memory permanently until the JVM process terminates",
+        "Yes, because the pool resides in Heap memory, unreferenced pooled strings can be garbage collected",
+        "Only if the operating system runs out of swap space",
+        "Only if the class is marked @Deprecated"
+      ],
+      "correctOption": 1,
+      "explanation": "Because the String pool was moved to the Heap, pooled strings that are no longer referenced by any reachable class or variable are eligible for garbage collection."
+    },
+    {
+      "id": "mcq-spm-8",
+      "question": "What happens if you declare `final String part = \"Ja\"; String s1 = part + \"va\"; String s2 = \"Java\";`?",
+      "options": [
+        "s1 == s2 is false",
+        "s1 == s2 is true because `part` is a compile-time constant",
+        "A compile error occurs",
+        "A runtime verification error occurs"
+      ],
+      "correctOption": 1,
+      "explanation": "Because `part` is declared `final` and initialized with a constant, the compiler treats it as a compile-time constant expression and folds `part + \"va\"` into \"Java\"."
+    },
+    {
+      "id": "mcq-spm-9",
+      "question": "In the following snippet, how many distinct String objects exist in total across both Pool and Heap?\n```java\nString a = \"Code\";\nString b = \"Code\";\nString c = new String(\"Code\");\nString d = new String(\"Code\");\n```",
+      "options": [
+        "1 object",
+        "2 objects",
+        "3 objects",
+        "4 objects"
+      ],
+      "correctOption": 2,
+      "explanation": "Three objects: 1 in the String Constant Pool (shared by a and b), 1 in general heap for c, and 1 in general heap for d."
+    },
+    {
+      "id": "mcq-spm-10",
+      "question": "What is the result of `(new String(\"A\") == new String(\"A\"))`?",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "Indeterminate"
+      ],
+      "correctOption": 1,
+      "explanation": "Each invocation of 'new' creates a distinct object at a unique memory address on the Heap. Comparing their addresses with == yields false."
+    },
+    {
+      "id": "mcq-spm-11",
+      "question": "Why would string pooling fail if Strings were mutable?",
+      "options": [
+        "It would cause memory leaks in CPU registers",
+        "If one variable modified the pooled string, every other variable referencing it would have its value corrupted",
+        "The JVM garbage collector would freeze",
+        "Strings could not be printed to the terminal"
+      ],
+      "correctOption": 1,
+      "explanation": "Sharing requires immutability. If string data could change, modifying one pooled instance would corrupt all other parts of the application sharing that reference."
+    },
+    {
+      "id": "mcq-spm-12",
+      "question": "What data structure does the JVM use internally to implement the String Constant Pool?",
+      "options": [
+        "A doubly linked list",
+        "A binary search tree",
+        "A fixed-capacity Hash Table (StringTable)",
+        "A circular queue"
+      ],
+      "correctOption": 2,
+      "explanation": "The JVM implements the pool as a specialized native hash table known as StringTable with configurable bucket size (-XX:StringTableSize)."
+    },
+    {
+      "id": "mcq-spm-13",
+      "question": "Predict the output:\n```java\nString s = new String(\"X\").intern();\nString t = \"X\";\nSystem.out.println(s == t);\n```",
+      "options": [
+        "true",
+        "false",
+        "NullPointerException",
+        "Compile error"
+      ],
+      "correctOption": 0,
+      "explanation": "new String(\"X\").intern() returns the pooled reference for \"X\", which is identical to the pooled literal reference assigned to t."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-spm-1",
+      "title": "Intern a Heap String",
+      "difficulty": "Easy",
+      "problemStatement": "Declare `String literal = \"Cloud\";` and `String heap = new String(\"Cloud\");`. Print `heap == literal`. Then call `heap = heap.intern();` and print `heap == literal` again.",
+      "description": "Declare `String literal = \"Cloud\";` and `String heap = new String(\"Cloud\");`. Print `heap == literal`. Then call `heap = heap.intern();` and print `heap == literal` again.",
+      "hint": "heap = heap.intern() assigns the pooled reference to heap.",
+      "hints": [
+        "heap = heap.intern() assigns the pooled reference to heap."
+      ],
+      "starterCode": "public class InternPractice {\n    public static void main(String[] args) {\n        // TODO: Implement pool interning demonstration\n    }\n}",
+      "solutionCode": "public class InternPractice {\n    public static void main(String[] args) {\n        String literal = \"Cloud\";\n        String heap = new String(\"Cloud\");\n        System.out.println(\"Before intern: \" + (heap == literal));\n        heap = heap.intern();\n        System.out.println(\"After intern: \" + (heap == literal));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Before intern: false\nAfter intern: true"
+        }
+      ],
+      "targetOutput": "Before intern: false\nAfter intern: true"
+    },
+    {
+      "id": "prob-spm-2",
+      "title": "Compile-Time Constant vs Runtime Concatenation",
+      "difficulty": "Medium",
+      "problemStatement": "Demonstrate the compiler constant folding behavior: Create `String base = \"Data\";`. Create `c1 = \"Data\" + \"Base\";` and `c2 = base + \"Base\";`. Print `(c1 == \"DataBase\")` and `(c2 == \"DataBase\")`.",
+      "description": "Demonstrate the compiler constant folding behavior: Create `String base = \"Data\";`. Create `c1 = \"Data\" + \"Base\";` and `c2 = base + \"Base\";`. Print `(c1 == \"DataBase\")` and `(c2 == \"DataBase\")`.",
+      "hint": "c1 is folded at compile time; c2 is evaluated at runtime with a variable.",
+      "hints": [
+        "c1 is folded at compile time; c2 is evaluated at runtime with a variable."
+      ],
+      "starterCode": "public class ConstantFoldingDemo {\n    public static void main(String[] args) {\n        // TODO: Demonstrate constant folding\n    }\n}",
+      "solutionCode": "public class ConstantFoldingDemo {\n    public static void main(String[] args) {\n        String base = \"Data\";\n        String c1 = \"Data\" + \"Base\";\n        String c2 = base + \"Base\";\n        System.out.println(\"c1 == DataBase: \" + (c1 == \"DataBase\"));\n        System.out.println(\"c2 == DataBase: \" + (c2 == \"DataBase\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "c1 == DataBase: true\nc2 == DataBase: false"
+        }
+      ],
+      "targetOutput": "c1 == DataBase: true\nc2 == DataBase: false"
+    },
+    {
+      "id": "prob-spm-3",
+      "title": "Final Variable Constant Folding",
+      "difficulty": "Medium",
+      "problemStatement": "Declare `final String prefix = \"Learn\";` and `String word = prefix + \"BySelf\";`. Print `word == \"LearnBySelf\"` to prove that `final` variables participate in compile-time constant folding.",
+      "description": "Declare `final String prefix = \"Learn\";` and `String word = prefix + \"BySelf\";`. Print `word == \"LearnBySelf\"` to prove that `final` variables participate in compile-time constant folding.",
+      "hint": "final makes the variable a compile-time constant.",
+      "hints": [
+        "final makes the variable a compile-time constant."
+      ],
+      "starterCode": "public class FinalConstantFolding {\n    public static void main(String[] args) {\n        // TODO: Declare final prefix and compare word with literal\n    }\n}",
+      "solutionCode": "public class FinalConstantFolding {\n    public static void main(String[] args) {\n        final String prefix = \"Learn\";\n        String word = prefix + \"BySelf\";\n        System.out.println(\"word == LearnBySelf: \" + (word == \"LearnBySelf\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "word == LearnBySelf: true"
+        }
+      ],
+      "targetOutput": "word == LearnBySelf: true"
+    },
+    {
+      "id": "prob-spm-4",
+      "title": "Count Created Objects in Logic",
+      "difficulty": "Medium",
+      "problemStatement": "Write a program that takes three status strings: `s1 = \"ACTIVE\"`, `s2 = \"ACTIVE\"`, `s3 = new String(\"ACTIVE\")`. Output the number of distinct Heap instances created (which is 2: 1 in pool, 1 in general heap).",
+      "description": "Write a program that takes three status strings: `s1 = \"ACTIVE\"`, `s2 = \"ACTIVE\"`, `s3 = new String(\"ACTIVE\")`. Output the number of distinct Heap instances created (which is 2: 1 in pool, 1 in general heap).",
+      "hint": "Print the explanation and count 2.",
+      "hints": [
+        "Print the explanation and count 2."
+      ],
+      "starterCode": "public class ObjectCountAnalysis {\n    public static void main(String[] args) {\n        String s1 = \"ACTIVE\";\n        String s2 = \"ACTIVE\";\n        String s3 = new String(\"ACTIVE\");\n        // TODO: Print the object analysis\n    }\n}",
+      "solutionCode": "public class ObjectCountAnalysis {\n    public static void main(String[] args) {\n        String s1 = \"ACTIVE\";\n        String s2 = \"ACTIVE\";\n        String s3 = new String(\"ACTIVE\");\n        int objectCount = 2; // 1 pooled literal + 1 new String heap object\n        System.out.println(\"s1 == s2: \" + (s1 == s2));\n        System.out.println(\"s1 == s3: \" + (s1 == s3));\n        System.out.println(\"Total distinct objects: \" + objectCount);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "s1 == s2: true\ns1 == s3: false\nTotal distinct objects: 2"
+        }
+      ],
+      "targetOutput": "s1 == s2: true\ns1 == s3: false\nTotal distinct objects: 2"
+    },
+    {
+      "id": "prob-spm-5",
+      "title": "Verify Distinct Array of Strings in Pool",
+      "difficulty": "Medium",
+      "problemStatement": "Create an array `String[] tags = {\"java\", \"java\", \"spring\", \"spring\", \"java\"};`. Count how many elements share the exact same reference as `tags[0]` using `==`. Print the matching count (should be 3).",
+      "description": "Create an array `String[] tags = {\"java\", \"java\", \"spring\", \"spring\", \"java\"};`. Count how many elements share the exact same reference as `tags[0]` using `==`. Print the matching count (should be 3).",
+      "hint": "Loop through tags and check if (tags[i] == tags[0]).",
+      "hints": [
+        "Loop through tags and check if (tags[i] == tags[0])."
+      ],
+      "starterCode": "public class PoolReferenceCounter {\n    public static void main(String[] args) {\n        String[] tags = {\"java\", \"java\", \"spring\", \"spring\", \"java\"};\n        // TODO: Count matching references to tags[0]\n    }\n}",
+      "solutionCode": "public class PoolReferenceCounter {\n    public static void main(String[] args) {\n        String[] tags = {\"java\", \"java\", \"spring\", \"spring\", \"java\"};\n        int count = 0;\n        for (String tag : tags) {\n            if (tag == tags[0]) {\n                count++;\n            }\n        }\n        System.out.println(\"Matching pool references: \" + count);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Matching pool references: 3"
+        }
+      ],
+      "targetOutput": "Matching pool references: 3"
+    },
+    {
+      "id": "prob-spm-6",
+      "title": "Intern in Dynamic Cache Simulation",
+      "difficulty": "Easy",
+      "problemStatement": "Simulate caching: Given a dynamically built string `String dynamic = new String(\"SUCCESS\");`. Call `.intern()` on it and assign it to `String cached`. Verify that `cached == \"SUCCESS\"` is true and print \"Cached in Pool\".",
+      "description": "Simulate caching: Given a dynamically built string `String dynamic = new String(\"SUCCESS\");`. Call `.intern()` on it and assign it to `String cached`. Verify that `cached == \"SUCCESS\"` is true and print \"Cached in Pool\".",
+      "hint": "String cached = dynamic.intern();",
+      "hints": [
+        "String cached = dynamic.intern();"
+      ],
+      "starterCode": "public class CacheSimulation {\n    public static void main(String[] args) {\n        String dynamic = new String(\"SUCCESS\");\n        // TODO: Intern and check equality with \"SUCCESS\"\n    }\n}",
+      "solutionCode": "public class CacheSimulation {\n    public static void main(String[] args) {\n        String dynamic = new String(\"SUCCESS\");\n        String cached = dynamic.intern();\n        if (cached == \"SUCCESS\") {\n            System.out.println(\"Cached in Pool\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Cached in Pool"
+        }
+      ],
+      "targetOutput": "Cached in Pool"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-spm-1",
+      "question": "What is the String Constant Pool and why was it introduced?",
+      "answer": "The String Constant Pool is a specialized storage area inside the JVM Heap dedicated to caching unique String literals. It was introduced to optimize memory utilization. Since applications frequently reuse common strings (keys, statuses, labels, configurations), caching and sharing a single immutable instance across the JVM eliminates massive memory redundancy."
+    },
+    {
+      "id": "iq-spm-2",
+      "question": "What is constant folding by the Java compiler?",
+      "answer": "Constant folding is a compiler optimization where constant expressions are evaluated at compile time rather than runtime. For example, `String s = \"A\" + \"B\";` is compiled directly into the bytecode constant `ldc \"AB\"`. Therefore, `s == \"AB\"` evaluates to `true` because no runtime concatenation occurs."
+    },
+    {
+      "id": "iq-spm-3",
+      "question": "Why does `String s1 = var + \"B\"; String s2 = \"AB\"; (s1 == s2)` evaluate to false?",
+      "answer": "Because `var` is a variable whose value cannot be guaranteed as an immutable constant at compile time, the Java compiler cannot perform constant folding. Instead, the concatenation is performed at runtime, which instantiates a brand new String object on the Heap. The addresses are different, so `==` returns `false`."
+    },
+    {
+      "id": "iq-spm-4",
+      "question": "What is the purpose of the intern() method in String?",
+      "answer": "The `intern()` method allows manual interaction with the String Constant Pool. When invoked on a String object, the JVM looks for an equal string in the pool. If found, it returns the pooled reference. If not, the current string is added to the pool and its reference is returned. This allows runtime-generated strings to share memory."
+    },
+    {
+      "id": "iq-spm-5",
+      "question": "Can excessive use of intern() cause memory or performance issues?",
+      "answer": "Yes. Interned strings are stored in a native JVM hash table (StringTable). If an application interns millions of dynamic, non-repeating strings (e.g. unique UUIDs), the hash table buckets become deeply populated, degrading lookup performance from $O(1)$ to $O(N)$ and consuming significant Heap memory."
+    },
+    {
+      "id": "iq-spm-6",
+      "question": "Where was the String pool located before Java 7, and why was it moved?",
+      "answer": "Before Java 7, the String Constant Pool was located in `PermGen` (Permanent Generation) space. PermGen had a fixed maximum size that was difficult to tune, frequently causing `java.lang.OutOfMemoryError: PermGen space`. In Java 7+, the pool was moved to the main JVM Heap, allowing pooled strings to be properly garbage collected."
+    },
+    {
+      "id": "iq-spm-7",
+      "question": "What is the tuning parameter for the JVM String pool?",
+      "answer": "The JVM parameter `-XX:StringTableSize=N` configures the number of buckets in the String Constant Pool hash table. Tuning this to a larger prime number (e.g., `-XX:StringTableSize=60013`) prevents bucket collisions in applications with hundreds of thousands of interned strings."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-spm-1",
+      "text": "I can visualize the String Constant Pool inside the JVM Heap."
+    },
+    {
+      "id": "chk-spm-2",
+      "text": "I understand how the Java compiler performs compile-time constant folding."
+    },
+    {
+      "id": "chk-spm-3",
+      "text": "I know why runtime concatenation with variables allocates new Heap objects."
+    },
+    {
+      "id": "chk-spm-4",
+      "text": "I know how and when to use the .intern() method."
+    },
+    {
+      "id": "chk-spm-5",
+      "text": "I understand that pooled strings can be garbage collected when unreachable in Java 8+."
+    }
+  ]
+}

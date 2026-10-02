@@ -1,0 +1,698 @@
+{
+  "id": "les-strings-string-immutability",
+  "slug": "string-immutability",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "String Immutability",
+  "summary": "Master the core concept of String immutability in Java: why strings cannot change in place, why methods return new objects, and the 4 critical reasons for immutability.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 3,
+  "prerequisites": [
+    "les-strings-string-creation-and-literals"
+  ],
+  "subtopics": [
+    "Definition of Immutability",
+    "Discarded Return Value Bug",
+    "4 Reasons for Immutability",
+    "Reassignment vs Object Mutation"
+  ],
+  "learningOutcomes": [
+    "Explain the 4 architectural reasons why String is immutable",
+    "Prevent bugs caused by ignoring method return values",
+    "Distinguish between final references and immutable objects"
+  ],
+  "activities": [
+    {
+      "id": "act-string-immutability-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: String Immutability",
+      "content": "### 1. Concept: What Does Immutable Mean?\nIn computer science, an **immutable object** is an object whose internal state (data) **cannot be modified** after it is constructed.\n\nIn Java, every `String` object is 100% immutable. Once a `String` is created in memory with specific characters, those characters can **never** be changed, appended, deleted, or overwritten in place.\n\nWhenever you call methods like `.toUpperCase()`, `.replace()`, `.trim()`, or use the concatenation operator `+`, Java **never modifies the original String**. Instead, it constructs a **completely brand-new String object** containing the transformed characters and returns its reference.\n\n### 2. Why It Matters\nThis is arguably the most critical interview topic in core Java. Beginners constantly write code like:\n```java\nString name = \"alice\";\nname.toUpperCase(); // BUG!\nSystem.out.println(name); // Still prints \"alice\"!\n```\nBecause Strings are immutable, `name.toUpperCase()` created a new String `\"ALICE\"`, but because the caller discarded the return value, the original `name` remained untouched! To capture the change, you must reassign: `name = name.toUpperCase();`.\n\n### 3. Mental Model: A Stone Tablet\nThink of a Java `String` as an inscription carved permanently into a **stone tablet**.\n- You cannot erase a letter from the tablet.\n- If you want a title in all capital letters, you must take a **fresh blank stone tablet** from the warehouse and carve the capitalized letters onto that new tablet.\n- Your variable is simply a hand pointing to a tablet. Reassignment (`name = \"Bob\"`) simply redirects your hand to point to a different tablet; the old tablet still exists unchanged.\n\n### 4. Java Mechanics: Why Did Java Designers Make String Immutable?\n1. **String Constant Pool Security & Sharing**: If Strings were mutable, sharing would be catastrophic! If variable `user1` and variable `user2` both point to pooled `\"guest\"`, and `user1` could mutate it to `\"admin\"`, `user2` would instantly gain administrator privileges without knowing why! Immutability makes pooling safe.\n2. **Thread Safety**: Multiple threads can access the same String concurrently without synchronization locks because neither thread can alter its data.\n3. **Security (Class Loading & Networking)**: Sensitive values like database passwords, socket URLs, and file paths are passed as Strings. If Strings were mutable, an attacker in another thread could modify the connection URL between validation and connection execution (Time-Of-Check to Time-Of-Use vulnerability).\n4. **Caching Hash Codes (`hashCode`)**: In `HashMap` and `HashSet`, `String` is the most popular key. Because String data cannot change, its hash code is computed once and cached permanently (`private int hash`). It never alters, guaranteeing $O(1)$ fast map lookups.\n\n### 5. Practical Java Example\n```java\nString greeting = \"Hello\";\n\n// Attempt to change:\ngreeting.concat(\" World\");\n\n// The original greeting is completely unaffected!\nSystem.out.println(\"Original: \" + greeting); // Prints \"Hello\"\n\n// Correct way: capture the newly created String reference\nString fullMessage = greeting.concat(\" World\");\nSystem.out.println(\"New String: \" + fullMessage); // Prints \"Hello World\"\n```\n\n### 6. Common Beginner Mistakes\n- **Ignoring the return value of String methods**: Calling `str.trim();` or `str.replace('a', 'b');` and wondering why `str` didn't change.\n- **Confusing variable reassignment with object mutation**: Believing that `s = \"new text\"` modified the original object. It only changed the address stored in variable `s`.\n- **String concatenation inside heavy loops**: Writing `s += i;` inside a loop of 10,000 iterations creates 10,000 intermediate abandoned String objects on the Heap.\n\n### 7. Key Takeaways\n- Java Strings are strictly immutable: internal character data can never be altered.\n- All transformation methods (`toUpperCase`, `concat`, `replace`, etc.) return brand-new String objects.\n- Immutability enables the String Constant Pool, guarantees thread safety, enhances security, and caches hash codes.\n- Always capture the return value of String manipulation methods.",
+      "breakdown": [
+        {
+          "topic": "Definition of Immutability",
+          "details": "The internal state and character sequence of a String object cannot be altered once created."
+        },
+        {
+          "topic": "Return Value Requirement",
+          "details": "Transformation methods do not mutate the caller; they return a newly allocated String with the result."
+        },
+        {
+          "topic": "Why String is Immutable",
+          "details": "Safe String Pooling, multi-threaded concurrency safety, network/credential security, and cached hashCodes."
+        },
+        {
+          "topic": "Reassignment vs Mutation",
+          "details": "Variable reassignment moves the pointer to a new object; the old object remains unchanged in memory."
+        }
+      ]
+    },
+    {
+      "id": "act-string-immutability-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Demonstrating String Immutability",
+      "codeSnippet": "public class StringImmutabilityDemo {\n    public static void main(String[] args) {\n        String city = \"San Francisco\";\n        \n        // 1. Classic Mistake: Calling transformation without capturing result\n        city.toUpperCase();\n        System.out.println(\"After city.toUpperCase(): \" + city); // \"San Francisco\"\n        \n        // 2. Correct Usage: Reassign or capture new reference\n        String upperCity = city.toUpperCase();\n        System.out.println(\"Original city: \" + city);            // \"San Francisco\"\n        System.out.println(\"Captured upperCity: \" + upperCity);  // \"SAN FRANCISCO\"\n        \n        // 3. Concatenation creates a brand-new object\n        String part1 = \"Cloud\";\n        String part2 = \"Native\";\n        String combined = part1 + part2;\n        \n        System.out.println(\"part1 unchanged: \" + part1);\n        System.out.println(\"combined is new: \" + combined);\n        \n        // 4. Reassigning reference\n        String message = \"Initial\";\n        message = message + \" Updated\"; // New object allocated; reference updated\n        System.out.println(\"message now points to: \" + message);\n    }\n}",
+      "description": "Proves that methods leave original Strings untouched and require capturing the newly created return values.",
+      "steps": [
+        {
+          "line": 3,
+          "description": "city is initialized with 'San Francisco' on the Heap."
+        },
+        {
+          "line": 6,
+          "description": "city.toUpperCase() creates 'SAN FRANCISCO' on the Heap, but return value is dropped."
+        },
+        {
+          "line": 7,
+          "description": "city still points to the untouched original 'San Francisco'."
+        },
+        {
+          "line": 10,
+          "description": "upperCity receives the reference to the newly created uppercase String."
+        },
+        {
+          "line": 17,
+          "description": "part1 + part2 allocates a new String 'CloudNative'; part1 and part2 are completely unchanged."
+        },
+        {
+          "line": 23,
+          "description": "message is reassigned to point to the newly created 'Initial Updated' object."
+        }
+      ]
+    },
+    {
+      "id": "act-string-immutability-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: String Immutability",
+      "questions": [
+        {
+          "id": "mcq-imm-1",
+          "question": "What does it mean that String is 'immutable' in Java?",
+          "options": [
+            "A String variable cannot be reassigned to point to another object",
+            "The character content of a String object cannot be altered after creation",
+            "A String cannot be printed to the console",
+            "A String cannot hold more than 256 characters"
+          ],
+          "correctOption": 1,
+          "explanation": "Immutability means the state (the internal character sequence) of the created object cannot be changed in memory."
+        },
+        {
+          "id": "mcq-imm-2",
+          "question": "What will be printed by the following code?\n```java\nString s = \"java\";\ns.toUpperCase();\nSystem.out.println(s);\n```",
+          "options": [
+            "JAVA",
+            "java",
+            "Java",
+            "NullPointerException"
+          ],
+          "correctOption": 1,
+          "explanation": "Because String is immutable, s.toUpperCase() produces a new String \"JAVA\" but does not mutate `s`. Since the return value was discarded, `s` remains \"java\"."
+        },
+        {
+          "id": "mcq-imm-3",
+          "question": "How do you correctly change a variable `str` to hold its uppercase version?",
+          "options": [
+            "str.toUpperCase();",
+            "str = str.toUpperCase();",
+            "str.setUpperCase();",
+            "String.modify(str);"
+          ],
+          "correctOption": 1,
+          "explanation": "You must capture the return value and reassign the variable: `str = str.toUpperCase();`."
+        },
+        {
+          "id": "mcq-imm-4",
+          "question": "Which of the following is NOT a reason why Java Strings were designed to be immutable?",
+          "options": [
+            "To allow safe sharing of String literals in the String Constant Pool",
+            "To provide thread safety without requiring explicit synchronization",
+            "To make String operations consume zero heap memory at runtime",
+            "To prevent security vulnerabilities with database URLs and passwords"
+          ],
+          "correctOption": 2,
+          "explanation": "Strings still consume Heap memory! Immutability provides thread safety, security, caching, and safe pooling, but does not make operations zero-memory."
+        },
+        {
+          "id": "mcq-imm-5",
+          "question": "What happens in memory when you execute `String s = \"A\"; s = s + \"B\";`?",
+          "options": [
+            "The letter 'B' is added directly into the existing object's memory slot",
+            "The object \"A\" is modified in place",
+            "A new String object \"AB\" is created on the Heap, and `s` is redirected to point to it",
+            "A compiler error occurs because `s` was already initialized"
+          ],
+          "correctOption": 2,
+          "explanation": "Strings cannot be modified in place. A brand-new String object \"AB\" is allocated, and the reference variable `s` is updated to point to the new object."
+        },
+        {
+          "id": "mcq-imm-6",
+          "question": "Predict the output of the following code:\n```java\nString text = \"Learn\";\ntext.concat(\"BySelf\");\nSystem.out.println(text);\n```",
+          "options": [
+            "LearnBySelf",
+            "Learn",
+            "BySelf",
+            "Compile error"
+          ],
+          "correctOption": 1,
+          "explanation": "concat() returns a newly created String \"LearnBySelf\". Because the return value was not stored or assigned to text, text remains \"Learn\"."
+        },
+        {
+          "id": "mcq-imm-7",
+          "question": "Why is String immutability beneficial for `HashMap` keys?",
+          "options": [
+            "It guarantees the hash code never changes, enabling cached hashCodes and reliable bucket lookups",
+            "It forces the HashMap to only store 10 elements",
+            "It prevents duplicate keys from being rejected",
+            "It eliminates the need for an equals method"
+          ],
+          "correctOption": 0,
+          "explanation": "If a key's data could mutate after insertion into a HashMap, its hashCode would change, making the entry lost forever. Immutability guarantees hash stability."
+        },
+        {
+          "id": "mcq-imm-8",
+          "question": "What is the difference between an immutable object and a `final` variable?",
+          "options": [
+            "They are identical concepts with different keywords",
+            "A final variable cannot be reassigned to point elsewhere; an immutable object's internal data cannot be changed",
+            "An immutable object cannot be garbage collected; a final variable can",
+            "A final variable only works with primitives"
+          ],
+          "correctOption": 1,
+          "explanation": "`final` on a variable locks the reference (you cannot reassign `x = other`). Immutability is a property of the object itself (its internal data cannot change)."
+        },
+        {
+          "id": "mcq-imm-9",
+          "question": "What happens to old String objects after a variable is reassigned to a new concatenated String?",
+          "options": [
+            "They crash the JVM",
+            "They become unreferenced garbage and are eventually reclaimed by the Garbage Collector",
+            "They are permanently locked in RAM until OS reboot",
+            "They are automatically merged into the new String"
+          ],
+          "correctOption": 1,
+          "explanation": "When no live reference variables point to an abandoned heap object, the JVM Garbage Collector reclaims its memory during standard GC cycles."
+        },
+        {
+          "id": "mcq-imm-10",
+          "question": "What will be printed?\n```java\nString s1 = \"Hello\";\nString s2 = s1;\ns1 = \"World\";\nSystem.out.println(s2);\n```",
+          "options": [
+            "World",
+            "Hello",
+            "HelloWorld",
+            "null"
+          ],
+          "correctOption": 1,
+          "explanation": "s2 was assigned the reference pointing to \"Hello\". Reassigning s1 to \"World\" moves s1's pointer, but s2 still securely points to \"Hello\"."
+        },
+        {
+          "id": "mcq-imm-11",
+          "question": "Why is `String` declared as a `final` class in Java (`public final class String`)?",
+          "options": [
+            "To prevent developers from subclassing it and overriding methods to break immutability",
+            "To make it run faster on Linux",
+            "To prevent creating more than one instance",
+            "To allow multiple inheritance"
+          ],
+          "correctOption": 0,
+          "explanation": "If String were not final, a malicious subclass could override methods to introduce mutable state, breaking Java's security guarantees."
+        },
+        {
+          "id": "mcq-imm-12",
+          "question": "What will the following code print?\n```java\nString word = \"Java\";\nString result = word.replace('a', 'o');\nSystem.out.println(word + \" \" + result);\n```",
+          "options": [
+            "Jovo Jovo",
+            "Java Jovo",
+            "Java Java",
+            "Jovo Java"
+          ],
+          "correctOption": 1,
+          "explanation": "word remains \"Java\" because Strings are immutable. The replace method returns a new String \"Jovo\", stored in result."
+        },
+        {
+          "id": "mcq-imm-13",
+          "question": "If you perform repeated String concatenation in a loop of 10,000 iterations using `+`, what performance problem arises?",
+          "options": [
+            "A StackOverflowError immediately occurs",
+            "About 10,000 temporary String objects are created on the Heap, degrading CPU and GC performance",
+            "The loop terminates after 100 iterations",
+            "Memory becomes fragmented and unrecoverable"
+          ],
+          "correctOption": 1,
+          "explanation": "Each iteration creates a new String copying the previous characters, resulting in $O(N^2)$ time complexity and thousands of temporary garbage objects."
+        },
+        {
+          "id": "mcq-imm-14",
+          "question": "How can you modify a character sequence efficiently without creating thousands of intermediate immutable objects?",
+          "options": [
+            "Using the `StringBuilder` or `StringBuffer` class",
+            "Using the `const` keyword",
+            "Calling `String.mutate()`",
+            "There is no way in Java"
+          ],
+          "correctOption": 0,
+          "explanation": "StringBuilder and StringBuffer provide mutable character buffers that can be appended, modified, and reversed in-place."
+        }
+      ]
+    },
+    {
+      "id": "act-string-immutability-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Capture Immutable Transformations",
+      "practice": {
+        "id": "prac-act-imm",
+        "title": "Hands-On: Capture Immutable Transformations",
+        "description": "Convert \"learnbyself\" to uppercase and replace 'E' with '3'. Verify the original string is unchanged.",
+        "starterCode": "public class PracticeImmutability {\n    public static void main(String[] args) {\n        String original = \"learnbyself\";\n        // TODO: Transform and print both original and transformed\n    }\n}",
+        "solutionCode": "public class PracticeImmutability {\n    public static void main(String[] args) {\n        String original = \"learnbyself\";\n        String transformed = original.toUpperCase().replace('E', '3');\n        System.out.println(\"Original: \" + original);\n        System.out.println(\"Transformed: \" + transformed);\n    }\n}",
+        "expectedOutput": "Original: learnbyself\nTransformed: L3ARNBYS3LF"
+      }
+    },
+    {
+      "id": "act-string-immutability-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: String Immutability",
+      "interviewQA": [
+        {
+          "id": "iq-imm-1",
+          "question": "Why is String immutable in Java? Explain the 4 primary reasons.",
+          "answer": "String is immutable in Java for four primary reasons: 1) **String Constant Pool Sharing**: Reusing instances saves massive heap memory; if strings were mutable, one variable modifying an object would silently corrupt all other variables sharing that pooled literal. 2) **Thread Safety**: Immutable objects are inherently thread-safe without synchronization locks. 3) **Security**: Passwords, file paths, and network connection strings cannot be maliciously altered between validation and execution. 4) **HashCode Caching**: String caches its computed `hashCode`. Since its characters never change, hash lookups in HashMap/HashSet are guaranteed to be fast and deterministic."
+        },
+        {
+          "id": "iq-imm-2",
+          "question": "What is the difference between a `final` reference variable and an immutable object?",
+          "answer": "`final` applies to the variable reference; it prevents the variable from being reassigned to point to another object (`x = newObj` is forbidden). Immutability applies to the object residing on the Heap; its internal character data cannot be modified. For example, a `final StringBuilder sb` allows mutating its contents (`sb.append(\"!\")`), but a regular non-final `String s` can be reassigned (`s = \"new\"`) even though its underlying objects are immutable."
+        },
+        {
+          "id": "iq-imm-3",
+          "question": "How does Java implement String immutability internally?",
+          "answer": "1) The `String` class is declared `public final class String`, preventing any subclass from overriding methods to introduce mutable state. 2) The internal character storage (formerly `char[] value`, now `byte[] value` in Java 9+ compact strings) is declared `private final`. 3) No setter or mutating methods are provided. 4) Methods that transform text always return a newly allocated String instance rather than modifying the internal array."
+        },
+        {
+          "id": "iq-imm-4",
+          "question": "Can you make a String mutable using Reflection?",
+          "answer": "Historically in older Java versions, reflection could access the private `value` field and modify characters directly, though doing so corrupted the JVM String Pool and caused bizarre bugs. Modern Java (Java 9+ with the Java Platform Module System) strictly enforces strong encapsulation, throwing an `InaccessibleObjectException` if reflection attempts to open java.lang internals without explicit JVM command-line flags."
+        },
+        {
+          "id": "iq-imm-5",
+          "question": "What is the performance implication of String immutability in large loops?",
+          "answer": "Performing repeated String concatenation (e.g. `s += data`) inside a loop creates $N$ intermediate, abandoned String objects on the Heap. This causes quadratic $O(N^2)$ time complexity and triggers frequent Garbage Collection pauses. In loops, developers must always use `StringBuilder`."
+        },
+        {
+          "id": "iq-imm-6",
+          "question": "If String is immutable, why can we write `String s = \"A\"; s += \"B\";`?",
+          "answer": "`s += \"B\"` does not mutate the String object \"A\". Instead, Java's compiler rewrites the expression to construct a brand-new String object containing \"AB\" and reassigns the reference variable `s` to point to the new address. The original object \"A\" remains completely unchanged."
+        },
+        {
+          "id": "iq-imm-7",
+          "question": "How does String immutability enhance security in banking and enterprise apps?",
+          "answer": "Parameters such as account numbers, authorization tokens, database connection URLs, and filesystem paths are passed as Strings. If Strings were mutable, untrusted or concurrent code could alter the account number or file path after security checks have passed but before the transaction executes (Time-Of-Check to Time-Of-Use vulnerability)."
+        }
+      ]
+    },
+    {
+      "id": "act-string-immutability-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: String Immutability",
+      "checklist": [
+        {
+          "id": "chk-imm-1",
+          "text": "I can explain the 4 reasons why Java Strings are immutable."
+        },
+        {
+          "id": "chk-imm-2",
+          "text": "I know that transformation methods like toUpperCase() never modify the caller."
+        },
+        {
+          "id": "chk-imm-3",
+          "text": "I understand the difference between a final variable and an immutable object."
+        },
+        {
+          "id": "chk-imm-4",
+          "text": "I recognize the performance pitfall of string concatenation inside heavy loops."
+        },
+        {
+          "id": "chk-imm-5",
+          "text": "I always capture or reassign the return values of String methods."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-imm-1",
+      "question": "What does it mean that String is 'immutable' in Java?",
+      "options": [
+        "A String variable cannot be reassigned to point to another object",
+        "The character content of a String object cannot be altered after creation",
+        "A String cannot be printed to the console",
+        "A String cannot hold more than 256 characters"
+      ],
+      "correctOption": 1,
+      "explanation": "Immutability means the state (the internal character sequence) of the created object cannot be changed in memory."
+    },
+    {
+      "id": "mcq-imm-2",
+      "question": "What will be printed by the following code?\n```java\nString s = \"java\";\ns.toUpperCase();\nSystem.out.println(s);\n```",
+      "options": [
+        "JAVA",
+        "java",
+        "Java",
+        "NullPointerException"
+      ],
+      "correctOption": 1,
+      "explanation": "Because String is immutable, s.toUpperCase() produces a new String \"JAVA\" but does not mutate `s`. Since the return value was discarded, `s` remains \"java\"."
+    },
+    {
+      "id": "mcq-imm-3",
+      "question": "How do you correctly change a variable `str` to hold its uppercase version?",
+      "options": [
+        "str.toUpperCase();",
+        "str = str.toUpperCase();",
+        "str.setUpperCase();",
+        "String.modify(str);"
+      ],
+      "correctOption": 1,
+      "explanation": "You must capture the return value and reassign the variable: `str = str.toUpperCase();`."
+    },
+    {
+      "id": "mcq-imm-4",
+      "question": "Which of the following is NOT a reason why Java Strings were designed to be immutable?",
+      "options": [
+        "To allow safe sharing of String literals in the String Constant Pool",
+        "To provide thread safety without requiring explicit synchronization",
+        "To make String operations consume zero heap memory at runtime",
+        "To prevent security vulnerabilities with database URLs and passwords"
+      ],
+      "correctOption": 2,
+      "explanation": "Strings still consume Heap memory! Immutability provides thread safety, security, caching, and safe pooling, but does not make operations zero-memory."
+    },
+    {
+      "id": "mcq-imm-5",
+      "question": "What happens in memory when you execute `String s = \"A\"; s = s + \"B\";`?",
+      "options": [
+        "The letter 'B' is added directly into the existing object's memory slot",
+        "The object \"A\" is modified in place",
+        "A new String object \"AB\" is created on the Heap, and `s` is redirected to point to it",
+        "A compiler error occurs because `s` was already initialized"
+      ],
+      "correctOption": 2,
+      "explanation": "Strings cannot be modified in place. A brand-new String object \"AB\" is allocated, and the reference variable `s` is updated to point to the new object."
+    },
+    {
+      "id": "mcq-imm-6",
+      "question": "Predict the output of the following code:\n```java\nString text = \"Learn\";\ntext.concat(\"BySelf\");\nSystem.out.println(text);\n```",
+      "options": [
+        "LearnBySelf",
+        "Learn",
+        "BySelf",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "concat() returns a newly created String \"LearnBySelf\". Because the return value was not stored or assigned to text, text remains \"Learn\"."
+    },
+    {
+      "id": "mcq-imm-7",
+      "question": "Why is String immutability beneficial for `HashMap` keys?",
+      "options": [
+        "It guarantees the hash code never changes, enabling cached hashCodes and reliable bucket lookups",
+        "It forces the HashMap to only store 10 elements",
+        "It prevents duplicate keys from being rejected",
+        "It eliminates the need for an equals method"
+      ],
+      "correctOption": 0,
+      "explanation": "If a key's data could mutate after insertion into a HashMap, its hashCode would change, making the entry lost forever. Immutability guarantees hash stability."
+    },
+    {
+      "id": "mcq-imm-8",
+      "question": "What is the difference between an immutable object and a `final` variable?",
+      "options": [
+        "They are identical concepts with different keywords",
+        "A final variable cannot be reassigned to point elsewhere; an immutable object's internal data cannot be changed",
+        "An immutable object cannot be garbage collected; a final variable can",
+        "A final variable only works with primitives"
+      ],
+      "correctOption": 1,
+      "explanation": "`final` on a variable locks the reference (you cannot reassign `x = other`). Immutability is a property of the object itself (its internal data cannot change)."
+    },
+    {
+      "id": "mcq-imm-9",
+      "question": "What happens to old String objects after a variable is reassigned to a new concatenated String?",
+      "options": [
+        "They crash the JVM",
+        "They become unreferenced garbage and are eventually reclaimed by the Garbage Collector",
+        "They are permanently locked in RAM until OS reboot",
+        "They are automatically merged into the new String"
+      ],
+      "correctOption": 1,
+      "explanation": "When no live reference variables point to an abandoned heap object, the JVM Garbage Collector reclaims its memory during standard GC cycles."
+    },
+    {
+      "id": "mcq-imm-10",
+      "question": "What will be printed?\n```java\nString s1 = \"Hello\";\nString s2 = s1;\ns1 = \"World\";\nSystem.out.println(s2);\n```",
+      "options": [
+        "World",
+        "Hello",
+        "HelloWorld",
+        "null"
+      ],
+      "correctOption": 1,
+      "explanation": "s2 was assigned the reference pointing to \"Hello\". Reassigning s1 to \"World\" moves s1's pointer, but s2 still securely points to \"Hello\"."
+    },
+    {
+      "id": "mcq-imm-11",
+      "question": "Why is `String` declared as a `final` class in Java (`public final class String`)?",
+      "options": [
+        "To prevent developers from subclassing it and overriding methods to break immutability",
+        "To make it run faster on Linux",
+        "To prevent creating more than one instance",
+        "To allow multiple inheritance"
+      ],
+      "correctOption": 0,
+      "explanation": "If String were not final, a malicious subclass could override methods to introduce mutable state, breaking Java's security guarantees."
+    },
+    {
+      "id": "mcq-imm-12",
+      "question": "What will the following code print?\n```java\nString word = \"Java\";\nString result = word.replace('a', 'o');\nSystem.out.println(word + \" \" + result);\n```",
+      "options": [
+        "Jovo Jovo",
+        "Java Jovo",
+        "Java Java",
+        "Jovo Java"
+      ],
+      "correctOption": 1,
+      "explanation": "word remains \"Java\" because Strings are immutable. The replace method returns a new String \"Jovo\", stored in result."
+    },
+    {
+      "id": "mcq-imm-13",
+      "question": "If you perform repeated String concatenation in a loop of 10,000 iterations using `+`, what performance problem arises?",
+      "options": [
+        "A StackOverflowError immediately occurs",
+        "About 10,000 temporary String objects are created on the Heap, degrading CPU and GC performance",
+        "The loop terminates after 100 iterations",
+        "Memory becomes fragmented and unrecoverable"
+      ],
+      "correctOption": 1,
+      "explanation": "Each iteration creates a new String copying the previous characters, resulting in $O(N^2)$ time complexity and thousands of temporary garbage objects."
+    },
+    {
+      "id": "mcq-imm-14",
+      "question": "How can you modify a character sequence efficiently without creating thousands of intermediate immutable objects?",
+      "options": [
+        "Using the `StringBuilder` or `StringBuffer` class",
+        "Using the `const` keyword",
+        "Calling `String.mutate()`",
+        "There is no way in Java"
+      ],
+      "correctOption": 0,
+      "explanation": "StringBuilder and StringBuffer provide mutable character buffers that can be appended, modified, and reversed in-place."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-imm-1",
+      "title": "Fix the Discarded Transformation Bug",
+      "difficulty": "Easy",
+      "problemStatement": "A developer wrote code to convert a username `\"developer\"` to uppercase, but the console still outputs lowercase. Fix the code by properly capturing the return value of `toUpperCase()` and printing the result.",
+      "description": "A developer wrote code to convert a username `\"developer\"` to uppercase, but the console still outputs lowercase. Fix the code by properly capturing the return value of `toUpperCase()` and printing the result.",
+      "hint": "Reassign user = user.toUpperCase();",
+      "hints": [
+        "Reassign user = user.toUpperCase();"
+      ],
+      "starterCode": "public class FixImmutability {\n    public static void main(String[] args) {\n        String user = \"developer\";\n        user.toUpperCase(); // Bug: Return value discarded!\n        System.out.println(\"User: \" + user);\n    }\n}",
+      "solutionCode": "public class FixImmutability {\n    public static void main(String[] args) {\n        String user = \"developer\";\n        user = user.toUpperCase();\n        System.out.println(\"User: \" + user);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "User: DEVELOPER"
+        }
+      ],
+      "targetOutput": "User: DEVELOPER"
+    },
+    {
+      "id": "prob-imm-2",
+      "title": "Chain Multiple Immutable Transformations",
+      "difficulty": "Medium",
+      "problemStatement": "Given a raw input string `\"  java-basics  \"`, chain calls to `trim()`, `toUpperCase()`, and `replace('-', '_')` to produce `\"JAVA_BASICS\"`. Print the original string and the final transformed string to prove the original was never altered.",
+      "description": "Given a raw input string `\"  java-basics  \"`, chain calls to `trim()`, `toUpperCase()`, and `replace('-', '_')` to produce `\"JAVA_BASICS\"`. Print the original string and the final transformed string to prove the original was never altered.",
+      "hint": "String cleaned = raw.trim().toUpperCase().replace('-', '_');",
+      "hints": [
+        "String cleaned = raw.trim().toUpperCase().replace('-', '_');"
+      ],
+      "starterCode": "public class StringChaining {\n    public static void main(String[] args) {\n        String raw = \"  java-basics  \";\n        // TODO: Chain transformations, print original and cleaned\n    }\n}",
+      "solutionCode": "public class StringChaining {\n    public static void main(String[] args) {\n        String raw = \"  java-basics  \";\n        String cleaned = raw.trim().toUpperCase().replace('-', '_');\n        System.out.println(\"Original: [\" + raw + \"]\");\n        System.out.println(\"Cleaned: [\" + cleaned + \"]\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Original: [  java-basics  ]\nCleaned: [JAVA_BASICS]"
+        }
+      ],
+      "targetOutput": "Original: [  java-basics  ]\nCleaned: [JAVA_BASICS]"
+    },
+    {
+      "id": "prob-imm-3",
+      "title": "Track Reference Movement",
+      "difficulty": "Medium",
+      "problemStatement": "Demonstrate reference independence: Create `String a = \"Alpha\"; String b = a;`. Reassign `a = \"Beta\";`. Print `\"a: \" + a` and `\"b: \" + b` to verify that mutating `a`'s pointer leaves `b` pointing to `\"Alpha\"`.",
+      "description": "Demonstrate reference independence: Create `String a = \"Alpha\"; String b = a;`. Reassign `a = \"Beta\";`. Print `\"a: \" + a` and `\"b: \" + b` to verify that mutating `a`'s pointer leaves `b` pointing to `\"Alpha\"`.",
+      "hint": "Assign b = a before reassigning a = \"Beta\".",
+      "hints": [
+        "Assign b = a before reassigning a = \"Beta\"."
+      ],
+      "starterCode": "public class ReferenceTracking {\n    public static void main(String[] args) {\n        // TODO: Implement reference tracking demonstration\n    }\n}",
+      "solutionCode": "public class ReferenceTracking {\n    public static void main(String[] args) {\n        String a = \"Alpha\";\n        String b = a;\n        a = \"Beta\";\n        System.out.println(\"a: \" + a);\n        System.out.println(\"b: \" + b);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "a: Beta\nb: Alpha"
+        }
+      ],
+      "targetOutput": "a: Beta\nb: Alpha"
+    },
+    {
+      "id": "prob-imm-4",
+      "title": "Clean Phone Number Formatting",
+      "difficulty": "Medium",
+      "problemStatement": "Given a phone number with formatting: `\"(555) 123-4567\"`. Use `.replace(\"(\", \"\").replace(\")\", \"\").replace(\" \", \"\").replace(\"-\", \"\")` to extract purely the digits `\"5551234567\"`. Print the result.",
+      "description": "Given a phone number with formatting: `\"(555) 123-4567\"`. Use `.replace(\"(\", \"\").replace(\")\", \"\").replace(\" \", \"\").replace(\"-\", \"\")` to extract purely the digits `\"5551234567\"`. Print the result.",
+      "hint": "Each replace() call returns a new String.",
+      "hints": [
+        "Each replace() call returns a new String."
+      ],
+      "starterCode": "public class CleanPhoneNumber {\n    public static void main(String[] args) {\n        String rawPhone = \"(555) 123-4567\";\n        // TODO: Clean phone number\n    }\n}",
+      "solutionCode": "public class CleanPhoneNumber {\n    public static void main(String[] args) {\n        String rawPhone = \"(555) 123-4567\";\n        String digits = rawPhone.replace(\"(\", \"\")\n                                .replace(\")\", \"\")\n                                .replace(\" \", \"\")\n                                .replace(\"-\", \"\");\n        System.out.println(\"Digits: \" + digits);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Digits: 5551234567"
+        }
+      ],
+      "targetOutput": "Digits: 5551234567"
+    },
+    {
+      "id": "prob-imm-5",
+      "title": "Simulate Object Reassignment Counter",
+      "difficulty": "Medium",
+      "problemStatement": "Start with `String path = \"root\";`. In a loop running 3 times (i from 1 to 3), append `\"/\" + i` to `path` (`path = path + \"/\" + i;`). Print the final accumulated path.",
+      "description": "Start with `String path = \"root\";`. In a loop running 3 times (i from 1 to 3), append `\"/\" + i` to `path` (`path = path + \"/\" + i;`). Print the final accumulated path.",
+      "hint": "Loop from 1 to 3 and reassign path.",
+      "hints": [
+        "Loop from 1 to 3 and reassign path."
+      ],
+      "starterCode": "public class PathBuilder {\n    public static void main(String[] args) {\n        String path = \"root\";\n        // TODO: Loop 3 times and append\n    }\n}",
+      "solutionCode": "public class PathBuilder {\n    public static void main(String[] args) {\n        String path = \"root\";\n        for (int i = 1; i <= 3; i++) {\n            path = path + \"/\" + i;\n        }\n        System.out.println(\"Final Path: \" + path);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Final Path: root/1/2/3"
+        }
+      ],
+      "targetOutput": "Final Path: root/1/2/3"
+    },
+    {
+      "id": "prob-imm-6",
+      "title": "Verify Substring Immutability",
+      "difficulty": "Easy",
+      "problemStatement": "Given `String filename = \"Report2024.pdf\";`. Extract the extension `\".pdf\"` using `filename.substring(10)`. Print both `filename` and `extension` to prove `filename` was not shortened.",
+      "description": "Given `String filename = \"Report2024.pdf\";`. Extract the extension `\".pdf\"` using `filename.substring(10)`. Print both `filename` and `extension` to prove `filename` was not shortened.",
+      "hint": "filename.substring(10) returns \".pdf\".",
+      "hints": [
+        "filename.substring(10) returns \".pdf\"."
+      ],
+      "starterCode": "public class SubstringImmutability {\n    public static void main(String[] args) {\n        String filename = \"Report2024.pdf\";\n        // TODO: Extract extension and print both\n    }\n}",
+      "solutionCode": "public class SubstringImmutability {\n    public static void main(String[] args) {\n        String filename = \"Report2024.pdf\";\n        String extension = filename.substring(10);\n        System.out.println(\"Filename: \" + filename);\n        System.out.println(\"Extension: \" + extension);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Filename: Report2024.pdf\nExtension: .pdf"
+        }
+      ],
+      "targetOutput": "Filename: Report2024.pdf\nExtension: .pdf"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-imm-1",
+      "question": "Why is String immutable in Java? Explain the 4 primary reasons.",
+      "answer": "String is immutable in Java for four primary reasons: 1) **String Constant Pool Sharing**: Reusing instances saves massive heap memory; if strings were mutable, one variable modifying an object would silently corrupt all other variables sharing that pooled literal. 2) **Thread Safety**: Immutable objects are inherently thread-safe without synchronization locks. 3) **Security**: Passwords, file paths, and network connection strings cannot be maliciously altered between validation and execution. 4) **HashCode Caching**: String caches its computed `hashCode`. Since its characters never change, hash lookups in HashMap/HashSet are guaranteed to be fast and deterministic."
+    },
+    {
+      "id": "iq-imm-2",
+      "question": "What is the difference between a `final` reference variable and an immutable object?",
+      "answer": "`final` applies to the variable reference; it prevents the variable from being reassigned to point to another object (`x = newObj` is forbidden). Immutability applies to the object residing on the Heap; its internal character data cannot be modified. For example, a `final StringBuilder sb` allows mutating its contents (`sb.append(\"!\")`), but a regular non-final `String s` can be reassigned (`s = \"new\"`) even though its underlying objects are immutable."
+    },
+    {
+      "id": "iq-imm-3",
+      "question": "How does Java implement String immutability internally?",
+      "answer": "1) The `String` class is declared `public final class String`, preventing any subclass from overriding methods to introduce mutable state. 2) The internal character storage (formerly `char[] value`, now `byte[] value` in Java 9+ compact strings) is declared `private final`. 3) No setter or mutating methods are provided. 4) Methods that transform text always return a newly allocated String instance rather than modifying the internal array."
+    },
+    {
+      "id": "iq-imm-4",
+      "question": "Can you make a String mutable using Reflection?",
+      "answer": "Historically in older Java versions, reflection could access the private `value` field and modify characters directly, though doing so corrupted the JVM String Pool and caused bizarre bugs. Modern Java (Java 9+ with the Java Platform Module System) strictly enforces strong encapsulation, throwing an `InaccessibleObjectException` if reflection attempts to open java.lang internals without explicit JVM command-line flags."
+    },
+    {
+      "id": "iq-imm-5",
+      "question": "What is the performance implication of String immutability in large loops?",
+      "answer": "Performing repeated String concatenation (e.g. `s += data`) inside a loop creates $N$ intermediate, abandoned String objects on the Heap. This causes quadratic $O(N^2)$ time complexity and triggers frequent Garbage Collection pauses. In loops, developers must always use `StringBuilder`."
+    },
+    {
+      "id": "iq-imm-6",
+      "question": "If String is immutable, why can we write `String s = \"A\"; s += \"B\";`?",
+      "answer": "`s += \"B\"` does not mutate the String object \"A\". Instead, Java's compiler rewrites the expression to construct a brand-new String object containing \"AB\" and reassigns the reference variable `s` to point to the new address. The original object \"A\" remains completely unchanged."
+    },
+    {
+      "id": "iq-imm-7",
+      "question": "How does String immutability enhance security in banking and enterprise apps?",
+      "answer": "Parameters such as account numbers, authorization tokens, database connection URLs, and filesystem paths are passed as Strings. If Strings were mutable, untrusted or concurrent code could alter the account number or file path after security checks have passed but before the transaction executes (Time-Of-Check to Time-Of-Use vulnerability)."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-imm-1",
+      "text": "I can explain the 4 reasons why Java Strings are immutable."
+    },
+    {
+      "id": "chk-imm-2",
+      "text": "I know that transformation methods like toUpperCase() never modify the caller."
+    },
+    {
+      "id": "chk-imm-3",
+      "text": "I understand the difference between a final variable and an immutable object."
+    },
+    {
+      "id": "chk-imm-4",
+      "text": "I recognize the performance pitfall of string concatenation inside heavy loops."
+    },
+    {
+      "id": "chk-imm-5",
+      "text": "I always capture or reassign the return values of String methods."
+    }
+  ]
+}

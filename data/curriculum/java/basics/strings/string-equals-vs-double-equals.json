@@ -1,0 +1,740 @@
+{
+  "id": "les-strings-string-equals-vs-double-equals",
+  "slug": "string-equals-vs-double-equals",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "== vs .equals()",
+  "summary": "Master the critical distinction between reference equality (==) and content equality (.equals()), avoid NullPointerExceptions, and ace this #1 Java interview question.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "orderIndex": 5,
+  "prerequisites": [
+    "les-strings-string-pool-and-memory"
+  ],
+  "subtopics": [
+    "Reference vs Value Equality",
+    "The .equals() Implementation",
+    ".equalsIgnoreCase()",
+    "Null-Safe Literal Pattern"
+  ],
+  "learningOutcomes": [
+    "Differentiate between reference identity and character content equality",
+    "Prevent NullPointerExceptions using literal-first comparisons",
+    "Identify why StringBuilder does not override .equals()"
+  ],
+  "activities": [
+    {
+      "id": "act-string-equals-vs-double-equals-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: == vs .equals()",
+      "content": "### 1. Concept: Reference Equality vs Value Equality\nIn Java, comparing strings is one of the most frequent sources of bugs and the #1 most asked Java interview question:\n- **The `==` Operator**: Checks **Reference Equality** (Identity). It asks: *\"Do these two variables hold the exact same memory address on the Heap?\"*\n- **The `.equals()` Method**: Checks **Value Equality** (Content). It asks: *\"Do these two objects contain the exact same sequence of characters in the exact same order?\"*\n\nIn addition, Java provides `.equalsIgnoreCase()` for case-insensitive content comparisons (e.g. `\"ADMIN\"` equals `\"admin\"`).\n\n### 2. Why It Matters\nWhen users type input into a console or submit a web form, the text is constructed dynamically at runtime into new Heap objects. If you compare `userInput == \"password\"`, the check will evaluate to `false` even if the user typed the exact word `\"password\"`! Using `==` on strings causes authentication bypasses, broken conditionals, and failed automated tests.\n\n### 3. Mental Model: House Keys vs Blueprints\n- **`==` is checking if two people hold the key to the exact same physical house** (same address on the block).\n- **`.equals()` is checking if two separate houses were built with the exact same architectural floor plan** (identical dimensions, rooms, and colors), even if they are in different cities.\n\n### 4. Java Mechanics: Null-Safety and the Yoda Condition\nIf you invoke `.equals()` on a variable that happens to be `null`, Java throws a fatal `NullPointerException`:\n```java\nString input = null;\ninput.equals(\"yes\"); // THROWS NullPointerException!\n```\nTo write safe, production-grade code, place the known, non-null literal on the left side of the method call (often nicknamed the *Yoda condition*):\n```java\n\"yes\".equals(input); // Safely evaluates to false! No exception!\n```\nOr use Java 7+'s built-in utility: `java.util.Objects.equals(a, b)`, which safely handles null for either or both operands.\n\n### 5. Practical Java Example\n```java\nString s1 = \"admin\";\nString s2 = \"admin\";\nString s3 = new String(\"admin\");\nString s4 = \"ADMIN\";\n\nSystem.out.println(\"s1 == s2: \" + (s1 == s2)); // true (both in String Pool)\nSystem.out.println(\"s1 == s3: \" + (s1 == s3)); // false (different memory addresses)\nSystem.out.println(\"s1.equals(s3): \" + s1.equals(s3)); // true (identical characters)\nSystem.out.println(\"s1.equalsIgnoreCase(s4): \" + s1.equalsIgnoreCase(s4)); // true\n```\n\n### 6. Common Beginner Mistakes\n- **Using `==` on Scanner or User Input**: `scanner.next() == \"exit\"`. This is always `false` because Scanner allocates new Heap objects! Always write `\"exit\".equalsIgnoreCase(scanner.next())`.\n- **Assuming `.equals()` throws an exception on mismatch**: `.equals()` returns `false` on mismatch. It only throws an exception if the caller itself is `null`.\n- **Using `.equals()` on `StringBuilder`**: `StringBuilder` does **not** override `.equals()`; it inherits the reference check from `Object`!\n\n### 7. Key Takeaways\n- Never use `==` to compare String contents in business logic; always use `.equals()`.\n- Use `.equalsIgnoreCase()` when case differences should be ignored.\n- Use `\"literal\".equals(variable)` or `Objects.equals(a, b)` to defend against `NullPointerException`.\n- `==` only checks if both references point to the exact same memory address.",
+      "breakdown": [
+        {
+          "topic": "== Operator",
+          "details": "Binary operator comparing memory references. Evaluates true only if both operands point to the exact same Heap address."
+        },
+        {
+          "topic": ".equals() Method",
+          "details": "Overridden method in String class that compares character counts and individual characters one by one."
+        },
+        {
+          "topic": ".equalsIgnoreCase()",
+          "details": "Compares text content ignoring uppercase and lowercase differences. Essential for commands and case-insensitive logins."
+        },
+        {
+          "topic": "Null-Safe Comparison",
+          "details": "Invoke .equals() on the guaranteed non-null literal: \"TARGET\".equals(variable), or use Objects.equals(a, b)."
+        }
+      ]
+    },
+    {
+      "id": "act-string-equals-vs-double-equals-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: == vs .equals() Comparison Suite",
+      "codeSnippet": "public class StringEqualityDemo {\n    public static void main(String[] args) {\n        String literal1 = \"Java\";\n        String literal2 = \"Java\";\n        String heapString = new String(\"Java\");\n        String uppercase = \"JAVA\";\n        String nullString = null;\n        \n        // 1. Reference equality (==)\n        System.out.println(\"literal1 == literal2: \" + (literal1 == literal2)); // true\n        System.out.println(\"literal1 == heapString: \" + (literal1 == heapString)); // false\n        \n        // 2. Content equality (.equals)\n        System.out.println(\"literal1.equals(heapString): \" + literal1.equals(heapString)); // true\n        System.out.println(\"literal1.equals(uppercase): \" + literal1.equals(uppercase)); // false\n        \n        // 3. Case-insensitive equality\n        System.out.println(\"literal1.equalsIgnoreCase(uppercase): \" + literal1.equalsIgnoreCase(uppercase)); // true\n        \n        // 4. Null-Safe comparison pattern\n        // nullString.equals(\"Java\"); // Would crash with NullPointerException!\n        System.out.println(\"Null-safe check: \" + \"Java\".equals(nullString)); // false (safe!)\n    }\n}",
+      "description": "Compares references, contents, case insensitivity, and null-safe patterns in Java.",
+      "steps": [
+        {
+          "line": 3,
+          "description": "literal1 points to 'Java' in the String Constant Pool."
+        },
+        {
+          "line": 4,
+          "description": "literal2 shares the pooled instance."
+        },
+        {
+          "line": 5,
+          "description": "heapString allocates a separate instance on the general Heap."
+        },
+        {
+          "line": 10,
+          "description": "literal1 == literal2 is true because both point to the same memory slot."
+        },
+        {
+          "line": 11,
+          "description": "literal1 == heapString is false because memory addresses are different."
+        },
+        {
+          "line": 14,
+          "description": "literal1.equals(heapString) is true because all 4 characters match sequentially."
+        },
+        {
+          "line": 18,
+          "description": "literal1.equalsIgnoreCase(uppercase) is true because it ignores character case."
+        },
+        {
+          "line": 22,
+          "description": "'Java'.equals(nullString) safely returns false without throwing NullPointerException."
+        }
+      ]
+    },
+    {
+      "id": "act-string-equals-vs-double-equals-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: == vs .equals()",
+      "questions": [
+        {
+          "id": "mcq-eqs-1",
+          "question": "What does the `==` operator check when applied to two String variables?",
+          "options": [
+            "Whether both Strings have the same character length",
+            "Whether both variables reference the exact same memory address",
+            "Whether both Strings have identical characters",
+            "Whether both Strings are stored in lowercase"
+          ],
+          "correctOption": 1,
+          "explanation": "In Java, `==` is an identity operator. On reference types, it checks if both variables hold the exact same memory address."
+        },
+        {
+          "id": "mcq-eqs-2",
+          "question": "What does the `.equals()` method check when called on a String?",
+          "options": [
+            "Whether both variables point to the same Heap address",
+            "Whether the two Strings contain the exact same character sequence",
+            "The alphabetical order of the two Strings",
+            "The creation timestamp in the JVM"
+          ],
+          "correctOption": 1,
+          "explanation": "The String class overrides .equals() from Object to compare the actual character contents character-by-character."
+        },
+        {
+          "id": "mcq-eqs-3",
+          "question": "What will be printed by this code?\n```java\nString s1 = new String(\"Learn\");\nString s2 = new String(\"Learn\");\nSystem.out.println((s1 == s2) + \" \" + s1.equals(s2));\n```",
+          "options": [
+            "true true",
+            "false true",
+            "true false",
+            "false false"
+          ],
+          "correctOption": 1,
+          "explanation": "s1 and s2 are two distinct objects created via 'new', so s1 == s2 is false. Their contents are identical, so s1.equals(s2) is true."
+        },
+        {
+          "id": "mcq-eqs-4",
+          "question": "What happens when you run `String s = null; System.out.println(s.equals(\"test\"));`?",
+          "options": [
+            "Prints false",
+            "Prints true",
+            "Throws NullPointerException",
+            "Throws IllegalArgumentException"
+          ],
+          "correctOption": 2,
+          "explanation": "Invoking any instance method on a null reference throws a java.lang.NullPointerException at runtime."
+        },
+        {
+          "id": "mcq-eqs-5",
+          "question": "How can you safely check if a potentially null String variable `input` equals \"CONFIRM\" without throwing an exception?",
+          "options": [
+            "\"CONFIRM\".equals(input)",
+            "input == \"CONFIRM\"",
+            "input.equals(\"CONFIRM\")",
+            "String.check(input, \"CONFIRM\")"
+          ],
+          "correctOption": 0,
+          "explanation": "Placing the non-null literal first (\"CONFIRM\".equals(input)) guarantees that .equals() is called on a valid object. If input is null, it cleanly returns false."
+        },
+        {
+          "id": "mcq-eqs-6",
+          "question": "What is the result of `\"admin\".equalsIgnoreCase(\"Admin\")`?",
+          "options": [
+            "false",
+            "true",
+            "Compile error",
+            "Throws StringIndexOutOfBoundsException"
+          ],
+          "correctOption": 1,
+          "explanation": ".equalsIgnoreCase() compares characters while disregarding uppercase vs lowercase differences."
+        },
+        {
+          "id": "mcq-eqs-7",
+          "question": "A student receives user input from a Scanner: `String input = scanner.next();`. Why does `input == \"quit\"` fail even when the user enters 'quit'?",
+          "options": [
+            "Scanner converts all input to integers",
+            "Scanner creates a new String instance on the Heap; its memory address will never match the pooled literal \"quit\"",
+            "The word \"quit\" is a reserved keyword in Java",
+            "Scanner input can only be compared with charAt"
+          ],
+          "correctOption": 1,
+          "explanation": "Scanner dynamically reads bytes and instantiates a new String on the general Heap. Because its address differs from the pooled literal \"quit\", == evaluates to false."
+        },
+        {
+          "id": "mcq-eqs-8",
+          "question": "What will be printed by the following code?\n```java\nString a = \"Hello\";\nString b = \"hello\";\nSystem.out.println(a.equals(b) + \":\" + a.equalsIgnoreCase(b));\n```",
+          "options": [
+            "false:true",
+            "true:true",
+            "false:false",
+            "true:false"
+          ],
+          "correctOption": 0,
+          "explanation": "Case matters for .equals() ('H' != 'h'), so it returns false. .equalsIgnoreCase() ignores case, returning true."
+        },
+        {
+          "id": "mcq-eqs-9",
+          "question": "Predict the output of the following:\n```java\nString s1 = \"A\" + \"B\";\nString s2 = \"AB\";\nSystem.out.println(s1 == s2);\n```",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "Runtime error"
+          ],
+          "correctOption": 0,
+          "explanation": "Compiler constant folding resolves \"A\" + \"B\" into \"AB\" at compile-time, so both s1 and s2 point to the exact same pooled literal."
+        },
+        {
+          "id": "mcq-eqs-10",
+          "question": "What is the return type of the `.equals(Object obj)` method in Java?",
+          "options": [
+            "int (-1, 0, 1)",
+            "boolean (true or false)",
+            "void",
+            "String"
+          ],
+          "correctOption": 1,
+          "explanation": ".equals() returns a boolean: true if the objects are equal according to the method definition, false otherwise."
+        },
+        {
+          "id": "mcq-eqs-11",
+          "question": "What does `java.util.Objects.equals(a, b)` return when both `a` and `b` are `null`?",
+          "options": [
+            "Throws NullPointerException",
+            "false",
+            "true",
+            "Compile-time error"
+          ],
+          "correctOption": 2,
+          "explanation": "Objects.equals(null, null) returns true, as two null references are defined to be equal to each other."
+        },
+        {
+          "id": "mcq-eqs-12",
+          "question": "What happens if you compare two `StringBuilder` instances containing the same text using `.equals()`?\n```java\nStringBuilder sb1 = new StringBuilder(\"Java\");\nStringBuilder sb2 = new StringBuilder(\"Java\");\nSystem.out.println(sb1.equals(sb2));\n```",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "ClassCastException"
+          ],
+          "correctOption": 1,
+          "explanation": "Crucial trap! StringBuilder does NOT override .equals(). It uses Object's default implementation, which compares memory addresses (==). Since sb1 and sb2 are distinct objects, it returns false!"
+        },
+        {
+          "id": "mcq-eqs-13",
+          "question": "What is the contract between `.equals()` and `.hashCode()` in Java?",
+          "options": [
+            "If two objects are equal according to .equals(), they MUST produce the exact same hashCode()",
+            "If two objects have the same hashCode(), they must be equal according to .equals()",
+            "There is no relationship",
+            "hashCode() must return 0 for all strings"
+          ],
+          "correctOption": 0,
+          "explanation": "If a.equals(b) is true, a.hashCode() == b.hashCode() must strictly be true. (The reverse is not necessarily true due to hash collisions)."
+        },
+        {
+          "id": "mcq-eqs-14",
+          "question": "Predict the output:\n```java\nString s1 = null;\nString s2 = null;\nSystem.out.println(s1 == s2);\n```",
+          "options": [
+            "true",
+            "false",
+            "NullPointerException",
+            "Compile error"
+          ],
+          "correctOption": 0,
+          "explanation": "Both variables hold the null reference (pointing to nothing). `null == null` evaluates to true in Java."
+        },
+        {
+          "id": "mcq-eqs-15",
+          "question": "Which method compares two strings lexicographically (alphabetically) and returns a negative number, zero, or a positive number?",
+          "options": [
+            ".equals()",
+            ".compareTo()",
+            ".same()",
+            ".alphabetize()"
+          ],
+          "correctOption": 1,
+          "explanation": "`str1.compareTo(str2)` returns a negative int if str1 comes before str2, 0 if equal, and a positive int if str1 comes after str2."
+        }
+      ]
+    },
+    {
+      "id": "act-string-equals-vs-double-equals-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Reference vs Value Equality",
+      "practice": {
+        "id": "prac-act-eqs",
+        "title": "Hands-On: Test Reference vs Value Equality",
+        "description": "Compare a literal with a new String using == and .equals(), and verify null-safe comparison.",
+        "starterCode": "public class PracticeEquality {\n    public static void main(String[] args) {\n        String a = \"Test\";\n        String b = new String(\"Test\");\n        // TODO: Print (a == b), a.equals(b), and \"Test\".equals(null)\n    }\n}",
+        "solutionCode": "public class PracticeEquality {\n    public static void main(String[] args) {\n        String a = \"Test\";\n        String b = new String(\"Test\");\n        System.out.println(\"a == b: \" + (a == b));\n        System.out.println(\"a.equals(b): \" + a.equals(b));\n        System.out.println(\"Null-safe: \" + \"Test\".equals(null));\n    }\n}",
+        "expectedOutput": "a == b: false\na.equals(b): true\nNull-safe: false"
+      }
+    },
+    {
+      "id": "act-string-equals-vs-double-equals-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: == vs .equals()",
+      "interviewQA": [
+        {
+          "id": "iq-eqs-1",
+          "question": "What is the fundamental difference between == and .equals() in Java?",
+          "answer": "`==` is a binary comparison operator that checks reference equality (whether two object references point to the exact same memory address in the Heap). In contrast, `.equals()` is an instance method originally defined in `Object` and overridden by `String` to check value equality (whether both strings contain the exact same sequence of characters in the same order)."
+        },
+        {
+          "id": "iq-eqs-2",
+          "question": "Why does `\"test\" == \"test\"` evaluate to true, but `new String(\"test\") == new String(\"test\")` evaluates to false?",
+          "answer": "String literals are automatically pooled in the JVM String Constant Pool; both `\"test\"` literals resolve to the exact same shared object in memory, so their addresses are identical (`==` is true). In contrast, each `new String(...)` statement explicitly allocates a distinct object at a brand new Heap address, so comparing them with `==` yields false."
+        },
+        {
+          "id": "iq-eqs-3",
+          "question": "How do you avoid a NullPointerException when comparing an unknown String variable against a known literal?",
+          "answer": "Invoke the `.equals()` method on the known constant literal instead of the variable: `\"SUCCESS\".equals(status)`. Because the literal is guaranteed non-null, the method executes safely and cleanly returns `false` if `status` is `null`. Calling `status.equals(\"SUCCESS\")` would throw a NullPointerException if `status` is null."
+        },
+        {
+          "id": "iq-eqs-4",
+          "question": "Why does StringBuilder.equals() behave differently from String.equals()?",
+          "answer": "`StringBuilder` does not override the `.equals()` method from `java.lang.Object`. Therefore, `sb1.equals(sb2)` performs a standard reference check (`==`), returning `false` even if both builders contain identical characters. To compare the textual content of two StringBuilders, you must call `sb1.toString().equals(sb2.toString())` or `sb1.compareTo(sb2) == 0`."
+        },
+        {
+          "id": "iq-eqs-5",
+          "question": "What is the difference between equals() and equalsIgnoreCase()?",
+          "answer": "`.equals()` is strictly case-sensitive ('a' != 'A' because their Unicode values 97 and 65 differ). `.equalsIgnoreCase()` compares strings character-by-character while ignoring differences in case, treating uppercase and lowercase ASCII/Unicode letters as identical."
+        },
+        {
+          "id": "iq-eqs-6",
+          "question": "What is the compareTo() method, and when should it be used instead of equals()?",
+          "answer": "`compareTo()` comes from the `Comparable<String>` interface. While `.equals()` only returns a binary `true` or `false`, `compareTo()` returns an integer (negative, zero, or positive) indicating alphabetical/lexicographical ordering. It is essential when sorting lists, arrays, or inserting strings into a `TreeSet` or `TreeMap`."
+        },
+        {
+          "id": "iq-eqs-7",
+          "question": "What does Java 7's java.util.Objects.equals(a, b) do under the hood?",
+          "answer": "It performs: `(a == b) || (a != null && a.equals(b))`. This first checks if both references are identical (including both being null, returning true). If not identical, it ensures `a` is non-null before delegating to `a.equals(b)`, eliminating any risk of `NullPointerException`."
+        },
+        {
+          "id": "iq-eqs-8",
+          "question": "What happens if a class overrides equals() but fails to override hashCode()?",
+          "answer": "It violates the core `equals-hashCode` contract. If two objects evaluate to equal via `.equals()`, they must produce identical hash codes. If `hashCode()` is not overridden, two equal objects will generate different default identity hash codes, causing hash-based collections (`HashMap`, `HashSet`) to lose elements or store duplicate keys."
+        }
+      ]
+    },
+    {
+      "id": "act-string-equals-vs-double-equals-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: == vs .equals()",
+      "checklist": [
+        {
+          "id": "chk-eqs-1",
+          "text": "I can explain the difference between reference equality (==) and value equality (.equals())."
+        },
+        {
+          "id": "chk-eqs-2",
+          "text": "I never use == to compare strings in business logic or user input."
+        },
+        {
+          "id": "chk-eqs-3",
+          "text": "I use the literal-first pattern (\"LITERAL\".equals(var)) to prevent NullPointerExceptions."
+        },
+        {
+          "id": "chk-eqs-4",
+          "text": "I understand that StringBuilder does not override .equals()."
+        },
+        {
+          "id": "chk-eqs-5",
+          "text": "I know how to use .equalsIgnoreCase() for case-insensitive commands and logins."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-eqs-1",
+      "question": "What does the `==` operator check when applied to two String variables?",
+      "options": [
+        "Whether both Strings have the same character length",
+        "Whether both variables reference the exact same memory address",
+        "Whether both Strings have identical characters",
+        "Whether both Strings are stored in lowercase"
+      ],
+      "correctOption": 1,
+      "explanation": "In Java, `==` is an identity operator. On reference types, it checks if both variables hold the exact same memory address."
+    },
+    {
+      "id": "mcq-eqs-2",
+      "question": "What does the `.equals()` method check when called on a String?",
+      "options": [
+        "Whether both variables point to the same Heap address",
+        "Whether the two Strings contain the exact same character sequence",
+        "The alphabetical order of the two Strings",
+        "The creation timestamp in the JVM"
+      ],
+      "correctOption": 1,
+      "explanation": "The String class overrides .equals() from Object to compare the actual character contents character-by-character."
+    },
+    {
+      "id": "mcq-eqs-3",
+      "question": "What will be printed by this code?\n```java\nString s1 = new String(\"Learn\");\nString s2 = new String(\"Learn\");\nSystem.out.println((s1 == s2) + \" \" + s1.equals(s2));\n```",
+      "options": [
+        "true true",
+        "false true",
+        "true false",
+        "false false"
+      ],
+      "correctOption": 1,
+      "explanation": "s1 and s2 are two distinct objects created via 'new', so s1 == s2 is false. Their contents are identical, so s1.equals(s2) is true."
+    },
+    {
+      "id": "mcq-eqs-4",
+      "question": "What happens when you run `String s = null; System.out.println(s.equals(\"test\"));`?",
+      "options": [
+        "Prints false",
+        "Prints true",
+        "Throws NullPointerException",
+        "Throws IllegalArgumentException"
+      ],
+      "correctOption": 2,
+      "explanation": "Invoking any instance method on a null reference throws a java.lang.NullPointerException at runtime."
+    },
+    {
+      "id": "mcq-eqs-5",
+      "question": "How can you safely check if a potentially null String variable `input` equals \"CONFIRM\" without throwing an exception?",
+      "options": [
+        "\"CONFIRM\".equals(input)",
+        "input == \"CONFIRM\"",
+        "input.equals(\"CONFIRM\")",
+        "String.check(input, \"CONFIRM\")"
+      ],
+      "correctOption": 0,
+      "explanation": "Placing the non-null literal first (\"CONFIRM\".equals(input)) guarantees that .equals() is called on a valid object. If input is null, it cleanly returns false."
+    },
+    {
+      "id": "mcq-eqs-6",
+      "question": "What is the result of `\"admin\".equalsIgnoreCase(\"Admin\")`?",
+      "options": [
+        "false",
+        "true",
+        "Compile error",
+        "Throws StringIndexOutOfBoundsException"
+      ],
+      "correctOption": 1,
+      "explanation": ".equalsIgnoreCase() compares characters while disregarding uppercase vs lowercase differences."
+    },
+    {
+      "id": "mcq-eqs-7",
+      "question": "A student receives user input from a Scanner: `String input = scanner.next();`. Why does `input == \"quit\"` fail even when the user enters 'quit'?",
+      "options": [
+        "Scanner converts all input to integers",
+        "Scanner creates a new String instance on the Heap; its memory address will never match the pooled literal \"quit\"",
+        "The word \"quit\" is a reserved keyword in Java",
+        "Scanner input can only be compared with charAt"
+      ],
+      "correctOption": 1,
+      "explanation": "Scanner dynamically reads bytes and instantiates a new String on the general Heap. Because its address differs from the pooled literal \"quit\", == evaluates to false."
+    },
+    {
+      "id": "mcq-eqs-8",
+      "question": "What will be printed by the following code?\n```java\nString a = \"Hello\";\nString b = \"hello\";\nSystem.out.println(a.equals(b) + \":\" + a.equalsIgnoreCase(b));\n```",
+      "options": [
+        "false:true",
+        "true:true",
+        "false:false",
+        "true:false"
+      ],
+      "correctOption": 0,
+      "explanation": "Case matters for .equals() ('H' != 'h'), so it returns false. .equalsIgnoreCase() ignores case, returning true."
+    },
+    {
+      "id": "mcq-eqs-9",
+      "question": "Predict the output of the following:\n```java\nString s1 = \"A\" + \"B\";\nString s2 = \"AB\";\nSystem.out.println(s1 == s2);\n```",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "Runtime error"
+      ],
+      "correctOption": 0,
+      "explanation": "Compiler constant folding resolves \"A\" + \"B\" into \"AB\" at compile-time, so both s1 and s2 point to the exact same pooled literal."
+    },
+    {
+      "id": "mcq-eqs-10",
+      "question": "What is the return type of the `.equals(Object obj)` method in Java?",
+      "options": [
+        "int (-1, 0, 1)",
+        "boolean (true or false)",
+        "void",
+        "String"
+      ],
+      "correctOption": 1,
+      "explanation": ".equals() returns a boolean: true if the objects are equal according to the method definition, false otherwise."
+    },
+    {
+      "id": "mcq-eqs-11",
+      "question": "What does `java.util.Objects.equals(a, b)` return when both `a` and `b` are `null`?",
+      "options": [
+        "Throws NullPointerException",
+        "false",
+        "true",
+        "Compile-time error"
+      ],
+      "correctOption": 2,
+      "explanation": "Objects.equals(null, null) returns true, as two null references are defined to be equal to each other."
+    },
+    {
+      "id": "mcq-eqs-12",
+      "question": "What happens if you compare two `StringBuilder` instances containing the same text using `.equals()`?\n```java\nStringBuilder sb1 = new StringBuilder(\"Java\");\nStringBuilder sb2 = new StringBuilder(\"Java\");\nSystem.out.println(sb1.equals(sb2));\n```",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "ClassCastException"
+      ],
+      "correctOption": 1,
+      "explanation": "Crucial trap! StringBuilder does NOT override .equals(). It uses Object's default implementation, which compares memory addresses (==). Since sb1 and sb2 are distinct objects, it returns false!"
+    },
+    {
+      "id": "mcq-eqs-13",
+      "question": "What is the contract between `.equals()` and `.hashCode()` in Java?",
+      "options": [
+        "If two objects are equal according to .equals(), they MUST produce the exact same hashCode()",
+        "If two objects have the same hashCode(), they must be equal according to .equals()",
+        "There is no relationship",
+        "hashCode() must return 0 for all strings"
+      ],
+      "correctOption": 0,
+      "explanation": "If a.equals(b) is true, a.hashCode() == b.hashCode() must strictly be true. (The reverse is not necessarily true due to hash collisions)."
+    },
+    {
+      "id": "mcq-eqs-14",
+      "question": "Predict the output:\n```java\nString s1 = null;\nString s2 = null;\nSystem.out.println(s1 == s2);\n```",
+      "options": [
+        "true",
+        "false",
+        "NullPointerException",
+        "Compile error"
+      ],
+      "correctOption": 0,
+      "explanation": "Both variables hold the null reference (pointing to nothing). `null == null` evaluates to true in Java."
+    },
+    {
+      "id": "mcq-eqs-15",
+      "question": "Which method compares two strings lexicographically (alphabetically) and returns a negative number, zero, or a positive number?",
+      "options": [
+        ".equals()",
+        ".compareTo()",
+        ".same()",
+        ".alphabetize()"
+      ],
+      "correctOption": 1,
+      "explanation": "`str1.compareTo(str2)` returns a negative int if str1 comes before str2, 0 if equal, and a positive int if str1 comes after str2."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-eqs-1",
+      "title": "Validate Authentication Command",
+      "difficulty": "Easy",
+      "problemStatement": "Write a program that takes an authorization command `String cmd = \"LOGIN\";`. Check if it matches \"login\" case-insensitively using `.equalsIgnoreCase()`. Print \"Command Accepted\" if matched, otherwise \"Command Rejected\".",
+      "description": "Write a program that takes an authorization command `String cmd = \"LOGIN\";`. Check if it matches \"login\" case-insensitively using `.equalsIgnoreCase()`. Print \"Command Accepted\" if matched, otherwise \"Command Rejected\".",
+      "hint": "cmd.equalsIgnoreCase(\"login\")",
+      "hints": [
+        "cmd.equalsIgnoreCase(\"login\")"
+      ],
+      "starterCode": "public class AuthValidator {\n    public static void main(String[] args) {\n        String cmd = \"LOGIN\";\n        // TODO: Verify command case-insensitively\n    }\n}",
+      "solutionCode": "public class AuthValidator {\n    public static void main(String[] args) {\n        String cmd = \"LOGIN\";\n        if (cmd.equalsIgnoreCase(\"login\")) {\n            System.out.println(\"Command Accepted\");\n        } else {\n            System.out.println(\"Command Rejected\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Command Accepted"
+        }
+      ],
+      "targetOutput": "Command Accepted"
+    },
+    {
+      "id": "prob-eqs-2",
+      "title": "Prevent NullPointerException in Comparison",
+      "difficulty": "Easy",
+      "problemStatement": "A variable `String userRole = null;` might be null. Safely check if `userRole` equals `\"ADMIN\"` using the literal-first pattern so that no NullPointerException occurs. Print \"Is Admin\" if true, or \"Not Admin\" if false.",
+      "description": "A variable `String userRole = null;` might be null. Safely check if `userRole` equals `\"ADMIN\"` using the literal-first pattern so that no NullPointerException occurs. Print \"Is Admin\" if true, or \"Not Admin\" if false.",
+      "hint": "Use \"ADMIN\".equals(userRole).",
+      "hints": [
+        "Use \"ADMIN\".equals(userRole)."
+      ],
+      "starterCode": "public class SafeRoleCheck {\n    public static void main(String[] args) {\n        String userRole = null;\n        // TODO: Safely check without NullPointerException\n    }\n}",
+      "solutionCode": "public class SafeRoleCheck {\n    public static void main(String[] args) {\n        String userRole = null;\n        if (\"ADMIN\".equals(userRole)) {\n            System.out.println(\"Is Admin\");\n        } else {\n            System.out.println(\"Not Admin\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Not Admin"
+        }
+      ],
+      "targetOutput": "Not Admin"
+    },
+    {
+      "id": "prob-eqs-3",
+      "title": "Simulate Login Credentials Check",
+      "difficulty": "Medium",
+      "problemStatement": "Create a method `checkCredentials(String inputUser, String inputPass, String storedUser, String storedPass)`. Username check must be case-insensitive, but password check must be strictly case-sensitive. Test with `\"Admin\"`, `\"Secret123\"`, `\"admin\"`, `\"Secret123\"` and print \"Login Successful\" if both match.",
+      "description": "Create a method `checkCredentials(String inputUser, String inputPass, String storedUser, String storedPass)`. Username check must be case-insensitive, but password check must be strictly case-sensitive. Test with `\"Admin\"`, `\"Secret123\"`, `\"admin\"`, `\"Secret123\"` and print \"Login Successful\" if both match.",
+      "hint": "Use inputUser.equalsIgnoreCase(storedUser) && inputPass.equals(storedPass).",
+      "hints": [
+        "Use inputUser.equalsIgnoreCase(storedUser) && inputPass.equals(storedPass)."
+      ],
+      "starterCode": "public class CredentialChecker {\n    public static void main(String[] args) {\n        String inputUser = \"Admin\";\n        String inputPass = \"Secret123\";\n        String storedUser = \"admin\";\n        String storedPass = \"Secret123\";\n        // TODO: Validate credentials\n    }\n}",
+      "solutionCode": "public class CredentialChecker {\n    public static void main(String[] args) {\n        String inputUser = \"Admin\";\n        String inputPass = \"Secret123\";\n        String storedUser = \"admin\";\n        String storedPass = \"Secret123\";\n        \n        boolean userMatches = inputUser.equalsIgnoreCase(storedUser);\n        boolean passMatches = inputPass.equals(storedPass);\n        \n        if (userMatches && passMatches) {\n            System.out.println(\"Login Successful\");\n        } else {\n            System.out.println(\"Login Failed\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Login Successful"
+        }
+      ],
+      "targetOutput": "Login Successful"
+    },
+    {
+      "id": "prob-eqs-4",
+      "title": "Lexicographical Comparison with compareTo",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String word1 = \"Apple\";` and `String word2 = \"Banana\";`. Compare them using `word1.compareTo(word2)`. Print \"word1 comes before word2\" if negative, \"words are identical\" if zero, and \"word1 comes after word2\" if positive.",
+      "description": "Given `String word1 = \"Apple\";` and `String word2 = \"Banana\";`. Compare them using `word1.compareTo(word2)`. Print \"word1 comes before word2\" if negative, \"words are identical\" if zero, and \"word1 comes after word2\" if positive.",
+      "hint": "int diff = word1.compareTo(word2);",
+      "hints": [
+        "int diff = word1.compareTo(word2);"
+      ],
+      "starterCode": "public class LexicographicalCompare {\n    public static void main(String[] args) {\n        String word1 = \"Apple\";\n        String word2 = \"Banana\";\n        // TODO: Compare with compareTo and print ordering\n    }\n}",
+      "solutionCode": "public class LexicographicalCompare {\n    public static void main(String[] args) {\n        String word1 = \"Apple\";\n        String word2 = \"Banana\";\n        int diff = word1.compareTo(word2);\n        if (diff < 0) {\n            System.out.println(\"word1 comes before word2\");\n        } else if (diff == 0) {\n            System.out.println(\"words are identical\");\n        } else {\n            System.out.println(\"word1 comes after word2\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "word1 comes before word2"
+        }
+      ],
+      "targetOutput": "word1 comes before word2"
+    },
+    {
+      "id": "prob-eqs-5",
+      "title": "Compare Array Elements for Matching Value",
+      "difficulty": "Medium",
+      "problemStatement": "Given an array `String[] allowedOrigins = {\"https://app.com\", \"https://api.com\", \"http://localhost:3000\"};` and an incoming request origin `String incoming = new String(\"https://api.com\");`. Search the array using `.equals()` to check if the origin is authorized. Print \"Authorized: true\".",
+      "description": "Given an array `String[] allowedOrigins = {\"https://app.com\", \"https://api.com\", \"http://localhost:3000\"};` and an incoming request origin `String incoming = new String(\"https://api.com\");`. Search the array using `.equals()` to check if the origin is authorized. Print \"Authorized: true\".",
+      "hint": "Loop through allowedOrigins and check origin.equals(incoming).",
+      "hints": [
+        "Loop through allowedOrigins and check origin.equals(incoming)."
+      ],
+      "starterCode": "public class CorsOriginCheck {\n    public static void main(String[] args) {\n        String[] allowedOrigins = {\"https://app.com\", \"https://api.com\", \"http://localhost:3000\"};\n        String incoming = new String(\"https://api.com\");\n        // TODO: Search array using .equals()\n    }\n}",
+      "solutionCode": "public class CorsOriginCheck {\n    public static void main(String[] args) {\n        String[] allowedOrigins = {\"https://app.com\", \"https://api.com\", \"http://localhost:3000\"};\n        String incoming = new String(\"https://api.com\");\n        boolean authorized = false;\n        for (String origin : allowedOrigins) {\n            if (origin.equals(incoming)) {\n                authorized = true;\n                break;\n            }\n        }\n        System.out.println(\"Authorized: \" + authorized);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Authorized: true"
+        }
+      ],
+      "targetOutput": "Authorized: true"
+    },
+    {
+      "id": "prob-eqs-6",
+      "title": "Distinguish Reference Equality from Content Equality",
+      "difficulty": "Easy",
+      "problemStatement": "Demonstrate the complete truth matrix of `s1 == s2` vs `s1.equals(s2)` for: `String s1 = \"Alpha\"; String s2 = new String(\"Alpha\");`. Print `\"s1 == s2: false\"` and `\"s1.equals(s2): true\"`.",
+      "description": "Demonstrate the complete truth matrix of `s1 == s2` vs `s1.equals(s2)` for: `String s1 = \"Alpha\"; String s2 = new String(\"Alpha\");`. Print `\"s1 == s2: false\"` and `\"s1.equals(s2): true\"`.",
+      "hint": "Print both boolean evaluation expressions.",
+      "hints": [
+        "Print both boolean evaluation expressions."
+      ],
+      "starterCode": "public class EqualityMatrix {\n    public static void main(String[] args) {\n        String s1 = \"Alpha\";\n        String s2 = new String(\"Alpha\");\n        // TODO: Print == and .equals() comparisons\n    }\n}",
+      "solutionCode": "public class EqualityMatrix {\n    public static void main(String[] args) {\n        String s1 = \"Alpha\";\n        String s2 = new String(\"Alpha\");\n        System.out.println(\"s1 == s2: \" + (s1 == s2));\n        System.out.println(\"s1.equals(s2): \" + s1.equals(s2));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "s1 == s2: false\ns1.equals(s2): true"
+        }
+      ],
+      "targetOutput": "s1 == s2: false\ns1.equals(s2): true"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-eqs-1",
+      "question": "What is the fundamental difference between == and .equals() in Java?",
+      "answer": "`==` is a binary comparison operator that checks reference equality (whether two object references point to the exact same memory address in the Heap). In contrast, `.equals()` is an instance method originally defined in `Object` and overridden by `String` to check value equality (whether both strings contain the exact same sequence of characters in the same order)."
+    },
+    {
+      "id": "iq-eqs-2",
+      "question": "Why does `\"test\" == \"test\"` evaluate to true, but `new String(\"test\") == new String(\"test\")` evaluates to false?",
+      "answer": "String literals are automatically pooled in the JVM String Constant Pool; both `\"test\"` literals resolve to the exact same shared object in memory, so their addresses are identical (`==` is true). In contrast, each `new String(...)` statement explicitly allocates a distinct object at a brand new Heap address, so comparing them with `==` yields false."
+    },
+    {
+      "id": "iq-eqs-3",
+      "question": "How do you avoid a NullPointerException when comparing an unknown String variable against a known literal?",
+      "answer": "Invoke the `.equals()` method on the known constant literal instead of the variable: `\"SUCCESS\".equals(status)`. Because the literal is guaranteed non-null, the method executes safely and cleanly returns `false` if `status` is `null`. Calling `status.equals(\"SUCCESS\")` would throw a NullPointerException if `status` is null."
+    },
+    {
+      "id": "iq-eqs-4",
+      "question": "Why does StringBuilder.equals() behave differently from String.equals()?",
+      "answer": "`StringBuilder` does not override the `.equals()` method from `java.lang.Object`. Therefore, `sb1.equals(sb2)` performs a standard reference check (`==`), returning `false` even if both builders contain identical characters. To compare the textual content of two StringBuilders, you must call `sb1.toString().equals(sb2.toString())` or `sb1.compareTo(sb2) == 0`."
+    },
+    {
+      "id": "iq-eqs-5",
+      "question": "What is the difference between equals() and equalsIgnoreCase()?",
+      "answer": "`.equals()` is strictly case-sensitive ('a' != 'A' because their Unicode values 97 and 65 differ). `.equalsIgnoreCase()` compares strings character-by-character while ignoring differences in case, treating uppercase and lowercase ASCII/Unicode letters as identical."
+    },
+    {
+      "id": "iq-eqs-6",
+      "question": "What is the compareTo() method, and when should it be used instead of equals()?",
+      "answer": "`compareTo()` comes from the `Comparable<String>` interface. While `.equals()` only returns a binary `true` or `false`, `compareTo()` returns an integer (negative, zero, or positive) indicating alphabetical/lexicographical ordering. It is essential when sorting lists, arrays, or inserting strings into a `TreeSet` or `TreeMap`."
+    },
+    {
+      "id": "iq-eqs-7",
+      "question": "What does Java 7's java.util.Objects.equals(a, b) do under the hood?",
+      "answer": "It performs: `(a == b) || (a != null && a.equals(b))`. This first checks if both references are identical (including both being null, returning true). If not identical, it ensures `a` is non-null before delegating to `a.equals(b)`, eliminating any risk of `NullPointerException`."
+    },
+    {
+      "id": "iq-eqs-8",
+      "question": "What happens if a class overrides equals() but fails to override hashCode()?",
+      "answer": "It violates the core `equals-hashCode` contract. If two objects evaluate to equal via `.equals()`, they must produce identical hash codes. If `hashCode()` is not overridden, two equal objects will generate different default identity hash codes, causing hash-based collections (`HashMap`, `HashSet`) to lose elements or store duplicate keys."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-eqs-1",
+      "text": "I can explain the difference between reference equality (==) and value equality (.equals())."
+    },
+    {
+      "id": "chk-eqs-2",
+      "text": "I never use == to compare strings in business logic or user input."
+    },
+    {
+      "id": "chk-eqs-3",
+      "text": "I use the literal-first pattern (\"LITERAL\".equals(var)) to prevent NullPointerExceptions."
+    },
+    {
+      "id": "chk-eqs-4",
+      "text": "I understand that StringBuilder does not override .equals()."
+    },
+    {
+      "id": "chk-eqs-5",
+      "text": "I know how to use .equalsIgnoreCase() for case-insensitive commands and logins."
+    }
+  ]
+}

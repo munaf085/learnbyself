@@ -230,7 +230,27 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'common-array-errors-and-output-prediction': 'array-bugs-and-output-prediction',
       'array-errors': 'array-bugs-and-output-prediction',
       'arrays-practice': 'array-practice',
-      'arrays-practice-and-interview-challenge': 'arrays-final-challenge'
+      'arrays-practice-and-interview-challenge': 'arrays-final-challenge',
+
+      // Module 09 (Strings) aliases:
+      'string-memory-and-immutability': 'string-immutability',
+      'immutability': 'string-immutability',
+      'string-pool': 'string-pool-and-memory',
+      'string-comparison': 'string-equals-vs-double-equals',
+      'equals-vs-double-equals': 'string-equals-vs-double-equals',
+      'reading-and-combining-strings': 'string-concatenation',
+      'concatenation': 'string-concatenation',
+      'finding-and-checking-text': 'essential-string-methods',
+      'string-methods': 'essential-string-methods',
+      'extracting-and-replacing-text': 'string-transformation-methods',
+      'splitting-and-cleaning-strings': 'splitting-joining-and-parsing',
+      'split-and-join': 'splitting-joining-and-parsing',
+      'stringbuilder-and-stringbuffer': 'stringbuffer-and-stringbuilder',
+      'string-buffer': 'stringbuffer-and-stringbuilder',
+      'string-output-prediction-and-debugging': 'string-performance-and-common-bugs',
+      'string-bugs': 'string-performance-and-common-bugs',
+      'string-problem-solving': 'string-practice',
+      'strings-practice-and-interview-challenge': 'strings-final-challenge'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

@@ -1,0 +1,626 @@
+{
+  "id": "les-strings-string-concatenation",
+  "slug": "string-concatenation",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "String Concatenation",
+  "summary": "Master the overloaded + operator, left-to-right evaluation order, arithmetic vs concatenation precedence, null handling, and why loops require StringBuilder.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 18,
+  "orderIndex": 9,
+  "prerequisites": [
+    "les-strings-splitting-joining-and-parsing"
+  ],
+  "subtopics": [
+    "The Overloaded + Operator",
+    "Left-to-Right Evaluation Order",
+    "Parentheses Precedence",
+    "Loop Performance Pitfall"
+  ],
+  "learningOutcomes": [
+    "Predict output of mixed arithmetic and String concatenation expressions",
+    "Avoid common output calculation bugs with parentheses",
+    "Explain JVM invokedynamic string concatenation mechanics"
+  ],
+  "activities": [
+    {
+      "id": "act-string-concatenation-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: String Concatenation",
+      "content": "### 1. Concept: String Concatenation (`+`)\nIn Java, the plus operator (`+`) is overloaded:\n1. When both operands are numeric (e.g. `10 + 20`), it performs **mathematical addition** (`30`).\n2. When at least one operand is a `String` (e.g. `\"Score: \" + 30`), it acts as the **String Concatenation Operator**, converting the non-string operand to text and returning a new combined `String`.\n\nJava also provides `str.concat(otherStr)`, but `+` is vastly more flexible because it automatically handles primitives, objects, and null values.\n\n### 2. Why It Matters: Left-to-Right Evaluation Traps\nThe `#1` output prediction question asked in technical placement tests involves left-to-right evaluation precedence:\n```java\nSystem.out.println(10 + 20 + \"Java\");   // Prints \"30Java\" !\nSystem.out.println(\"Java\" + 10 + 20);   // Prints \"Java1020\" !\n```\nBecause `+` evaluates from **left to right**:\n- In `10 + 20 + \"Java\"`, Java first adds `10 + 20` (numeric addition = `30`), then concatenates `30 + \"Java\"` (`\"30Java\"`).\n- In `\"Java\" + 10 + 20`, Java first concatenates `\"Java\" + 10` (`\"Java10\"`). Now the left operand is a String! So the next `+ 20` also becomes string concatenation, yielding `\"Java1020\"`!\n\nTo force arithmetic when a string appears first, you must use parentheses: `\"Java\" + (10 + 20)` prints `\"Java30\"`.\n\n### 3. Java Mechanics: How the JVM Implements `+`\nUnder the hood, Java transforms String concatenation based on the compiler version:\n- **Java 5 to Java 8**: The compiler rewrote `a + b` as `new StringBuilder().append(a).append(b).toString()`.\n- **Java 9+ (JEP 280: Indified String Concatenation)**: The compiler emits an `invokedynamic` bytecode instruction that uses `StringConcatFactory`. At runtime, the JVM inspects the exact arguments and generates highly tuned bytecode allocating the exact byte size needed in one shot without intermediate buffer resizes.\n\n### 4. The Deadly Loop Concatenation Trap\nEven with modern optimizations, using `+` inside a loop remains a severe performance anti-pattern:\n```java\nString s = \"\";\nfor (int i = 0; i < 10000; i++) {\n    s += i; // DANGEROUS!\n}\n```\nBecause the loop repeats thousands of times, the JVM allocates thousands of temporary intermediate String objects, turning what should be an $O(N)$ linear operation into an $O(N^2)$ quadratic disaster. Always use `StringBuilder` inside loops.\n\n### 5. Practical Java Example\n```java\nint apples = 5;\nint oranges = 10;\n\n// Evaluation order matters!\nSystem.out.println(\"Total: \" + apples + oranges);   // \"Total: 510\" (Bug!)\nSystem.out.println(\"Total: \" + (apples + oranges)); // \"Total: 15\"  (Correct)\n\n// Concatenating with null\nString item = null;\nSystem.out.println(\"Item: \" + item); // Prints \"Item: null\" (safe)\n// item.concat(\" details\");          // Throws NullPointerException!\n```\n\n### 6. Common Beginner Mistakes\n- **Forgetting Parentheses**: Writing `\"Price: $\" + base + tax` and getting `\"Price: $10020\"` instead of `\"Price: $120\"`.\n- **Using `.concat()` with null**: `s.concat(null)` throws `NullPointerException`, whereas `s + null` converts null to the string `\"null\"`.\n- **Concatenation in Accumulator Loops**: Using `+=` inside loops over collections.\n\n### 7. Key Takeaways\n- `+` evaluates from left to right: numbers before a string add; numbers after a string concatenate.\n- Use parentheses `(a + b)` to force arithmetic before concatenation.\n- `+` handles `null` safely by converting it to `\"null\"`; `.concat()` throws `NullPointerException`.\n- Never use `+=` on Strings inside large loops; always use `StringBuilder`.",
+      "breakdown": [
+        {
+          "topic": "Overloaded + Operator",
+          "details": "Performs addition if both operands are numeric; performs concatenation if either operand is a String."
+        },
+        {
+          "topic": "Left-to-Right Precedence",
+          "details": "Operands are evaluated sequentially from left to right. Once a String is encountered, subsequent + operators become concatenation unless bracketed with ()."
+        },
+        {
+          "topic": "Handling Nulls",
+          "details": "+ converts null to the 4-character string \"null\". .concat() throws NullPointerException on null operands."
+        },
+        {
+          "topic": "Indified String Concatenation",
+          "details": "Java 9+ compiles string concatenation into invokedynamic and StringConcatFactory for zero-intermediate-copy performance."
+        }
+      ]
+    },
+    {
+      "id": "act-string-concatenation-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: String Concatenation Suite",
+      "codeSnippet": "public class StringConcatenationDemo {\n    public static void main(String[] args) {\n        int val1 = 15;\n        int val2 = 25;\n        \n        // 1. Left-to-right evaluation order\n        System.out.println(\"Result 1: \" + val1 + val2);       // \"Result 1: 1525\"\n        System.out.println(\"Result 2: \" + (val1 + val2));     // \"Result 2: 40\"\n        System.out.println(val1 + val2 + \" is the sum\");     // \"40 is the sum\"\n        \n        // 2. Concatenation with different primitive types\n        boolean active = true;\n        double price = 99.95;\n        String summary = \"Active: \" + active + \" | Price: $\" + price;\n        System.out.println(summary);\n        \n        // 3. Null handling: + vs .concat()\n        String prefix = \"Status: \";\n        String nullValue = null;\n        System.out.println(prefix + nullValue); // \"Status: null\"\n        \n        // 4. Character addition before String\n        // 'A' is 65, 'B' is 66 -> 65 + 66 = 131\n        System.out.println('A' + 'B' + \" = letters\"); // \"131 = letters\"\n        System.out.println(\"\" + 'A' + 'B' + \" = letters\"); // \"AB = letters\"\n    }\n}",
+      "description": "Demonstrates evaluation order, parentheses precedence, char additions, and null handling in concatenation.",
+      "steps": [
+        {
+          "line": 7,
+          "description": "\"Result 1: \" + 15 produces \"Result 1: 15\", then + 25 produces \"Result 1: 1525\"."
+        },
+        {
+          "line": 8,
+          "description": "Parentheses force (15 + 25) to compute arithmetic 40 before concatenating with the string."
+        },
+        {
+          "line": 9,
+          "description": "15 + 25 is on the left, so numbers are added (40), then concatenated with ' is the sum'."
+        },
+        {
+          "line": 15,
+          "description": "+ converts boolean and double into their string representations seamlessly."
+        },
+        {
+          "line": 20,
+          "description": "Concatenating a null reference with + converts it safely into the string 'null'."
+        },
+        {
+          "line": 24,
+          "description": "'A' + 'B' are chars (primitives), so their ASCII/Unicode values add: 65 + 66 = 131!"
+        }
+      ]
+    },
+    {
+      "id": "act-string-concatenation-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: String Concatenation",
+      "questions": [
+        {
+          "id": "mcq-cat-1",
+          "question": "What will be printed by `System.out.println(10 + 20 + \"Hello\");`?",
+          "options": [
+            "1020Hello",
+            "30Hello",
+            "Hello30",
+            "Hello1020"
+          ],
+          "correctOption": 1,
+          "explanation": "Java evaluates from left to right. 10 + 20 is evaluated as numeric addition (30), then 30 + \"Hello\" produces \"30Hello\"."
+        },
+        {
+          "id": "mcq-cat-2",
+          "question": "What will be printed by `System.out.println(\"Hello\" + 10 + 20);`?",
+          "options": [
+            "Hello30",
+            "Hello1020",
+            "30Hello",
+            "Compile error"
+          ],
+          "correctOption": 1,
+          "explanation": "\"Hello\" + 10 becomes \"Hello10\". Then \"Hello10\" + 20 becomes \"Hello1020\" because the left operand is now a String."
+        },
+        {
+          "id": "mcq-cat-3",
+          "question": "How do you ensure numeric addition occurs in `\"Total: \" + a + b`?",
+          "options": [
+            "\"Total: \" + (a + b)",
+            "(\"Total: \" + a) + b",
+            "Total: + a + b",
+            "\"Total: \" . (a + b)"
+          ],
+          "correctOption": 0,
+          "explanation": "Parentheses have the highest precedence in Java, forcing (a + b) to evaluate first before string concatenation."
+        },
+        {
+          "id": "mcq-cat-4",
+          "question": "What will be printed by `System.out.println('A' + 'B' + \"Java\");`? (ASCII of 'A' is 65, 'B' is 66)",
+          "options": [
+            "ABJava",
+            "131Java",
+            "JavaAB",
+            "Compile error"
+          ],
+          "correctOption": 1,
+          "explanation": "Both 'A' and 'B' are char primitives. Without a String on the left, the + operator performs integer addition: 65 + 66 = 131, producing \"131Java\"."
+        },
+        {
+          "id": "mcq-cat-5",
+          "question": "What happens if you execute `String s = \"Hi\"; String t = null; System.out.println(s + t);`?",
+          "options": [
+            "Throws NullPointerException",
+            "Prints \"Hinull\"",
+            "Prints \"Hi\"",
+            "Prints null"
+          ],
+          "correctOption": 1,
+          "explanation": "The + operator converts a null reference to the string literal \"null\", outputting \"Hinull\" safely."
+        },
+        {
+          "id": "mcq-cat-6",
+          "question": "What happens if you execute `\"Hi\".concat(null)`?",
+          "options": [
+            "Prints \"Hinull\"",
+            "Prints \"Hi\"",
+            "Throws NullPointerException",
+            "Compile error"
+          ],
+          "correctOption": 2,
+          "explanation": "Unlike the + operator, the .concat() method explicitly checks for null and throws a NullPointerException if the argument is null."
+        },
+        {
+          "id": "mcq-cat-7",
+          "question": "Predict the output of the following code:\n```java\nint x = 5;\nSystem.out.println(\"Value: \" + x * 2);\n```",
+          "options": [
+            "Value: 10",
+            "Value: 5 * 2",
+            "Value: 52",
+            "Compile error"
+          ],
+          "correctOption": 0,
+          "explanation": "Multiplication (*) has higher precedence than addition (+), so `x * 2` (10) evaluates first, then concatenates to produce \"Value: 10\"."
+        },
+        {
+          "id": "mcq-cat-8",
+          "question": "Why is `String s = \"\"; for (int i = 0; i < 10000; i++) s += i;` considered bad practice?",
+          "options": [
+            "It causes an integer overflow",
+            "It allocates about 10,000 intermediate String objects on the Heap, resulting in O(N^2) complexity",
+            "It throws a ConcurrentModificationException",
+            "Strings cannot store numbers"
+          ],
+          "correctOption": 1,
+          "explanation": "Each iteration constructs a new String copying all previous characters, creating quadratic $O(N^2)$ memory churn."
+        },
+        {
+          "id": "mcq-cat-9",
+          "question": "What will `System.out.println(\"\" + 'A' + 'B');` print?",
+          "options": [
+            "131",
+            "AB",
+            "\"\"AB",
+            "Compile error"
+          ],
+          "correctOption": 1,
+          "explanation": "The empty string \"\" at the beginning forces 'A' to be converted to \"A\", and then 'B' is concatenated as text to produce \"AB\"."
+        },
+        {
+          "id": "mcq-cat-10",
+          "question": "How did Java 9 optimize single-line String concatenation (e.g. a + b + c)?",
+          "options": [
+            "By converting all strings to C char pointers",
+            "By using invokedynamic and StringConcatFactory to compute the buffer size and generate bytecode at runtime",
+            "By disabling the + operator completely",
+            "By caching all results in the OS kernel"
+          ],
+          "correctOption": 1,
+          "explanation": "JEP 280 introduced invokedynamic string concatenation, avoiding fixed StringBuilder bytecodes and computing optimal buffer sizes dynamically."
+        },
+        {
+          "id": "mcq-cat-11",
+          "question": "Predict the output of:\n```java\nSystem.out.println(1 + 2 + \"3\" + 4 + 5);\n```",
+          "options": [
+            "12345",
+            "3345",
+            "15",
+            "37"
+          ],
+          "correctOption": 1,
+          "explanation": "1 + 2 is numeric addition (3). 3 + \"3\" is \"33\". \"33\" + 4 is \"334\". \"334\" + 5 is \"3345\"."
+        }
+      ]
+    },
+    {
+      "id": "act-string-concatenation-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Precedence and Concatenation",
+      "practice": {
+        "id": "prac-act-cat",
+        "title": "Hands-On: Test Precedence and Concatenation",
+        "description": "Print \"Sum: \" + 10 + 20 and \"Sum: \" + (10 + 20) to demonstrate the difference.",
+        "starterCode": "public class PracticeConcat {\n    public static void main(String[] args) {\n        // TODO: Print without and with parentheses\n    }\n}",
+        "solutionCode": "public class PracticeConcat {\n    public static void main(String[] args) {\n        System.out.println(\"Without: \" + 10 + 20);\n        System.out.println(\"With: \" + (10 + 20));\n    }\n}",
+        "expectedOutput": "Without: 1020\nWith: 30"
+      }
+    },
+    {
+      "id": "act-string-concatenation-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: String Concatenation",
+      "interviewQA": [
+        {
+          "id": "iq-cat-1",
+          "question": "What is the difference between the + operator and the concat() method in String?",
+          "answer": "1) Operands: `+` can concatenate Strings with any primitive (int, boolean, double) or object. `concat()` strictly requires a `String` argument. 2) Null safety: `+` safely converts `null` into the string `\"null\"`. `concat(null)` throws a `NullPointerException`. 3) Chaining: `+` supports syntax like `a + b + c + d`, while `concat()` requires nested method chaining `a.concat(b).concat(c)`."
+        },
+        {
+          "id": "iq-cat-2",
+          "question": "Why does \"Java\" + 1 + 2 result in \"Java12\", but 1 + 2 + \"Java\" results in \"3Java\"?",
+          "answer": "Binary operators in Java have left-to-right associativity. In `\"Java\" + 1 + 2`, the first operation `\"Java\" + 1` produces a String `\"Java1\"`. The subsequent operation is now between a String and an int (`\"Java1\" + 2`), which performs concatenation to yield `\"Java12\"`. In `1 + 2 + \"Java\"`, the first operation is between two integers (`1 + 2`), performing standard arithmetic addition to yield `3`. Then `3 + \"Java\"` performs string concatenation, yielding `\"3Java\"`."
+        },
+        {
+          "id": "iq-cat-3",
+          "question": "How does the Java compiler implement String concatenation under the hood in modern Java?",
+          "answer": "Prior to Java 9, the javac compiler translated string concatenation using `new StringBuilder().append(...).toString()`. Since Java 9 (JEP 280), the compiler generates `invokedynamic` calls backed by `java.lang.invoke.StringConcatFactory`. At runtime, the JVM uses method handles to compute exact buffer sizes and generate optimized machine code, completely avoiding intermediate buffer re-allocations."
+        },
+        {
+          "id": "iq-cat-4",
+          "question": "Why should you never use String concatenation (+) inside a loop?",
+          "answer": "In each iteration of a loop, string concatenation creates a new String object and copies all characters from the previous iteration. For $N$ iterations, this requires copying $1 + 2 + 3 + ... + N = O(N^2)$ characters and creates $N$ intermediate garbage objects on the Heap. Using `StringBuilder` inside the loop allocates a mutable buffer that appends in amortized $O(1)$ time, yielding overall $O(N)$ linear time complexity."
+        },
+        {
+          "id": "iq-cat-5",
+          "question": "What is printed by 'A' + 'B' + \"\"?",
+          "answer": "It prints `\"131\"`. Because both `'A'` and `'B'` are char primitives and appear before any String, numeric promotion applies: their ASCII integer values (65 and 66) are added arithmetically to equal 131. Then `131 + \"\"` converts 131 into the string `\"131\"`."
+        },
+        {
+          "id": "iq-cat-6",
+          "question": "Can custom user-defined classes support operator overloading for + in Java?",
+          "answer": "No. Java deliberately does not support user-defined operator overloading. The `+` operator for `String` is the sole exception hardcoded into the Java language specification by its creators to facilitate natural textual handling."
+        },
+        {
+          "id": "iq-cat-7",
+          "question": "What does String.valueOf(obj) do during concatenation?",
+          "answer": "When an object `obj` is concatenated with a String, Java internally invokes `String.valueOf(obj)`. If `obj` is null, it returns `\"null\"`. If `obj` is not null, it delegates to `obj.toString()`."
+        }
+      ]
+    },
+    {
+      "id": "act-string-concatenation-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: String Concatenation",
+      "checklist": [
+        {
+          "id": "chk-cat-1",
+          "text": "I understand left-to-right evaluation order for String concatenation (+)."
+        },
+        {
+          "id": "chk-cat-2",
+          "text": "I use parentheses (a + b) to force arithmetic addition before concatenating with text."
+        },
+        {
+          "id": "chk-cat-3",
+          "text": "I know why 'A' + 'B' yields 131 while \"\" + 'A' + 'B' yields \"AB\"."
+        },
+        {
+          "id": "chk-cat-4",
+          "text": "I understand how + handles null safely compared to .concat()."
+        },
+        {
+          "id": "chk-cat-5",
+          "text": "I never use String concatenation in large loops; I use StringBuilder."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-cat-1",
+      "question": "What will be printed by `System.out.println(10 + 20 + \"Hello\");`?",
+      "options": [
+        "1020Hello",
+        "30Hello",
+        "Hello30",
+        "Hello1020"
+      ],
+      "correctOption": 1,
+      "explanation": "Java evaluates from left to right. 10 + 20 is evaluated as numeric addition (30), then 30 + \"Hello\" produces \"30Hello\"."
+    },
+    {
+      "id": "mcq-cat-2",
+      "question": "What will be printed by `System.out.println(\"Hello\" + 10 + 20);`?",
+      "options": [
+        "Hello30",
+        "Hello1020",
+        "30Hello",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "\"Hello\" + 10 becomes \"Hello10\". Then \"Hello10\" + 20 becomes \"Hello1020\" because the left operand is now a String."
+    },
+    {
+      "id": "mcq-cat-3",
+      "question": "How do you ensure numeric addition occurs in `\"Total: \" + a + b`?",
+      "options": [
+        "\"Total: \" + (a + b)",
+        "(\"Total: \" + a) + b",
+        "Total: + a + b",
+        "\"Total: \" . (a + b)"
+      ],
+      "correctOption": 0,
+      "explanation": "Parentheses have the highest precedence in Java, forcing (a + b) to evaluate first before string concatenation."
+    },
+    {
+      "id": "mcq-cat-4",
+      "question": "What will be printed by `System.out.println('A' + 'B' + \"Java\");`? (ASCII of 'A' is 65, 'B' is 66)",
+      "options": [
+        "ABJava",
+        "131Java",
+        "JavaAB",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "Both 'A' and 'B' are char primitives. Without a String on the left, the + operator performs integer addition: 65 + 66 = 131, producing \"131Java\"."
+    },
+    {
+      "id": "mcq-cat-5",
+      "question": "What happens if you execute `String s = \"Hi\"; String t = null; System.out.println(s + t);`?",
+      "options": [
+        "Throws NullPointerException",
+        "Prints \"Hinull\"",
+        "Prints \"Hi\"",
+        "Prints null"
+      ],
+      "correctOption": 1,
+      "explanation": "The + operator converts a null reference to the string literal \"null\", outputting \"Hinull\" safely."
+    },
+    {
+      "id": "mcq-cat-6",
+      "question": "What happens if you execute `\"Hi\".concat(null)`?",
+      "options": [
+        "Prints \"Hinull\"",
+        "Prints \"Hi\"",
+        "Throws NullPointerException",
+        "Compile error"
+      ],
+      "correctOption": 2,
+      "explanation": "Unlike the + operator, the .concat() method explicitly checks for null and throws a NullPointerException if the argument is null."
+    },
+    {
+      "id": "mcq-cat-7",
+      "question": "Predict the output of the following code:\n```java\nint x = 5;\nSystem.out.println(\"Value: \" + x * 2);\n```",
+      "options": [
+        "Value: 10",
+        "Value: 5 * 2",
+        "Value: 52",
+        "Compile error"
+      ],
+      "correctOption": 0,
+      "explanation": "Multiplication (*) has higher precedence than addition (+), so `x * 2` (10) evaluates first, then concatenates to produce \"Value: 10\"."
+    },
+    {
+      "id": "mcq-cat-8",
+      "question": "Why is `String s = \"\"; for (int i = 0; i < 10000; i++) s += i;` considered bad practice?",
+      "options": [
+        "It causes an integer overflow",
+        "It allocates about 10,000 intermediate String objects on the Heap, resulting in O(N^2) complexity",
+        "It throws a ConcurrentModificationException",
+        "Strings cannot store numbers"
+      ],
+      "correctOption": 1,
+      "explanation": "Each iteration constructs a new String copying all previous characters, creating quadratic $O(N^2)$ memory churn."
+    },
+    {
+      "id": "mcq-cat-9",
+      "question": "What will `System.out.println(\"\" + 'A' + 'B');` print?",
+      "options": [
+        "131",
+        "AB",
+        "\"\"AB",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "The empty string \"\" at the beginning forces 'A' to be converted to \"A\", and then 'B' is concatenated as text to produce \"AB\"."
+    },
+    {
+      "id": "mcq-cat-10",
+      "question": "How did Java 9 optimize single-line String concatenation (e.g. a + b + c)?",
+      "options": [
+        "By converting all strings to C char pointers",
+        "By using invokedynamic and StringConcatFactory to compute the buffer size and generate bytecode at runtime",
+        "By disabling the + operator completely",
+        "By caching all results in the OS kernel"
+      ],
+      "correctOption": 1,
+      "explanation": "JEP 280 introduced invokedynamic string concatenation, avoiding fixed StringBuilder bytecodes and computing optimal buffer sizes dynamically."
+    },
+    {
+      "id": "mcq-cat-11",
+      "question": "Predict the output of:\n```java\nSystem.out.println(1 + 2 + \"3\" + 4 + 5);\n```",
+      "options": [
+        "12345",
+        "3345",
+        "15",
+        "37"
+      ],
+      "correctOption": 1,
+      "explanation": "1 + 2 is numeric addition (3). 3 + \"3\" is \"33\". \"33\" + 4 is \"334\". \"334\" + 5 is \"3345\"."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-cat-1",
+      "title": "Fix the Mathematical Output Bug",
+      "difficulty": "Easy",
+      "problemStatement": "A billing method prints `\"Subtotal: $\" + subtotal + tax`. Given `int subtotal = 100; int tax = 15;`, fix the code so it prints the correct arithmetic sum `\"Subtotal: $115\"` instead of `\"Subtotal: $10015\"`.",
+      "description": "A billing method prints `\"Subtotal: $\" + subtotal + tax`. Given `int subtotal = 100; int tax = 15;`, fix the code so it prints the correct arithmetic sum `\"Subtotal: $115\"` instead of `\"Subtotal: $10015\"`.",
+      "hint": "Use parentheses: + (subtotal + tax).",
+      "hints": [
+        "Use parentheses: + (subtotal + tax)."
+      ],
+      "starterCode": "public class FixBillingCalculation {\n    public static void main(String[] args) {\n        int subtotal = 100;\n        int tax = 15;\n        // Fix bug where subtotal and tax are concatenated instead of added\n        System.out.println(\"Subtotal: $\" + subtotal + tax);\n    }\n}",
+      "solutionCode": "public class FixBillingCalculation {\n    public static void main(String[] args) {\n        int subtotal = 100;\n        int tax = 15;\n        System.out.println(\"Subtotal: $\" + (subtotal + tax));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Subtotal: $115"
+        }
+      ],
+      "targetOutput": "Subtotal: $115"
+    },
+    {
+      "id": "prob-cat-2",
+      "title": "Concatenate Characters into Word",
+      "difficulty": "Easy",
+      "problemStatement": "Given `char c1 = 'J'; char c2 = 'A'; char c3 = 'V'; char c4 = 'A';`. Concatenate them into the String `\"JAVA\"` without computing their numerical sum. Print the word.",
+      "description": "Given `char c1 = 'J'; char c2 = 'A'; char c3 = 'V'; char c4 = 'A';`. Concatenate them into the String `\"JAVA\"` without computing their numerical sum. Print the word.",
+      "hint": "Start the concatenation with \"\" + c1 + c2 + c3 + c4.",
+      "hints": [
+        "Start the concatenation with \"\" + c1 + c2 + c3 + c4."
+      ],
+      "starterCode": "public class CharConcat {\n    public static void main(String[] args) {\n        char c1 = 'J'; char c2 = 'A'; char c3 = 'V'; char c4 = 'A';\n        // TODO: Concatenate characters into \"JAVA\"\n    }\n}",
+      "solutionCode": "public class CharConcat {\n    public static void main(String[] args) {\n        char c1 = 'J'; char c2 = 'A'; char c3 = 'V'; char c4 = 'A';\n        String word = \"\" + c1 + c2 + c3 + c4;\n        System.out.println(\"Word: \" + word);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Word: JAVA"
+        }
+      ],
+      "targetOutput": "Word: JAVA"
+    },
+    {
+      "id": "prob-cat-3",
+      "title": "Construct Multi-Type Log Message",
+      "difficulty": "Medium",
+      "problemStatement": "Format a log line using concatenation: Given `long timestamp = 1729000000L; String level = \"WARN\"; int code = 404; boolean resolved = false;`. Output: `\"[1729000000] WARN: Code 404, Resolved: false\"`.",
+      "description": "Format a log line using concatenation: Given `long timestamp = 1729000000L; String level = \"WARN\"; int code = 404; boolean resolved = false;`. Output: `\"[1729000000] WARN: Code 404, Resolved: false\"`.",
+      "hint": "Concatenate with brackets and separators.",
+      "hints": [
+        "Concatenate with brackets and separators."
+      ],
+      "starterCode": "public class LogLineFormatter {\n    public static void main(String[] args) {\n        long timestamp = 1729000000L;\n        String level = \"WARN\";\n        int code = 404;\n        boolean resolved = false;\n        // TODO: Format log line\n    }\n}",
+      "solutionCode": "public class LogLineFormatter {\n    public static void main(String[] args) {\n        long timestamp = 1729000000L;\n        String level = \"WARN\";\n        int code = 404;\n        boolean resolved = false;\n        String log = \"[\" + timestamp + \"] \" + level + \": Code \" + code + \", Resolved: \" + resolved;\n        System.out.println(log);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "[1729000000] WARN: Code 404, Resolved: false"
+        }
+      ],
+      "targetOutput": "[1729000000] WARN: Code 404, Resolved: false"
+    },
+    {
+      "id": "prob-cat-4",
+      "title": "Handle Null Variables Safely in Message",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String customer = null; String orderId = \"ORD-1002\";`. Create a notification message using the `+` operator. Check if customer is null; if so, display `\"Guest\"`, otherwise display customer name. Format: `\"Notification: Order ORD-1002 assigned to Guest\"`.",
+      "description": "Given `String customer = null; String orderId = \"ORD-1002\";`. Create a notification message using the `+` operator. Check if customer is null; if so, display `\"Guest\"`, otherwise display customer name. Format: `\"Notification: Order ORD-1002 assigned to Guest\"`.",
+      "hint": "Use ternary operator: (customer != null ? customer : \"Guest\").",
+      "hints": [
+        "Use ternary operator: (customer != null ? customer : \"Guest\")."
+      ],
+      "starterCode": "public class NullSafeNotification {\n    public static void main(String[] args) {\n        String customer = null;\n        String orderId = \"ORD-1002\";\n        // TODO: Construct notification message safely\n    }\n}",
+      "solutionCode": "public class NullSafeNotification {\n    public static void main(String[] args) {\n        String customer = null;\n        String orderId = \"ORD-1002\";\n        String displayName = (customer != null) ? customer : \"Guest\";\n        String message = \"Notification: Order \" + orderId + \" assigned to \" + displayName;\n        System.out.println(message);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Notification: Order ORD-1002 assigned to Guest"
+        }
+      ],
+      "targetOutput": "Notification: Order ORD-1002 assigned to Guest"
+    },
+    {
+      "id": "prob-cat-5",
+      "title": "Precedence Evaluation Matrix",
+      "difficulty": "Easy",
+      "problemStatement": "Demonstrate the evaluation order of `+` by printing the results of: 1) `\"A\" + 1 + 2`, 2) `1 + 2 + \"A\"`, and 3) `\"A\" + (1 + 2)`. Format output on three lines.",
+      "description": "Demonstrate the evaluation order of `+` by printing the results of: 1) `\"A\" + 1 + 2`, 2) `1 + 2 + \"A\"`, and 3) `\"A\" + (1 + 2)`. Format output on three lines.",
+      "hint": "Print each expression directly.",
+      "hints": [
+        "Print each expression directly."
+      ],
+      "starterCode": "public class PrecedenceMatrix {\n    public static void main(String[] args) {\n        // TODO: Print the three expressions\n    }\n}",
+      "solutionCode": "public class PrecedenceMatrix {\n    public static void main(String[] args) {\n        System.out.println(\"A\" + 1 + 2);\n        System.out.println(1 + 2 + \"A\");\n        System.out.println(\"A\" + (1 + 2));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "A12\n3A\nA3"
+        }
+      ],
+      "targetOutput": "A12\n3A\nA3"
+    },
+    {
+      "id": "prob-cat-6",
+      "title": "Evaluate Expression with Multiplication and Concatenation",
+      "difficulty": "Easy",
+      "problemStatement": "Given `int width = 5; int height = 10;`. Print: `\"Area: \" + width * height + \" sq ft\"`. Explain why multiplication executes before string concatenation.",
+      "description": "Given `int width = 5; int height = 10;`. Print: `\"Area: \" + width * height + \" sq ft\"`. Explain why multiplication executes before string concatenation.",
+      "hint": "* operator has higher precedence than + operator.",
+      "hints": [
+        "* operator has higher precedence than + operator."
+      ],
+      "starterCode": "public class AreaFormatter {\n    public static void main(String[] args) {\n        int width = 5;\n        int height = 10;\n        // TODO: Print area formatted\n    }\n}",
+      "solutionCode": "public class AreaFormatter {\n    public static void main(String[] args) {\n        int width = 5;\n        int height = 10;\n        System.out.println(\"Area: \" + width * height + \" sq ft\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Area: 50 sq ft"
+        }
+      ],
+      "targetOutput": "Area: 50 sq ft"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-cat-1",
+      "question": "What is the difference between the + operator and the concat() method in String?",
+      "answer": "1) Operands: `+` can concatenate Strings with any primitive (int, boolean, double) or object. `concat()` strictly requires a `String` argument. 2) Null safety: `+` safely converts `null` into the string `\"null\"`. `concat(null)` throws a `NullPointerException`. 3) Chaining: `+` supports syntax like `a + b + c + d`, while `concat()` requires nested method chaining `a.concat(b).concat(c)`."
+    },
+    {
+      "id": "iq-cat-2",
+      "question": "Why does \"Java\" + 1 + 2 result in \"Java12\", but 1 + 2 + \"Java\" results in \"3Java\"?",
+      "answer": "Binary operators in Java have left-to-right associativity. In `\"Java\" + 1 + 2`, the first operation `\"Java\" + 1` produces a String `\"Java1\"`. The subsequent operation is now between a String and an int (`\"Java1\" + 2`), which performs concatenation to yield `\"Java12\"`. In `1 + 2 + \"Java\"`, the first operation is between two integers (`1 + 2`), performing standard arithmetic addition to yield `3`. Then `3 + \"Java\"` performs string concatenation, yielding `\"3Java\"`."
+    },
+    {
+      "id": "iq-cat-3",
+      "question": "How does the Java compiler implement String concatenation under the hood in modern Java?",
+      "answer": "Prior to Java 9, the javac compiler translated string concatenation using `new StringBuilder().append(...).toString()`. Since Java 9 (JEP 280), the compiler generates `invokedynamic` calls backed by `java.lang.invoke.StringConcatFactory`. At runtime, the JVM uses method handles to compute exact buffer sizes and generate optimized machine code, completely avoiding intermediate buffer re-allocations."
+    },
+    {
+      "id": "iq-cat-4",
+      "question": "Why should you never use String concatenation (+) inside a loop?",
+      "answer": "In each iteration of a loop, string concatenation creates a new String object and copies all characters from the previous iteration. For $N$ iterations, this requires copying $1 + 2 + 3 + ... + N = O(N^2)$ characters and creates $N$ intermediate garbage objects on the Heap. Using `StringBuilder` inside the loop allocates a mutable buffer that appends in amortized $O(1)$ time, yielding overall $O(N)$ linear time complexity."
+    },
+    {
+      "id": "iq-cat-5",
+      "question": "What is printed by 'A' + 'B' + \"\"?",
+      "answer": "It prints `\"131\"`. Because both `'A'` and `'B'` are char primitives and appear before any String, numeric promotion applies: their ASCII integer values (65 and 66) are added arithmetically to equal 131. Then `131 + \"\"` converts 131 into the string `\"131\"`."
+    },
+    {
+      "id": "iq-cat-6",
+      "question": "Can custom user-defined classes support operator overloading for + in Java?",
+      "answer": "No. Java deliberately does not support user-defined operator overloading. The `+` operator for `String` is the sole exception hardcoded into the Java language specification by its creators to facilitate natural textual handling."
+    },
+    {
+      "id": "iq-cat-7",
+      "question": "What does String.valueOf(obj) do during concatenation?",
+      "answer": "When an object `obj` is concatenated with a String, Java internally invokes `String.valueOf(obj)`. If `obj` is null, it returns `\"null\"`. If `obj` is not null, it delegates to `obj.toString()`."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-cat-1",
+      "text": "I understand left-to-right evaluation order for String concatenation (+)."
+    },
+    {
+      "id": "chk-cat-2",
+      "text": "I use parentheses (a + b) to force arithmetic addition before concatenating with text."
+    },
+    {
+      "id": "chk-cat-3",
+      "text": "I know why 'A' + 'B' yields 131 while \"\" + 'A' + 'B' yields \"AB\"."
+    },
+    {
+      "id": "chk-cat-4",
+      "text": "I understand how + handles null safely compared to .concat()."
+    },
+    {
+      "id": "chk-cat-5",
+      "text": "I never use String concatenation in large loops; I use StringBuilder."
+    }
+  ]
+}

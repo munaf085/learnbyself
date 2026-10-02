@@ -2083,6 +2083,181 @@ Row 2</td>
         </Card>
       )}
 
+
+      {/* Module 09: String Fundamentals, Immutability & == vs .equals() */}
+      {(slug === 'what-is-a-string' || slug === 'string-creation-and-literals' || slug === 'string-immutability' || slug === 'string-pool-and-memory' || slug === 'string-equals-vs-double-equals' || slug === 'string-memory-and-immutability' || slug === 'string-comparison') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java String Core Architecture, Pool &amp; Equality Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept</th>
+                  <th className="p-2.5">Java Syntax</th>
+                  <th className="p-2.5">Memory Behavior</th>
+                  <th className="p-2.5 rounded-r-lg">Golden Rule / Trap</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">String Literal</td>
+                  <td className="p-2.5 font-mono text-slate-800">String s = &quot;Java&quot;;</td>
+                  <td className="p-2.5 text-slate-600">Reuses shared instance from String Constant Pool on Heap.</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Always preferred over new String() to save memory.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">The new Keyword</td>
+                  <td className="p-2.5 font-mono text-slate-800">new String(&quot;Java&quot;)</td>
+                  <td className="p-2.5 text-slate-600">Forces allocation of a separate object in regular Heap memory.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Bypasses pool sharing &mdash; creates redundant memory overhead!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Immutability</td>
+                  <td className="p-2.5 font-mono text-slate-800">s = s.toUpperCase();</td>
+                  <td className="p-2.5 text-slate-600">Internal characters cannot change; methods return new String.</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Calling s.toUpperCase() without reassigning discards the result!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">== vs .equals()</td>
+                  <td className="p-2.5 font-mono text-slate-800">a == b vs a.equals(b)</td>
+                  <td className="p-2.5 text-slate-600">== compares Heap address; .equals() compares character sequence.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Never use == on user input or scanner strings!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Yoda Condition</td>
+                  <td className="p-2.5 font-mono text-indigo-700">&quot;TARGET&quot;.equals(var)</td>
+                  <td className="p-2.5 text-slate-600">Invokes .equals() on guaranteed non-null literal constant.</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Defends against NullPointerException if var is null.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 09: String Methods, Transformations & Splitting */}
+      {(slug === 'essential-string-methods' || slug === 'string-transformation-methods' || slug === 'splitting-joining-and-parsing' || slug === 'finding-and-checking-text' || slug === 'extracting-and-replacing-text' || slug === 'splitting-and-cleaning-strings') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Essential String Inspection, Transformation &amp; Parsing Methods
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Method</th>
+                  <th className="p-2.5">Example Call</th>
+                  <th className="p-2.5">Behavior &amp; Return</th>
+                  <th className="p-2.5 rounded-r-lg">Key Note / Boundary</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">substring</td>
+                  <td className="p-2.5 font-mono text-slate-800">s.substring(0, 4)</td>
+                  <td className="p-2.5 text-slate-600">Extracts slice in range [begin, end). Returns String.</td>
+                  <td className="p-2.5 text-slate-700">Length = end - begin. begin is inclusive, end is exclusive.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">indexOf</td>
+                  <td className="p-2.5 font-mono text-slate-800">s.indexOf(&apos;@&apos;)</td>
+                  <td className="p-2.5 text-slate-600">Scans left-to-right. Returns 0-based index or -1 if absent.</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Index 0 means found at first char; only -1 means not found!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">trim vs strip</td>
+                  <td className="p-2.5 font-mono text-slate-800">s.strip()</td>
+                  <td className="p-2.5 text-slate-600">strip() (Java 11+) removes all Unicode whitespace.</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">strip() is preferred over legacy trim() which only handles ASCII &lt;= 32.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">replace vs replaceAll</td>
+                  <td className="p-2.5 font-mono text-slate-800">s.replace(&quot;.&quot;, &quot;:&quot;)</td>
+                  <td className="p-2.5 text-slate-600">replace() matches literal strings; replaceAll() compiles regex.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">replaceAll(&quot;.&quot;, &quot;:&quot;) matches EVERY char! Always use replace() for literals.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">split &amp; join</td>
+                  <td className="p-2.5 font-mono text-slate-800">s.split(&quot;\\.&quot;) / String.join(&quot;, &quot;, arr)</td>
+                  <td className="p-2.5 text-slate-600">split() divides string to String[]; String.join() combines without trailing commas.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Must escape regex delimiters like dot (\\.) and pipe (\\|).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 09: String vs StringBuilder vs StringBuffer & Performance */}
+      {(slug === 'string-concatenation' || slug === 'stringbuilder' || slug === 'stringbuffer-and-stringbuilder' || slug === 'string-performance-and-common-bugs' || slug === 'string-practice' || slug === 'strings-final-challenge' || slug === 'stringbuilder-and-stringbuffer' || slug === 'string-problem-solving') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              String vs StringBuilder vs StringBuffer Performance Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Class / Pattern</th>
+                  <th className="p-2.5">Mutability</th>
+                  <th className="p-2.5">Thread Safety</th>
+                  <th className="p-2.5">Performance</th>
+                  <th className="p-2.5 rounded-r-lg">Standard Usage Context</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-mono">String</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Immutable</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Yes (Inherently)</td>
+                  <td className="p-2.5 text-slate-600">Slow for repeated concatenation</td>
+                  <td className="p-2.5 text-slate-700">Constants, DTOs, HashMap keys, API contracts.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-brand-50/30">
+                  <td className="p-2.5 font-bold text-brand-700 font-mono">StringBuilder</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Mutable</td>
+                  <td className="p-2.5 text-rose-700 font-medium">No (Unsynchronized)</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Fastest</td>
+                  <td className="p-2.5 text-slate-700">Default choice for local text assembly &amp; loops.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-mono">StringBuffer</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Mutable</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Yes (Synchronized)</td>
+                  <td className="p-2.5 text-slate-600">Moderate (Lock overhead)</td>
+                  <td className="p-2.5 text-slate-700">Shared multi-threaded text mutation buffers.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Loop Concatenation (+)</td>
+                  <td className="p-2.5 text-slate-600">Creates N objects</td>
+                  <td className="p-2.5 text-slate-600">N/A</td>
+                  <td className="p-2.5 text-rose-700 font-bold">O(N&sup2;) Quadratic Disaster</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Anti-pattern in loops! Always replace with StringBuilder.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Compact Strings</td>
+                  <td className="p-2.5 text-slate-600">byte[] value + coder</td>
+                  <td className="p-2.5 text-slate-600">N/A</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Halves memory usage</td>
+                  <td className="p-2.5 text-slate-700">Automatic in Java 9+ for Latin-1 (ASCII) text.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
     </div>
   );
 };

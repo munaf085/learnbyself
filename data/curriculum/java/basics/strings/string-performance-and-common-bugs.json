@@ -1,0 +1,694 @@
+{
+  "id": "les-strings-string-performance-and-common-bugs",
+  "slug": "string-performance-and-common-bugs",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "String Performance & Common Bugs",
+  "summary": "Master debugging and performance tuning: eliminating StringIndexOutOfBoundsException, preventing NPEs, fixing regex traps, and understanding Java 9 Compact Strings.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "orderIndex": 12,
+  "prerequisites": [
+    "les-strings-stringbuffer-and-stringbuilder"
+  ],
+  "subtopics": [
+    "Boundary Exceptions",
+    "Null-Safe Defense Patterns",
+    "Regex Escaping Pitfalls",
+    "Java 9 Compact Strings"
+  ],
+  "learningOutcomes": [
+    "Diagnose and prevent StringIndexOutOfBoundsException and NullPointerException",
+    "Fix regex metacharacter errors in split() and replaceAll()",
+    "Explain memory optimization with Java 9 Compact Strings"
+  ],
+  "activities": [
+    {
+      "id": "act-string-performance-and-common-bugs-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: String Performance & Common Bugs",
+      "content": "### 1. Concept: Diagnosing Common String Bugs & Performance Anti-Patterns\nBecause strings are used everywhere in application software, small errors in String handling produce outsized consequences: system crashes (`NullPointerException`), authentication vulnerabilities (`==` checks), memory leaks, and severe garbage collection pauses.\n\nUnderstanding the classic anti-patterns and knowing how to debug them makes you an exceptionally reliable backend engineer.\n\n### 2. The Top 6 Classic String Bugs\n1. **`StringIndexOutOfBoundsException`**:\n   - Calling `str.charAt(str.length())`. Valid indices strictly stop at `str.length() - 1`.\n   - Passing `endIndex > str.length()` in `substring()`.\n2. **The `NullPointerException` (NPE)**:\n   - Invoking methods on uninitialized or null variables (`input.toLowerCase()`). Fix with the Yoda condition (`\"target\".equalsIgnoreCase(input)`) or null checks (`input != null && ...`).\n3. **The `==` Identity Trap**:\n   - Comparing dynamic strings (e.g. from user input, JSON parsers, databases) using `==`. Fix: always use `.equals()` or `.equalsIgnoreCase()`.\n4. **Discarded Return Value (Immutability Misunderstanding)**:\n   - Calling `str.replace('-', '_');` without reassigning `str = str.replace('-', '_');`.\n5. **Regex Metacharacter Traps in `split()` & `replaceAll()`**:\n   - Using unescaped `.`, `|`, `*`, `+` in `split()`. For example, `str.split(\".\")` matches all characters and returns an empty array. Fix: `str.split(\"\\\\.\")`.\n6. **Quadratic Loop Memory Churn ($O(N^2)$)**:\n   - Repeated string concatenation inside loops (`s += item;`). Fix: use `StringBuilder`.\n\n### 3. Java 9 Compact Strings Optimization\nHistorically, Java stored strings using `char[]`, with every character occupying **2 bytes** (16 bits) in UTF-16 encoding. However, analysis revealed that over 70% of strings in enterprise apps consist entirely of Latin-1 (ASCII) characters requiring only **1 byte**!\n- Since Java 9 (JEP 254), Java uses **Compact Strings**: internal storage is `byte[] value` paired with an encoding flag `byte coder` (0 for `LATIN1`, 1 for `UTF16`).\n- Latin-1 strings automatically consume **half the Heap memory** (1 byte per char instead of 2), reducing overall JVM memory footprints by 10–15% transparently!\n\n### 4. Practical Java Example: Debugging String Code\n```java\n// Buggy:\nString input = null;\n// if (input.equals(\"yes\")) { ... } // CRASH!\n\n// Defensive, production-ready:\nif (\"yes\".equalsIgnoreCase(input)) {\n    System.out.println(\"Confirmed\");\n}\n\n// Regex fix:\nString ip = \"10.0.0.1\";\nString[] octets = ip.split(\"\\\\.\"); // Escaped!\nSystem.out.println(\"Octet count: \" + octets.length); // 4\n```\n\n### 5. Key Takeaways\n- Always guard against NullPointerExceptions by checking null or placing literals on the left.\n- Watch boundaries: valid indices are strictly `0` to `length() - 1`.\n- Always escape regex metacharacters in `split()` and `replaceAll()`.\n- Reassign variables when invoking transformation methods.\n- Compact Strings in Java 9+ automatically halve memory for Latin-1 characters.",
+      "breakdown": [
+        {
+          "topic": "Boundary Exceptions",
+          "details": "charAt(length()) and substring(0, length() + 1) cause StringIndexOutOfBoundsException. Indices are 0-based."
+        },
+        {
+          "topic": "Null-Safe Defenses",
+          "details": "Literal-first comparisons (\"CONST\".equals(var)) prevent NullPointerException when handling external input."
+        },
+        {
+          "topic": "Regex Escaping Pitfalls",
+          "details": "split() and replaceAll() require double backslashes for regex metacharacters: split(\"\\\\.\") and split(\"\\\\|\")."
+        },
+        {
+          "topic": "Compact Strings (Java 9+)",
+          "details": "Internal representation changed from char[] to byte[] + coder flag, halving memory for Latin-1 text."
+        }
+      ]
+    },
+    {
+      "id": "act-string-performance-and-common-bugs-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: String Bug Detection & Defense Suite",
+      "codeSnippet": "public class StringBugsAndPerformanceDemo {\n    public static void main(String[] args) {\n        // 1. Boundary Defense: Avoid StringIndexOutOfBoundsException\n        String word = \"Learn\";\n        if (word != null && word.length() > 0) {\n            char last = word.charAt(word.length() - 1);\n            System.out.println(\"Safe last char: \" + last);\n        }\n        \n        // 2. Safe Substring Extraction\n        int begin = 1;\n        int end = 10;\n        int safeEnd = Math.min(end, word.length());\n        String safeSlice = word.substring(begin, safeEnd);\n        System.out.println(\"Safe slice [1, min(10, len)]: \" + safeSlice);\n        \n        // 3. Null-Safe Literal Comparison\n        String query = null;\n        System.out.println(\"Safe null check: \" + \"SEARCH\".equalsIgnoreCase(query)); // false\n        \n        // 4. Regex Escaping\n        String file = \"archive.tar.gz\";\n        String[] parts = file.split(\"\\\\.\");\n        System.out.println(\"Correctly split dot parts: \" + parts.length); // 3\n        \n        // 5. Performance: Measuring Loop Concatenation vs StringBuilder\n        long start = System.currentTimeMillis();\n        StringBuilder sb = new StringBuilder(1000);\n        for (int i = 0; i < 1000; i++) {\n            sb.append(i);\n        }\n        long duration = System.currentTimeMillis() - start;\n        System.out.println(\"StringBuilder 1000 appends completed in: \" + duration + \"ms\");\n    }\n}",
+      "description": "Demonstrates boundary clamping, defensive null checks, escaped regex splitting, and loop performance benchmarks.",
+      "steps": [
+        {
+          "line": 5,
+          "description": "Always check word != null and word.length() > 0 before accessing indices."
+        },
+        {
+          "line": 13,
+          "description": "Math.min(end, word.length()) prevents StringIndexOutOfBoundsException during substring operations."
+        },
+        {
+          "line": 18,
+          "description": "Yoda condition 'SEARCH'.equalsIgnoreCase(query) safely returns false on null query."
+        },
+        {
+          "line": 22,
+          "description": "Escaped double backslash \\\\. ensures split divides cleanly by the literal dot."
+        },
+        {
+          "line": 28,
+          "description": "StringBuilder appends 1,000 items in place without intermediate object allocation."
+        }
+      ]
+    },
+    {
+      "id": "act-string-performance-and-common-bugs-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: String Performance & Common Bugs",
+      "questions": [
+        {
+          "id": "mcq-perf-1",
+          "question": "What exception is thrown by the following line: `\"Java\".charAt(4)`?",
+          "options": [
+            "ArrayIndexOutOfBoundsException",
+            "StringIndexOutOfBoundsException",
+            "NullPointerException",
+            "IllegalArgumentException"
+          ],
+          "correctOption": 1,
+          "explanation": "\"Java\" has length 4 with valid indices 0, 1, 2, 3. Index 4 is out of bounds, throwing StringIndexOutOfBoundsException."
+        },
+        {
+          "id": "mcq-perf-2",
+          "question": "Why does `\"file.txt\".split(\".\").length` return 0 instead of 2?",
+          "options": [
+            "The dot is treated as the regex wildcard matching all characters",
+            "The split method is deprecated",
+            "String array cannot store extensions",
+            "Java only allows splitting by comma"
+          ],
+          "correctOption": 0,
+          "explanation": "In regex, `.` matches any character. Every character in the string matches the delimiter, leaving no tokens. Use `split(\"\\\\.\")`."
+        },
+        {
+          "id": "mcq-perf-3",
+          "question": "What is the primary motivation for Java 9's Compact Strings (JEP 254)?",
+          "options": [
+            "To encrypt all strings in memory",
+            "To replace 2-byte UTF-16 char[] with 1-byte byte[] for Latin-1 strings, halving memory usage for most applications",
+            "To allow strings to be mutated",
+            "To eliminate the need for String Pool"
+          ],
+          "correctOption": 1,
+          "explanation": "Most strings contain Latin-1 characters requiring only 1 byte. Compact Strings store byte[] with a 1-byte coder flag, cutting string memory by 50%."
+        },
+        {
+          "id": "mcq-perf-4",
+          "question": "What will be printed by the following code?\n```java\nString s = \"hello\";\ns.concat(\" world\");\nSystem.out.println(s);\n```",
+          "options": [
+            "hello world",
+            "hello",
+            "world",
+            "NullPointerException"
+          ],
+          "correctOption": 1,
+          "explanation": "Because Strings are immutable, concat() returns a new String. Because the return value was discarded, `s` remains \"hello\"."
+        },
+        {
+          "id": "mcq-perf-5",
+          "question": "How should you safely clamp a substring `endIndex` to prevent `StringIndexOutOfBoundsException`?",
+          "options": [
+            "int safeEnd = Math.min(endIndex, str.length());",
+            "int safeEnd = endIndex % str.length();",
+            "int safeEnd = str.length() + 1;",
+            "int safeEnd = Math.max(endIndex, str.length());"
+          ],
+          "correctOption": 0,
+          "explanation": "Math.min(endIndex, str.length()) ensures the index never exceeds the string's total length."
+        },
+        {
+          "id": "mcq-perf-6",
+          "question": "What will happen if you run: `String s = null; if (s != null & s.length() > 0)`?",
+          "options": [
+            "It evaluates to false safely",
+            "It throws a NullPointerException because '&' is a non-short-circuit operator and evaluates both sides",
+            "Compile error",
+            "It evaluates to true"
+          ],
+          "correctOption": 1,
+          "explanation": "Single `&` evaluates BOTH sides unconditionally! To prevent NullPointerException, you must use the short-circuit `&&` operator."
+        },
+        {
+          "id": "mcq-perf-7",
+          "question": "What is the time complexity of building a string of length $N$ by repeated concatenation (+) inside a loop of $N$ iterations?",
+          "options": [
+            "O(1)",
+            "O(N)",
+            "O(N^2)",
+            "O(log N)"
+          ],
+          "correctOption": 2,
+          "explanation": "Each iteration copies all previously accumulated characters: $1 + 2 + 3 + ... + N = O(N^2)$ quadratic time."
+        },
+        {
+          "id": "mcq-perf-8",
+          "question": "What does `String.join()` do if one of the elements is `null`?",
+          "options": [
+            "Throws NullPointerException",
+            "Skips the element",
+            "Appends the text \"null\"",
+            "Replaces with an empty string"
+          ],
+          "correctOption": 2,
+          "explanation": "String.join converts null elements to the literal string \"null\" (only throwing NPE if the delimiter itself is null)."
+        },
+        {
+          "id": "mcq-perf-9",
+          "question": "Predict the output of the following:\n```java\nString s = \"Java\";\nSystem.out.println(s.substring(0, 0));\n```",
+          "options": [
+            "\"J\"",
+            "\"\"",
+            "Throws StringIndexOutOfBoundsException",
+            "null"
+          ],
+          "correctOption": 1,
+          "explanation": "substring(0, 0) is valid: beginIndex equals endIndex (0 <= 0 <= 4), returning an empty string \"\" of length 0."
+        },
+        {
+          "id": "mcq-perf-10",
+          "question": "Why does `\"abc\".replace(\"\", \"-\")` produce `\"-a-b-c-\"` in Java?",
+          "options": [
+            "It is a known JVM bug",
+            "Empty string matches at every character boundary, including before and after every character",
+            "It throws an IllegalArgumentException",
+            "It replaces the letters"
+          ],
+          "correctOption": 1,
+          "explanation": "An empty string \"\" matches at zero-width boundaries before, between, and after every character, inserting '-' at each boundary."
+        },
+        {
+          "id": "mcq-perf-11",
+          "question": "What is the best way to check if a String is neither null nor empty nor only whitespace in Java 11+?",
+          "options": [
+            "str != null && !str.trim().isEmpty()",
+            "str != null && !str.isBlank()",
+            "str.isFilled()",
+            "str != null && str.length() > 0"
+          ],
+          "correctOption": 1,
+          "explanation": "`str != null && !str.isBlank()` is the modern, idiomatic Java 11+ check for non-blank text."
+        },
+        {
+          "id": "mcq-perf-12",
+          "question": "What will `System.out.println(\"Java\".indexOf(\"\", 1));` return?",
+          "options": [
+            "-1",
+            "0",
+            "1",
+            "Throws an Exception"
+          ],
+          "correctOption": 2,
+          "explanation": "An empty string matches at any valid index. Starting search from fromIndex 1 immediately matches at index 1."
+        },
+        {
+          "id": "mcq-perf-13",
+          "question": "Why is `new String(\"Hello\")` almost never needed in real-world Java applications?",
+          "options": [
+            "Because String literals already create or reuse instances from the String Constant Pool",
+            "Because new String is forbidden in modern JDKs",
+            "Because new String only works on numbers",
+            "Because new String throws exceptions"
+          ],
+          "correctOption": 0,
+          "explanation": "Literals already provide a reference to the String object while taking advantage of pool deduplication."
+        },
+        {
+          "id": "mcq-perf-14",
+          "question": "What will `System.out.println(\"1\" + 2 + 3);` output?",
+          "options": [
+            "6",
+            "15",
+            "123",
+            "Compile error"
+          ],
+          "correctOption": 2,
+          "explanation": "\"1\" + 2 evaluates to \"12\", then \"12\" + 3 evaluates to \"123\"."
+        }
+      ]
+    },
+    {
+      "id": "act-string-performance-and-common-bugs-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Implement Defensive Substring Extractor",
+      "practice": {
+        "id": "prac-act-perf",
+        "title": "Hands-On: Implement Defensive Substring Extractor",
+        "description": "Safely extract up to 10 characters starting at index 2 without throwing StringIndexOutOfBoundsException.",
+        "starterCode": "public class PracticeDefensive {\n    public static void main(String[] args) {\n        String text = \"Java\";\n        // TODO: Safely extract from index 2 to min(10, text.length())\n    }\n}",
+        "solutionCode": "public class PracticeDefensive {\n    public static void main(String[] args) {\n        String text = \"Java\";\n        int start = 2;\n        int end = Math.min(10, text.length());\n        String res = text.substring(start, end);\n        System.out.println(\"Result: \" + res);\n    }\n}",
+        "expectedOutput": "Result: va"
+      }
+    },
+    {
+      "id": "act-string-performance-and-common-bugs-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: String Performance & Common Bugs",
+      "interviewQA": [
+        {
+          "id": "iq-perf-1",
+          "question": "What is JEP 254 Compact Strings in Java 9, and how does it save memory?",
+          "answer": "Prior to Java 9, `String` stored characters in a `char[]` array where every character took 16 bits (2 bytes), even if the characters were basic ASCII. JEP 254 replaced `char[]` with `byte[] value` paired with a 1-byte encoding identifier `coder`. If all characters fit into ISO-8859-1 (Latin-1), coder is 0 and each character consumes only 1 byte. If a single character requires UTF-16, coder is 1 and 2 bytes per char are used. This cuts the heap memory used by Strings by up to 50% in standard applications."
+        },
+        {
+          "id": "iq-perf-2",
+          "question": "What causes a StringIndexOutOfBoundsException, and how do you prevent it defensively?",
+          "answer": "`StringIndexOutOfBoundsException` occurs when attempting to read `charAt(index)` or `substring(start, end)` where an index is negative, or greater than or equal to `length()` (or `> length()` for substring endpoints). Prevent it defensively by: 1) Checking `index >= 0 && index < str.length()`, and 2) Clamping substring endpoints with `Math.min(end, str.length())`."
+        },
+        {
+          "id": "iq-perf-3",
+          "question": "Why is the Yoda condition (\"CONSTANT\".equals(variable)) considered a best practice in enterprise Java?",
+          "answer": "If `variable` is `null`, calling `variable.equals(\"CONSTANT\")` throws an unhandled `NullPointerException`. Placing the known constant literal on the left side ensures that `.equals()` is invoked on a guaranteed valid object. The method safely inspects the argument, finds it is null or unequal, and cleanly returns `false` without crashing the application."
+        },
+        {
+          "id": "iq-perf-4",
+          "question": "What is the danger of using split(\"|\") without escaping?",
+          "answer": "In Regular Expressions, `|` is the alternation (OR) metacharacter. Passing `\"|\"` without escaping matches the empty string between every character, splitting the string at every single character boundary. To split by a literal pipe, developers must escape it with double backslashes: `split(\"\\\\|\")`."
+        },
+        {
+          "id": "iq-perf-5",
+          "question": "What is String Deduplication (-XX:+UseStringDeduplication) in G1 GC?",
+          "answer": "Introduced in Java 8u20, String Deduplication is an optional feature of the G1 Garbage Collector. During minor GC cycles, G1 inspects String objects on the Heap. If it finds two distinct String objects that have identical underlying character arrays, it modifies one of them to share the other's character array and reclaims the duplicate array, eliminating redundant memory without requiring code changes or `.intern()`."
+        },
+        {
+          "id": "iq-perf-6",
+          "question": "Why should you avoid creating Strings with new String(String original)?",
+          "answer": "Calling `new String(original)` allocates an extra object on the general Heap while referencing the same underlying character buffer. It bypasses String Constant Pool sharing, creates duplicate object headers, and adds unnecessary overhead to memory and Garbage Collection."
+        },
+        {
+          "id": "iq-perf-7",
+          "question": "How do you detect memory leaks caused by Strings in Java?",
+          "answer": "Using profilers (such as JProfiler, VisualVM, or Eclipse MAT) to inspect JVM Heap dumps. Look for massive retained sizes in `java.lang.String` or `byte[]`. Common culprits include: caching unbounded collections of Strings in static Maps without eviction, interned string leaks in the StringTable, or retaining large strings via substrings in older pre-Java 7 versions."
+        }
+      ]
+    },
+    {
+      "id": "act-string-performance-and-common-bugs-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: String Performance & Common Bugs",
+      "checklist": [
+        {
+          "id": "chk-perf-1",
+          "text": "I know how to prevent StringIndexOutOfBoundsException with boundary checks."
+        },
+        {
+          "id": "chk-perf-2",
+          "text": "I use Yoda conditions or Objects.equals() to prevent NullPointerExceptions."
+        },
+        {
+          "id": "chk-perf-3",
+          "text": "I always escape regex characters like '.' and '|' in split() and replaceAll()."
+        },
+        {
+          "id": "chk-perf-4",
+          "text": "I understand how Java 9 Compact Strings halve memory for Latin-1 text."
+        },
+        {
+          "id": "chk-perf-5",
+          "text": "I know how to identify and replace O(N^2) loop string concatenations."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-perf-1",
+      "question": "What exception is thrown by the following line: `\"Java\".charAt(4)`?",
+      "options": [
+        "ArrayIndexOutOfBoundsException",
+        "StringIndexOutOfBoundsException",
+        "NullPointerException",
+        "IllegalArgumentException"
+      ],
+      "correctOption": 1,
+      "explanation": "\"Java\" has length 4 with valid indices 0, 1, 2, 3. Index 4 is out of bounds, throwing StringIndexOutOfBoundsException."
+    },
+    {
+      "id": "mcq-perf-2",
+      "question": "Why does `\"file.txt\".split(\".\").length` return 0 instead of 2?",
+      "options": [
+        "The dot is treated as the regex wildcard matching all characters",
+        "The split method is deprecated",
+        "String array cannot store extensions",
+        "Java only allows splitting by comma"
+      ],
+      "correctOption": 0,
+      "explanation": "In regex, `.` matches any character. Every character in the string matches the delimiter, leaving no tokens. Use `split(\"\\\\.\")`."
+    },
+    {
+      "id": "mcq-perf-3",
+      "question": "What is the primary motivation for Java 9's Compact Strings (JEP 254)?",
+      "options": [
+        "To encrypt all strings in memory",
+        "To replace 2-byte UTF-16 char[] with 1-byte byte[] for Latin-1 strings, halving memory usage for most applications",
+        "To allow strings to be mutated",
+        "To eliminate the need for String Pool"
+      ],
+      "correctOption": 1,
+      "explanation": "Most strings contain Latin-1 characters requiring only 1 byte. Compact Strings store byte[] with a 1-byte coder flag, cutting string memory by 50%."
+    },
+    {
+      "id": "mcq-perf-4",
+      "question": "What will be printed by the following code?\n```java\nString s = \"hello\";\ns.concat(\" world\");\nSystem.out.println(s);\n```",
+      "options": [
+        "hello world",
+        "hello",
+        "world",
+        "NullPointerException"
+      ],
+      "correctOption": 1,
+      "explanation": "Because Strings are immutable, concat() returns a new String. Because the return value was discarded, `s` remains \"hello\"."
+    },
+    {
+      "id": "mcq-perf-5",
+      "question": "How should you safely clamp a substring `endIndex` to prevent `StringIndexOutOfBoundsException`?",
+      "options": [
+        "int safeEnd = Math.min(endIndex, str.length());",
+        "int safeEnd = endIndex % str.length();",
+        "int safeEnd = str.length() + 1;",
+        "int safeEnd = Math.max(endIndex, str.length());"
+      ],
+      "correctOption": 0,
+      "explanation": "Math.min(endIndex, str.length()) ensures the index never exceeds the string's total length."
+    },
+    {
+      "id": "mcq-perf-6",
+      "question": "What will happen if you run: `String s = null; if (s != null & s.length() > 0)`?",
+      "options": [
+        "It evaluates to false safely",
+        "It throws a NullPointerException because '&' is a non-short-circuit operator and evaluates both sides",
+        "Compile error",
+        "It evaluates to true"
+      ],
+      "correctOption": 1,
+      "explanation": "Single `&` evaluates BOTH sides unconditionally! To prevent NullPointerException, you must use the short-circuit `&&` operator."
+    },
+    {
+      "id": "mcq-perf-7",
+      "question": "What is the time complexity of building a string of length $N$ by repeated concatenation (+) inside a loop of $N$ iterations?",
+      "options": [
+        "O(1)",
+        "O(N)",
+        "O(N^2)",
+        "O(log N)"
+      ],
+      "correctOption": 2,
+      "explanation": "Each iteration copies all previously accumulated characters: $1 + 2 + 3 + ... + N = O(N^2)$ quadratic time."
+    },
+    {
+      "id": "mcq-perf-8",
+      "question": "What does `String.join()` do if one of the elements is `null`?",
+      "options": [
+        "Throws NullPointerException",
+        "Skips the element",
+        "Appends the text \"null\"",
+        "Replaces with an empty string"
+      ],
+      "correctOption": 2,
+      "explanation": "String.join converts null elements to the literal string \"null\" (only throwing NPE if the delimiter itself is null)."
+    },
+    {
+      "id": "mcq-perf-9",
+      "question": "Predict the output of the following:\n```java\nString s = \"Java\";\nSystem.out.println(s.substring(0, 0));\n```",
+      "options": [
+        "\"J\"",
+        "\"\"",
+        "Throws StringIndexOutOfBoundsException",
+        "null"
+      ],
+      "correctOption": 1,
+      "explanation": "substring(0, 0) is valid: beginIndex equals endIndex (0 <= 0 <= 4), returning an empty string \"\" of length 0."
+    },
+    {
+      "id": "mcq-perf-10",
+      "question": "Why does `\"abc\".replace(\"\", \"-\")` produce `\"-a-b-c-\"` in Java?",
+      "options": [
+        "It is a known JVM bug",
+        "Empty string matches at every character boundary, including before and after every character",
+        "It throws an IllegalArgumentException",
+        "It replaces the letters"
+      ],
+      "correctOption": 1,
+      "explanation": "An empty string \"\" matches at zero-width boundaries before, between, and after every character, inserting '-' at each boundary."
+    },
+    {
+      "id": "mcq-perf-11",
+      "question": "What is the best way to check if a String is neither null nor empty nor only whitespace in Java 11+?",
+      "options": [
+        "str != null && !str.trim().isEmpty()",
+        "str != null && !str.isBlank()",
+        "str.isFilled()",
+        "str != null && str.length() > 0"
+      ],
+      "correctOption": 1,
+      "explanation": "`str != null && !str.isBlank()` is the modern, idiomatic Java 11+ check for non-blank text."
+    },
+    {
+      "id": "mcq-perf-12",
+      "question": "What will `System.out.println(\"Java\".indexOf(\"\", 1));` return?",
+      "options": [
+        "-1",
+        "0",
+        "1",
+        "Throws an Exception"
+      ],
+      "correctOption": 2,
+      "explanation": "An empty string matches at any valid index. Starting search from fromIndex 1 immediately matches at index 1."
+    },
+    {
+      "id": "mcq-perf-13",
+      "question": "Why is `new String(\"Hello\")` almost never needed in real-world Java applications?",
+      "options": [
+        "Because String literals already create or reuse instances from the String Constant Pool",
+        "Because new String is forbidden in modern JDKs",
+        "Because new String only works on numbers",
+        "Because new String throws exceptions"
+      ],
+      "correctOption": 0,
+      "explanation": "Literals already provide a reference to the String object while taking advantage of pool deduplication."
+    },
+    {
+      "id": "mcq-perf-14",
+      "question": "What will `System.out.println(\"1\" + 2 + 3);` output?",
+      "options": [
+        "6",
+        "15",
+        "123",
+        "Compile error"
+      ],
+      "correctOption": 2,
+      "explanation": "\"1\" + 2 evaluates to \"12\", then \"12\" + 3 evaluates to \"123\"."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-perf-1",
+      "title": "Safely Extract Substring with Out-of-Bounds Protection",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `safeSubstring(String str, int start, int length)`. It must safely extract `length` characters starting from `start`. If `start >= str.length()`, return `\"\"`. If `start + length > str.length()`, clamp to `str.length()`. Test with `\"LearnBySelf\"`, start `5`, length `20`. Output: `\"BySelf\"`.",
+      "description": "Write a method `safeSubstring(String str, int start, int length)`. It must safely extract `length` characters starting from `start`. If `start >= str.length()`, return `\"\"`. If `start + length > str.length()`, clamp to `str.length()`. Test with `\"LearnBySelf\"`, start `5`, length `20`. Output: `\"BySelf\"`.",
+      "hint": "Use Math.min(start + length, str.length()).",
+      "hints": [
+        "Use Math.min(start + length, str.length())."
+      ],
+      "starterCode": "public class SafeSubstringDemo {\n    static String safeSubstring(String str, int start, int length) {\n        // TODO: Implement boundary-safe substring extraction\n        return \"\";\n    }\n    public static void main(String[] args) {\n        String res = safeSubstring(\"LearnBySelf\", 5, 20);\n        System.out.println(\"Result: \" + res);\n    }\n}",
+      "solutionCode": "public class SafeSubstringDemo {\n    static String safeSubstring(String str, int start, int length) {\n        if (str == null || start >= str.length()) {\n            return \"\";\n        }\n        int end = Math.min(start + length, str.length());\n        return str.substring(start, end);\n    }\n    public static void main(String[] args) {\n        String res = safeSubstring(\"LearnBySelf\", 5, 20);\n        System.out.println(\"Result: \" + res);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: BySelf"
+        }
+      ],
+      "targetOutput": "Result: BySelf"
+    },
+    {
+      "id": "prob-perf-2",
+      "title": "Fix the Pipe Split Regex Bug",
+      "difficulty": "Easy",
+      "problemStatement": "A developer wrote `String[] parts = \"ABC|DEF|GHI\".split(\"|\");` and wondered why the length was 12 instead of 3. Fix the split expression so that it correctly returns 3 tokens and print each token on a separate line.",
+      "description": "A developer wrote `String[] parts = \"ABC|DEF|GHI\".split(\"|\");` and wondered why the length was 12 instead of 3. Fix the split expression so that it correctly returns 3 tokens and print each token on a separate line.",
+      "hint": "Escape pipe: split(\"\\\\|\").",
+      "hints": [
+        "Escape pipe: split(\"\\\\|\")."
+      ],
+      "starterCode": "public class FixPipeSplit {\n    public static void main(String[] args) {\n        String data = \"ABC|DEF|GHI\";\n        // TODO: Fix split to properly parse 3 tokens\n    }\n}",
+      "solutionCode": "public class FixPipeSplit {\n    public static void main(String[] args) {\n        String data = \"ABC|DEF|GHI\";\n        String[] parts = data.split(\"\\\\|\");\n        for (String part : parts) {\n            System.out.println(part);\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "ABC\nDEF\nGHI"
+        }
+      ],
+      "targetOutput": "ABC\nDEF\nGHI"
+    },
+    {
+      "id": "prob-perf-3",
+      "title": "Defensive Status Comparator",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method `isCompleted(String status)` that returns true if status is \"COMPLETE\" (case-insensitive) and false if status is null or any other value. Test with `\"complete\"`, `\"PENDING\"`, and `null`. Format output: 3 boolean lines.",
+      "description": "Write a method `isCompleted(String status)` that returns true if status is \"COMPLETE\" (case-insensitive) and false if status is null or any other value. Test with `\"complete\"`, `\"PENDING\"`, and `null`. Format output: 3 boolean lines.",
+      "hint": "\"COMPLETE\".equalsIgnoreCase(status);",
+      "hints": [
+        "\"COMPLETE\".equalsIgnoreCase(status);"
+      ],
+      "starterCode": "public class DefensiveStatusCheck {\n    static boolean isCompleted(String status) {\n        // TODO: Implement null-safe case-insensitive check\n        return false;\n    }\n    public static void main(String[] args) {\n        System.out.println(isCompleted(\"complete\"));\n        System.out.println(isCompleted(\"PENDING\"));\n        System.out.println(isCompleted(null));\n    }\n}",
+      "solutionCode": "public class DefensiveStatusCheck {\n    static boolean isCompleted(String status) {\n        return \"COMPLETE\".equalsIgnoreCase(status);\n    }\n    public static void main(String[] args) {\n        System.out.println(isCompleted(\"complete\"));\n        System.out.println(isCompleted(\"PENDING\"));\n        System.out.println(isCompleted(null));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "true\nfalse\nfalse"
+        }
+      ],
+      "targetOutput": "true\nfalse\nfalse"
+    },
+    {
+      "id": "prob-perf-4",
+      "title": "Refactor Loop Concatenation to StringBuilder",
+      "difficulty": "Medium",
+      "problemStatement": "Refactor the following loop from `+` concatenation to `StringBuilder`: Build a string containing numbers `[0][1][2][3][4]`. Print the completed string.",
+      "description": "Refactor the following loop from `+` concatenation to `StringBuilder`: Build a string containing numbers `[0][1][2][3][4]`. Print the completed string.",
+      "hint": "Instantiate StringBuilder before loop and append.",
+      "hints": [
+        "Instantiate StringBuilder before loop and append."
+      ],
+      "starterCode": "public class RefactorLoopConcat {\n    public static void main(String[] args) {\n        // TODO: Use StringBuilder to build [0][1][2][3][4]\n    }\n}",
+      "solutionCode": "public class RefactorLoopConcat {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(30);\n        for (int i = 0; i < 5; i++) {\n            sb.append(\"[\").append(i).append(\"]\");\n        }\n        System.out.println(\"Result: \" + sb.toString());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: [0][1][2][3][4]"
+        }
+      ],
+      "targetOutput": "Result: [0][1][2][3][4]"
+    },
+    {
+      "id": "prob-perf-5",
+      "title": "Validate Non-Blank Input",
+      "difficulty": "Easy",
+      "problemStatement": "Write a validation method `boolean isValidInput(String s)` that returns true if `s != null && !s.isBlank()`. Test with `\"Hello\"`, `\"   \"`, `\"\"`, and `null`. Output the 4 boolean results.",
+      "description": "Write a validation method `boolean isValidInput(String s)` that returns true if `s != null && !s.isBlank()`. Test with `\"Hello\"`, `\"   \"`, `\"\"`, and `null`. Output the 4 boolean results.",
+      "hint": "return s != null && !s.isBlank();",
+      "hints": [
+        "return s != null && !s.isBlank();"
+      ],
+      "starterCode": "public class ValidateNonBlank {\n    static boolean isValidInput(String s) {\n        // TODO: Return true if non-null and not blank\n        return false;\n    }\n    public static void main(String[] args) {\n        System.out.println(isValidInput(\"Hello\"));\n        System.out.println(isValidInput(\"   \"));\n        System.out.println(isValidInput(\"\"));\n        System.out.println(isValidInput(null));\n    }\n}",
+      "solutionCode": "public class ValidateNonBlank {\n    static boolean isValidInput(String s) {\n        return s != null && !s.isBlank();\n    }\n    public static void main(String[] args) {\n        System.out.println(isValidInput(\"Hello\"));\n        System.out.println(isValidInput(\"   \"));\n        System.out.println(isValidInput(\"\"));\n        System.out.println(isValidInput(null));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "true\nfalse\nfalse\nfalse"
+        }
+      ],
+      "targetOutput": "true\nfalse\nfalse\nfalse"
+    },
+    {
+      "id": "prob-perf-6",
+      "title": "Detect Accidental Identity Check Bug",
+      "difficulty": "Medium",
+      "problemStatement": "A system receives two identical query parameters created via `new String(\"active\")`. Fix the comparison from `==` to `.equals()` so the program correctly prints \"Status: ACTIVE_MATCH\".",
+      "description": "A system receives two identical query parameters created via `new String(\"active\")`. Fix the comparison from `==` to `.equals()` so the program correctly prints \"Status: ACTIVE_MATCH\".",
+      "hint": "Use s1.equals(s2).",
+      "hints": [
+        "Use s1.equals(s2)."
+      ],
+      "starterCode": "public class FixIdentityBug {\n    public static void main(String[] args) {\n        String p1 = new String(\"active\");\n        String p2 = new String(\"active\");\n        // Fix the comparison bug below\n        if (p1 == p2) {\n            System.out.println(\"Status: ACTIVE_MATCH\");\n        } else {\n            System.out.println(\"Status: MISMATCH\");\n        }\n    }\n}",
+      "solutionCode": "public class FixIdentityBug {\n    public static void main(String[] args) {\n        String p1 = new String(\"active\");\n        String p2 = new String(\"active\");\n        if (p1.equals(p2)) {\n            System.out.println(\"Status: ACTIVE_MATCH\");\n        } else {\n            System.out.println(\"Status: MISMATCH\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Status: ACTIVE_MATCH"
+        }
+      ],
+      "targetOutput": "Status: ACTIVE_MATCH"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-perf-1",
+      "question": "What is JEP 254 Compact Strings in Java 9, and how does it save memory?",
+      "answer": "Prior to Java 9, `String` stored characters in a `char[]` array where every character took 16 bits (2 bytes), even if the characters were basic ASCII. JEP 254 replaced `char[]` with `byte[] value` paired with a 1-byte encoding identifier `coder`. If all characters fit into ISO-8859-1 (Latin-1), coder is 0 and each character consumes only 1 byte. If a single character requires UTF-16, coder is 1 and 2 bytes per char are used. This cuts the heap memory used by Strings by up to 50% in standard applications."
+    },
+    {
+      "id": "iq-perf-2",
+      "question": "What causes a StringIndexOutOfBoundsException, and how do you prevent it defensively?",
+      "answer": "`StringIndexOutOfBoundsException` occurs when attempting to read `charAt(index)` or `substring(start, end)` where an index is negative, or greater than or equal to `length()` (or `> length()` for substring endpoints). Prevent it defensively by: 1) Checking `index >= 0 && index < str.length()`, and 2) Clamping substring endpoints with `Math.min(end, str.length())`."
+    },
+    {
+      "id": "iq-perf-3",
+      "question": "Why is the Yoda condition (\"CONSTANT\".equals(variable)) considered a best practice in enterprise Java?",
+      "answer": "If `variable` is `null`, calling `variable.equals(\"CONSTANT\")` throws an unhandled `NullPointerException`. Placing the known constant literal on the left side ensures that `.equals()` is invoked on a guaranteed valid object. The method safely inspects the argument, finds it is null or unequal, and cleanly returns `false` without crashing the application."
+    },
+    {
+      "id": "iq-perf-4",
+      "question": "What is the danger of using split(\"|\") without escaping?",
+      "answer": "In Regular Expressions, `|` is the alternation (OR) metacharacter. Passing `\"|\"` without escaping matches the empty string between every character, splitting the string at every single character boundary. To split by a literal pipe, developers must escape it with double backslashes: `split(\"\\\\|\")`."
+    },
+    {
+      "id": "iq-perf-5",
+      "question": "What is String Deduplication (-XX:+UseStringDeduplication) in G1 GC?",
+      "answer": "Introduced in Java 8u20, String Deduplication is an optional feature of the G1 Garbage Collector. During minor GC cycles, G1 inspects String objects on the Heap. If it finds two distinct String objects that have identical underlying character arrays, it modifies one of them to share the other's character array and reclaims the duplicate array, eliminating redundant memory without requiring code changes or `.intern()`."
+    },
+    {
+      "id": "iq-perf-6",
+      "question": "Why should you avoid creating Strings with new String(String original)?",
+      "answer": "Calling `new String(original)` allocates an extra object on the general Heap while referencing the same underlying character buffer. It bypasses String Constant Pool sharing, creates duplicate object headers, and adds unnecessary overhead to memory and Garbage Collection."
+    },
+    {
+      "id": "iq-perf-7",
+      "question": "How do you detect memory leaks caused by Strings in Java?",
+      "answer": "Using profilers (such as JProfiler, VisualVM, or Eclipse MAT) to inspect JVM Heap dumps. Look for massive retained sizes in `java.lang.String` or `byte[]`. Common culprits include: caching unbounded collections of Strings in static Maps without eviction, interned string leaks in the StringTable, or retaining large strings via substrings in older pre-Java 7 versions."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-perf-1",
+      "text": "I know how to prevent StringIndexOutOfBoundsException with boundary checks."
+    },
+    {
+      "id": "chk-perf-2",
+      "text": "I use Yoda conditions or Objects.equals() to prevent NullPointerExceptions."
+    },
+    {
+      "id": "chk-perf-3",
+      "text": "I always escape regex characters like '.' and '|' in split() and replaceAll()."
+    },
+    {
+      "id": "chk-perf-4",
+      "text": "I understand how Java 9 Compact Strings halve memory for Latin-1 text."
+    },
+    {
+      "id": "chk-perf-5",
+      "text": "I know how to identify and replace O(N^2) loop string concatenations."
+    }
+  ]
+}

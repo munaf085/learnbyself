@@ -1,0 +1,602 @@
+{
+  "id": "les-strings-splitting-joining-and-parsing",
+  "slug": "splitting-joining-and-parsing",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "Splitting, Joining & Parsing Strings",
+  "summary": "Master data parsing and formatting with split(), String.join(), escaping regex delimiters like dots and pipes, and handling trailing tokens.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 8,
+  "prerequisites": [
+    "les-strings-string-transformation-methods"
+  ],
+  "subtopics": [
+    "split() Mechanics",
+    "Escaping Special Regex Delimiters",
+    "String.join()",
+    "Preserving Trailing Empty Tokens"
+  ],
+  "learningOutcomes": [
+    "Decompose structured text like CSV and pipe logs using split()",
+    "Escape regex metacharacters properly",
+    "Reconstruct formatted text cleanly with String.join()"
+  ],
+  "activities": [
+    {
+      "id": "act-splitting-joining-and-parsing-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Splitting, Joining & Parsing Strings",
+      "content": "### 1. Concept: Splitting & Joining Strings\nReal-world systems exchange structured data in separated text formats: CSV files (`\"Alice,28,Engineer\"`), pipe-delimited records (`\"ORD101|PAID|99.50\"`), and space-separated terminal arguments.\n- **`split(String regex)`**: Breaks a single String into an array of Strings (`String[]`) around matches of the specified delimiter.\n- **`String.join(CharSequence delimiter, CharSequence... elements)`** (Java 8+): Combines multiple strings or an iterable collection into a single delimited String.\n\n### 2. Why It Matters\nData ingestion, CSV parsing, query parameter processing, and log formatting all rely on `split` and `join`. Knowing how to decompose delimited text into an array and reconstruct it cleanly without trailing commas is a foundational backend engineering skill.\n\n### 3. Mental Model\n- **`split()` is a pair of scissors**: You tell Java where to cut (e.g. at every comma `','`). Java snips the string into pieces and places the pieces into a box (a `String[]` array).\n- **`String.join()` is glue and spacers**: You provide a list of blocks and a spacer (e.g. `\", \"`). Java glues the blocks together, placing the spacer strictly *between* elements, never adding an ugly dangling spacer at the very end!\n\n### 4. Java Mechanics: Special Delimiters in `split()`\nBecause `split()` accepts a **Regular Expression**, certain characters have special meaning in regex and **must be escaped with double backslashes (`\\\\`)**:\n- **Pipe `|`**: `split(\"|\")` treats pipe as the regex OR operator! You must write `split(\"\\\\|\")`.\n- **Dot `.`**: `split(\".\")` treats dot as \"any character\"! You must write `split(\"\\\\.\")`.\n- **Whitespace `\\s+`**: To split across any number of spaces or tabs: `split(\"\\\\s+\")`.\n\n### 5. Practical Java Example\n```java\n// 1. Splitting CSV record\nString record = \"Keerthi|28|Bengaluru|Staff Engineer\";\nString[] tokens = record.split(\"\\\\|\");\n\nSystem.out.println(\"Name: \" + tokens[0]);     // \"Keerthi\"\nSystem.out.println(\"Role: \" + tokens[3]);     // \"Staff Engineer\"\n\n// 2. Joining elements back with a new delimiter\nString csvOutput = String.join(\", \", tokens);\nSystem.out.println(\"CSV: \" + csvOutput); // \"Keerthi, 28, Bengaluru, Staff Engineer\"\n```\n\n### 6. Common Beginner Mistakes\n- **Forgetting to escape `.` and `|`**: Calling `filename.split(\".\")` yields an empty array! Always write `split(\"\\\\.\")`.\n- **Trailing empty strings dropped by default**: By default, `split(\",\")` discards trailing empty strings (e.g. `\"a,b,,\".split(\",\")` produces an array of length 2). Use `split(\",\", -1)` to preserve trailing empty tokens.\n- **Manual loops for joining**: Writing a loop with `result += item + \", \"` and struggling to remove the trailing `\", \"` from the end. Always use `String.join(delimiter, items)`.\n\n### 7. Key Takeaways\n- `split(regex)` breaks a String into a `String[]` array.\n- Delimiters with special regex meanings (`.`, `|`, `+`, `*`) must be escaped with `\\\\`.\n- `String.join(delimiter, elements)` merges elements with a delimiter without trailing separators.\n- Use `split(delimiter, -1)` when trailing empty fields must be preserved.",
+      "breakdown": [
+        {
+          "topic": "split() Method",
+          "details": "Splits a string around regex matches, returning a String[] array of tokens."
+        },
+        {
+          "topic": "Escaping Special Regex Delimiters",
+          "details": "Characters like | and . have special regex syntax. Must be escaped: split(\"\\\\|\") or split(\"\\\\.\")."
+        },
+        {
+          "topic": "String.join()",
+          "details": "Static utility introduced in Java 8. Combines arrays or collections with a delimiter, avoiding trailing separators."
+        },
+        {
+          "topic": "Preserving Empty Tokens",
+          "details": "The two-parameter split(regex, -1) prevents Java from discarding trailing empty strings."
+        }
+      ]
+    },
+    {
+      "id": "act-splitting-joining-and-parsing-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: String Splitting and Joining Suite",
+      "codeSnippet": "public class SplitJoinDemo {\n    public static void main(String[] args) {\n        // 1. Splitting with escaped pipe delimiter\n        String employeeRecord = \"E104|Sarah Connor|DevOps|95000\";\n        String[] fields = employeeRecord.split(\"\\\\|\");\n        \n        System.out.println(\"Field count: \" + fields.length);\n        System.out.println(\"ID: \" + fields[0]);\n        System.out.println(\"Name: \" + fields[1]);\n        System.out.println(\"Dept: \" + fields[2]);\n        System.out.println(\"Salary: \" + fields[3]);\n        \n        // 2. Joining with custom delimiter\n        String jsonFormat = String.join(\" - \", fields);\n        System.out.println(\"Formatted: \" + jsonFormat);\n        \n        // 3. Splitting by comma\n        String techStack = \"Java,Spring,PostgreSQL,Docker\";\n        String[] techs = techStack.split(\",\");\n        for (String tech : techs) {\n            System.out.println(\"Tech: \" + tech);\n        }\n        \n        // 4. Splitting filename by dot (escaped)\n        String file = \"archive.tar.gz\";\n        String[] parts = file.split(\"\\\\.\");\n        System.out.println(\"File parts count: \" + parts.length); // 3: archive, tar, gz\n        \n        // 5. Preserving trailing empty tokens with limit -1\n        String sparse = \"one,two,,\";\n        String[] defaultSplit = sparse.split(\",\");     // Drops trailing empties (length 2)\n        String[] fullSplit = sparse.split(\",\", -1);    // Preserves trailing empties (length 4)\n        System.out.println(\"Default split length: \" + defaultSplit.length);\n        System.out.println(\"Full split length: \" + fullSplit.length);\n    }\n}",
+      "description": "Demonstrates escaped pipe/dot splitting, CSV parsing, String.join formatting, and limit -1 handling.",
+      "steps": [
+        {
+          "line": 4,
+          "description": "employeeRecord contains pipe-separated data."
+        },
+        {
+          "line": 5,
+          "description": "split(\"\\\\|\") uses double backslash to escape the pipe regex character."
+        },
+        {
+          "line": 14,
+          "description": "String.join(\" - \", fields) combines all 4 tokens with ' - ' separator."
+        },
+        {
+          "line": 18,
+          "description": "techStack.split(\",\") splits by standard comma delimiter."
+        },
+        {
+          "line": 26,
+          "description": "file.split(\"\\\\.\") escapes the dot to avoid matching every character."
+        },
+        {
+          "line": 31,
+          "description": "sparse.split(\",\", -1) with negative limit ensures trailing empty commas are preserved."
+        }
+      ]
+    },
+    {
+      "id": "act-splitting-joining-and-parsing-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Splitting, Joining & Parsing Strings",
+      "questions": [
+        {
+          "id": "mcq-sjp-1",
+          "question": "What is the return type of `str.split(\",\")` in Java?",
+          "options": [
+            "List<String>",
+            "String[]",
+            "char[]",
+            "StringTokenizer"
+          ],
+          "correctOption": 1,
+          "explanation": "split() returns a standard one-dimensional array of String objects: String[]."
+        },
+        {
+          "id": "mcq-sjp-2",
+          "question": "Why does `\"file.txt\".split(\".\").length` return 0 in Java?",
+          "options": [
+            "Because dot is an invalid character in Java strings",
+            "Because '.' in regex matches any character, consuming the entire string and leaving no remaining tokens",
+            "Because split requires char input",
+            "Because the file extension is hidden"
+          ],
+          "correctOption": 1,
+          "explanation": "In regular expressions, '.' matches any character. To split by a literal dot, you must escape it: `split(\"\\\\.\")`."
+        },
+        {
+          "id": "mcq-sjp-3",
+          "question": "How do you correctly split a string by the pipe character `|` in Java?",
+          "options": [
+            "str.split(\"|\")",
+            "str.split(\"\\\\|\")",
+            "str.split('/|/')",
+            "str.splitPipe()"
+          ],
+          "correctOption": 1,
+          "explanation": "'|' is the regex alternation (OR) operator. It must be escaped with `\\\\|`."
+        },
+        {
+          "id": "mcq-sjp-4",
+          "question": "What does `String.join(\", \", \"A\", \"B\", \"C\")` return?",
+          "options": [
+            "\"A, B, C, \"",
+            "\"A, B, C\"",
+            "\"[A, B, C]\"",
+            "\"A B C\""
+          ],
+          "correctOption": 1,
+          "explanation": "String.join places the delimiter strictly between elements. It never leaves a trailing delimiter at the end."
+        },
+        {
+          "id": "mcq-sjp-5",
+          "question": "What happens by default to trailing empty strings when calling `\"a,b,,\".split(\",\")`?",
+          "options": [
+            "They are preserved as empty strings \"\"",
+            "They are discarded, yielding an array of length 2 [\"a\", \"b\"]",
+            "A NullPointerException is thrown",
+            "They are converted to null"
+          ],
+          "correctOption": 1,
+          "explanation": "By default, split(regex) discards trailing empty strings. Calling split(regex, -1) preserves them."
+        },
+        {
+          "id": "mcq-sjp-6",
+          "question": "How can you split a sentence across arbitrary whitespace (one or more spaces, tabs, or newlines)?",
+          "options": [
+            "sentence.split(\" \")",
+            "sentence.split(\"\\\\s+\")",
+            "sentence.split(\"\\\\w+\")",
+            "sentence.splitWhitespace()"
+          ],
+          "correctOption": 1,
+          "explanation": "`\\\\s+` is the regex pattern for one or more whitespace characters (spaces, tabs, newlines)."
+        },
+        {
+          "id": "mcq-sjp-7",
+          "question": "Can `String.join()` accept a `List<String>` or `Set<String>` collection?",
+          "options": [
+            "No, it only accepts varargs String arrays",
+            "Yes, String.join(delimiter, Iterable<? extends CharSequence> elements) is fully supported",
+            "Only in Java 21",
+            "Only if converted to int[] first"
+          ],
+          "correctOption": 1,
+          "explanation": "String.join has two overloaded variants: one taking varargs (`CharSequence...`) and one taking any `Iterable<? extends CharSequence>` (like List or Set)."
+        },
+        {
+          "id": "mcq-sjp-8",
+          "question": "Predict the output of the following code:\n```java\nString[] parts = \"10:20:30\".split(\":\");\nSystem.out.println(parts[1]);\n```",
+          "options": [
+            "10",
+            "20",
+            "30",
+            "IndexOutOfBoundsException"
+          ],
+          "correctOption": 1,
+          "explanation": "The array contains [\"10\", \"20\", \"30\"]. Index 1 is \"20\"."
+        },
+        {
+          "id": "mcq-sjp-9",
+          "question": "What will `String.join(\"-\", new String[]{\"2024\", \"10\", \"15\"})` return?",
+          "options": [
+            "\"2024-10-15-\"",
+            "\"2024-10-15\"",
+            "\"20241015\"",
+            "\"-2024-10-15-\""
+          ],
+          "correctOption": 1,
+          "explanation": "String.join places the hyphen delimiter strictly between each of the three array elements."
+        },
+        {
+          "id": "mcq-sjp-10",
+          "question": "What is the return of `\"hello\".split(\",\")` when the delimiter does not exist in the string?",
+          "options": [
+            "An empty array of length 0",
+            "An array of length 1 containing the original string [\"hello\"]",
+            "null",
+            "Throws an Exception"
+          ],
+          "correctOption": 1,
+          "explanation": "If no match is found, split returns a 1-element array containing the entire original string."
+        }
+      ]
+    },
+    {
+      "id": "act-splitting-joining-and-parsing-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Split CSV and Join with Hyphens",
+      "practice": {
+        "id": "prac-act-sjp",
+        "title": "Hands-On: Split CSV and Join with Hyphens",
+        "description": "Given \"Apple,Banana,Cherry\", split by comma and join back with \" - \".",
+        "starterCode": "public class PracticeSplitJoin {\n    public static void main(String[] args) {\n        String fruits = \"Apple,Banana,Cherry\";\n        // TODO: Split by comma and join with ' - '\n    }\n}",
+        "solutionCode": "public class PracticeSplitJoin {\n    public static void main(String[] args) {\n        String fruits = \"Apple,Banana,Cherry\";\n        String[] list = fruits.split(\",\");\n        String joined = String.join(\" - \", list);\n        System.out.println(\"Result: \" + joined);\n    }\n}",
+        "expectedOutput": "Result: Apple - Banana - Cherry"
+      }
+    },
+    {
+      "id": "act-splitting-joining-and-parsing-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Splitting, Joining & Parsing Strings",
+      "interviewQA": [
+        {
+          "id": "iq-sjp-1",
+          "question": "Why does str.split(\".\") fail to split a file name by its extension dot?",
+          "answer": "The argument to `split()` is compiled as a Regular Expression. In regex, `.` is a wildcard character matching any character. Therefore, every single character in the string matches the delimiter, leaving no tokens. To split by a literal dot, you must escape it with double backslashes: `str.split(\"\\\\.\")` or use `Pattern.quote(\".\")`."
+        },
+        {
+          "id": "iq-sjp-2",
+          "question": "What is the difference between split(regex) and split(regex, int limit)?",
+          "answer": "`split(regex)` is equivalent to `split(regex, 0)`, which discards trailing empty strings. If `limit > 0`, the pattern is applied at most `limit - 1` times and the resulting array has at most `limit` entries. If `limit < 0` (e.g. `-1`), the pattern is applied as many times as possible and trailing empty strings are strictly preserved."
+        },
+        {
+          "id": "iq-sjp-3",
+          "question": "How does String.join() prevent trailing delimiters?",
+          "answer": "`String.join()` uses an internal `java.util.StringJoiner` which tracks the delimiter and element indices. It inserts the delimiter prefix only prior to appending subsequent elements (elements 1 through $N-1$), guaranteeing that no trailing separator is ever appended to the final string."
+        },
+        {
+          "id": "iq-sjp-4",
+          "question": "What is the difference between split() and StringTokenizer?",
+          "answer": "`split()` is a modern method that uses Regular Expressions and returns a complete `String[]` array in memory. `StringTokenizer` is a legacy class (dating back to Java 1.0) that parses strings character-by-character without regex support using an enumerator pattern. While `StringTokenizer` can be slightly faster for simple single-char delimiters, `split()` is the standard modern idiomatic approach."
+        },
+        {
+          "id": "iq-sjp-5",
+          "question": "How can you split a string using Pattern.compile() for better performance?",
+          "answer": "When repeatedly splitting strings with the same regex inside a high-throughput loop, calling `str.split(regex)` re-compiles the regex on every single call. Instead, pre-compile the pattern once: `private static final Pattern COMMA_PATTERN = Pattern.compile(\",\");` and invoke `COMMA_PATTERN.split(str)`."
+        },
+        {
+          "id": "iq-sjp-6",
+          "question": "What happens if you pass an empty string \"\" as the delimiter in split()?",
+          "answer": "Calling `\"abc\".split(\"\")` splits the string at every character boundary, returning an array of individual 1-character strings: `[\"a\", \"b\", \"c\"]`."
+        },
+        {
+          "id": "iq-sjp-7",
+          "question": "What happens if one of the elements passed to String.join() is null?",
+          "answer": "If an element in the collection or varargs is null, `String.join()` converts it to the literal text `\"null\"`. However, if the `delimiter` itself is null, it throws a `NullPointerException`."
+        }
+      ]
+    },
+    {
+      "id": "act-splitting-joining-and-parsing-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Splitting, Joining & Parsing Strings",
+      "checklist": [
+        {
+          "id": "chk-sjp-1",
+          "text": "I always escape regex special characters like '.' and '|' when using split()."
+        },
+        {
+          "id": "chk-sjp-2",
+          "text": "I know how to split across arbitrary whitespace using \"\\\\s+\"."
+        },
+        {
+          "id": "chk-sjp-3",
+          "text": "I use String.join() to combine strings without trailing delimiters."
+        },
+        {
+          "id": "chk-sjp-4",
+          "text": "I understand how to preserve trailing empty tokens using split(regex, -1)."
+        },
+        {
+          "id": "chk-sjp-5",
+          "text": "I know how to parse structured records like CSVs and pipe-delimited logs."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-sjp-1",
+      "question": "What is the return type of `str.split(\",\")` in Java?",
+      "options": [
+        "List<String>",
+        "String[]",
+        "char[]",
+        "StringTokenizer"
+      ],
+      "correctOption": 1,
+      "explanation": "split() returns a standard one-dimensional array of String objects: String[]."
+    },
+    {
+      "id": "mcq-sjp-2",
+      "question": "Why does `\"file.txt\".split(\".\").length` return 0 in Java?",
+      "options": [
+        "Because dot is an invalid character in Java strings",
+        "Because '.' in regex matches any character, consuming the entire string and leaving no remaining tokens",
+        "Because split requires char input",
+        "Because the file extension is hidden"
+      ],
+      "correctOption": 1,
+      "explanation": "In regular expressions, '.' matches any character. To split by a literal dot, you must escape it: `split(\"\\\\.\")`."
+    },
+    {
+      "id": "mcq-sjp-3",
+      "question": "How do you correctly split a string by the pipe character `|` in Java?",
+      "options": [
+        "str.split(\"|\")",
+        "str.split(\"\\\\|\")",
+        "str.split('/|/')",
+        "str.splitPipe()"
+      ],
+      "correctOption": 1,
+      "explanation": "'|' is the regex alternation (OR) operator. It must be escaped with `\\\\|`."
+    },
+    {
+      "id": "mcq-sjp-4",
+      "question": "What does `String.join(\", \", \"A\", \"B\", \"C\")` return?",
+      "options": [
+        "\"A, B, C, \"",
+        "\"A, B, C\"",
+        "\"[A, B, C]\"",
+        "\"A B C\""
+      ],
+      "correctOption": 1,
+      "explanation": "String.join places the delimiter strictly between elements. It never leaves a trailing delimiter at the end."
+    },
+    {
+      "id": "mcq-sjp-5",
+      "question": "What happens by default to trailing empty strings when calling `\"a,b,,\".split(\",\")`?",
+      "options": [
+        "They are preserved as empty strings \"\"",
+        "They are discarded, yielding an array of length 2 [\"a\", \"b\"]",
+        "A NullPointerException is thrown",
+        "They are converted to null"
+      ],
+      "correctOption": 1,
+      "explanation": "By default, split(regex) discards trailing empty strings. Calling split(regex, -1) preserves them."
+    },
+    {
+      "id": "mcq-sjp-6",
+      "question": "How can you split a sentence across arbitrary whitespace (one or more spaces, tabs, or newlines)?",
+      "options": [
+        "sentence.split(\" \")",
+        "sentence.split(\"\\\\s+\")",
+        "sentence.split(\"\\\\w+\")",
+        "sentence.splitWhitespace()"
+      ],
+      "correctOption": 1,
+      "explanation": "`\\\\s+` is the regex pattern for one or more whitespace characters (spaces, tabs, newlines)."
+    },
+    {
+      "id": "mcq-sjp-7",
+      "question": "Can `String.join()` accept a `List<String>` or `Set<String>` collection?",
+      "options": [
+        "No, it only accepts varargs String arrays",
+        "Yes, String.join(delimiter, Iterable<? extends CharSequence> elements) is fully supported",
+        "Only in Java 21",
+        "Only if converted to int[] first"
+      ],
+      "correctOption": 1,
+      "explanation": "String.join has two overloaded variants: one taking varargs (`CharSequence...`) and one taking any `Iterable<? extends CharSequence>` (like List or Set)."
+    },
+    {
+      "id": "mcq-sjp-8",
+      "question": "Predict the output of the following code:\n```java\nString[] parts = \"10:20:30\".split(\":\");\nSystem.out.println(parts[1]);\n```",
+      "options": [
+        "10",
+        "20",
+        "30",
+        "IndexOutOfBoundsException"
+      ],
+      "correctOption": 1,
+      "explanation": "The array contains [\"10\", \"20\", \"30\"]. Index 1 is \"20\"."
+    },
+    {
+      "id": "mcq-sjp-9",
+      "question": "What will `String.join(\"-\", new String[]{\"2024\", \"10\", \"15\"})` return?",
+      "options": [
+        "\"2024-10-15-\"",
+        "\"2024-10-15\"",
+        "\"20241015\"",
+        "\"-2024-10-15-\""
+      ],
+      "correctOption": 1,
+      "explanation": "String.join places the hyphen delimiter strictly between each of the three array elements."
+    },
+    {
+      "id": "mcq-sjp-10",
+      "question": "What is the return of `\"hello\".split(\",\")` when the delimiter does not exist in the string?",
+      "options": [
+        "An empty array of length 0",
+        "An array of length 1 containing the original string [\"hello\"]",
+        "null",
+        "Throws an Exception"
+      ],
+      "correctOption": 1,
+      "explanation": "If no match is found, split returns a 1-element array containing the entire original string."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-sjp-1",
+      "title": "Parse CSV User Record",
+      "difficulty": "Easy",
+      "problemStatement": "Given `String csv = \"John Doe,29,Engineer,Seattle\";`. Split the record by comma and print: `\"Name: John Doe\"`, `\"Age: 29\"`, and `\"City: Seattle\"`.",
+      "description": "Given `String csv = \"John Doe,29,Engineer,Seattle\";`. Split the record by comma and print: `\"Name: John Doe\"`, `\"Age: 29\"`, and `\"City: Seattle\"`.",
+      "hint": "String[] parts = csv.split(\",\");",
+      "hints": [
+        "String[] parts = csv.split(\",\");"
+      ],
+      "starterCode": "public class CsvParser {\n    public static void main(String[] args) {\n        String csv = \"John Doe,29,Engineer,Seattle\";\n        // TODO: Split and print fields\n    }\n}",
+      "solutionCode": "public class CsvParser {\n    public static void main(String[] args) {\n        String csv = \"John Doe,29,Engineer,Seattle\";\n        String[] parts = csv.split(\",\");\n        System.out.println(\"Name: \" + parts[0]);\n        System.out.println(\"Age: \" + parts[1]);\n        System.out.println(\"City: \" + parts[3]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Name: John Doe\nAge: 29\nCity: Seattle"
+        }
+      ],
+      "targetOutput": "Name: John Doe\nAge: 29\nCity: Seattle"
+    },
+    {
+      "id": "prob-sjp-2",
+      "title": "Format Breadcrumb Navigation Path",
+      "difficulty": "Easy",
+      "problemStatement": "Given an array `String[] crumbs = {\"Home\", \"Courses\", \"Java\", \"Strings\"};`. Join the array elements using `\" > \"` as the delimiter. Print the formatted breadcrumb.",
+      "description": "Given an array `String[] crumbs = {\"Home\", \"Courses\", \"Java\", \"Strings\"};`. Join the array elements using `\" > \"` as the delimiter. Print the formatted breadcrumb.",
+      "hint": "String.join(\" > \", crumbs);",
+      "hints": [
+        "String.join(\" > \", crumbs);"
+      ],
+      "starterCode": "public class BreadcrumbBuilder {\n    public static void main(String[] args) {\n        String[] crumbs = {\"Home\", \"Courses\", \"Java\", \"Strings\"};\n        // TODO: Join with ' > ' and print\n    }\n}",
+      "solutionCode": "public class BreadcrumbBuilder {\n    public static void main(String[] args) {\n        String[] crumbs = {\"Home\", \"Courses\", \"Java\", \"Strings\"};\n        String breadcrumb = String.join(\" > \", crumbs);\n        System.out.println(\"Path: \" + breadcrumb);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Path: Home > Courses > Java > Strings"
+        }
+      ],
+      "targetOutput": "Path: Home > Courses > Java > Strings"
+    },
+    {
+      "id": "prob-sjp-3",
+      "title": "Parse Pipe Delimited Server Metric",
+      "difficulty": "Medium",
+      "problemStatement": "A server metric is emitted as: `String metric = \"srv-app-01|CPU|87.4|CRITICAL\";`. Split by escaped pipe (`\"\\\\|\"`). Print the server ID and status, and convert CPU to double to print \"CPU Usage: 87.4%\".",
+      "description": "A server metric is emitted as: `String metric = \"srv-app-01|CPU|87.4|CRITICAL\";`. Split by escaped pipe (`\"\\\\|\"`). Print the server ID and status, and convert CPU to double to print \"CPU Usage: 87.4%\".",
+      "hint": "Double.parseDouble(tokens[2]);",
+      "hints": [
+        "Double.parseDouble(tokens[2]);"
+      ],
+      "starterCode": "public class MetricParser {\n    public static void main(String[] args) {\n        String metric = \"srv-app-01|CPU|87.4|CRITICAL\";\n        // TODO: Parse pipe delimited metric\n    }\n}",
+      "solutionCode": "public class MetricParser {\n    public static void main(String[] args) {\n        String metric = \"srv-app-01|CPU|87.4|CRITICAL\";\n        String[] tokens = metric.split(\"\\\\|\");\n        System.out.println(\"Server: \" + tokens[0]);\n        System.out.println(\"Status: \" + tokens[3]);\n        double cpu = Double.parseDouble(tokens[2]);\n        System.out.println(\"CPU Usage: \" + cpu + \"%\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Server: srv-app-01\nStatus: CRITICAL\nCPU Usage: 87.4%"
+        }
+      ],
+      "targetOutput": "Server: srv-app-01\nStatus: CRITICAL\nCPU Usage: 87.4%"
+    },
+    {
+      "id": "prob-sjp-4",
+      "title": "Count Words in a Sentence",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String paragraph = \"Java is a robust, object-oriented programming language\";`. Split the string by whitespace (`\"\\\\s+\"`). Print the total number of words.",
+      "description": "Given `String paragraph = \"Java is a robust, object-oriented programming language\";`. Split the string by whitespace (`\"\\\\s+\"`). Print the total number of words.",
+      "hint": "String[] words = paragraph.split(\"\\\\s+\");",
+      "hints": [
+        "String[] words = paragraph.split(\"\\\\s+\");"
+      ],
+      "starterCode": "public class WordCounter {\n    public static void main(String[] args) {\n        String paragraph = \"Java is a robust, object-oriented programming language\";\n        // TODO: Split and print word count\n    }\n}",
+      "solutionCode": "public class WordCounter {\n    public static void main(String[] args) {\n        String paragraph = \"Java is a robust, object-oriented programming language\";\n        String[] words = paragraph.split(\"\\\\s+\");\n        System.out.println(\"Word count: \" + words.length);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Word count: 7"
+        }
+      ],
+      "targetOutput": "Word count: 7"
+    },
+    {
+      "id": "prob-sjp-5",
+      "title": "Reconstruct URL Query String",
+      "difficulty": "Medium",
+      "problemStatement": "Given parameter key-value pairs in an array: `String[] params = {\"page=1\", \"sort=desc\", \"filter=active\"};`. Join them with `'&'` delimiter and prepend `\"https://api.com/items?\"`. Print the final query URL.",
+      "description": "Given parameter key-value pairs in an array: `String[] params = {\"page=1\", \"sort=desc\", \"filter=active\"};`. Join them with `'&'` delimiter and prepend `\"https://api.com/items?\"`. Print the final query URL.",
+      "hint": "\"https://api.com/items?\" + String.join(\"&\", params);",
+      "hints": [
+        "\"https://api.com/items?\" + String.join(\"&\", params);"
+      ],
+      "starterCode": "public class QueryBuilder {\n    public static void main(String[] args) {\n        String[] params = {\"page=1\", \"sort=desc\", \"filter=active\"};\n        // TODO: Join with & and prepend base url\n    }\n}",
+      "solutionCode": "public class QueryBuilder {\n    public static void main(String[] args) {\n        String[] params = {\"page=1\", \"sort=desc\", \"filter=active\"};\n        String queryString = String.join(\"&\", params);\n        String fullUrl = \"https://api.com/items?\" + queryString;\n        System.out.println(\"URL: \" + fullUrl);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "URL: https://api.com/items?page=1&sort=desc&filter=active"
+        }
+      ],
+      "targetOutput": "URL: https://api.com/items?page=1&sort=desc&filter=active"
+    },
+    {
+      "id": "prob-sjp-6",
+      "title": "Parse IP Address Octets",
+      "difficulty": "Easy",
+      "problemStatement": "Given `String ip = \"192.168.0.1\";`. Split by escaped dot (`\"\\\\.\"`). Verify that there are 4 octets and print: `\"First octet: 192\"` and `\"Last octet: 1\"`.",
+      "description": "Given `String ip = \"192.168.0.1\";`. Split by escaped dot (`\"\\\\.\"`). Verify that there are 4 octets and print: `\"First octet: 192\"` and `\"Last octet: 1\"`.",
+      "hint": "ip.split(\"\\\\.\");",
+      "hints": [
+        "ip.split(\"\\\\.\");"
+      ],
+      "starterCode": "public class IpOctetParser {\n    public static void main(String[] args) {\n        String ip = \"192.168.0.1\";\n        // TODO: Split IP and print first and last octets\n    }\n}",
+      "solutionCode": "public class IpOctetParser {\n    public static void main(String[] args) {\n        String ip = \"192.168.0.1\";\n        String[] octets = ip.split(\"\\\\.\");\n        System.out.println(\"First octet: \" + octets[0]);\n        System.out.println(\"Last octet: \" + octets[octets.length - 1]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "First octet: 192\nLast octet: 1"
+        }
+      ],
+      "targetOutput": "First octet: 192\nLast octet: 1"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-sjp-1",
+      "question": "Why does str.split(\".\") fail to split a file name by its extension dot?",
+      "answer": "The argument to `split()` is compiled as a Regular Expression. In regex, `.` is a wildcard character matching any character. Therefore, every single character in the string matches the delimiter, leaving no tokens. To split by a literal dot, you must escape it with double backslashes: `str.split(\"\\\\.\")` or use `Pattern.quote(\".\")`."
+    },
+    {
+      "id": "iq-sjp-2",
+      "question": "What is the difference between split(regex) and split(regex, int limit)?",
+      "answer": "`split(regex)` is equivalent to `split(regex, 0)`, which discards trailing empty strings. If `limit > 0`, the pattern is applied at most `limit - 1` times and the resulting array has at most `limit` entries. If `limit < 0` (e.g. `-1`), the pattern is applied as many times as possible and trailing empty strings are strictly preserved."
+    },
+    {
+      "id": "iq-sjp-3",
+      "question": "How does String.join() prevent trailing delimiters?",
+      "answer": "`String.join()` uses an internal `java.util.StringJoiner` which tracks the delimiter and element indices. It inserts the delimiter prefix only prior to appending subsequent elements (elements 1 through $N-1$), guaranteeing that no trailing separator is ever appended to the final string."
+    },
+    {
+      "id": "iq-sjp-4",
+      "question": "What is the difference between split() and StringTokenizer?",
+      "answer": "`split()` is a modern method that uses Regular Expressions and returns a complete `String[]` array in memory. `StringTokenizer` is a legacy class (dating back to Java 1.0) that parses strings character-by-character without regex support using an enumerator pattern. While `StringTokenizer` can be slightly faster for simple single-char delimiters, `split()` is the standard modern idiomatic approach."
+    },
+    {
+      "id": "iq-sjp-5",
+      "question": "How can you split a string using Pattern.compile() for better performance?",
+      "answer": "When repeatedly splitting strings with the same regex inside a high-throughput loop, calling `str.split(regex)` re-compiles the regex on every single call. Instead, pre-compile the pattern once: `private static final Pattern COMMA_PATTERN = Pattern.compile(\",\");` and invoke `COMMA_PATTERN.split(str)`."
+    },
+    {
+      "id": "iq-sjp-6",
+      "question": "What happens if you pass an empty string \"\" as the delimiter in split()?",
+      "answer": "Calling `\"abc\".split(\"\")` splits the string at every character boundary, returning an array of individual 1-character strings: `[\"a\", \"b\", \"c\"]`."
+    },
+    {
+      "id": "iq-sjp-7",
+      "question": "What happens if one of the elements passed to String.join() is null?",
+      "answer": "If an element in the collection or varargs is null, `String.join()` converts it to the literal text `\"null\"`. However, if the `delimiter` itself is null, it throws a `NullPointerException`."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-sjp-1",
+      "text": "I always escape regex special characters like '.' and '|' when using split()."
+    },
+    {
+      "id": "chk-sjp-2",
+      "text": "I know how to split across arbitrary whitespace using \"\\\\s+\"."
+    },
+    {
+      "id": "chk-sjp-3",
+      "text": "I use String.join() to combine strings without trailing delimiters."
+    },
+    {
+      "id": "chk-sjp-4",
+      "text": "I understand how to preserve trailing empty tokens using split(regex, -1)."
+    },
+    {
+      "id": "chk-sjp-5",
+      "text": "I know how to parse structured records like CSVs and pipe-delimited logs."
+    }
+  ]
+}

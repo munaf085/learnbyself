@@ -1,0 +1,650 @@
+{
+  "id": "les-strings-stringbuilder",
+  "slug": "stringbuilder",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "StringBuilder",
+  "summary": "Master mutable text construction with StringBuilder: solving the O(N^2) loop concatenation disaster, buffer capacity, in-place manipulation, and reverse().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 10,
+  "prerequisites": [
+    "les-strings-string-concatenation"
+  ],
+  "subtopics": [
+    "Mutable Character Buffer",
+    "Solving O(N^2) Loop Disaster",
+    "Capacity and Growth Formula",
+    "append, insert, delete, reverse"
+  ],
+  "learningOutcomes": [
+    "Eliminate performance bottlenecks by replacing loop concatenation with StringBuilder",
+    "Manipulate text in-place using append, insert, delete, and reverse",
+    "Avoid the StringBuilder.equals() reference trap"
+  ],
+  "activities": [
+    {
+      "id": "act-stringbuilder-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: StringBuilder",
+      "content": "### 1. Concept: What is StringBuilder?\n`java.lang.StringBuilder` represents a **mutable sequence of characters**. Unlike immutable `String` where any change creates a brand-new object, a `StringBuilder` provides an expandable, in-memory character buffer that can be directly modified in place.\n\nYou append, insert, delete, or reverse characters directly within the existing buffer, and when your text construction is complete, you call `.toString()` to generate a final immutable `String`.\n\n### 2. Why It Matters: Solving the $O(N^2)$ Loop Disaster\nWhen assembling text in loops (e.g. generating SQL queries, formatting JSON payloads, building HTML tables, or processing 100,000 sensor readings), `StringBuilder` is mandatory:\n- **String Concatenation (`+`) in a loop**: Allocates $N$ objects, copies memory repeatedly -> **$O(N^2)$ Time, high GC overhead**.\n- **StringBuilder (`append`) in a loop**: Appends to an internal array in place -> **$O(N)$ Linear Time, minimal GC overhead**.\nA 10,000-iteration string build that takes 850ms with `+` finishes in **2ms** with `StringBuilder`!\n\n### 3. Mental Model: A Whiteboard vs Stone Tablets\n- Remember our mental model of `String` as a **stone tablet**? You had to quarry a new stone every time you wanted to change a letter.\n- `StringBuilder` is a **classroom whiteboard**. You write on it, erase a word, insert an exclamation point, reverse the letters, or append new sentences. Only when the lecture is over do you take a photograph of the whiteboard to create the final permanent `String`.\n\n### 4. Java Mechanics: Capacity and Growth Strategy\n1. **Default Capacity**: Calling `new StringBuilder()` allocates an internal character array of capacity **16**.\n2. **Specified Capacity**: Calling `new StringBuilder(100)` pre-allocates a buffer of size 100. Always do this if you know the approximate length!\n3. **Automatic Resizing**: If the buffer runs out of space, `StringBuilder` automatically grows its internal array using the formula:\n   $$\text{newCapacity} = (\text{oldCapacity} \times 2) + 2$$\n   It copies existing characters to the larger buffer and continues appending.\n\n### 5. Essential StringBuilder Methods\n- **`append(anyType)`**: Appends any primitive, String, or object to the end of the sequence. Returns `this` (enables method chaining).\n- **`insert(int offset, anyType)`**: Inserts characters at a specific index, shifting subsequent characters right.\n- **`delete(int start, int end)`**: Removes characters in the range `[start, end)`.\n- **`deleteCharAt(int index)`**: Removes a single character at the index.\n- **`reverse()`**: Reverses the entire character sequence in-place ($O(N)$ algorithm).\n- **`toString()`**: Converts the mutable builder into an immutable `String`.\n\n### 6. Common Beginner Mistakes\n- **Using `.equals()` on `StringBuilder`**: `sb1.equals(sb2)` checks **memory address**, NOT characters! Always convert to string first: `sb1.toString().equals(sb2.toString())`.\n- **Creating new StringBuilder instances inside the loop**: `for (...) { StringBuilder sb = new StringBuilder(); ... }`. This defeats the purpose! Instantiate the builder **before** the loop and append inside.\n\n### 7. Key Takeaways\n- `StringBuilder` is a mutable character buffer designed for efficient text assembly.\n- Transforms $O(N^2)$ repeated string concatenation into $O(N)$ linear time.\n- Essential methods: `append()`, `insert()`, `delete()`, `reverse()`, and `toString()`.\n- It is NOT thread-safe (use `StringBuffer` if synchronization is required).\n- Always convert to `String` with `.toString()` when passing across API boundaries.",
+      "breakdown": [
+        {
+          "topic": "Mutable Character Buffer",
+          "details": "Modifies internal byte[] or char[] directly without allocating intermediate String instances."
+        },
+        {
+          "topic": "append() and Method Chaining",
+          "details": "append() returns the StringBuilder reference (this), enabling fluent chaining: sb.append(\"A\").append(\"B\")."
+        },
+        {
+          "topic": "reverse() in Place",
+          "details": "Reverses characters in-place with O(N) two-pointer swaps. Essential for palindrome checks and string reversals."
+        },
+        {
+          "topic": "Capacity Management",
+          "details": "Default initial capacity is 16. Grows dynamically via (oldCapacity * 2) + 2 when capacity is exceeded."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuilder-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: StringBuilder Mechanics Suite",
+      "codeSnippet": "public class StringBuilderDemo {\n    public static void main(String[] args) {\n        // 1. Initializing with capacity\n        StringBuilder sb = new StringBuilder(64);\n        \n        // 2. Chained appends of multiple data types\n        sb.append(\"Order #\")\n          .append(1024)\n          .append(\" [\")\n          .append(\"CONFIRMED\")\n          .append(\"]\");\n          \n        System.out.println(\"Constructed: \" + sb.toString());\n        \n        // 3. Inserting text at an index\n        sb.insert(0, \"URGENT: \");\n        System.out.println(\"After Insert: \" + sb.toString());\n        \n        // 4. Deleting a slice [start, end)\n        sb.delete(0, 8); // Removes \"URGENT: \"\n        System.out.println(\"After Delete: \" + sb.toString());\n        \n        // 5. In-place reversal\n        StringBuilder word = new StringBuilder(\"LearnBySelf\");\n        word.reverse();\n        System.out.println(\"Reversed: \" + word.toString());\n        \n        // 6. Capacity vs Length\n        StringBuilder demo = new StringBuilder(\"Java\");\n        System.out.println(\"Length: \" + demo.length());     // 4 (characters stored)\n        System.out.println(\"Capacity: \" + demo.capacity()); // 20 (16 default + 4)\n    }\n}",
+      "description": "Demonstrates capacity allocation, append chaining, insert, delete, and reverse operations on StringBuilder.",
+      "steps": [
+        {
+          "line": 4,
+          "description": "new StringBuilder(64) pre-allocates a buffer of 64 characters to prevent resize copies."
+        },
+        {
+          "line": 7,
+          "description": "Fluent chaining of append() adds string, int, and symbols to the same buffer."
+        },
+        {
+          "line": 16,
+          "description": "sb.insert(0, 'URGENT: ') inserts at index 0, shifting existing characters right."
+        },
+        {
+          "line": 20,
+          "description": "sb.delete(0, 8) removes the first 8 characters [0, 8) in place."
+        },
+        {
+          "line": 25,
+          "description": "word.reverse() reverses characters in-place using two-pointer swaps."
+        },
+        {
+          "line": 30,
+          "description": "demo.length() is 4 characters, while demo.capacity() is 20 (16 default + 4)."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuilder-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: StringBuilder",
+      "questions": [
+        {
+          "id": "mcq-sb-1",
+          "question": "What is the primary difference between `String` and `StringBuilder`?",
+          "options": [
+            "String is mutable, StringBuilder is immutable",
+            "String is immutable, StringBuilder is mutable",
+            "String is only for numbers, StringBuilder is for characters",
+            "StringBuilder cannot be printed to the console"
+          ],
+          "correctOption": 1,
+          "explanation": "String objects are strictly immutable (cannot be altered in place). StringBuilder is a mutable character sequence that allows modifications in place."
+        },
+        {
+          "id": "mcq-sb-2",
+          "question": "What is the default initial capacity of a `StringBuilder` created with `new StringBuilder()`?",
+          "options": [
+            "0 characters",
+            "16 characters",
+            "32 characters",
+            "256 characters"
+          ],
+          "correctOption": 1,
+          "explanation": "The no-arg constructor `new StringBuilder()` creates an empty buffer with an initial default capacity of 16 characters."
+        },
+        {
+          "id": "mcq-sb-3",
+          "question": "What will be printed by the following code?\n```java\nStringBuilder sb1 = new StringBuilder(\"Java\");\nStringBuilder sb2 = new StringBuilder(\"Java\");\nSystem.out.println(sb1.equals(sb2));\n```",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "ClassCastException"
+          ],
+          "correctOption": 1,
+          "explanation": "StringBuilder does NOT override the .equals() method from Object! It performs reference comparison (`==`), which evaluates to false for distinct instances."
+        },
+        {
+          "id": "mcq-sb-4",
+          "question": "How do you correctly compare the text contents of two `StringBuilder` instances?",
+          "options": [
+            "sb1.equals(sb2)",
+            "sb1.toString().equals(sb2.toString())",
+            "sb1 == sb2",
+            "StringBuilder.compare(sb1, sb2)"
+          ],
+          "correctOption": 1,
+          "explanation": "Convert both builders to String objects via .toString(), which properly overrides .equals() for content comparison (or use sb1.compareTo(sb2) == 0 in Java 11+)."
+        },
+        {
+          "id": "mcq-sb-5",
+          "question": "What will be printed by this code?\n```java\nStringBuilder sb = new StringBuilder(\"abc\");\nsb.append(\"def\").reverse();\nSystem.out.println(sb);\n```",
+          "options": [
+            "abcdef",
+            "fedcba",
+            "cbafed",
+            "defabc"
+          ],
+          "correctOption": 1,
+          "explanation": "sb.append(\"def\") creates \"abcdef\". Then .reverse() reverses the entire buffer in-place to produce \"fedcba\"."
+        },
+        {
+          "id": "mcq-sb-6",
+          "question": "What does `sb.delete(1, 3)` do on `StringBuilder sb = new StringBuilder(\"abcdef\");`?",
+          "options": [
+            "Removes characters at indices 1 and 2 ('b' and 'c'), resulting in \"adef\"",
+            "Removes characters at indices 1, 2, and 3, resulting in \"aef\"",
+            "Throws an IndexOutOfBoundsException",
+            "Removes character at index 1 only"
+          ],
+          "correctOption": 0,
+          "explanation": "delete(start, end) uses the half-open interval `[start, end)`. Indices 1 ('b') and 2 ('c') are removed. Result is \"adef\"."
+        },
+        {
+          "id": "mcq-sb-7",
+          "question": "Why is `sb.append(...)` able to be chained in a single statement (e.g. `sb.append(a).append(b)`)?",
+          "options": [
+            "Because append() returns a void type",
+            "Because append() returns a reference to the current StringBuilder instance (`this`)",
+            "Because the JVM uses static reflection",
+            "Because of multithreading"
+          ],
+          "correctOption": 1,
+          "explanation": "The append method returns `this` (the calling StringBuilder instance), enabling fluent method chaining."
+        },
+        {
+          "id": "mcq-sb-8",
+          "question": "What is the difference between `sb.length()` and `sb.capacity()`?",
+          "options": [
+            "They are always identical",
+            "length() is the number of characters currently stored; capacity() is the total allocated buffer space available before resizing",
+            "length() is memory in bytes; capacity() is characters",
+            "capacity() is always 16"
+          ],
+          "correctOption": 1,
+          "explanation": "length() counts the active characters currently stored. capacity() is the total storage allocated in the underlying array."
+        },
+        {
+          "id": "mcq-sb-9",
+          "question": "Is `StringBuilder` thread-safe?",
+          "options": [
+            "Yes, all its methods are synchronized",
+            "No, StringBuilder is not thread-safe and is designed for single-threaded high performance",
+            "Only on 64-bit systems",
+            "Only when declared final"
+          ],
+          "correctOption": 1,
+          "explanation": "StringBuilder is explicitly unsynchronized to provide maximum speed in single-threaded contexts. For thread safety, use StringBuffer."
+        },
+        {
+          "id": "mcq-sb-10",
+          "question": "What will `new StringBuilder(\"Java\").insert(2, \"--\").toString()` produce?",
+          "options": [
+            "\"Ja--va\"",
+            "\"J--ava\"",
+            "\"Jav--a\"",
+            "\"--Java\""
+          ],
+          "correctOption": 0,
+          "explanation": "Inserting at index 2 places \"--\" right after \"Ja\" and before \"va\", producing \"Ja--va\"."
+        },
+        {
+          "id": "mcq-sb-11",
+          "question": "What happens when `StringBuilder` exceeds its current capacity during an `append()`?",
+          "options": [
+            "An OutOfMemoryException is thrown immediately",
+            "A new larger array is allocated (typically `oldCapacity * 2 + 2`) and characters are copied over",
+            "The append operation fails silently",
+            "Subsequent characters are truncated"
+          ],
+          "correctOption": 1,
+          "explanation": "The JVM dynamically allocates a larger character array (approximately double the old size + 2), copies existing characters, and continues."
+        },
+        {
+          "id": "mcq-sb-12",
+          "question": "How do you clear or reset a `StringBuilder` instance to reuse it without allocating a new object?",
+          "options": [
+            "sb.setLength(0);",
+            "sb.clear();",
+            "sb.delete();",
+            "sb.reset();"
+          ],
+          "correctOption": 0,
+          "explanation": "Calling `sb.setLength(0)` resets the character count to 0 without reallocating the underlying memory buffer, making it ready for reuse."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuilder-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Reverse and Format Text with StringBuilder",
+      "practice": {
+        "id": "prac-act-sb",
+        "title": "Hands-On: Reverse and Format Text with StringBuilder",
+        "description": "Reverse \"LearnBySelf\" and append \"-Verified\" using StringBuilder.",
+        "starterCode": "public class PracticeStringBuilder {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(\"LearnBySelf\");\n        // TODO: Reverse and append \"-Verified\"\n    }\n}",
+        "solutionCode": "public class PracticeStringBuilder {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(\"LearnBySelf\");\n        sb.reverse().append(\"-Verified\");\n        System.out.println(\"Result: \" + sb.toString());\n    }\n}",
+        "expectedOutput": "Result: fleSyBnraeL-Verified"
+      }
+    },
+    {
+      "id": "act-stringbuilder-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: StringBuilder",
+      "interviewQA": [
+        {
+          "id": "iq-sb-1",
+          "question": "Why is StringBuilder faster than String concatenation (+) in a loop?",
+          "answer": "String concatenation (`+`) in a loop creates a new `String` object on every iteration and copies all existing characters into it, resulting in $O(N^2)$ quadratic time complexity and immense garbage collector pressure. `StringBuilder` uses a mutable resizable buffer, appending characters in-place with amortized $O(1)$ time, yielding overall $O(N)$ linear time complexity."
+        },
+        {
+          "id": "iq-sb-2",
+          "question": "What is the default capacity of a StringBuilder, and how does it resize?",
+          "answer": "The default capacity is 16 characters. When appending causes the length to exceed current capacity, the JVM allocates a new larger array using the formula: `newCapacity = (oldCapacity * 2) + 2`. It copies the existing characters over and drops the old array for garbage collection."
+        },
+        {
+          "id": "iq-sb-3",
+          "question": "Why does sb1.equals(sb2) return false even when both StringBuilders contain \"Java\"?",
+          "answer": "`StringBuilder` does not override the `.equals()` method from `java.lang.Object`. Therefore, it inherits identity reference comparison (`==`), which checks if both references point to the exact same memory address. Since `sb1` and `sb2` are distinct objects on the Heap, `.equals()` returns `false`."
+        },
+        {
+          "id": "iq-sb-4",
+          "question": "How do you compare the content of two StringBuilders?",
+          "answer": "You can convert both to Strings: `sb1.toString().equals(sb2.toString())`, or in Java 11+, invoke `sb1.compareTo(sb2) == 0` since StringBuilder implements `Comparable<StringBuilder>`."
+        },
+        {
+          "id": "iq-sb-5",
+          "question": "How can you optimize StringBuilder performance when building a known large string?",
+          "answer": "Specify the expected capacity in the constructor: `new StringBuilder(expectedLength)`. Pre-allocating sufficient capacity prevents the buffer from repeatedly re-allocating larger arrays and copying characters during growth."
+        },
+        {
+          "id": "iq-sb-6",
+          "question": "What is the difference between length() and capacity() in StringBuilder?",
+          "answer": "`length()` returns the number of valid characters currently stored in the buffer. `capacity()` returns the total number of characters the buffer can accommodate before a memory expansion is required."
+        },
+        {
+          "id": "iq-sb-7",
+          "question": "Can StringBuilder be used across multiple concurrent threads?",
+          "answer": "No. `StringBuilder` methods are unsynchronized. If multiple threads concurrently append or mutate a single `StringBuilder` instance, race conditions and internal array corruption will occur. For multi-threaded shared buffers, use `StringBuffer` or manage synchronization externally."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuilder-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: StringBuilder",
+      "checklist": [
+        {
+          "id": "chk-sb-1",
+          "text": "I always use StringBuilder instead of + when assembling strings inside loops."
+        },
+        {
+          "id": "chk-sb-2",
+          "text": "I remember that StringBuilder does not override .equals()."
+        },
+        {
+          "id": "chk-sb-3",
+          "text": "I know how to reverse a string in-place with .reverse()."
+        },
+        {
+          "id": "chk-sb-4",
+          "text": "I can use append(), insert(), and delete() to modify buffers in place."
+        },
+        {
+          "id": "chk-sb-5",
+          "text": "I understand the difference between length() and capacity()."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-sb-1",
+      "question": "What is the primary difference between `String` and `StringBuilder`?",
+      "options": [
+        "String is mutable, StringBuilder is immutable",
+        "String is immutable, StringBuilder is mutable",
+        "String is only for numbers, StringBuilder is for characters",
+        "StringBuilder cannot be printed to the console"
+      ],
+      "correctOption": 1,
+      "explanation": "String objects are strictly immutable (cannot be altered in place). StringBuilder is a mutable character sequence that allows modifications in place."
+    },
+    {
+      "id": "mcq-sb-2",
+      "question": "What is the default initial capacity of a `StringBuilder` created with `new StringBuilder()`?",
+      "options": [
+        "0 characters",
+        "16 characters",
+        "32 characters",
+        "256 characters"
+      ],
+      "correctOption": 1,
+      "explanation": "The no-arg constructor `new StringBuilder()` creates an empty buffer with an initial default capacity of 16 characters."
+    },
+    {
+      "id": "mcq-sb-3",
+      "question": "What will be printed by the following code?\n```java\nStringBuilder sb1 = new StringBuilder(\"Java\");\nStringBuilder sb2 = new StringBuilder(\"Java\");\nSystem.out.println(sb1.equals(sb2));\n```",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "ClassCastException"
+      ],
+      "correctOption": 1,
+      "explanation": "StringBuilder does NOT override the .equals() method from Object! It performs reference comparison (`==`), which evaluates to false for distinct instances."
+    },
+    {
+      "id": "mcq-sb-4",
+      "question": "How do you correctly compare the text contents of two `StringBuilder` instances?",
+      "options": [
+        "sb1.equals(sb2)",
+        "sb1.toString().equals(sb2.toString())",
+        "sb1 == sb2",
+        "StringBuilder.compare(sb1, sb2)"
+      ],
+      "correctOption": 1,
+      "explanation": "Convert both builders to String objects via .toString(), which properly overrides .equals() for content comparison (or use sb1.compareTo(sb2) == 0 in Java 11+)."
+    },
+    {
+      "id": "mcq-sb-5",
+      "question": "What will be printed by this code?\n```java\nStringBuilder sb = new StringBuilder(\"abc\");\nsb.append(\"def\").reverse();\nSystem.out.println(sb);\n```",
+      "options": [
+        "abcdef",
+        "fedcba",
+        "cbafed",
+        "defabc"
+      ],
+      "correctOption": 1,
+      "explanation": "sb.append(\"def\") creates \"abcdef\". Then .reverse() reverses the entire buffer in-place to produce \"fedcba\"."
+    },
+    {
+      "id": "mcq-sb-6",
+      "question": "What does `sb.delete(1, 3)` do on `StringBuilder sb = new StringBuilder(\"abcdef\");`?",
+      "options": [
+        "Removes characters at indices 1 and 2 ('b' and 'c'), resulting in \"adef\"",
+        "Removes characters at indices 1, 2, and 3, resulting in \"aef\"",
+        "Throws an IndexOutOfBoundsException",
+        "Removes character at index 1 only"
+      ],
+      "correctOption": 0,
+      "explanation": "delete(start, end) uses the half-open interval `[start, end)`. Indices 1 ('b') and 2 ('c') are removed. Result is \"adef\"."
+    },
+    {
+      "id": "mcq-sb-7",
+      "question": "Why is `sb.append(...)` able to be chained in a single statement (e.g. `sb.append(a).append(b)`)?",
+      "options": [
+        "Because append() returns a void type",
+        "Because append() returns a reference to the current StringBuilder instance (`this`)",
+        "Because the JVM uses static reflection",
+        "Because of multithreading"
+      ],
+      "correctOption": 1,
+      "explanation": "The append method returns `this` (the calling StringBuilder instance), enabling fluent method chaining."
+    },
+    {
+      "id": "mcq-sb-8",
+      "question": "What is the difference between `sb.length()` and `sb.capacity()`?",
+      "options": [
+        "They are always identical",
+        "length() is the number of characters currently stored; capacity() is the total allocated buffer space available before resizing",
+        "length() is memory in bytes; capacity() is characters",
+        "capacity() is always 16"
+      ],
+      "correctOption": 1,
+      "explanation": "length() counts the active characters currently stored. capacity() is the total storage allocated in the underlying array."
+    },
+    {
+      "id": "mcq-sb-9",
+      "question": "Is `StringBuilder` thread-safe?",
+      "options": [
+        "Yes, all its methods are synchronized",
+        "No, StringBuilder is not thread-safe and is designed for single-threaded high performance",
+        "Only on 64-bit systems",
+        "Only when declared final"
+      ],
+      "correctOption": 1,
+      "explanation": "StringBuilder is explicitly unsynchronized to provide maximum speed in single-threaded contexts. For thread safety, use StringBuffer."
+    },
+    {
+      "id": "mcq-sb-10",
+      "question": "What will `new StringBuilder(\"Java\").insert(2, \"--\").toString()` produce?",
+      "options": [
+        "\"Ja--va\"",
+        "\"J--ava\"",
+        "\"Jav--a\"",
+        "\"--Java\""
+      ],
+      "correctOption": 0,
+      "explanation": "Inserting at index 2 places \"--\" right after \"Ja\" and before \"va\", producing \"Ja--va\"."
+    },
+    {
+      "id": "mcq-sb-11",
+      "question": "What happens when `StringBuilder` exceeds its current capacity during an `append()`?",
+      "options": [
+        "An OutOfMemoryException is thrown immediately",
+        "A new larger array is allocated (typically `oldCapacity * 2 + 2`) and characters are copied over",
+        "The append operation fails silently",
+        "Subsequent characters are truncated"
+      ],
+      "correctOption": 1,
+      "explanation": "The JVM dynamically allocates a larger character array (approximately double the old size + 2), copies existing characters, and continues."
+    },
+    {
+      "id": "mcq-sb-12",
+      "question": "How do you clear or reset a `StringBuilder` instance to reuse it without allocating a new object?",
+      "options": [
+        "sb.setLength(0);",
+        "sb.clear();",
+        "sb.delete();",
+        "sb.reset();"
+      ],
+      "correctOption": 0,
+      "explanation": "Calling `sb.setLength(0)` resets the character count to 0 without reallocating the underlying memory buffer, making it ready for reuse."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-sb-1",
+      "title": "Reverse a String with StringBuilder",
+      "difficulty": "Easy",
+      "problemStatement": "Given `String input = \"Algorithms\";`. Use a `StringBuilder` to reverse the string and print the reversed result: `\"smhtiroglA\"`.",
+      "description": "Given `String input = \"Algorithms\";`. Use a `StringBuilder` to reverse the string and print the reversed result: `\"smhtiroglA\"`.",
+      "hint": "new StringBuilder(input).reverse().toString();",
+      "hints": [
+        "new StringBuilder(input).reverse().toString();"
+      ],
+      "starterCode": "public class ReverseStringPractice {\n    public static void main(String[] args) {\n        String input = \"Algorithms\";\n        // TODO: Reverse string with StringBuilder\n    }\n}",
+      "solutionCode": "public class ReverseStringPractice {\n    public static void main(String[] args) {\n        String input = \"Algorithms\";\n        String reversed = new StringBuilder(input).reverse().toString();\n        System.out.println(\"Reversed: \" + reversed);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Reversed: smhtiroglA"
+        }
+      ],
+      "targetOutput": "Reversed: smhtiroglA"
+    },
+    {
+      "id": "prob-sb-2",
+      "title": "Build Comma Separated Number List in Loop",
+      "difficulty": "Easy",
+      "problemStatement": "Use a `StringBuilder` to build a comma-separated list of numbers from 1 to 5. Format: `\"1, 2, 3, 4, 5\"` (ensure no trailing comma). Print the result.",
+      "description": "Use a `StringBuilder` to build a comma-separated list of numbers from 1 to 5. Format: `\"1, 2, 3, 4, 5\"` (ensure no trailing comma). Print the result.",
+      "hint": "Append comma only if i > 1.",
+      "hints": [
+        "Append comma only if i > 1."
+      ],
+      "starterCode": "public class NumberListBuilder {\n    public static void main(String[] args) {\n        // TODO: Build 1, 2, 3, 4, 5 using StringBuilder\n    }\n}",
+      "solutionCode": "public class NumberListBuilder {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder();\n        for (int i = 1; i <= 5; i++) {\n            if (i > 1) {\n                sb.append(\", \");\n            }\n            sb.append(i);\n        }\n        System.out.println(\"Numbers: \" + sb.toString());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Numbers: 1, 2, 3, 4, 5"
+        }
+      ],
+      "targetOutput": "Numbers: 1, 2, 3, 4, 5"
+    },
+    {
+      "id": "prob-sb-3",
+      "title": "Check Palindrome Using StringBuilder",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String word = \"radar\";`. Use `StringBuilder` to reverse `word`. Compare the reversed string with the original using `.equals()`. Print \"Palindrome: true\" if identical.",
+      "description": "Given `String word = \"radar\";`. Use `StringBuilder` to reverse `word`. Compare the reversed string with the original using `.equals()`. Print \"Palindrome: true\" if identical.",
+      "hint": "reversed.equals(word)",
+      "hints": [
+        "reversed.equals(word)"
+      ],
+      "starterCode": "public class PalindromeChecker {\n    public static void main(String[] args) {\n        String word = \"radar\";\n        // TODO: Check if word is palindrome using StringBuilder\n    }\n}",
+      "solutionCode": "public class PalindromeChecker {\n    public static void main(String[] args) {\n        String word = \"radar\";\n        String reversed = new StringBuilder(word).reverse().toString();\n        boolean isPalindrome = word.equals(reversed);\n        System.out.println(\"Palindrome: \" + isPalindrome);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Palindrome: true"
+        }
+      ],
+      "targetOutput": "Palindrome: true"
+    },
+    {
+      "id": "prob-sb-4",
+      "title": "Insert and Delete Characters in Buffer",
+      "difficulty": "Medium",
+      "problemStatement": "Start with `StringBuilder sb = new StringBuilder(\"Java Development\");`. Insert `\"Core \"` at index 5 to get `\"Java Core Development\"`. Then delete `\"Development\"` (indices 10 to end) to get `\"Java Core \"`. Print the final trimmed result.",
+      "description": "Start with `StringBuilder sb = new StringBuilder(\"Java Development\");`. Insert `\"Core \"` at index 5 to get `\"Java Core Development\"`. Then delete `\"Development\"` (indices 10 to end) to get `\"Java Core \"`. Print the final trimmed result.",
+      "hint": "sb.insert(5, \"Core \"); and sb.delete(10, sb.length());",
+      "hints": [
+        "sb.insert(5, \"Core \"); and sb.delete(10, sb.length());"
+      ],
+      "starterCode": "public class BufferManipulator {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(\"Java Development\");\n        // TODO: Insert and delete\n    }\n}",
+      "solutionCode": "public class BufferManipulator {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(\"Java Development\");\n        sb.insert(5, \"Core \");\n        sb.delete(10, sb.length());\n        System.out.println(\"Result: [\" + sb.toString().trim() + \"]\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: [Java Core]"
+        }
+      ],
+      "targetOutput": "Result: [Java Core]"
+    },
+    {
+      "id": "prob-sb-5",
+      "title": "Construct SQL Query with StringBuilder",
+      "difficulty": "Medium",
+      "problemStatement": "Construct a dynamic SQL query using `StringBuilder`: start with `\"SELECT * FROM users WHERE active = 1\"`. If `boolean filterByRole = true`, append `\" AND role = 'ADMIN'\"`. If `boolean sortByDate = true`, append `\" ORDER BY created_at DESC\"`. Print the assembled query.",
+      "description": "Construct a dynamic SQL query using `StringBuilder`: start with `\"SELECT * FROM users WHERE active = 1\"`. If `boolean filterByRole = true`, append `\" AND role = 'ADMIN'\"`. If `boolean sortByDate = true`, append `\" ORDER BY created_at DESC\"`. Print the assembled query.",
+      "hint": "Use if checks and sb.append().",
+      "hints": [
+        "Use if checks and sb.append()."
+      ],
+      "starterCode": "public class SqlQueryBuilder {\n    public static void main(String[] args) {\n        boolean filterByRole = true;\n        boolean sortByDate = true;\n        // TODO: Assemble SQL query\n    }\n}",
+      "solutionCode": "public class SqlQueryBuilder {\n    public static void main(String[] args) {\n        boolean filterByRole = true;\n        boolean sortByDate = true;\n        StringBuilder sql = new StringBuilder(\"SELECT * FROM users WHERE active = 1\");\n        if (filterByRole) {\n            sql.append(\" AND role = 'ADMIN'\");\n        }\n        if (sortByDate) {\n            sql.append(\" ORDER BY created_at DESC\");\n        }\n        System.out.println(\"SQL: \" + sql.toString());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "SQL: SELECT * FROM users WHERE active = 1 AND role = 'ADMIN' ORDER BY created_at DESC"
+        }
+      ],
+      "targetOutput": "SQL: SELECT * FROM users WHERE active = 1 AND role = 'ADMIN' ORDER BY created_at DESC"
+    },
+    {
+      "id": "prob-sb-6",
+      "title": "Reset Buffer Using setLength(0)",
+      "difficulty": "Easy",
+      "problemStatement": "Demonstrate buffer reuse: Create `StringBuilder sb = new StringBuilder(\"Initial Data\");`. Print its length. Reset the buffer using `sb.setLength(0);`. Append `\"Fresh Data\"`. Print the new length and content.",
+      "description": "Demonstrate buffer reuse: Create `StringBuilder sb = new StringBuilder(\"Initial Data\");`. Print its length. Reset the buffer using `sb.setLength(0);`. Append `\"Fresh Data\"`. Print the new length and content.",
+      "hint": "sb.setLength(0); resets length to 0.",
+      "hints": [
+        "sb.setLength(0); resets length to 0."
+      ],
+      "starterCode": "public class BufferResetDemo {\n    public static void main(String[] args) {\n        // TODO: Demonstrate buffer reuse with setLength(0)\n    }\n}",
+      "solutionCode": "public class BufferResetDemo {\n    public static void main(String[] args) {\n        StringBuilder sb = new StringBuilder(\"Initial Data\");\n        System.out.println(\"Initial length: \" + sb.length());\n        sb.setLength(0);\n        sb.append(\"Fresh Data\");\n        System.out.println(\"New content: \" + sb.toString());\n        System.out.println(\"New length: \" + sb.length());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Initial length: 12\nNew content: Fresh Data\nNew length: 10"
+        }
+      ],
+      "targetOutput": "Initial length: 12\nNew content: Fresh Data\nNew length: 10"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-sb-1",
+      "question": "Why is StringBuilder faster than String concatenation (+) in a loop?",
+      "answer": "String concatenation (`+`) in a loop creates a new `String` object on every iteration and copies all existing characters into it, resulting in $O(N^2)$ quadratic time complexity and immense garbage collector pressure. `StringBuilder` uses a mutable resizable buffer, appending characters in-place with amortized $O(1)$ time, yielding overall $O(N)$ linear time complexity."
+    },
+    {
+      "id": "iq-sb-2",
+      "question": "What is the default capacity of a StringBuilder, and how does it resize?",
+      "answer": "The default capacity is 16 characters. When appending causes the length to exceed current capacity, the JVM allocates a new larger array using the formula: `newCapacity = (oldCapacity * 2) + 2`. It copies the existing characters over and drops the old array for garbage collection."
+    },
+    {
+      "id": "iq-sb-3",
+      "question": "Why does sb1.equals(sb2) return false even when both StringBuilders contain \"Java\"?",
+      "answer": "`StringBuilder` does not override the `.equals()` method from `java.lang.Object`. Therefore, it inherits identity reference comparison (`==`), which checks if both references point to the exact same memory address. Since `sb1` and `sb2` are distinct objects on the Heap, `.equals()` returns `false`."
+    },
+    {
+      "id": "iq-sb-4",
+      "question": "How do you compare the content of two StringBuilders?",
+      "answer": "You can convert both to Strings: `sb1.toString().equals(sb2.toString())`, or in Java 11+, invoke `sb1.compareTo(sb2) == 0` since StringBuilder implements `Comparable<StringBuilder>`."
+    },
+    {
+      "id": "iq-sb-5",
+      "question": "How can you optimize StringBuilder performance when building a known large string?",
+      "answer": "Specify the expected capacity in the constructor: `new StringBuilder(expectedLength)`. Pre-allocating sufficient capacity prevents the buffer from repeatedly re-allocating larger arrays and copying characters during growth."
+    },
+    {
+      "id": "iq-sb-6",
+      "question": "What is the difference between length() and capacity() in StringBuilder?",
+      "answer": "`length()` returns the number of valid characters currently stored in the buffer. `capacity()` returns the total number of characters the buffer can accommodate before a memory expansion is required."
+    },
+    {
+      "id": "iq-sb-7",
+      "question": "Can StringBuilder be used across multiple concurrent threads?",
+      "answer": "No. `StringBuilder` methods are unsynchronized. If multiple threads concurrently append or mutate a single `StringBuilder` instance, race conditions and internal array corruption will occur. For multi-threaded shared buffers, use `StringBuffer` or manage synchronization externally."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-sb-1",
+      "text": "I always use StringBuilder instead of + when assembling strings inside loops."
+    },
+    {
+      "id": "chk-sb-2",
+      "text": "I remember that StringBuilder does not override .equals()."
+    },
+    {
+      "id": "chk-sb-3",
+      "text": "I know how to reverse a string in-place with .reverse()."
+    },
+    {
+      "id": "chk-sb-4",
+      "text": "I can use append(), insert(), and delete() to modify buffers in place."
+    },
+    {
+      "id": "chk-sb-5",
+      "text": "I understand the difference between length() and capacity()."
+    }
+  ]
+}

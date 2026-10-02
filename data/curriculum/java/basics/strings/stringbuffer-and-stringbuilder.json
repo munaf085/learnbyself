@@ -1,0 +1,594 @@
+{
+  "id": "les-strings-stringbuffer-and-stringbuilder",
+  "slug": "stringbuffer-and-stringbuilder",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "StringBuffer & Thread-Safety",
+  "summary": "Master the critical comparison between StringBuilder and StringBuffer: synchronization locks, thread-safety, CharSequence polymorphism, and modern best practices.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 11,
+  "prerequisites": [
+    "les-strings-stringbuilder"
+  ],
+  "subtopics": [
+    "StringBuffer vs StringBuilder",
+    "Synchronization & Thread Safety",
+    "CharSequence Interface",
+    "When to Use Which"
+  ],
+  "learningOutcomes": [
+    "Differentiate between thread-safe and unsynchronized mutable buffers",
+    "Select the optimal class between String, StringBuilder, and StringBuffer",
+    "Write polymorphic methods using CharSequence"
+  ],
+  "activities": [
+    {
+      "id": "act-stringbuffer-and-stringbuilder-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: StringBuffer & Thread-Safety",
+      "content": "### 1. Concept: StringBuffer vs StringBuilder\nBoth `StringBuilder` and `StringBuffer` represent mutable sequences of characters with nearly identical API methods (`append`, `insert`, `delete`, `reverse`, `toString`).\n\nThe single critical distinction between them is **Thread Safety & Synchronization**:\n- **`StringBuffer`** (Legacy since Java 1.0): Every public method is marked `synchronized`. It is **Thread-Safe**. Multiple threads can safely mutate it concurrently, but acquiring and releasing locks adds execution overhead.\n- **`StringBuilder`** (Modern since Java 5): Methods are **NOT synchronized**. It is **NOT Thread-Safe**, but it runs significantly faster because there is zero locking overhead.\n\n### 2. Why It Matters: Modern Engineering Standard\nIn over 99% of real-world backend applications, text is assembled within local method variables (e.g. inside a single controller, service, or loop). Local variables live entirely on a single thread's private stack—they are never shared with other threads!\n\nTherefore, using `StringBuffer` in a local method wastes CPU cycles acquiring pointless synchronization locks that no other thread is contending for. Modern Java guidelines dictate:\n> *\"Always use `StringBuilder` unless you have an explicit requirement for shared multi-threaded mutation.\"*\n\n### 3. Mental Model\n- **`StringBuilder` is your personal notebook**: You sit at your desk and write notes as fast as possible. Nobody else touches your notebook. There are no locks on your door. Speed is maximum.\n- **`StringBuffer` is a shared whiteboard in a conference room with a key lock**: Before anyone can write a letter, they must wait in line, unlock the door (`synchronized`), write a letter, and lock the door behind them. Safe for a crowd, but much slower for a solo worker.\n\n### 4. Java Mechanics: Comprehensive Comparison\n| Feature | `String` | `StringBuilder` | `StringBuffer` |\n| :--- | :--- | :--- | :--- |\n| **Mutability** | Strictly Immutable | Mutable in-place | Mutable in-place |\n| **Thread Safety** | Inherently Thread-Safe | **Not Thread-Safe** | **Thread-Safe (synchronized)** |\n| **Performance** | Slow for modifications | **Fastest** | Moderate (locking overhead) |\n| **Introduced** | Java 1.0 | Java 5.0 | Java 1.0 |\n| **Storage** | String Pool / Heap | Regular Heap | Regular Heap |\n| **Typical Use** | Constants, DTOs, Keys | Local text assembly | Shared concurrent logging |\n\n### 5. Practical Java Example\n```java\n// Modern standard: single-threaded local assembly\nStringBuilder sb = new StringBuilder();\nsb.append(\"Fast\").append(\"SingleThreaded\");\nSystem.out.println(sb.toString());\n\n// Legacy/Concurrent: multi-threaded shared buffer\nStringBuffer sbuf = new StringBuffer();\nsbuf.append(\"Safe\").append(\"MultiThreaded\");\nSystem.out.println(sbuf.toString());\n```\n\n### 6. Common Beginner Mistakes\n- **Using `StringBuffer` by default**: Believing `StringBuffer` is the standard because it appears in older textbooks. Always prefer `StringBuilder`.\n- **Relying on `StringBuilder` in shared multithreaded fields**: Sharing an instance of `StringBuilder` across multiple worker threads will cause corrupted text and index out of bounds exceptions.\n\n### 7. Key Takeaways\n- `StringBuilder` and `StringBuffer` share the same API for mutable text manipulation.\n- `StringBuffer` is synchronized and thread-safe; `StringBuilder` is unsynchronized and faster.\n- Always default to `StringBuilder` for local variables and single-threaded operations.\n- `String` is immutable; `StringBuilder` and `StringBuffer` are mutable.",
+      "breakdown": [
+        {
+          "topic": "Synchronization & Thread Safety",
+          "details": "StringBuffer synchronizes every method with internal monitors. StringBuilder has no synchronization."
+        },
+        {
+          "topic": "Performance Benchmark",
+          "details": "StringBuilder avoids lock acquisition and memory barrier instructions, outperforming StringBuffer in single-threaded code."
+        },
+        {
+          "topic": "When to Use Which",
+          "details": "Use String for immutability; use StringBuilder for local method string building; use StringBuffer for shared thread buffers."
+        },
+        {
+          "topic": "API Equivalence",
+          "details": "Both implement CharSequence, Appendable, and Serializable with identical method signatures."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuffer-and-stringbuilder-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Buffer Comparison Suite",
+      "codeSnippet": "public class BufferComparisonDemo {\n    public static void main(String[] args) {\n        // 1. StringBuilder: Fast, unsynchronized (Modern default)\n        StringBuilder builder = new StringBuilder();\n        builder.append(\"Single-threaded \")\n               .append(\"high performance \")\n               .append(\"buffer.\");\n        System.out.println(\"Builder: \" + builder.toString());\n        \n        // 2. StringBuffer: Thread-safe, synchronized (Legacy)\n        StringBuffer buffer = new StringBuffer();\n        buffer.append(\"Multi-threaded \")\n              .append(\"synchronized \")\n              .append(\"buffer.\");\n        System.out.println(\"Buffer: \" + buffer.toString());\n        \n        // 3. Demonstrating API parity\n        builder.reverse();\n        buffer.reverse();\n        System.out.println(\"Reversed Builder: \" + builder.toString());\n        System.out.println(\"Reversed Buffer: \" + buffer.toString());\n        \n        // 4. Content comparison must use toString()\n        StringBuilder s1 = new StringBuilder(\"Java\");\n        StringBuffer s2 = new StringBuffer(\"Java\");\n        boolean contentMatch = s1.toString().equals(s2.toString());\n        System.out.println(\"Content matches: \" + contentMatch); // true\n    }\n}",
+      "description": "Demonstrates thread-safe StringBuffer vs fast StringBuilder, API parity, and CharSequence polymorphism.",
+      "steps": [
+        {
+          "line": 4,
+          "description": "StringBuilder allocated for fast local assembly without locking overhead."
+        },
+        {
+          "line": 11,
+          "description": "StringBuffer allocated; every append() method acquires an internal object monitor lock."
+        },
+        {
+          "line": 18,
+          "description": "Both classes share identical methods such as reverse(), append(), insert(), and delete()."
+        },
+        {
+          "line": 24,
+          "description": "Comparing a StringBuilder and a StringBuffer requires converting both to String with toString()."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuffer-and-stringbuilder-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: StringBuffer & Thread-Safety",
+      "questions": [
+        {
+          "id": "mcq-sbsb-1",
+          "question": "What is the primary difference between `StringBuilder` and `StringBuffer`?",
+          "options": [
+            "StringBuilder is mutable, StringBuffer is immutable",
+            "StringBuffer is synchronized (thread-safe); StringBuilder is not synchronized",
+            "StringBuilder is in java.lang; StringBuffer is in java.util",
+            "StringBuffer can only store numbers"
+          ],
+          "correctOption": 1,
+          "explanation": "StringBuffer has synchronized methods, making it safe for concurrent access by multiple threads at the cost of performance. StringBuilder is unsynchronized and faster."
+        },
+        {
+          "id": "mcq-sbsb-2",
+          "question": "Which class should you prefer in modern Java for assembling strings inside a local method?",
+          "options": [
+            "StringBuffer, because safety is always paramount",
+            "StringBuilder, because local variables are already thread-confined and don't need locking overhead",
+            "String with repeated +",
+            "char[] array directly"
+          ],
+          "correctOption": 1,
+          "explanation": "Local variables live on the private stack of a single thread. Locking is completely redundant, making StringBuilder the optimal choice."
+        },
+        {
+          "id": "mcq-sbsb-3",
+          "question": "In which Java version was `StringBuilder` introduced to replace `StringBuffer` in single-threaded scenarios?",
+          "options": [
+            "Java 1.0",
+            "Java 1.2",
+            "Java 5",
+            "Java 8"
+          ],
+          "correctOption": 2,
+          "explanation": "StringBuilder was introduced in Java 5 to provide an unsynchronized, higher-performance alternative to StringBuffer."
+        },
+        {
+          "id": "mcq-sbsb-4",
+          "question": "Why is `String` inherently thread-safe without having synchronized methods?",
+          "options": [
+            "Because the operating system locks it",
+            "Because String is immutable; its internal character data can never be modified by any thread",
+            "Because String runs in a separate thread",
+            "Because String is a primitive type"
+          ],
+          "correctOption": 1,
+          "explanation": "Immutable objects are automatically thread-safe. Since their state cannot be changed, multiple threads can read them concurrently without race conditions."
+        },
+        {
+          "id": "mcq-sbsb-5",
+          "question": "What will `s1.equals(s2)` return if `s1` is a `StringBuilder` and `s2` is a `StringBuffer` containing \"Hello\"?",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "ClassCastException"
+          ],
+          "correctOption": 1,
+          "explanation": "They are different classes! `s1.equals(s2)` will check if s2 is of type StringBuilder; since it is not, it returns false immediately."
+        },
+        {
+          "id": "mcq-sbsb-6",
+          "question": "What interface is implemented by `String`, `StringBuilder`, and `StringBuffer` representing a readable sequence of chars?",
+          "options": [
+            "CharBuffer",
+            "CharSequence",
+            "StringSequence",
+            "TextStream"
+          ],
+          "correctOption": 1,
+          "explanation": "All three classes implement the `java.lang.CharSequence` interface, which defines length(), charAt(i), and subSequence()."
+        },
+        {
+          "id": "mcq-sbsb-7",
+          "question": "What is the performance drawback of `StringBuffer` in single-threaded applications?",
+          "options": [
+            "It causes severe memory leaks",
+            "Every method invocation acquires and releases an internal monitor lock, consuming unnecessary CPU cycles",
+            "It cannot store more than 100 characters",
+            "It requires explicit garbage collection"
+          ],
+          "correctOption": 1,
+          "explanation": "Acquiring and releasing JVM object monitors involves memory fences and atomic operations that slow down execution when synchronization is not required."
+        },
+        {
+          "id": "mcq-sbsb-8",
+          "question": "When would using `StringBuffer` genuinely be appropriate?",
+          "options": [
+            "Inside a local method loop",
+            "When a single mutable buffer instance is shared and modified by multiple concurrent background threads",
+            "Whenever storing user passwords",
+            "When compiling on Linux"
+          ],
+          "correctOption": 1,
+          "explanation": "StringBuffer is intended specifically for scenarios where multiple threads concurrently append or mutate a single shared text buffer."
+        },
+        {
+          "id": "mcq-sbsb-9",
+          "question": "Do `StringBuilder` and `StringBuffer` have different method names for appending text?",
+          "options": [
+            "Yes, StringBuilder uses .add() and StringBuffer uses .append()",
+            "No, both use the exact same .append() method signatures",
+            "StringBuffer uses .concat()",
+            "StringBuilder uses .push()"
+          ],
+          "correctOption": 1,
+          "explanation": "Both classes share nearly identical APIs, including append(), insert(), delete(), reverse(), and toString()."
+        },
+        {
+          "id": "mcq-sbsb-10",
+          "question": "Predict the output of the following code:\n```java\nStringBuffer sb = new StringBuffer(\"Hello\");\nsb.append(\" World\");\nSystem.out.println(sb.length());\n```",
+          "options": [
+            "5",
+            "6",
+            "11",
+            "16"
+          ],
+          "correctOption": 2,
+          "explanation": "\"Hello World\" contains 11 characters. sb.length() returns 11."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuffer-and-stringbuilder-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test CharSequence Polymorphism",
+      "practice": {
+        "id": "prac-act-sbsb",
+        "title": "Hands-On: Test CharSequence Polymorphism",
+        "description": "Pass a String and a StringBuilder into a CharSequence method to verify length.",
+        "starterCode": "public class PracticeBufferCompare {\n    static int getLen(CharSequence cs) {\n        // TODO: Return length\n        return 0;\n    }\n    public static void main(String[] args) {\n        // TODO: Test getLen with String and StringBuilder\n    }\n}",
+        "solutionCode": "public class PracticeBufferCompare {\n    static int getLen(CharSequence cs) {\n        return cs.length();\n    }\n    public static void main(String[] args) {\n        System.out.println(\"String len: \" + getLen(\"Java\"));\n        System.out.println(\"Builder len: \" + getLen(new StringBuilder(\"LearnBySelf\")));\n    }\n}",
+        "expectedOutput": "String len: 4\nBuilder len: 11"
+      }
+    },
+    {
+      "id": "act-stringbuffer-and-stringbuilder-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: StringBuffer & Thread-Safety",
+      "interviewQA": [
+        {
+          "id": "iq-sbsb-1",
+          "question": "Compare String, StringBuilder, and StringBuffer in terms of mutability, thread safety, and performance.",
+          "answer": "1) **String**: Strictly immutable, inherently thread-safe without locks, slow for repeated concatenation. 2) **StringBuilder**: Mutable in-place, NOT thread-safe (unsynchronized), fastest performance for text construction. 3) **StringBuffer**: Mutable in-place, thread-safe (every method is synchronized), slower than StringBuilder due to synchronization lock overhead."
+        },
+        {
+          "id": "iq-sbsb-2",
+          "question": "Why is StringBuilder preferred over StringBuffer in 99% of modern Java applications?",
+          "answer": "Most text assembly occurs inside local method variables. Since local variables reside entirely on a thread's private stack frame, no other thread can ever access them. Using `StringBuffer` unnecessarily forces the JVM to acquire and release monitor locks for single-threaded code. `StringBuilder` eliminates this overhead, providing maximum execution speed."
+        },
+        {
+          "id": "iq-sbsb-3",
+          "question": "What is the common superinterface shared by String, StringBuilder, and StringBuffer?",
+          "answer": "All three implement `java.lang.CharSequence`. This interface defines read-only operations for character sequences (`length()`, `charAt(index)`, and `subSequence(start, end)`), allowing polymorphic utility methods to accept any text representation."
+        },
+        {
+          "id": "iq-sbsb-4",
+          "question": "Why didn't Java just make StringBuffer unsynchronized instead of creating StringBuilder in Java 5?",
+          "answer": "Backward compatibility! Millions of lines of legacy enterprise Java code depended on `StringBuffer` being thread-safe. Modifying `StringBuffer` to remove synchronization would have broken existing concurrent software worldwide. Introducing `StringBuilder` preserved compatibility while offering a modern, faster option."
+        },
+        {
+          "id": "iq-sbsb-5",
+          "question": "Can you synchronize StringBuilder externally if thread safety is needed?",
+          "answer": "Yes. If an application must use `StringBuilder` across threads, the code can wrap operations in a standard `synchronized(lock)` block or use explicit locks (`ReentrantLock`). However, `StringBuffer` already provides this synchronization natively."
+        },
+        {
+          "id": "iq-sbsb-6",
+          "question": "Does StringBuffer have any modern alternatives in concurrent programming?",
+          "answer": "In modern concurrent systems, developers rarely share a single mutable text buffer across threads. Instead, threads accumulate text independently using their own local `StringBuilder` instances and then merge the final immutable `String` results via concurrent queues, streams, or actors, avoiding shared lock contention altogether."
+        },
+        {
+          "id": "iq-sbsb-7",
+          "question": "Why is String preferred as a HashMap key over StringBuilder or StringBuffer?",
+          "answer": "Because `String` is immutable, its `hashCode()` is guaranteed never to change, and `String` properly implements `.equals()` and `.hashCode()`. Neither `StringBuilder` nor `StringBuffer` override `.equals()` or `.hashCode()`, meaning identical text will fail hash lookups and cannot safely serve as map keys."
+        }
+      ]
+    },
+    {
+      "id": "act-stringbuffer-and-stringbuilder-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: StringBuffer & Thread-Safety",
+      "checklist": [
+        {
+          "id": "chk-sbsb-1",
+          "text": "I can compare String, StringBuilder, and StringBuffer across mutability, thread-safety, and speed."
+        },
+        {
+          "id": "chk-sbsb-2",
+          "text": "I know why StringBuilder is the modern default for local variables."
+        },
+        {
+          "id": "chk-sbsb-3",
+          "text": "I understand that StringBuffer uses synchronized methods for thread safety."
+        },
+        {
+          "id": "chk-sbsb-4",
+          "text": "I know how to write polymorphic methods accepting CharSequence."
+        },
+        {
+          "id": "chk-sbsb-5",
+          "text": "I know why StringBuilder cannot be used as a HashMap key."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-sbsb-1",
+      "question": "What is the primary difference between `StringBuilder` and `StringBuffer`?",
+      "options": [
+        "StringBuilder is mutable, StringBuffer is immutable",
+        "StringBuffer is synchronized (thread-safe); StringBuilder is not synchronized",
+        "StringBuilder is in java.lang; StringBuffer is in java.util",
+        "StringBuffer can only store numbers"
+      ],
+      "correctOption": 1,
+      "explanation": "StringBuffer has synchronized methods, making it safe for concurrent access by multiple threads at the cost of performance. StringBuilder is unsynchronized and faster."
+    },
+    {
+      "id": "mcq-sbsb-2",
+      "question": "Which class should you prefer in modern Java for assembling strings inside a local method?",
+      "options": [
+        "StringBuffer, because safety is always paramount",
+        "StringBuilder, because local variables are already thread-confined and don't need locking overhead",
+        "String with repeated +",
+        "char[] array directly"
+      ],
+      "correctOption": 1,
+      "explanation": "Local variables live on the private stack of a single thread. Locking is completely redundant, making StringBuilder the optimal choice."
+    },
+    {
+      "id": "mcq-sbsb-3",
+      "question": "In which Java version was `StringBuilder` introduced to replace `StringBuffer` in single-threaded scenarios?",
+      "options": [
+        "Java 1.0",
+        "Java 1.2",
+        "Java 5",
+        "Java 8"
+      ],
+      "correctOption": 2,
+      "explanation": "StringBuilder was introduced in Java 5 to provide an unsynchronized, higher-performance alternative to StringBuffer."
+    },
+    {
+      "id": "mcq-sbsb-4",
+      "question": "Why is `String` inherently thread-safe without having synchronized methods?",
+      "options": [
+        "Because the operating system locks it",
+        "Because String is immutable; its internal character data can never be modified by any thread",
+        "Because String runs in a separate thread",
+        "Because String is a primitive type"
+      ],
+      "correctOption": 1,
+      "explanation": "Immutable objects are automatically thread-safe. Since their state cannot be changed, multiple threads can read them concurrently without race conditions."
+    },
+    {
+      "id": "mcq-sbsb-5",
+      "question": "What will `s1.equals(s2)` return if `s1` is a `StringBuilder` and `s2` is a `StringBuffer` containing \"Hello\"?",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "ClassCastException"
+      ],
+      "correctOption": 1,
+      "explanation": "They are different classes! `s1.equals(s2)` will check if s2 is of type StringBuilder; since it is not, it returns false immediately."
+    },
+    {
+      "id": "mcq-sbsb-6",
+      "question": "What interface is implemented by `String`, `StringBuilder`, and `StringBuffer` representing a readable sequence of chars?",
+      "options": [
+        "CharBuffer",
+        "CharSequence",
+        "StringSequence",
+        "TextStream"
+      ],
+      "correctOption": 1,
+      "explanation": "All three classes implement the `java.lang.CharSequence` interface, which defines length(), charAt(i), and subSequence()."
+    },
+    {
+      "id": "mcq-sbsb-7",
+      "question": "What is the performance drawback of `StringBuffer` in single-threaded applications?",
+      "options": [
+        "It causes severe memory leaks",
+        "Every method invocation acquires and releases an internal monitor lock, consuming unnecessary CPU cycles",
+        "It cannot store more than 100 characters",
+        "It requires explicit garbage collection"
+      ],
+      "correctOption": 1,
+      "explanation": "Acquiring and releasing JVM object monitors involves memory fences and atomic operations that slow down execution when synchronization is not required."
+    },
+    {
+      "id": "mcq-sbsb-8",
+      "question": "When would using `StringBuffer` genuinely be appropriate?",
+      "options": [
+        "Inside a local method loop",
+        "When a single mutable buffer instance is shared and modified by multiple concurrent background threads",
+        "Whenever storing user passwords",
+        "When compiling on Linux"
+      ],
+      "correctOption": 1,
+      "explanation": "StringBuffer is intended specifically for scenarios where multiple threads concurrently append or mutate a single shared text buffer."
+    },
+    {
+      "id": "mcq-sbsb-9",
+      "question": "Do `StringBuilder` and `StringBuffer` have different method names for appending text?",
+      "options": [
+        "Yes, StringBuilder uses .add() and StringBuffer uses .append()",
+        "No, both use the exact same .append() method signatures",
+        "StringBuffer uses .concat()",
+        "StringBuilder uses .push()"
+      ],
+      "correctOption": 1,
+      "explanation": "Both classes share nearly identical APIs, including append(), insert(), delete(), reverse(), and toString()."
+    },
+    {
+      "id": "mcq-sbsb-10",
+      "question": "Predict the output of the following code:\n```java\nStringBuffer sb = new StringBuffer(\"Hello\");\nsb.append(\" World\");\nSystem.out.println(sb.length());\n```",
+      "options": [
+        "5",
+        "6",
+        "11",
+        "16"
+      ],
+      "correctOption": 2,
+      "explanation": "\"Hello World\" contains 11 characters. sb.length() returns 11."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-sbsb-1",
+      "title": "Compare StringBuilder and StringBuffer Output",
+      "difficulty": "Easy",
+      "problemStatement": "Create a `StringBuilder` with text `\"Concurrent\"` and a `StringBuffer` with text `\"Concurrent\"`. Compare their contents using `.toString().equals()`. Print \"Contents match: true\".",
+      "description": "Create a `StringBuilder` with text `\"Concurrent\"` and a `StringBuffer` with text `\"Concurrent\"`. Compare their contents using `.toString().equals()`. Print \"Contents match: true\".",
+      "hint": "builder.toString().equals(buffer.toString());",
+      "hints": [
+        "builder.toString().equals(buffer.toString());"
+      ],
+      "starterCode": "public class BufferComparePractice {\n    public static void main(String[] args) {\n        // TODO: Compare StringBuilder and StringBuffer contents\n    }\n}",
+      "solutionCode": "public class BufferComparePractice {\n    public static void main(String[] args) {\n        StringBuilder builder = new StringBuilder(\"Concurrent\");\n        StringBuffer buffer = new StringBuffer(\"Concurrent\");\n        boolean match = builder.toString().equals(buffer.toString());\n        System.out.println(\"Contents match: \" + match);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Contents match: true"
+        }
+      ],
+      "targetOutput": "Contents match: true"
+    },
+    {
+      "id": "prob-sbsb-2",
+      "title": "Simulate Thread-Safe Log Accumulator",
+      "difficulty": "Easy",
+      "problemStatement": "Use a `StringBuffer` to accumulate 3 thread log entries: `\"[Thread-1: OK]\"`, `\"[Thread-2: OK]\"`, and `\"[Thread-3: OK]\"` separated by `\" | \"`. Print the accumulated buffer.",
+      "description": "Use a `StringBuffer` to accumulate 3 thread log entries: `\"[Thread-1: OK]\"`, `\"[Thread-2: OK]\"`, and `\"[Thread-3: OK]\"` separated by `\" | \"`. Print the accumulated buffer.",
+      "hint": "buffer.append(\"[Thread-1: OK]\").append(\" | \")...",
+      "hints": [
+        "buffer.append(\"[Thread-1: OK]\").append(\" | \")..."
+      ],
+      "starterCode": "public class ThreadLogAccumulator {\n    public static void main(String[] args) {\n        StringBuffer logBuffer = new StringBuffer();\n        // TODO: Append the 3 logs with separator\n    }\n}",
+      "solutionCode": "public class ThreadLogAccumulator {\n    public static void main(String[] args) {\n        StringBuffer logBuffer = new StringBuffer();\n        logBuffer.append(\"[Thread-1: OK]\")\n                 .append(\" | \")\n                 .append(\"[Thread-2: OK]\")\n                 .append(\" | \")\n                 .append(\"[Thread-3: OK]\");\n        System.out.println(\"Log: \" + logBuffer.toString());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Log: [Thread-1: OK] | [Thread-2: OK] | [Thread-3: OK]"
+        }
+      ],
+      "targetOutput": "Log: [Thread-1: OK] | [Thread-2: OK] | [Thread-3: OK]"
+    },
+    {
+      "id": "prob-sbsb-3",
+      "title": "CharSequence Interface Polymorphism",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method `printLength(CharSequence cs)` that prints `cs.length()`. Test it with `String s = \"Java\"`, `StringBuilder sb = new StringBuilder(\"SpringBoot\")`, and `StringBuffer sbf = new StringBuffer(\"Microservices\")`. Format: 3 output lines with their lengths.",
+      "description": "Write a method `printLength(CharSequence cs)` that prints `cs.length()`. Test it with `String s = \"Java\"`, `StringBuilder sb = new StringBuilder(\"SpringBoot\")`, and `StringBuffer sbf = new StringBuffer(\"Microservices\")`. Format: 3 output lines with their lengths.",
+      "hint": "CharSequence is the common superinterface.",
+      "hints": [
+        "CharSequence is the common superinterface."
+      ],
+      "starterCode": "public class CharSequenceDemo {\n    public static void main(String[] args) {\n        // TODO: Demonstrate polymorphism with CharSequence\n    }\n}",
+      "solutionCode": "public class CharSequenceDemo {\n    static void printLength(CharSequence cs) {\n        System.out.println(\"Length: \" + cs.length());\n    }\n    public static void main(String[] args) {\n        printLength(\"Java\");\n        printLength(new StringBuilder(\"SpringBoot\"));\n        printLength(new StringBuffer(\"Microservices\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Length: 4\nLength: 10\nLength: 13"
+        }
+      ],
+      "targetOutput": "Length: 4\nLength: 10\nLength: 13"
+    },
+    {
+      "id": "prob-sbsb-4",
+      "title": "Reverse Words in a Sentence Using StringBuilder",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String sentence = \"Java Backend Engineer\";`. Split it by space into words. Use `StringBuilder` to reverse each individual word, then join them with spaces. Output: `\"avaJ dnekcaB reenignE\"`.",
+      "description": "Given `String sentence = \"Java Backend Engineer\";`. Split it by space into words. Use `StringBuilder` to reverse each individual word, then join them with spaces. Output: `\"avaJ dnekcaB reenignE\"`.",
+      "hint": "Loop over words, call new StringBuilder(word).reverse().toString().",
+      "hints": [
+        "Loop over words, call new StringBuilder(word).reverse().toString()."
+      ],
+      "starterCode": "public class ReverseWords {\n    public static void main(String[] args) {\n        String sentence = \"Java Backend Engineer\";\n        // TODO: Reverse each word\n    }\n}",
+      "solutionCode": "public class ReverseWords {\n    public static void main(String[] args) {\n        String sentence = \"Java Backend Engineer\";\n        String[] words = sentence.split(\" \");\n        for (int i = 0; i < words.length; i++) {\n            words[i] = new StringBuilder(words[i]).reverse().toString();\n        }\n        String result = String.join(\" \", words);\n        System.out.println(\"Result: \" + result);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: avaJ dnekcaB reenignE"
+        }
+      ],
+      "targetOutput": "Result: avaJ dnekcaB reenignE"
+    },
+    {
+      "id": "prob-sbsb-5",
+      "title": "Demonstrate Mutability vs Immutability",
+      "difficulty": "Medium",
+      "problemStatement": "Demonstrate the memory mutability difference: Create `String s = \"Base\"; s.concat(\"+Extra\");`. Create `StringBuilder sb = new StringBuilder(\"Base\"); sb.append(\"+Extra\");`. Print `s` and `sb` to prove `s` is unchanged while `sb` is mutated.",
+      "description": "Demonstrate the memory mutability difference: Create `String s = \"Base\"; s.concat(\"+Extra\");`. Create `StringBuilder sb = new StringBuilder(\"Base\"); sb.append(\"+Extra\");`. Print `s` and `sb` to prove `s` is unchanged while `sb` is mutated.",
+      "hint": "s is immutable so s remains \"Base\"; sb is mutable so it becomes \"Base+Extra\".",
+      "hints": [
+        "s is immutable so s remains \"Base\"; sb is mutable so it becomes \"Base+Extra\"."
+      ],
+      "starterCode": "public class MutabilityProof {\n    public static void main(String[] args) {\n        // TODO: Compare String concat vs StringBuilder append\n    }\n}",
+      "solutionCode": "public class MutabilityProof {\n    public static void main(String[] args) {\n        String s = \"Base\";\n        s.concat(\"+Extra\");\n        StringBuilder sb = new StringBuilder(\"Base\");\n        sb.append(\"+Extra\");\n        System.out.println(\"String: \" + s);\n        System.out.println(\"StringBuilder: \" + sb.toString());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "String: Base\nStringBuilder: Base+Extra"
+        }
+      ],
+      "targetOutput": "String: Base\nStringBuilder: Base+Extra"
+    },
+    {
+      "id": "prob-sbsb-6",
+      "title": "StringBuffer Character Replacement",
+      "difficulty": "Easy",
+      "problemStatement": "Given `StringBuffer sbf = new StringBuffer(\"Error 404\");`. Use `sbf.replace(0, 5, \"Status\")` to replace \"Error\" with \"Status\". Print the modified buffer.",
+      "description": "Given `StringBuffer sbf = new StringBuffer(\"Error 404\");`. Use `sbf.replace(0, 5, \"Status\")` to replace \"Error\" with \"Status\". Print the modified buffer.",
+      "hint": "sbf.replace(0, 5, \"Status\"); modifies in place.",
+      "hints": [
+        "sbf.replace(0, 5, \"Status\"); modifies in place."
+      ],
+      "starterCode": "public class BufferReplaceDemo {\n    public static void main(String[] args) {\n        StringBuffer sbf = new StringBuffer(\"Error 404\");\n        // TODO: Replace Error with Status\n    }\n}",
+      "solutionCode": "public class BufferReplaceDemo {\n    public static void main(String[] args) {\n        StringBuffer sbf = new StringBuffer(\"Error 404\");\n        sbf.replace(0, 5, \"Status\");\n        System.out.println(\"Result: \" + sbf.toString());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: Status 404"
+        }
+      ],
+      "targetOutput": "Result: Status 404"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-sbsb-1",
+      "question": "Compare String, StringBuilder, and StringBuffer in terms of mutability, thread safety, and performance.",
+      "answer": "1) **String**: Strictly immutable, inherently thread-safe without locks, slow for repeated concatenation. 2) **StringBuilder**: Mutable in-place, NOT thread-safe (unsynchronized), fastest performance for text construction. 3) **StringBuffer**: Mutable in-place, thread-safe (every method is synchronized), slower than StringBuilder due to synchronization lock overhead."
+    },
+    {
+      "id": "iq-sbsb-2",
+      "question": "Why is StringBuilder preferred over StringBuffer in 99% of modern Java applications?",
+      "answer": "Most text assembly occurs inside local method variables. Since local variables reside entirely on a thread's private stack frame, no other thread can ever access them. Using `StringBuffer` unnecessarily forces the JVM to acquire and release monitor locks for single-threaded code. `StringBuilder` eliminates this overhead, providing maximum execution speed."
+    },
+    {
+      "id": "iq-sbsb-3",
+      "question": "What is the common superinterface shared by String, StringBuilder, and StringBuffer?",
+      "answer": "All three implement `java.lang.CharSequence`. This interface defines read-only operations for character sequences (`length()`, `charAt(index)`, and `subSequence(start, end)`), allowing polymorphic utility methods to accept any text representation."
+    },
+    {
+      "id": "iq-sbsb-4",
+      "question": "Why didn't Java just make StringBuffer unsynchronized instead of creating StringBuilder in Java 5?",
+      "answer": "Backward compatibility! Millions of lines of legacy enterprise Java code depended on `StringBuffer` being thread-safe. Modifying `StringBuffer` to remove synchronization would have broken existing concurrent software worldwide. Introducing `StringBuilder` preserved compatibility while offering a modern, faster option."
+    },
+    {
+      "id": "iq-sbsb-5",
+      "question": "Can you synchronize StringBuilder externally if thread safety is needed?",
+      "answer": "Yes. If an application must use `StringBuilder` across threads, the code can wrap operations in a standard `synchronized(lock)` block or use explicit locks (`ReentrantLock`). However, `StringBuffer` already provides this synchronization natively."
+    },
+    {
+      "id": "iq-sbsb-6",
+      "question": "Does StringBuffer have any modern alternatives in concurrent programming?",
+      "answer": "In modern concurrent systems, developers rarely share a single mutable text buffer across threads. Instead, threads accumulate text independently using their own local `StringBuilder` instances and then merge the final immutable `String` results via concurrent queues, streams, or actors, avoiding shared lock contention altogether."
+    },
+    {
+      "id": "iq-sbsb-7",
+      "question": "Why is String preferred as a HashMap key over StringBuilder or StringBuffer?",
+      "answer": "Because `String` is immutable, its `hashCode()` is guaranteed never to change, and `String` properly implements `.equals()` and `.hashCode()`. Neither `StringBuilder` nor `StringBuffer` override `.equals()` or `.hashCode()`, meaning identical text will fail hash lookups and cannot safely serve as map keys."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-sbsb-1",
+      "text": "I can compare String, StringBuilder, and StringBuffer across mutability, thread-safety, and speed."
+    },
+    {
+      "id": "chk-sbsb-2",
+      "text": "I know why StringBuilder is the modern default for local variables."
+    },
+    {
+      "id": "chk-sbsb-3",
+      "text": "I understand that StringBuffer uses synchronized methods for thread safety."
+    },
+    {
+      "id": "chk-sbsb-4",
+      "text": "I know how to write polymorphic methods accepting CharSequence."
+    },
+    {
+      "id": "chk-sbsb-5",
+      "text": "I know why StringBuilder cannot be used as a HashMap key."
+    }
+  ]
+}

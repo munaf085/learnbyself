@@ -1,0 +1,578 @@
+{
+  "id": "les-strings-string-creation-and-literals",
+  "slug": "string-creation-and-literals",
+  "sectionSlug": "basics",
+  "moduleSlug": "strings",
+  "title": "String Creation & String Literals",
+  "summary": "Master the two primary ways to create Strings: string literals vs the new keyword, heap memory mechanics, and why literals are the gold standard.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "les-strings-what-is-a-string"
+  ],
+  "subtopics": [
+    "String Literals",
+    "new String() Constructor",
+    "Object Count Calculation",
+    "char[] to String Conversion"
+  ],
+  "learningOutcomes": [
+    "Differentiate between pooled literals and heap-allocated objects",
+    "Explain why new String() is generally an anti-pattern",
+    "Convert char arrays to String objects"
+  ],
+  "activities": [
+    {
+      "id": "act-string-creation-and-literals-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: String Creation & String Literals",
+      "content": "### 1. Concept: Two Ways to Create Strings\nIn Java, there are two distinct mechanisms to instantiate a `String` object:\n1. **String Literal Syntax**: `String s1 = \"Java\";`\n2. **The `new` Keyword**: `String s2 = new String(\"Java\");`\n\nWhile both result in a valid `String` variable containing the text `\"Java\"`, they behave fundamentally differently behind the scenes in JVM memory management.\n\n### 2. Why It Matters\nUsing `new String(\"hello\")` unnecessarily allocates extra objects on the normal Heap and bypasses the memory-saving benefits of Java's String Constant Pool. In high-throughput services processing millions of records, choosing string literals over `new String()` can reduce garbage collection pressure by gigabytes.\n\n### 3. Mental Model\n- **String Literal (`\"Java\"`)**: Like borrowing a communal book from a city library. If someone already donated a copy of \"Java\" to the library shelf (the String Constant Pool), the librarian simply gives you a library card pointing to that exact existing book. No new paper is printed.\n- **The `new` Keyword (`new String(\"Java\")`)**: You command the printing press to print a brand-new physical copy for your personal house in the regular Heap, even though an identical copy is already sitting in the library.\n\n### 4. Java Mechanics: Literal vs `new` Keyword\n1. **String Literal**:\n   - When the class loader encounters `\"Java\"`, it checks the **String Constant Pool** (a specialized cache in Heap memory).\n   - If `\"Java\"` already exists in the pool, the JVM returns the reference to the existing instance.\n   - If `\"Java\"` does not exist, it creates a new instance in the pool and returns its reference.\n2. **The `new` Keyword**:\n   - `new String(\"Java\")` explicitly forces the JVM to allocate a **brand new object** in regular Heap memory outside the pool.\n   - It also ensures `\"Java\"` exists in the pool (because of the literal argument), resulting in **two objects** created if `\"Java\"` wasn't in the pool yet.\n3. **Reference Comparison (`==`)**:\n   - `s1 == s2` compares the memory addresses.\n   - Two literals with identical content share the exact same address (`s1 == s2` is `true`).\n   - An object created with `new` has a distinct address (`s1 == s3` is `false`).\n\n### 5. Practical Java Example\n```java\n// String literal: pooled\nString a = \"Cloud\";\nString b = \"Cloud\";\n\n// new keyword: separate heap instance\nString c = new String(\"Cloud\");\n\nSystem.out.println(\"a == b: \" + (a == b)); // true (same pool object)\nSystem.out.println(\"a == c: \" + (a == c)); // false (c is a distinct heap object)\nSystem.out.println(\"a.equals(c): \" + a.equals(c)); // true (identical characters)\n```\n\n### 6. Common Beginner Mistakes\n- **Writing `new String(\"abc\")` routinely**: Writing `String name = new String(\"John\");`. This is redundant and considered an anti-pattern in Java.\n- **Assuming `new` is required**: Forgetting that Java provides automatic literal instantiation for Strings.\n- **Comparing references instead of content**: Using `==` to verify user input against a literal.\n\n### 7. Key Takeaways\n- Always prefer String literals (`String s = \"text\";`) over `new String(\"text\")`.\n- String literals take advantage of the String Constant Pool to conserve memory.\n- `new String(...)` forces the creation of a separate object on the normal Heap.\n- Use `.equals()` to compare text content, not `==`.",
+      "breakdown": [
+        {
+          "topic": "String Literal Syntax",
+          "details": "Quotes characters directly. Managed by the JVM String Constant Pool for memory deduplication."
+        },
+        {
+          "topic": "The new Keyword",
+          "details": "Explicitly allocates a distinct String object in regular Heap memory, regardless of whether identical text already exists."
+        },
+        {
+          "topic": "Memory Optimization",
+          "details": "Literals reuse memory; new allocates duplicate instances, creating unnecessary garbage collector work."
+        },
+        {
+          "topic": "Content Equality",
+          "details": "Regardless of how a String was created, .equals() verifies identical character sequences."
+        }
+      ]
+    },
+    {
+      "id": "act-string-creation-and-literals-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: String Literals vs New Keyword",
+      "codeSnippet": "public class StringCreationDemo {\n    public static void main(String[] args) {\n        // 1. String Literals (Reused from String Pool)\n        String s1 = \"LearnBySelf\";\n        String s2 = \"LearnBySelf\";\n        \n        // 2. new Keyword (Forced new object in regular Heap)\n        String s3 = new String(\"LearnBySelf\");\n        \n        // Output references comparison (memory address check)\n        System.out.println(\"s1 == s2: \" + (s1 == s2)); // true\n        System.out.println(\"s1 == s3: \" + (s1 == s3)); // false\n        \n        // Content comparison (character sequence check)\n        System.out.println(\"s1.equals(s3): \" + s1.equals(s3)); // true\n        \n        // Checking identity hash codes to observe physical memory difference\n        System.out.println(\"s1 Hash: \" + System.identityHashCode(s1));\n        System.out.println(\"s2 Hash: \" + System.identityHashCode(s2));\n        System.out.println(\"s3 Hash: \" + System.identityHashCode(s3));\n    }\n}",
+      "description": "Compares memory address identity vs content equality between literals and objects allocated with new.",
+      "steps": [
+        {
+          "line": 4,
+          "description": "JVM places 'LearnBySelf' into the String Constant Pool and assigns reference to s1."
+        },
+        {
+          "line": 5,
+          "description": "JVM finds 'LearnBySelf' already in pool; s2 is assigned the exact same memory address."
+        },
+        {
+          "line": 8,
+          "description": "new String() forces allocation of a new instance on the general Heap; s3 gets a new address."
+        },
+        {
+          "line": 11,
+          "description": "s1 == s2 evaluates to true because both variables hold the exact same memory address."
+        },
+        {
+          "line": 12,
+          "description": "s1 == s3 evaluates to false because s3 points to a different heap object."
+        },
+        {
+          "line": 15,
+          "description": "s1.equals(s3) evaluates to true because the sequence of characters is identical."
+        }
+      ]
+    },
+    {
+      "id": "act-string-creation-and-literals-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: String Creation & String Literals",
+      "questions": [
+        {
+          "id": "mcq-scl-1",
+          "question": "How many objects are created by the statement: `String str = new String(\"Hello\");` if \"Hello\" is not already in the String Constant Pool?",
+          "options": [
+            "0 objects",
+            "1 object",
+            "2 objects",
+            "3 objects"
+          ],
+          "correctOption": 2,
+          "explanation": "Two objects: 1 object in the String Constant Pool because of the literal \"Hello\", and 1 object in the regular Heap created by the 'new' keyword."
+        },
+        {
+          "id": "mcq-scl-2",
+          "question": "What is the result of evaluating `s1 == s2` in the following code?\n```java\nString s1 = \"Java\";\nString s2 = \"Java\";\n```",
+          "options": [
+            "true, because both point to the same pooled instance",
+            "false, because two variables can never share memory",
+            "Compile error",
+            "NullPointerException"
+          ],
+          "correctOption": 0,
+          "explanation": "Because \"Java\" is a string literal, the JVM reuses the existing instance from the String Constant Pool. Both s1 and s2 share the exact same reference address."
+        },
+        {
+          "id": "mcq-scl-3",
+          "question": "What will `s1 == s2` evaluate to in this snippet?\n```java\nString s1 = \"Spring\";\nString s2 = new String(\"Spring\");\n```",
+          "options": [
+            "true",
+            "false",
+            "Compile-time error",
+            "Runtime Exception"
+          ],
+          "correctOption": 1,
+          "explanation": "The 'new' keyword allocates a separate object on the regular Heap. Hence s1 and s2 point to different memory locations, making == false."
+        },
+        {
+          "id": "mcq-scl-4",
+          "question": "Why is `String s = new String(\"text\");` considered an anti-pattern in standard Java code?",
+          "options": [
+            "It causes an immediate compiler error",
+            "It is deprecated in Java 17",
+            "It creates unnecessary duplicate heap objects, wasting memory and increasing garbage collection overhead",
+            "It prevents methods like .length() from executing"
+          ],
+          "correctOption": 2,
+          "explanation": "Using 'new String()' bypasses standard literal pooling optimization, allocating redundant heap instances that pressure the garbage collector."
+        },
+        {
+          "id": "mcq-scl-5",
+          "question": "Which method should you use to check if two String objects have the exact same characters, regardless of how they were created?",
+          "options": [
+            "==",
+            ".equals()",
+            ".same()",
+            ".compare()"
+          ],
+          "correctOption": 1,
+          "explanation": ".equals() compares the character sequence inside the Strings. '==' only compares memory references."
+        },
+        {
+          "id": "mcq-scl-6",
+          "question": "What will the following code print?\n```java\nString a = \"Alpha\";\nString b = new String(\"Alpha\");\nSystem.out.println(a.equals(b) + \" \" + (a == b));\n```",
+          "options": [
+            "true true",
+            "false false",
+            "true false",
+            "false true"
+          ],
+          "correctOption": 2,
+          "explanation": "a.equals(b) is true because both contain \"Alpha\". (a == b) is false because b was created with 'new' and has a different memory address."
+        },
+        {
+          "id": "mcq-scl-7",
+          "question": "Where is the String Constant Pool located in modern JVM implementations (Java 8+)?",
+          "options": [
+            "Inside PermGen space on the operating system kernel",
+            "Inside the main Java Heap memory",
+            "On the native C-runtime stack",
+            "Inside CPU L1 cache"
+          ],
+          "correctOption": 1,
+          "explanation": "Since Java 7, the String Constant Pool resides directly within the standard JVM Heap memory, enabling pooled strings to be garbage collected if unreferenced."
+        },
+        {
+          "id": "mcq-scl-8",
+          "question": "Can you create a String from an array of characters (`char[]`)?",
+          "options": [
+            "No, Java does not support converting char[] to String",
+            "Yes, using new String(charArray)",
+            "Only using external third-party libraries",
+            "Only by converting each char to int first"
+          ],
+          "correctOption": 1,
+          "explanation": "Java provides a constructor `new String(char[] data)` that copies the character array into a new String object."
+        },
+        {
+          "id": "mcq-scl-9",
+          "question": "Predict the output of the following code:\n```java\nchar[] chars = {'C', 'o', 'd', 'e'};\nString str = new String(chars);\nSystem.out.println(str.length() + \":\" + str.charAt(1));\n```",
+          "options": [
+            "4:C",
+            "4:o",
+            "3:d",
+            "4:d"
+          ],
+          "correctOption": 1,
+          "explanation": "The string has length 4. Index 1 corresponds to 'o'. Output is '4:o'."
+        }
+      ]
+    },
+    {
+      "id": "act-string-creation-and-literals-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Literal Pooling vs New Object Allocation",
+      "practice": {
+        "id": "prac-act-scl",
+        "title": "Hands-On: Test Literal Pooling vs New Object Allocation",
+        "description": "Create two literals and one 'new String' object, then verify their reference and content equality.",
+        "starterCode": "public class PracticeCreation {\n    public static void main(String[] args) {\n        String x = \"Learn\";\n        String y = \"Learn\";\n        String z = new String(\"Learn\");\n        // TODO: Print (x == y), (x == z), and x.equals(z)\n    }\n}",
+        "solutionCode": "public class PracticeCreation {\n    public static void main(String[] args) {\n        String x = \"Learn\";\n        String y = \"Learn\";\n        String z = new String(\"Learn\");\n        System.out.println(\"x == y: \" + (x == y));\n        System.out.println(\"x == z: \" + (x == z));\n        System.out.println(\"x.equals(z): \" + x.equals(z));\n    }\n}",
+        "expectedOutput": "x == y: true\nx == z: false\nx.equals(z): true"
+      }
+    },
+    {
+      "id": "act-string-creation-and-literals-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: String Creation & String Literals",
+      "interviewQA": [
+        {
+          "id": "iq-scl-1",
+          "question": "What is the difference between String s = \"Hello\" and String s = new String(\"Hello\")?",
+          "answer": "`String s = \"Hello\"` creates or reuses an existing instance in the String Constant Pool. `String s = new String(\"Hello\")` forces the JVM to allocate a brand new String object on the regular Heap, even if \"Hello\" is already present in the pool. It creates redundant memory overhead."
+        },
+        {
+          "id": "iq-scl-2",
+          "question": "How many objects are created in this code: `String s1 = \"test\"; String s2 = \"test\"; String s3 = new String(\"test\");`?",
+          "answer": "Exactly two objects: 1) One object in the String Constant Pool created when the literal \"test\" is first evaluated (shared by both s1 and s2), and 2) One object in the standard Heap created when `new String(\"test\")` is executed for s3."
+        },
+        {
+          "id": "iq-scl-3",
+          "question": "Can two different String variables have different memory addresses but equal content?",
+          "answer": "Yes, absolutely. For example, `String a = \"data\";` and `String b = new String(\"data\");`. `a == b` evaluates to `false` because they reside at different memory addresses, but `a.equals(b)` evaluates to `true` because their character sequences are identical."
+        },
+        {
+          "id": "iq-scl-4",
+          "question": "What is the intern() method on String?",
+          "answer": "`str.intern()` returns the canonical representation of the string from the String Constant Pool. If the pool already contains a string equal to `str`, that pooled reference is returned. If not, `str` is added to the pool and its reference is returned."
+        },
+        {
+          "id": "iq-scl-5",
+          "question": "Why does Java promote using String literals over the new keyword?",
+          "answer": "Memory efficiency and performance. Literals enable String pooling (deduplication). By sharing identical literals across the entire JVM runtime, memory consumption drops drastically and garbage collection overhead is minimized."
+        },
+        {
+          "id": "iq-scl-6",
+          "question": "What will `System.out.println(\"Java\" == \"Java\");` output and why?",
+          "answer": "It prints `true`. The Java compiler and JVM identify that both literals represent the exact same constant value in the class file's constant pool, so both references point to the exact same object in the String Constant Pool."
+        },
+        {
+          "id": "iq-scl-7",
+          "question": "What happens if you pass null into `new String((String) null)`?",
+          "answer": "It throws a `NullPointerException` at runtime. The String copy constructor checks if the incoming argument is null and immediately rejects it."
+        }
+      ]
+    },
+    {
+      "id": "act-string-creation-and-literals-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: String Creation & String Literals",
+      "checklist": [
+        {
+          "id": "chk-scl-1",
+          "text": "I can explain how String literals use the String Constant Pool."
+        },
+        {
+          "id": "chk-scl-2",
+          "text": "I understand why new String() creates duplicate objects on the Heap."
+        },
+        {
+          "id": "chk-scl-3",
+          "text": "I know why == compares references and .equals() compares text contents."
+        },
+        {
+          "id": "chk-scl-4",
+          "text": "I can count how many objects are created by literal and new expressions."
+        },
+        {
+          "id": "chk-scl-5",
+          "text": "I know how to construct a String from a char[] array."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-scl-1",
+      "question": "How many objects are created by the statement: `String str = new String(\"Hello\");` if \"Hello\" is not already in the String Constant Pool?",
+      "options": [
+        "0 objects",
+        "1 object",
+        "2 objects",
+        "3 objects"
+      ],
+      "correctOption": 2,
+      "explanation": "Two objects: 1 object in the String Constant Pool because of the literal \"Hello\", and 1 object in the regular Heap created by the 'new' keyword."
+    },
+    {
+      "id": "mcq-scl-2",
+      "question": "What is the result of evaluating `s1 == s2` in the following code?\n```java\nString s1 = \"Java\";\nString s2 = \"Java\";\n```",
+      "options": [
+        "true, because both point to the same pooled instance",
+        "false, because two variables can never share memory",
+        "Compile error",
+        "NullPointerException"
+      ],
+      "correctOption": 0,
+      "explanation": "Because \"Java\" is a string literal, the JVM reuses the existing instance from the String Constant Pool. Both s1 and s2 share the exact same reference address."
+    },
+    {
+      "id": "mcq-scl-3",
+      "question": "What will `s1 == s2` evaluate to in this snippet?\n```java\nString s1 = \"Spring\";\nString s2 = new String(\"Spring\");\n```",
+      "options": [
+        "true",
+        "false",
+        "Compile-time error",
+        "Runtime Exception"
+      ],
+      "correctOption": 1,
+      "explanation": "The 'new' keyword allocates a separate object on the regular Heap. Hence s1 and s2 point to different memory locations, making == false."
+    },
+    {
+      "id": "mcq-scl-4",
+      "question": "Why is `String s = new String(\"text\");` considered an anti-pattern in standard Java code?",
+      "options": [
+        "It causes an immediate compiler error",
+        "It is deprecated in Java 17",
+        "It creates unnecessary duplicate heap objects, wasting memory and increasing garbage collection overhead",
+        "It prevents methods like .length() from executing"
+      ],
+      "correctOption": 2,
+      "explanation": "Using 'new String()' bypasses standard literal pooling optimization, allocating redundant heap instances that pressure the garbage collector."
+    },
+    {
+      "id": "mcq-scl-5",
+      "question": "Which method should you use to check if two String objects have the exact same characters, regardless of how they were created?",
+      "options": [
+        "==",
+        ".equals()",
+        ".same()",
+        ".compare()"
+      ],
+      "correctOption": 1,
+      "explanation": ".equals() compares the character sequence inside the Strings. '==' only compares memory references."
+    },
+    {
+      "id": "mcq-scl-6",
+      "question": "What will the following code print?\n```java\nString a = \"Alpha\";\nString b = new String(\"Alpha\");\nSystem.out.println(a.equals(b) + \" \" + (a == b));\n```",
+      "options": [
+        "true true",
+        "false false",
+        "true false",
+        "false true"
+      ],
+      "correctOption": 2,
+      "explanation": "a.equals(b) is true because both contain \"Alpha\". (a == b) is false because b was created with 'new' and has a different memory address."
+    },
+    {
+      "id": "mcq-scl-7",
+      "question": "Where is the String Constant Pool located in modern JVM implementations (Java 8+)?",
+      "options": [
+        "Inside PermGen space on the operating system kernel",
+        "Inside the main Java Heap memory",
+        "On the native C-runtime stack",
+        "Inside CPU L1 cache"
+      ],
+      "correctOption": 1,
+      "explanation": "Since Java 7, the String Constant Pool resides directly within the standard JVM Heap memory, enabling pooled strings to be garbage collected if unreferenced."
+    },
+    {
+      "id": "mcq-scl-8",
+      "question": "Can you create a String from an array of characters (`char[]`)?",
+      "options": [
+        "No, Java does not support converting char[] to String",
+        "Yes, using new String(charArray)",
+        "Only using external third-party libraries",
+        "Only by converting each char to int first"
+      ],
+      "correctOption": 1,
+      "explanation": "Java provides a constructor `new String(char[] data)` that copies the character array into a new String object."
+    },
+    {
+      "id": "mcq-scl-9",
+      "question": "Predict the output of the following code:\n```java\nchar[] chars = {'C', 'o', 'd', 'e'};\nString str = new String(chars);\nSystem.out.println(str.length() + \":\" + str.charAt(1));\n```",
+      "options": [
+        "4:C",
+        "4:o",
+        "3:d",
+        "4:d"
+      ],
+      "correctOption": 1,
+      "explanation": "The string has length 4. Index 1 corresponds to 'o'. Output is '4:o'."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-scl-1",
+      "title": "Demonstrate Literal vs New Equality",
+      "difficulty": "Easy",
+      "problemStatement": "Declare three Strings: `s1 = \"Oracle\"`, `s2 = \"Oracle\"`, and `s3 = new String(\"Oracle\")`. Print the results of `(s1 == s2)`, `(s1 == s3)`, and `s1.equals(s3)` formatted clearly.",
+      "description": "Declare three Strings: `s1 = \"Oracle\"`, `s2 = \"Oracle\"`, and `s3 = new String(\"Oracle\")`. Print the results of `(s1 == s2)`, `(s1 == s3)`, and `s1.equals(s3)` formatted clearly.",
+      "hint": "Use parentheses when printing expressions inside println with string concatenation: + (s1 == s2).",
+      "hints": [
+        "Use parentheses when printing expressions inside println with string concatenation: + (s1 == s2)."
+      ],
+      "starterCode": "public class CreationEquality {\n    public static void main(String[] args) {\n        // TODO: Declare s1, s2, s3 and print comparisons\n    }\n}",
+      "solutionCode": "public class CreationEquality {\n    public static void main(String[] args) {\n        String s1 = \"Oracle\";\n        String s2 = \"Oracle\";\n        String s3 = new String(\"Oracle\");\n        System.out.println(\"s1 == s2: \" + (s1 == s2));\n        System.out.println(\"s1 == s3: \" + (s1 == s3));\n        System.out.println(\"s1.equals(s3): \" + s1.equals(s3));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "s1 == s2: true\ns1 == s3: false\ns1.equals(s3): true"
+        }
+      ],
+      "targetOutput": "s1 == s2: true\ns1 == s3: false\ns1.equals(s3): true"
+    },
+    {
+      "id": "prob-scl-2",
+      "title": "Convert Character Array to String",
+      "difficulty": "Easy",
+      "problemStatement": "Given an array `char[] letters = {'J', 'a', 'v', 'a', '2', '1'};`, create a String using `new String(letters)`. Print the resulting String and its length.",
+      "description": "Given an array `char[] letters = {'J', 'a', 'v', 'a', '2', '1'};`, create a String using `new String(letters)`. Print the resulting String and its length.",
+      "hint": "Use String word = new String(letters);",
+      "hints": [
+        "Use String word = new String(letters);"
+      ],
+      "starterCode": "public class CharArrayToString {\n    public static void main(String[] args) {\n        char[] letters = {'J', 'a', 'v', 'a', '2', '1'};\n        // TODO: Construct string and print\n    }\n}",
+      "solutionCode": "public class CharArrayToString {\n    public static void main(String[] args) {\n        char[] letters = {'J', 'a', 'v', 'a', '2', '1'};\n        String word = new String(letters);\n        System.out.println(\"Constructed: \" + word);\n        System.out.println(\"Length: \" + word.length());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Constructed: Java21\nLength: 6"
+        }
+      ],
+      "targetOutput": "Constructed: Java21\nLength: 6"
+    },
+    {
+      "id": "prob-scl-3",
+      "title": "Analyze String Pool Count",
+      "difficulty": "Medium",
+      "problemStatement": "Write a program that takes two literals `\"Red\"` and `\"Blue\"` and constructs a third string `new String(\"Red\")`. Print \"Same Pool Object\" if `a == b`, else print \"Distinct Objects\". Compare `a` with the new instance.",
+      "description": "Write a program that takes two literals `\"Red\"` and `\"Blue\"` and constructs a third string `new String(\"Red\")`. Print \"Same Pool Object\" if `a == b`, else print \"Distinct Objects\". Compare `a` with the new instance.",
+      "hint": "Check with if (a == c) ...",
+      "hints": [
+        "Check with if (a == c) ..."
+      ],
+      "starterCode": "public class PoolInspector {\n    public static void main(String[] args) {\n        String a = \"Red\";\n        String c = new String(\"Red\");\n        // TODO: Compare with == and print result\n    }\n}",
+      "solutionCode": "public class PoolInspector {\n    public static void main(String[] args) {\n        String a = \"Red\";\n        String c = new String(\"Red\");\n        if (a == c) {\n            System.out.println(\"Same Pool Object\");\n        } else {\n            System.out.println(\"Distinct Objects\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Distinct Objects"
+        }
+      ],
+      "targetOutput": "Distinct Objects"
+    },
+    {
+      "id": "prob-scl-4",
+      "title": "Build String from Partial Character Array",
+      "difficulty": "Medium",
+      "problemStatement": "Using the constructor `new String(char[] data, int offset, int count)`, extract the substring corresponding to `\"PASS\"` from the array `char[] status = {'F', 'A', 'I', 'L', 'P', 'A', 'S', 'S'};` (offset 4, count 4). Print the extracted String.",
+      "description": "Using the constructor `new String(char[] data, int offset, int count)`, extract the substring corresponding to `\"PASS\"` from the array `char[] status = {'F', 'A', 'I', 'L', 'P', 'A', 'S', 'S'};` (offset 4, count 4). Print the extracted String.",
+      "hint": "new String(status, 4, 4);",
+      "hints": [
+        "new String(status, 4, 4);"
+      ],
+      "starterCode": "public class PartialArrayString {\n    public static void main(String[] args) {\n        char[] status = {'F', 'A', 'I', 'L', 'P', 'A', 'S', 'S'};\n        // TODO: Extract PASS and print\n    }\n}",
+      "solutionCode": "public class PartialArrayString {\n    public static void main(String[] args) {\n        char[] status = {'F', 'A', 'I', 'L', 'P', 'A', 'S', 'S'};\n        String result = new String(status, 4, 4);\n        System.out.println(\"Result: \" + result);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: PASS"
+        }
+      ],
+      "targetOutput": "Result: PASS"
+    },
+    {
+      "id": "prob-scl-5",
+      "title": "Compare Substring with Literal",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String message = \"Backend Engineer\";` and `String target = \"Engineer\";`. Extract the substring starting from index 8 (`message.substring(8)`). Check and print whether `extracted.equals(target)` is true, and whether `extracted == target` is true or false.",
+      "description": "Given `String message = \"Backend Engineer\";` and `String target = \"Engineer\";`. Extract the substring starting from index 8 (`message.substring(8)`). Check and print whether `extracted.equals(target)` is true, and whether `extracted == target` is true or false.",
+      "hint": "substring creates a new String object at runtime on the Heap.",
+      "hints": [
+        "substring creates a new String object at runtime on the Heap."
+      ],
+      "starterCode": "public class SubstringComparison {\n    public static void main(String[] args) {\n        String message = \"Backend Engineer\";\n        String target = \"Engineer\";\n        // TODO: Extract and compare\n    }\n}",
+      "solutionCode": "public class SubstringComparison {\n    public static void main(String[] args) {\n        String message = \"Backend Engineer\";\n        String target = \"Engineer\";\n        String extracted = message.substring(8);\n        System.out.println(\"Extracted: \" + extracted);\n        System.out.println(\"Content equals: \" + extracted.equals(target));\n        System.out.println(\"Same reference: \" + (extracted == target));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Extracted: Engineer\nContent equals: true\nSame reference: false"
+        }
+      ],
+      "targetOutput": "Extracted: Engineer\nContent equals: true\nSame reference: false"
+    },
+    {
+      "id": "prob-scl-6",
+      "title": "Verify Null vs Empty String Creation",
+      "difficulty": "Easy",
+      "problemStatement": "Demonstrate the difference between an empty string `String empty = \"\";` and an unassigned null string `String unassigned = null;`. Print the length of `empty`. Print \"Null Reference\" if `unassigned == null`.",
+      "description": "Demonstrate the difference between an empty string `String empty = \"\";` and an unassigned null string `String unassigned = null;`. Print the length of `empty`. Print \"Null Reference\" if `unassigned == null`.",
+      "hint": "Do NOT call .length() on unassigned as it will throw NullPointerException.",
+      "hints": [
+        "Do NOT call .length() on unassigned as it will throw NullPointerException."
+      ],
+      "starterCode": "public class EmptyVsNull {\n    public static void main(String[] args) {\n        String empty = \"\";\n        String unassigned = null;\n        // TODO: Print empty length and verify unassigned is null\n    }\n}",
+      "solutionCode": "public class EmptyVsNull {\n    public static void main(String[] args) {\n        String empty = \"\";\n        String unassigned = null;\n        System.out.println(\"Empty length: \" + empty.length());\n        if (unassigned == null) {\n            System.out.println(\"Null Reference\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Empty length: 0\nNull Reference"
+        }
+      ],
+      "targetOutput": "Empty length: 0\nNull Reference"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-scl-1",
+      "question": "What is the difference between String s = \"Hello\" and String s = new String(\"Hello\")?",
+      "answer": "`String s = \"Hello\"` creates or reuses an existing instance in the String Constant Pool. `String s = new String(\"Hello\")` forces the JVM to allocate a brand new String object on the regular Heap, even if \"Hello\" is already present in the pool. It creates redundant memory overhead."
+    },
+    {
+      "id": "iq-scl-2",
+      "question": "How many objects are created in this code: `String s1 = \"test\"; String s2 = \"test\"; String s3 = new String(\"test\");`?",
+      "answer": "Exactly two objects: 1) One object in the String Constant Pool created when the literal \"test\" is first evaluated (shared by both s1 and s2), and 2) One object in the standard Heap created when `new String(\"test\")` is executed for s3."
+    },
+    {
+      "id": "iq-scl-3",
+      "question": "Can two different String variables have different memory addresses but equal content?",
+      "answer": "Yes, absolutely. For example, `String a = \"data\";` and `String b = new String(\"data\");`. `a == b` evaluates to `false` because they reside at different memory addresses, but `a.equals(b)` evaluates to `true` because their character sequences are identical."
+    },
+    {
+      "id": "iq-scl-4",
+      "question": "What is the intern() method on String?",
+      "answer": "`str.intern()` returns the canonical representation of the string from the String Constant Pool. If the pool already contains a string equal to `str`, that pooled reference is returned. If not, `str` is added to the pool and its reference is returned."
+    },
+    {
+      "id": "iq-scl-5",
+      "question": "Why does Java promote using String literals over the new keyword?",
+      "answer": "Memory efficiency and performance. Literals enable String pooling (deduplication). By sharing identical literals across the entire JVM runtime, memory consumption drops drastically and garbage collection overhead is minimized."
+    },
+    {
+      "id": "iq-scl-6",
+      "question": "What will `System.out.println(\"Java\" == \"Java\");` output and why?",
+      "answer": "It prints `true`. The Java compiler and JVM identify that both literals represent the exact same constant value in the class file's constant pool, so both references point to the exact same object in the String Constant Pool."
+    },
+    {
+      "id": "iq-scl-7",
+      "question": "What happens if you pass null into `new String((String) null)`?",
+      "answer": "It throws a `NullPointerException` at runtime. The String copy constructor checks if the incoming argument is null and immediately rejects it."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-scl-1",
+      "text": "I can explain how String literals use the String Constant Pool."
+    },
+    {
+      "id": "chk-scl-2",
+      "text": "I understand why new String() creates duplicate objects on the Heap."
+    },
+    {
+      "id": "chk-scl-3",
+      "text": "I know why == compares references and .equals() compares text contents."
+    },
+    {
+      "id": "chk-scl-4",
+      "text": "I can count how many objects are created by literal and new expressions."
+    },
+    {
+      "id": "chk-scl-5",
+      "text": "I know how to construct a String from a char[] array."
+    }
+  ]
+}
