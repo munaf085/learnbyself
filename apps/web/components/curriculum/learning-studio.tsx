@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Section, LessonDetail, LessonSummary } from '@learnbyself/types';
 import { Tabs, TabItem, Card, Badge, Alert, Button } from '@learnbyself/ui';
@@ -47,6 +47,9 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     setActiveModuleSlug(initialLesson.moduleSlug);
     setActiveLessonSlug(initialLesson.slug);
     setActiveTab('concept');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, [initialLesson]);
 
   // Sync active lesson with local storage for ContinueLearning banner
@@ -63,13 +66,16 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
   }, [languageSlug, section.slug, currentLesson]);
 
   // Handle switching lessons via Next.js router
-  const handleSelectLesson = (moduleSlug: string, lessonSlug: string) => {
+  const handleSelectLesson = useCallback((moduleSlug: string, lessonSlug: string) => {
     setActiveModuleSlug(moduleSlug);
     setActiveLessonSlug(lessonSlug);
     setActiveTab('concept');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     router.push(`/${languageSlug}/${section.slug}/${moduleSlug}/${lessonSlug}`);
-  };
+  }, [languageSlug, section.slug, router]);
 
   // Compute Prev / Next lesson pointers in current section
   const allSectionLessons: { moduleSlug: string; lesson: LessonSummary }[] = [];
@@ -124,6 +130,43 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     }
   };
 
+  // Smooth scroll to top of studio content on tab change if scrolled down
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    if (typeof window !== 'undefined' && window.scrollY > 180) {
+      const mainEl = document.getElementById('lesson-studio-main');
+      if (mainEl) {
+        const yOffset = -70;
+        const y = mainEl.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      }
+    }
+  };
+
+  // Keyboard navigation shortcuts: Alt + ArrowRight for Next, Alt + ArrowLeft for Prev
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if (e.altKey && e.key === 'ArrowRight') {
+        if (nextItem) {
+          e.preventDefault();
+          handleSelectLesson(nextItem.moduleSlug, nextItem.lesson.slug);
+        }
+      } else if (e.altKey && e.key === 'ArrowLeft') {
+        if (prevItem) {
+          e.preventDefault();
+          handleSelectLesson(prevItem.moduleSlug, prevItem.lesson.slug);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [prevItem, nextItem, handleSelectLesson]);
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start pb-20">
       {/* 1. Left Side: Modules Accordion Sidebar (Desktop) - collapsed in Focus Mode */}
@@ -166,7 +209,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
       )}
 
       {/* 2. Main Area: Unified Interactive Learning Studio */}
-      <main className="flex-1 w-full min-w-0 space-y-6">
+      <main id="lesson-studio-main" className="flex-1 w-full min-w-0 space-y-6">
         {/* Header with Gamification & Focus Mode */}
         <LearningStudioHeader
           languageSlug={languageSlug}
@@ -184,6 +227,8 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
           onOpenMobileSyllabus={() => setMobileDrawerOpen(true)}
           hasPrev={!!prevItem}
           hasNext={!!nextItem}
+          prevLessonTitle={prevItem?.lesson.title}
+          nextLessonTitle={nextItem?.lesson.title}
           onPrevLesson={() => prevItem && handleSelectLesson(prevItem.moduleSlug, prevItem.lesson.slug)}
           onNextLesson={() => nextItem && handleSelectLesson(nextItem.moduleSlug, nextItem.lesson.slug)}
         />
@@ -193,7 +238,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
         ) : (
           <>
             {/* Navigation Tabs */}
-            <Tabs tabs={studioTabs} defaultTab={activeTab} onChange={setActiveTab} />
+            <Tabs tabs={studioTabs} defaultTab={activeTab} onChange={handleTabChange} />
 
         {/* Tab 1: Concept & Core Understanding */}
         {activeTab === 'concept' && (
@@ -360,32 +405,46 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
           </>
         )}
 
-        {/* Clean Bottom Navigation: Previous and Next only */}
-        <div className="pt-6 border-t border-slate-200 flex items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            size="md"
-            disabled={!prevItem}
-            onClick={() => prevItem && handleSelectLesson(prevItem.moduleSlug, prevItem.lesson.slug)}
-            className="min-h-[42px] px-5 font-medium"
-          >
-            ← Previous
-          </Button>
-
-          <div className="flex items-center space-x-3">
-            {showCelebration && (
-              <span className="text-xs font-bold text-emerald-600 animate-bounce flex items-center gap-1">
-                <span>🎉</span> +50 XP
+        {/* Clean Bottom Navigation: Previous and Next with Lesson Titles */}
+        <div className="pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col items-start gap-1">
+            {prevItem && (
+              <span className="text-[11px] text-slate-400 font-medium truncate max-w-[240px]">
+                ← {prevItem.lesson.title}
               </span>
             )}
+            <Button
+              variant="outline"
+              size="md"
+              disabled={!prevItem}
+              onClick={() => prevItem && handleSelectLesson(prevItem.moduleSlug, prevItem.lesson.slug)}
+              className="min-h-[42px] px-5 font-medium cursor-pointer"
+            >
+              ← Previous Lesson
+            </Button>
+          </div>
+
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center space-x-3">
+              {showCelebration && (
+                <span className="text-xs font-bold text-emerald-600 animate-bounce flex items-center gap-1">
+                  <span>🎉</span> +50 XP
+                </span>
+              )}
+              {nextItem && (
+                <span className="text-[11px] text-slate-400 font-medium truncate max-w-[240px] text-right">
+                  {nextItem.lesson.title} →
+                </span>
+              )}
+            </div>
             <Button
               variant="primary"
               size="md"
               disabled={!nextItem}
               onClick={handleNextLessonWithCelebration}
-              className="min-h-[42px] px-6 font-semibold"
+              className="min-h-[42px] px-6 font-semibold shadow-subtle cursor-pointer"
             >
-              Next →
+              Next Lesson →
             </Button>
           </div>
         </div>

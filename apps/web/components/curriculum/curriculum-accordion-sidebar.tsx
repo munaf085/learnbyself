@@ -1,9 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { Module, LessonSummary } from '@learnbyself/types';
-import { Badge, ProgressBar } from '@learnbyself/ui';
+import { Badge } from '@learnbyself/ui';
+import {
+  ChevronDown,
+  CheckCircle2,
+  BookOpen,
+  Search,
+  X,
+  Layers,
+  Sparkles
+} from 'lucide-react';
 
 interface CurriculumAccordionSidebarProps {
   languageSlug?: string;
@@ -36,7 +45,11 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
   });
   const [filterQuery, setFilterQuery] = useState('');
 
-  // Automatically keep current module expanded if user navigates
+  // Ref for the active lesson element to auto-scroll into view
+  const activeItemRef = useRef<HTMLAnchorElement | HTMLButtonElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Automatically keep current module expanded when activeModuleSlug changes
   useEffect(() => {
     if (activeModuleSlug) {
       setExpandedModules(prev => ({
@@ -45,6 +58,17 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
       }));
     }
   }, [activeModuleSlug]);
+
+  // Auto-scroll the sidebar container to keep the active lesson in view
+  useEffect(() => {
+    if (activeItemRef.current) {
+      // Use smooth scrollIntoView with nearest block alignment
+      activeItemRef.current.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth'
+      });
+    }
+  }, [activeLessonSlug, activeModuleSlug]);
 
   const toggleModule = (slug: string) => {
     setExpandedModules(prev => ({
@@ -63,32 +87,44 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
     setExpandedModules({});
   };
 
+  // Calculate course stats
+  const totalLessons = modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  const completedLessons = modules.reduce(
+    (acc, m) => acc + m.lessons.filter(l => l.isCompleted).length,
+    0
+  );
+  const courseProgressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
   return (
     <div className={`flex flex-col bg-white border border-slate-200/90 rounded-2xl shadow-subtle overflow-hidden ${className}`}>
-      {/* Header */}
-      <div className="p-4 border-b border-slate-100 bg-slate-50/60">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600 font-mono">
-            Section Modules
-          </span>
+      {/* 1. Header with Course Progress (Udemy/Coursera style) */}
+      <div className="p-4 border-b border-slate-100 bg-slate-50/70 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-brand-600" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-brand-700 font-mono">
+              Course Syllabus
+            </span>
+          </div>
+
           <div className="flex items-center space-x-2 text-[11px] text-slate-500">
             <button
               onClick={expandAll}
-              className="hover:text-brand-600 font-medium py-0.5"
+              className="hover:text-brand-600 font-medium py-0.5 cursor-pointer"
             >
               Expand All
             </button>
-            <span>•</span>
+            <span className="text-slate-300">•</span>
             <button
               onClick={collapseAll}
-              className="hover:text-brand-600 font-medium py-0.5"
+              className="hover:text-brand-600 font-medium py-0.5 cursor-pointer"
             >
               Collapse
             </button>
             {isMobileDrawer && (
               <button
                 onClick={onCloseMobileDrawer}
-                className="ml-2 text-slate-400 hover:text-slate-600 p-1"
+                className="ml-2 text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
                 aria-label="Close drawer"
               >
                 ✕
@@ -97,25 +133,54 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
           </div>
         </div>
 
-        <h3 className="text-sm font-bold text-slate-900 leading-snug">
-          {sectionTitle}
-        </h3>
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 leading-snug">
+            {sectionTitle}
+          </h3>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+            <span>{modules.length} Modules • {totalLessons} Lessons</span>
+            {completedLessons > 0 && (
+              <span className="font-semibold text-emerald-600">{completedLessons}/{totalLessons} Done</span>
+            )}
+          </div>
+        </div>
 
-        {/* Quick search input */}
-        <div className="mt-2.5 relative">
+        {/* Progress bar */}
+        {completedLessons > 0 && (
+          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+              style={{ width: `${courseProgressPercent}%` }}
+            />
+          </div>
+        )}
+
+        {/* Quick search input with clear button */}
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
           <input
             type="text"
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Search lessons..."
-            className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 pl-7 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-500"
+            placeholder="Filter lessons..."
+            className="w-full text-xs bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 pl-8 pr-7 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
           />
-          <span className="absolute left-2 top-2 text-xs text-slate-400">🔍</span>
+          {filterQuery && (
+            <button
+              onClick={() => setFilterQuery('')}
+              className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Modules Accordion List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-[calc(100vh-14rem)]">
+      {/* 2. Scrollable Modules Accordion List */}
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-[calc(100vh-14rem)] scrollbar-thin"
+      >
         {modules.map((mod, modIdx) => {
           const isExpanded = !!expandedModules[mod.slug] || !!filterQuery.trim();
           const isCurrentModule = mod.slug === activeModuleSlug;
@@ -128,24 +193,34 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
             return null;
           }
 
+          const moduleCompletedCount = mod.lessons.filter(l => l.isCompleted).length;
+
           return (
-            <div key={mod.id} className="transition-colors">
+            <div
+              key={mod.id}
+              className={`transition-colors ${
+                isCurrentModule ? 'bg-brand-50/15 border-l-2 border-brand-500' : ''
+              }`}
+            >
               {/* Module Accordion Trigger */}
               <button
                 onClick={() => toggleModule(mod.slug)}
-                className={`w-full text-left p-3.5 flex items-start justify-between gap-2 hover:bg-slate-50 transition-colors min-h-[44px] ${
-                  isCurrentModule ? 'bg-brand-50/20' : ''
-                }`}
+                className={`w-full text-left p-3.5 flex items-start justify-between gap-2 hover:bg-slate-50 transition-colors min-h-[44px] cursor-pointer`}
                 aria-expanded={isExpanded}
               >
                 <div className="flex items-start space-x-2.5 flex-1 min-w-0">
-                  <span className="text-xs text-slate-400 font-mono mt-0.5 select-none">
-                    {isExpanded ? '▼' : '▶'}
+                  <span
+                    className={`text-slate-400 mt-0.5 transition-transform duration-200 inline-block ${
+                      isExpanded ? 'rotate-0' : '-rotate-90'
+                    }`}
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </span>
+
                   <div className="space-y-0.5 flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[11px] font-bold text-slate-400 font-mono">
-                        {String(modIdx + 1).padStart(2, '0')}
+                    <div className="flex items-center space-x-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 font-mono">
+                        {String(modIdx + 1).padStart(2, '0')}.
                       </span>
                       <h4 className="text-xs font-bold text-slate-900 truncate">
                         {mod.title}
@@ -157,16 +232,16 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                   </div>
                 </div>
 
-                {mod.progressPercent !== undefined && mod.progressPercent > 0 && (
-                  <Badge variant="blue" size="sm" className="flex-shrink-0 text-[10px]">
-                    {mod.progressPercent}%
-                  </Badge>
+                {moduleCompletedCount > 0 && (
+                  <span className="text-[10px] text-emerald-600 font-semibold px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200/80 shrink-0">
+                    {moduleCompletedCount}/{mod.lessons.length}
+                  </span>
                 )}
               </button>
 
               {/* Collapsible Lessons List */}
               {isExpanded && (
-                <div className="bg-slate-50/50 px-2 py-1.5 space-y-1">
+                <div className="bg-slate-50/40 px-2 py-1.5 space-y-1">
                   {filteredLessons.length > 0 ? (
                     filteredLessons.map((lesson, lIdx) => {
                       const isCurrentLesson = isCurrentModule && lesson.slug === activeLessonSlug;
@@ -178,22 +253,26 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
 
                       const content = (
                         <>
-                          <span className="mt-0.5 font-mono select-none">
+                          {/* Active / Completed indicator icon */}
+                          <div className="mt-0.5 shrink-0">
                             {isCompleted ? (
-                              <span className={isCurrentLesson ? 'text-white' : 'text-emerald-600 font-bold'}>✓</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             ) : isCurrentLesson ? (
-                              <span className="text-white font-bold">●</span>
+                              <span className="relative flex h-2.5 w-2.5 mt-0.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-600" />
+                              </span>
                             ) : (
-                              <span className="text-slate-300">○</span>
+                              <span className="w-2.5 h-2.5 rounded-full border border-slate-300 inline-block mt-0.5" />
                             )}
-                          </span>
+                          </div>
 
                           <div className="flex-1 min-w-0">
                             <p className="leading-snug truncate">
                               {lIdx + 1}. {lesson.title}
                             </p>
                             <span className={`text-[10px] font-mono block mt-0.5 ${
-                              isCurrentLesson ? 'text-brand-100' : 'text-slate-400'
+                              isCurrentLesson ? 'text-brand-700' : 'text-slate-400'
                             }`}>
                               ~{lesson.estimatedMinutes}m • {lesson.difficulty}
                             </span>
@@ -203,7 +282,7 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
 
                       const itemClasses = `w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-start space-x-2.5 min-h-[40px] cursor-pointer ${
                         isCurrentLesson
-                          ? 'bg-brand-600 text-white font-bold shadow-subtle'
+                          ? 'bg-brand-50 text-brand-950 font-semibold border-l-3 border-brand-600 shadow-xs'
                           : 'text-slate-700 hover:bg-white hover:text-slate-900'
                       }`;
 
@@ -212,6 +291,7 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                           <Link
                             key={lesson.id}
                             href={href}
+                            ref={isCurrentLesson ? (el => { activeItemRef.current = el; }) : undefined}
                             onClick={() => {
                               onSelectLesson(mod.slug, lesson.slug);
                               onCloseMobileDrawer?.();
@@ -226,6 +306,7 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                       return (
                         <button
                           key={lesson.id}
+                          ref={isCurrentLesson ? (el => { activeItemRef.current = el; }) : undefined}
                           onClick={() => {
                             onSelectLesson(mod.slug, lesson.slug);
                             onCloseMobileDrawer?.();
@@ -238,7 +319,7 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                     })
                   ) : (
                     <p className="text-[11px] text-slate-400 italic p-2">
-                      Lessons coming soon for this module.
+                      No matching lessons found.
                     </p>
                   )}
                 </div>
