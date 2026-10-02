@@ -279,16 +279,48 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                             )}
                           </div>
 
-                          <div className="flex-1 min-w-0">
-                            <p className="leading-snug truncate">
-                              {lIdx + 1}. {lesson.title}
-                            </p>
-                            <span className={`text-[10px] font-mono block mt-0.5 ${
-                              isCurrentLesson ? 'text-brand-700' : 'text-slate-400'
-                            }`}>
-                              ~{lesson.estimatedMinutes}m • {lesson.difficulty}
-                            </span>
-                          </div>
+                          {(() => {
+                            const titleLower = lesson.title.toLowerCase();
+                            const isFinal = titleLower.includes('final project') || titleLower.includes('capstone');
+                            const isProject = !isFinal && titleLower.includes('mini project');
+                            const isChallenge = titleLower.includes('challenge') || titleLower.includes('debugging');
+                            const isPractice = titleLower.includes('practice');
+
+                            return (
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <p className="leading-snug truncate">
+                                    {lIdx + 1}. {lesson.title}
+                                  </p>
+                                  {isFinal && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200 shrink-0">
+                                      🏆 Capstone
+                                    </span>
+                                  )}
+                                  {isProject && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800 border border-brand-200 shrink-0">
+                                      🚀 Project
+                                    </span>
+                                  )}
+                                  {isChallenge && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 shrink-0">
+                                      ⚡ Challenge
+                                    </span>
+                                  )}
+                                  {isPractice && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                                      🛠️ Practice
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={`text-[10px] font-mono block mt-0.5 ${
+                                  isCurrentLesson ? 'text-brand-700' : 'text-slate-400'
+                                }`}>
+                                  ~{lesson.estimatedMinutes}m • {lesson.difficulty}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </>
                       );
 

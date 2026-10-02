@@ -18,7 +18,7 @@ describe('Java OOP 11-Module Curriculum Structure', () => {
     expect(totalLessons).toBe(102);
   });
 
-  it('verifies module slugs and titles match the confirmed 11-module breakdown', async () => {
+  it('verifies module slugs and titles match the revised 11-module breakdown', async () => {
     const section = await provider.getSection('java', 'oop');
     const expectedSlugs = [
       'classes-and-objects',
@@ -30,7 +30,7 @@ describe('Java OOP 11-Module Curriculum Structure', () => {
       'abstraction-and-interfaces',
       'composition-and-relationships',
       'object-class-and-equality',
-      'advanced-oop-thinking',
+      'object-references-casting-and-immutability',
       'oop-mastery-and-final-build'
     ];
 
