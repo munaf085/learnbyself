@@ -1976,6 +1976,113 @@ Row 2</td>
         </Card>
       )}
 
+
+      {/* Module 08: Array Fundamentals & Syntax */}
+      {(slug === 'what-is-an-array' || slug === 'creating-and-initializing-arrays' || slug === 'array-indexing-and-access' || slug === 'traversing-arrays' || slug === 'indexes-and-accessing-elements') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Array Core Architecture &amp; Index Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Java Syntax</th>
+                  <th className="p-2.5">Memory Model / Behavior</th>
+                  <th className="p-2.5 rounded-r-lg">Rule / Interview Alert</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Allocation</td>
+                  <td className="p-2.5 font-mono text-slate-800">int[] arr = new int[5];</td>
+                  <td className="p-2.5 text-slate-600">Continuous Heap memory block. Stack stores 8-byte reference.</td>
+                  <td className="p-2.5 text-slate-700">Size is fixed at creation time; cannot grow or shrink.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Default Values</td>
+                  <td className="p-2.5 font-mono text-slate-800">0, 0.0, false, null</td>
+                  <td className="p-2.5 text-slate-600">Primitive numbers default to 0; booleans false; objects null.</td>
+                  <td className="p-2.5 text-slate-700">Arrays are objects, auto-cleared in heap with type defaults.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Valid Indices</td>
+                  <td className="p-2.5 font-mono text-slate-800">0 to arr.length - 1</td>
+                  <td className="p-2.5 text-slate-600">Base-pointer arithmetic: address = base + index * elemSize.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Accessing arr[arr.length] throws ArrayIndexOutOfBoundsException!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Property vs Method</td>
+                  <td className="p-2.5 font-mono text-indigo-700">arr.length</td>
+                  <td className="p-2.5 text-slate-600">Final immutable public field of array object.</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Do NOT call arr.length() &mdash; that is only for Strings!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 08: Loops, Utility Class, 2D Arrays & Common Pitfalls */}
+      {(slug === 'enhanced-for-loop' || slug === 'common-array-operations' || slug === 'updating-copying-and-comparing-arrays' || slug === 'the-arrays-utility-class' || slug === 'multidimensional-arrays' || slug === 'array-bugs-and-output-prediction' || slug === 'array-practice' || slug === 'arrays-final-challenge' || slug === 'for-each-loop' || slug === '2d-arrays') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Array Operations, Arrays Utilities &amp; 2D Mechanics
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Operation / Class</th>
+                  <th className="p-2.5">Syntax Example</th>
+                  <th className="p-2.5">Key Characteristic</th>
+                  <th className="p-2.5 rounded-r-lg">Critical Trap</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Enhanced for</td>
+                  <td className="p-2.5 font-mono text-slate-800">for (int n : arr)</td>
+                  <td className="p-2.5 text-slate-600">Read-only iteration from index 0 to end; no index tracking.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Assigning n = 99 only updates loop variable; arr is unchanged!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Deep vs Shallow Copy</td>
+                  <td className="p-2.5 font-mono text-slate-800">int[] b = Arrays.copyOf(a, a.length);</td>
+                  <td className="p-2.5 text-slate-600">Creates a fresh Heap array copying elements.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">int[] b = a; only copies reference address &mdash; both mutate together!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Printing Arrays</td>
+                  <td className="p-2.5 font-mono text-indigo-700">Arrays.toString(arr)</td>
+                  <td className="p-2.5 text-slate-600">Returns bracketed comma-separated string: [10, 20, 30].</td>
+                  <td className="p-2.5 text-amber-700 font-medium">System.out.println(arr) prints cryptic type-hashcode ([I@15db9742).</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Binary Search</td>
+                  <td className="p-2.5 font-mono text-slate-800">Arrays.binarySearch(arr, key)</td>
+                  <td className="p-2.5 text-slate-600">O(log N) lookup; returns index or negative insertion point.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Array MUST be sorted with Arrays.sort(arr) first or output is undefined!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">2D Matrix Access</td>
+                  <td className="p-2.5 font-mono text-slate-800">matrix[row][col]</td>
+                  <td className="p-2.5 text-slate-600">matrix.length = row count; matrix[r].length = col count.</td>
+                  <td className="p-2.5 text-slate-700">Java supports ragged/jagged arrays where rows have variable lengths.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
     </div>
   );
 };

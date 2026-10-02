@@ -1,0 +1,648 @@
+{
+  "id": "les-arrays-updating-copying-and-comparing-arrays",
+  "slug": "updating-copying-and-comparing-arrays",
+  "sectionSlug": "basics",
+  "moduleSlug": "arrays",
+  "title": "Updating, Copying & Comparing Arrays",
+  "summary": "Avoid shared reference bugs with shallow vs deep copying, and use java.util.Arrays for sorting, comparing, and printing.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "prerequisites": [
+    "mod-methods"
+  ],
+  "subtopics": [
+    "Reference Copying Trap (b = a)",
+    "Arrays.copyOf & Arrays.copyOfRange",
+    "Reference Equality (==) vs Content Equality (Arrays.equals)",
+    "High Performance System.arraycopy"
+  ],
+  "learningOutcomes": [
+    "Identify and prevent reference aliasing bugs in array assignments",
+    "Create independent array copies using Arrays.copyOf",
+    "Compare array contents properly using Arrays.equals"
+  ],
+  "activities": [
+    {
+      "id": "act-updating-copying-and-comparing-arrays-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Updating, Copying & Comparing Arrays",
+      "content": "### The Dangerous Reference Assignment Trap\n\nBeginners often write this code assuming it makes an independent duplicate of an array:\n```java\nint[] a = {10, 20, 30};\nint[] b = a; // DANGER: This does NOT create a copy!\n```\n\nWhat actually happened in memory?\n- `a` is a reference variable on the Stack pointing to Array Object #1 on the Heap.\n- `int[] b = a;` copies only the **memory address reference**, NOT the array!\n- Both `a` and `b` now point to the **exact same physical array** on the Heap.\n\n```\nStack:                          Heap:\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 a: 0x4A \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510        \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518            \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u25ba\u2502 [0]:10, [1]:20, [2]:30\u2502\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510            \u2502        \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n\u2502 b: 0x4A \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\nIf you change `b[0] = 99;`, then `a[0]` instantly becomes 99 too! This is called **aliasing**, and it causes silent, catastrophic bugs in production.\n\n---\n\n### How to Create a True Independent Copy\n\nTo create a genuine independent copy whose modifications do not affect the original, you have three options:\n\n#### 1. Manual Element-by-Element Copy (Loop)\n```java\nint[] copy = new int[original.length];\nfor (int i = 0; i < original.length; i++) {\n    copy[i] = original[i];\n}\n```\n\n#### 2. Using `Arrays.copyOf`\n```java\nimport java.util.Arrays;\n\n// Copies original and allocates a new independent array:\nint[] copy = Arrays.copyOf(original, original.length);\n\n// You can also change the capacity while copying!\nint[] expanded = Arrays.copyOf(original, 10); // pads with default 0s\n```\n\n#### 3. Low-Level Native `System.arraycopy`\n```java\nint[] copy = new int[original.length];\n// System.arraycopy(src, srcPos, dest, destPos, length)\nSystem.arraycopy(original, 0, copy, 0, original.length);\n```\n\n---\n\n### Comparing Arrays: `==` vs `Arrays.equals()`\n\nHow do you check if two arrays contain identical values?\n\n```java\nint[] x = {1, 2, 3};\nint[] y = {1, 2, 3};\n\n// TRAP: Using == compares memory addresses!\nSystem.out.println(x == y); // false! (different Heap objects)\n\n// CORRECT: Arrays.equals compares element contents!\nSystem.out.println(Arrays.equals(x, y)); // true!\n```\n- `==`: Compares object reference addresses. Only returns `true` if both variables point to the exact same array in memory.\n- `Arrays.equals(a, b)`: Compares the lengths and each element pairwise (`a[i] == b[i]`).\n",
+      "breakdown": {
+        "whatIsIt": "Comprehensive exploration of Updating, Copying & Comparing Arrays in Java.",
+        "whyItMatters": "Essential for building robust, scalable algorithms and mastering placement interview challenges.",
+        "howItWorks": [
+          "Assigning variables copies the 64-bit reference address from stack slot to stack slot.",
+          "Arrays.copyOf invokes System.arraycopy to allocate a fresh Heap buffer.",
+          "Arrays.equals inspects length first, then verifies each element pairwise.",
+          "Mutations on independent copies never leak back to the source array."
+        ],
+        "keyTakeaways": [
+          "int[] b = a copies the pointer, not the array.",
+          "Use Arrays.copyOf(arr, length) for independent copies.",
+          "== tests memory address identity; Arrays.equals(a, b) tests element equality.",
+          "Arrays.copyOf can expand an array, padding new slots with default zeros."
+        ]
+      }
+    },
+    {
+      "id": "act-updating-copying-and-comparing-arrays-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Aliasing vs Arrays.copyOf vs Content Equality",
+      "codeSnippet": "import java.util.Arrays;\n\npublic class CopyCompareDemo {\n    public static void main(String[] args) {\n        // 1. The Reference Trap\n        int[] original = {10, 20, 30};\n        int[] alias = original; // Shared address!\n        alias[0] = 99;\n        System.out.println(\"original[0] after alias update: \" + original[0]); // 99!\n\n        // 2. Genuine Independent Copy\n        int[] source = {1, 2, 3};\n        int[] trueCopy = Arrays.copyOf(source, source.length);\n        trueCopy[0] = 500;\n        System.out.println(\"source[0] after trueCopy update: \" + source[0]); // 1 (Safe!)\n\n        // 3. Equality Comparison\n        int[] a1 = {4, 5, 6};\n        int[] a2 = {4, 5, 6};\n        System.out.println(\"a1 == a2 (Address equality): \" + (a1 == a2)); // false\n        System.out.println(\"Arrays.equals(a1, a2) (Content equality): \" + Arrays.equals(a1, a2)); // true\n    }\n}",
+      "description": "Visual proof of reference aliasing, safe array cloning with Arrays.copyOf, and content comparison.",
+      "steps": [
+        {
+          "line": 4,
+          "explanation": "Demonstrates reference aliasing: b points to a. Changing b[0] mutates a[0]."
+        },
+        {
+          "line": 13,
+          "explanation": "Demonstrates true cloning using Arrays.copyOf: independent heap object created."
+        },
+        {
+          "line": 19,
+          "explanation": "Demonstrates comparison: == evaluates to false, but Arrays.equals evaluates to true."
+        }
+      ]
+    },
+    {
+      "id": "act-updating-copying-and-comparing-arrays-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Essential Concept & Bug Detection Check",
+      "questions": [
+        {
+          "id": "q-updating-copying-and-comparing-arrays-1",
+          "type": "mcq",
+          "prompt": "What happens when you write 'int[] b = a;' where 'a' is an existing array in Java?",
+          "options": [
+            "A brand new copy of the array is allocated on the heap",
+            "Only the memory address reference is copied; both variables now point to the exact same array",
+            "Array 'a' is deleted from memory",
+            "Elements of 'a' are converted to doubles"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Assigning one array variable to another copies only the reference pointer, creating an alias to the same Heap object.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-2",
+          "type": "mcq",
+          "prompt": "What is the result of 'int[] a = {1, 2}; int[] b = {1, 2}; System.out.println(a == b);'?",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The == operator compares reference memory addresses. Since a and b are distinct objects on the Heap, a == b evaluates to false.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-3",
+          "type": "mcq",
+          "prompt": "Which method correctly tests if two arrays contain the exact same elements in the exact same order?",
+          "options": [
+            "a.equals(b)",
+            "Arrays.equals(a, b)",
+            "a == b",
+            "Arrays.compare(a, b) == 0"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays.equals(a, b) compares the lengths and each element pairwise. (Note that default a.equals(b) inherits from Object and checks ==).",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-4",
+          "type": "mcq",
+          "prompt": "What does 'Arrays.copyOf(arr, 6)' do if 'arr' originally has a length of 4?",
+          "options": [
+            "Throws ArrayIndexOutOfBoundsException",
+            "Creates a new array of length 6, copies the 4 original elements, and pads the remaining 2 slots with default zeros",
+            "Truncates the array to length 2",
+            "Throws NegativeArraySizeException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays.copyOf can expand an array; extra positions beyond original length are padded with default values (0 for ints).",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-5",
+          "type": "mcq",
+          "prompt": "What does 'Arrays.copyOfRange(arr, 1, 4)' copy?",
+          "options": [
+            "Indices 1, 2, 3, 4",
+            "Indices 1, 2, 3 (fromIndex is inclusive, toIndex is exclusive)",
+            "Indices 0, 1, 2, 3",
+            "Only indices 1 and 4"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Like most range operations in Java, fromIndex is inclusive and toIndex is exclusive: copies indices 1, 2, and 3.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-6",
+          "type": "mcq",
+          "prompt": "Given: 'int[] x = {5}; int[] y = x; y[0] = 20;'. What does 'x[0]' print?",
+          "options": [
+            "5",
+            "20",
+            "0",
+            "null"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because y is an alias for x, modifying y[0] alters the shared array on the Heap, so x[0] is 20.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-7",
+          "type": "mcq",
+          "prompt": "Which copying method offers the highest performance in the JVM by delegating to native CPU memory block copying?",
+          "options": [
+            "A manual while loop",
+            "System.arraycopy()",
+            "A recursive function",
+            "A try-catch block"
+          ],
+          "correctAnswer": 1,
+          "explanation": "System.arraycopy is a native method implemented in C/assembly that copies memory blocks directly via high-speed CPU instructions.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-updating-copying-and-comparing-arrays-8",
+          "type": "mcq",
+          "prompt": "What happens if you invoke 'Arrays.equals(null, null)'?",
+          "options": [
+            "Throws NullPointerException",
+            "Returns true",
+            "Returns false",
+            "Compile error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays.equals safely handles null references: two null array references are considered equal and return true.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-updating-copying-and-comparing-arrays-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Demonstrate the Reference Assignment Trap",
+      "practice": {
+        "title": "Demonstrate the Reference Assignment Trap",
+        "problemStatement": "Create 'int[] a = {10, 20};'. Assign 'int[] b = a;'. Set 'b[0] = 77;'. Print 'a[0]=' + a[0] + ', b[0]=' + b[0]. Proves that changing b mutates a.",
+        "initialCode": "public class Main {\n    public static void main(String[] args) {\n        // Implement reference assignment demo\n    }\n}",
+        "expectedOutput": "a[0]=77, b[0]=77",
+        "hints": [
+          "b = a assigns reference address.",
+          "Print 'a[0]=77, b[0]=77'."
+        ],
+        "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int[] a = {10, 20};\n        int[] b = a;\n        b[0] = 77;\n        System.out.println(\"a[0]=\" + a[0] + \", b[0]=\" + b[0]);\n    }\n}"
+      }
+    },
+    {
+      "id": "act-updating-copying-and-comparing-arrays-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Placement Interview Questions",
+      "interviewQA": [
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-1",
+          "question": "What is the difference between shallow copy and deep copy for arrays in Java?",
+          "expectedAnswer": "For an array of primitives, Arrays.copyOf or clone() creates a complete independent copy because primitive values are copied directly. However, for an array of objects (like Person[] or String[][]), a shallow copy creates a new array object but copies only the reference addresses of the elements; both arrays still point to the same underlying objects. A deep copy requires instantiating new objects for every individual element.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Cisco"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-2",
+          "question": "Why does 'a.equals(b)' behave differently than 'Arrays.equals(a, b)'?",
+          "expectedAnswer": "Arrays in Java inherit the default .equals() implementation from java.lang.Object without overriding it. Therefore, 'a.equals(b)' performs reference identity comparison ('a == b'), checking if both variables point to the exact same memory address. 'Arrays.equals(a, b)' explicitly iterates through the elements and compares their contents.",
+          "companyTags": [
+            "Microsoft",
+            "TCS",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-3",
+          "question": "Why doesn't assigning 'int[] b = a;' create a copy of the array?",
+          "expectedAnswer": "In Java, array variables are reference types stored on the Call Stack. The assignment operator '=' merely copies the 32-bit or 64-bit memory address stored in 'a' into 'b'. Both variables refer to the exact same array object allocated on the Heap.",
+          "companyTags": [
+            "Oracle",
+            "Adobe",
+            "Salesforce"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-4",
+          "question": "How does System.arraycopy() achieve superior performance over a manual Java for loop?",
+          "expectedAnswer": "System.arraycopy is a native method (written in C). It bypasses JVM bytecode execution and bounds checks per iteration, directly invoking low-level CPU memory block copy instructions (like memmove in C). It is significantly faster for large arrays.",
+          "companyTags": [
+            "Meta",
+            "Uber",
+            "Goldman Sachs"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-5",
+          "question": "What happens if fromIndex > toIndex in Arrays.copyOfRange(arr, fromIndex, toIndex)?",
+          "expectedAnswer": "If fromIndex is greater than toIndex, the JVM throws an IllegalArgumentException. If fromIndex < 0 or fromIndex > arr.length, it throws ArrayIndexOutOfBoundsException.",
+          "companyTags": [
+            "Google",
+            "Morgan Stanley",
+            "Flipkart"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-6",
+          "question": "Can you use the clone() method on arrays in Java?",
+          "expectedAnswer": "Yes. Arrays implement the Cloneable interface, and calling 'arr.clone()' returns a shallow copy of the array without requiring any casting for primitive arrays (e.g. int[] copy = arr.clone();).",
+          "companyTags": [
+            "Google",
+            "Amazon",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-updating-copying-and-comparing-arrays-7",
+          "question": "How does dynamic resizing work under the hood in Java data structures like ArrayList?",
+          "expectedAnswer": "ArrayList internally wraps a primitive array (e.g. Object[] elementData). When the array reaches capacity, it allocates a new array 1.5 times larger (newCapacity = oldCapacity + (oldCapacity >> 1)) and uses Arrays.copyOf / System.arraycopy to transfer the elements.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Cisco"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        }
+      ]
+    },
+    {
+      "id": "act-updating-copying-and-comparing-arrays-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist",
+      "checklist": [
+        "Reference Assignment: int[] b = a copies memory address only; mutations through b affect a.",
+        "Arrays.copyOf: Allocates a new independent heap array and copies elements up to the specified capacity.",
+        "Arrays.copyOfRange: Copies a sub-array from fromIndex (inclusive) to toIndex (exclusive).",
+        "Content Equality: Use Arrays.equals(a, b) to compare element values, NOT == which checks memory addresses.",
+        "System.arraycopy: High-performance native block-copy method used in core JDK libraries."
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-m8-l7-1",
+      "question": "What happens when you write 'int[] b = a;' where 'a' is an existing array in Java?",
+      "options": [
+        "A brand new copy of the array is allocated on the heap",
+        "Only the memory address reference is copied; both variables now point to the exact same array",
+        "Array 'a' is deleted from memory",
+        "Elements of 'a' are converted to doubles"
+      ],
+      "correctOption": 1,
+      "explanation": "Assigning one array variable to another copies only the reference pointer, creating an alias to the same Heap object."
+    },
+    {
+      "id": "mcq-m8-l7-2",
+      "question": "What is the result of 'int[] a = {1, 2}; int[] b = {1, 2}; System.out.println(a == b);'?",
+      "options": [
+        "true",
+        "false",
+        "Compile error",
+        "NullPointerException"
+      ],
+      "correctOption": 1,
+      "explanation": "The == operator compares reference memory addresses. Since a and b are distinct objects on the Heap, a == b evaluates to false."
+    },
+    {
+      "id": "mcq-m8-l7-3",
+      "question": "Which method correctly tests if two arrays contain the exact same elements in the exact same order?",
+      "options": [
+        "a.equals(b)",
+        "Arrays.equals(a, b)",
+        "a == b",
+        "Arrays.compare(a, b) == 0"
+      ],
+      "correctOption": 1,
+      "explanation": "Arrays.equals(a, b) compares the lengths and each element pairwise. (Note that default a.equals(b) inherits from Object and checks ==)."
+    },
+    {
+      "id": "mcq-m8-l7-4",
+      "question": "What does 'Arrays.copyOf(arr, 6)' do if 'arr' originally has a length of 4?",
+      "options": [
+        "Throws ArrayIndexOutOfBoundsException",
+        "Creates a new array of length 6, copies the 4 original elements, and pads the remaining 2 slots with default zeros",
+        "Truncates the array to length 2",
+        "Throws NegativeArraySizeException"
+      ],
+      "correctOption": 1,
+      "explanation": "Arrays.copyOf can expand an array; extra positions beyond original length are padded with default values (0 for ints)."
+    },
+    {
+      "id": "mcq-m8-l7-5",
+      "question": "What does 'Arrays.copyOfRange(arr, 1, 4)' copy?",
+      "options": [
+        "Indices 1, 2, 3, 4",
+        "Indices 1, 2, 3 (fromIndex is inclusive, toIndex is exclusive)",
+        "Indices 0, 1, 2, 3",
+        "Only indices 1 and 4"
+      ],
+      "correctOption": 1,
+      "explanation": "Like most range operations in Java, fromIndex is inclusive and toIndex is exclusive: copies indices 1, 2, and 3."
+    },
+    {
+      "id": "mcq-m8-l7-6",
+      "question": "Given: 'int[] x = {5}; int[] y = x; y[0] = 20;'. What does 'x[0]' print?",
+      "options": [
+        "5",
+        "20",
+        "0",
+        "null"
+      ],
+      "correctOption": 1,
+      "explanation": "Because y is an alias for x, modifying y[0] alters the shared array on the Heap, so x[0] is 20."
+    },
+    {
+      "id": "mcq-m8-l7-7",
+      "question": "Which copying method offers the highest performance in the JVM by delegating to native CPU memory block copying?",
+      "options": [
+        "A manual while loop",
+        "System.arraycopy()",
+        "A recursive function",
+        "A try-catch block"
+      ],
+      "correctOption": 1,
+      "explanation": "System.arraycopy is a native method implemented in C/assembly that copies memory blocks directly via high-speed CPU instructions."
+    },
+    {
+      "id": "mcq-m8-l7-8",
+      "question": "What happens if you invoke 'Arrays.equals(null, null)'?",
+      "options": [
+        "Throws NullPointerException",
+        "Returns true",
+        "Returns false",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "Arrays.equals safely handles null references: two null array references are considered equal and return true."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prac-m8-l7-1",
+      "title": "Demonstrate the Reference Assignment Trap",
+      "difficulty": "Easy",
+      "description": "Create 'int[] a = {10, 20};'. Assign 'int[] b = a;'. Set 'b[0] = 77;'. Print 'a[0]=' + a[0] + ', b[0]=' + b[0]. Proves that changing b mutates a.",
+      "problemStatement": "Create 'int[] a = {10, 20};'. Assign 'int[] b = a;'. Set 'b[0] = 77;'. Print 'a[0]=' + a[0] + ', b[0]=' + b[0]. Proves that changing b mutates a.",
+      "hint": "Both variables reference the exact same array object.",
+      "hints": [
+        "b = a assigns reference address.",
+        "Print 'a[0]=77, b[0]=77'."
+      ],
+      "starterCode": "public class Main {\n    public static void main(String[] args) {\n        // Implement reference assignment demo\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int[] a = {10, 20};\n        int[] b = a;\n        b[0] = 77;\n        System.out.println(\"a[0]=\" + a[0] + \", b[0]=\" + b[0]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "a[0]=77, b[0]=77"
+        }
+      ],
+      "targetOutput": "a[0]=77, b[0]=77"
+    },
+    {
+      "id": "prac-m8-l7-2",
+      "title": "Manual Array Copy via Loop",
+      "difficulty": "Easy",
+      "description": "Given 'int[] src = {5, 10, 15};'. Manually allocate 'int[] dest = new int[src.length];' and copy each element with a loop. Set dest[0] = 99. Print 'src[0]=' + src[0] + ', dest[0]=' + dest[0]. Proves independence.",
+      "problemStatement": "Given 'int[] src = {5, 10, 15};'. Manually allocate 'int[] dest = new int[src.length];' and copy each element with a loop. Set dest[0] = 99. Print 'src[0]=' + src[0] + ', dest[0]=' + dest[0]. Proves independence.",
+      "hint": "for (int i = 0; i < src.length; i++) dest[i] = src[i];",
+      "hints": [
+        "Allocate new array of same size.",
+        "Copy element-by-element.",
+        "Print 'src[0]=5, dest[0]=99'."
+      ],
+      "starterCode": "public class Main {\n    public static void main(String[] args) {\n        int[] src = {5, 10, 15};\n        // Copy manually and verify\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int[] src = {5, 10, 15};\n        int[] dest = new int[src.length];\n        for (int i = 0; i < src.length; i++) {\n            dest[i] = src[i];\n        }\n        dest[0] = 99;\n        System.out.println(\"src[0]=\" + src[0] + \", dest[0]=\" + dest[0]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "src[0]=5, dest[0]=99"
+        }
+      ],
+      "targetOutput": "src[0]=5, dest[0]=99"
+    },
+    {
+      "id": "prac-m8-l7-3",
+      "title": "Clone with Arrays.copyOf",
+      "difficulty": "Medium",
+      "description": "Given 'int[] original = {100, 200, 300};'. Use 'Arrays.copyOf(original, original.length)' to create 'clone'. Change clone[2] = 999. Print 'original[2]=' + original[2] + ', clone[2]=' + clone[2].",
+      "problemStatement": "Given 'int[] original = {100, 200, 300};'. Use 'Arrays.copyOf(original, original.length)' to create 'clone'. Change clone[2] = 999. Print 'original[2]=' + original[2] + ', clone[2]=' + clone[2].",
+      "hint": "import java.util.Arrays; int[] clone = Arrays.copyOf(original, original.length);",
+      "hints": [
+        "Use Arrays.copyOf.",
+        "Print 'original[2]=300, clone[2]=999'."
+      ],
+      "starterCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] original = {100, 200, 300};\n        // Clone with Arrays.copyOf and test\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] original = {100, 200, 300};\n        int[] clone = Arrays.copyOf(original, original.length);\n        clone[2] = 999;\n        System.out.println(\"original[2]=\" + original[2] + \", clone[2]=\" + clone[2]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "original[2]=300, clone[2]=999"
+        }
+      ],
+      "targetOutput": "original[2]=300, clone[2]=999"
+    },
+    {
+      "id": "prac-m8-l7-4",
+      "title": "Compare Arrays by Value using Arrays.equals",
+      "difficulty": "Medium",
+      "description": "Given arrays: 'int[] a = {1, 2, 3}; int[] b = {1, 2, 3}; int[] c = {1, 2, 4};'. Print: 'a == b: ' + (a == b) + ' | Arrays.equals(a, b): ' + Arrays.equals(a, b) + ' | Arrays.equals(a, c): ' + Arrays.equals(a, c).",
+      "problemStatement": "Given arrays: 'int[] a = {1, 2, 3}; int[] b = {1, 2, 3}; int[] c = {1, 2, 4};'. Print: 'a == b: ' + (a == b) + ' | Arrays.equals(a, b): ' + Arrays.equals(a, b) + ' | Arrays.equals(a, c): ' + Arrays.equals(a, c).",
+      "hint": "== compares addresses; Arrays.equals compares contents.",
+      "hints": [
+        "a == b is false.",
+        "Arrays.equals(a, b) is true.",
+        "Arrays.equals(a, c) is false."
+      ],
+      "starterCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] a = {1, 2, 3};\n        int[] b = {1, 2, 3};\n        int[] c = {1, 2, 4};\n        // Print comparison results\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] a = {1, 2, 3};\n        int[] b = {1, 2, 3};\n        int[] c = {1, 2, 4};\n        System.out.println(\"a == b: \" + (a == b) + \" | Arrays.equals(a, b): \" + Arrays.equals(a, b) + \" | Arrays.equals(a, c): \" + Arrays.equals(a, c));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "a == b: false | Arrays.equals(a, b): true | Arrays.equals(a, c): false"
+        }
+      ],
+      "targetOutput": "a == b: false | Arrays.equals(a, b): true | Arrays.equals(a, c): false"
+    },
+    {
+      "id": "prac-m8-l7-5",
+      "title": "Subarray Extraction with Arrays.copyOfRange",
+      "difficulty": "Hard",
+      "description": "Given 'int[] full = {10, 20, 30, 40, 50, 60};'. Extract the sub-array from index 1 to 4 (exclusive of 4) using 'Arrays.copyOfRange(full, 1, 4)'. Print elements of sub-array separated by spaces: '20 30 40 '.",
+      "problemStatement": "Given 'int[] full = {10, 20, 30, 40, 50, 60};'. Extract the sub-array from index 1 to 4 (exclusive of 4) using 'Arrays.copyOfRange(full, 1, 4)'. Print elements of sub-array separated by spaces: '20 30 40 '.",
+      "hint": "Arrays.copyOfRange(full, 1, 4) extracts indices 1, 2, and 3.",
+      "hints": [
+        "int[] sub = Arrays.copyOfRange(full, 1, 4);",
+        "for (int x : sub) System.out.print(x + \" \");"
+      ],
+      "starterCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] full = {10, 20, 30, 40, 50, 60};\n        // Extract range [1, 4) and print\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] full = {10, 20, 30, 40, 50, 60};\n        int[] sub = Arrays.copyOfRange(full, 1, 4);\n        for (int x : sub) {\n            System.out.print(x + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "20 30 40 "
+        }
+      ],
+      "targetOutput": "20 30 40 "
+    },
+    {
+      "id": "prac-m8-l7-6",
+      "title": "Expand Array Capacity Simulation",
+      "difficulty": "Hard",
+      "description": "Write a method 'expandCapacity(int[] arr, int newCapacity)' that uses 'Arrays.copyOf' to return an enlarged array. In main(), start with array {1, 2, 3}, expand to capacity 5, set the new slots arr[3] = 4, arr[4] = 5, and print 'New Length: 5 | Last Element: 5'.",
+      "problemStatement": "Write a method 'expandCapacity(int[] arr, int newCapacity)' that uses 'Arrays.copyOf' to return an enlarged array. In main(), start with array {1, 2, 3}, expand to capacity 5, set the new slots arr[3] = 4, arr[4] = 5, and print 'New Length: 5 | Last Element: 5'.",
+      "hint": "return Arrays.copyOf(arr, newCapacity);",
+      "hints": [
+        "Method returns enlarged array.",
+        "In main: arr = expandCapacity(arr, 5);",
+        "Print 'New Length: 5 | Last Element: 5'."
+      ],
+      "starterCode": "import java.util.Arrays;\n\npublic class Main {\n    // Define expandCapacity\n\n    public static void main(String[] args) {\n        int[] arr = {1, 2, 3};\n        // Expand to 5 and populate\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic class Main {\n    public static int[] expandCapacity(int[] arr, int newCapacity) {\n        return Arrays.copyOf(arr, newCapacity);\n    }\n\n    public static void main(String[] args) {\n        int[] arr = {1, 2, 3};\n        arr = expandCapacity(arr, 5);\n        arr[3] = 4;\n        arr[4] = 5;\n        System.out.println(\"New Length: \" + arr.length + \" | Last Element: \" + arr[arr.length - 1]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "New Length: 5 | Last Element: 5"
+        }
+      ],
+      "targetOutput": "New Length: 5 | Last Element: 5"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "qa-m8-l7-1",
+      "question": "What is the difference between shallow copy and deep copy for arrays in Java?",
+      "answer": "For an array of primitives, Arrays.copyOf or clone() creates a complete independent copy because primitive values are copied directly. However, for an array of objects (like Person[] or String[][]), a shallow copy creates a new array object but copies only the reference addresses of the elements; both arrays still point to the same underlying objects. A deep copy requires instantiating new objects for every individual element."
+    },
+    {
+      "id": "qa-m8-l7-2",
+      "question": "Why does 'a.equals(b)' behave differently than 'Arrays.equals(a, b)'?",
+      "answer": "Arrays in Java inherit the default .equals() implementation from java.lang.Object without overriding it. Therefore, 'a.equals(b)' performs reference identity comparison ('a == b'), checking if both variables point to the exact same memory address. 'Arrays.equals(a, b)' explicitly iterates through the elements and compares their contents."
+    },
+    {
+      "id": "qa-m8-l7-3",
+      "question": "Why doesn't assigning 'int[] b = a;' create a copy of the array?",
+      "answer": "In Java, array variables are reference types stored on the Call Stack. The assignment operator '=' merely copies the 32-bit or 64-bit memory address stored in 'a' into 'b'. Both variables refer to the exact same array object allocated on the Heap."
+    },
+    {
+      "id": "qa-m8-l7-4",
+      "question": "How does System.arraycopy() achieve superior performance over a manual Java for loop?",
+      "answer": "System.arraycopy is a native method (written in C). It bypasses JVM bytecode execution and bounds checks per iteration, directly invoking low-level CPU memory block copy instructions (like memmove in C). It is significantly faster for large arrays."
+    },
+    {
+      "id": "qa-m8-l7-5",
+      "question": "What happens if fromIndex > toIndex in Arrays.copyOfRange(arr, fromIndex, toIndex)?",
+      "answer": "If fromIndex is greater than toIndex, the JVM throws an IllegalArgumentException. If fromIndex < 0 or fromIndex > arr.length, it throws ArrayIndexOutOfBoundsException."
+    },
+    {
+      "id": "qa-m8-l7-6",
+      "question": "Can you use the clone() method on arrays in Java?",
+      "answer": "Yes. Arrays implement the Cloneable interface, and calling 'arr.clone()' returns a shallow copy of the array without requiring any casting for primitive arrays (e.g. int[] copy = arr.clone();)."
+    },
+    {
+      "id": "qa-m8-l7-7",
+      "question": "How does dynamic resizing work under the hood in Java data structures like ArrayList?",
+      "answer": "ArrayList internally wraps a primitive array (e.g. Object[] elementData). When the array reaches capacity, it allocates a new array 1.5 times larger (newCapacity = oldCapacity + (oldCapacity >> 1)) and uses Arrays.copyOf / System.arraycopy to transfer the elements."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "label": "Reference Assignment",
+      "description": "int[] b = a copies memory address only; mutations through b affect a."
+    },
+    {
+      "label": "Arrays.copyOf",
+      "description": "Allocates a new independent heap array and copies elements up to the specified capacity."
+    },
+    {
+      "label": "Arrays.copyOfRange",
+      "description": "Copies a sub-array from fromIndex (inclusive) to toIndex (exclusive)."
+    },
+    {
+      "label": "Content Equality",
+      "description": "Use Arrays.equals(a, b) to compare element values, NOT == which checks memory addresses."
+    },
+    {
+      "label": "System.arraycopy",
+      "description": "High-performance native block-copy method used in core JDK libraries."
+    }
+  ]
+}

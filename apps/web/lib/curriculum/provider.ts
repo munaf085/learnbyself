@@ -213,7 +213,24 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'recursion-intro': 'recursion-basics',
       'method-bugs': 'method-bugs-and-output-prediction',
       'methods-practice': 'methods-practice-and-interview-challenge',
-      'methods-final-challenge': 'methods-practice-and-interview-challenge'
+      'methods-final-challenge': 'methods-practice-and-interview-challenge',
+
+      // Module 08 (Arrays) aliases:
+      'indexes-and-accessing-elements': 'array-indexing-and-access',
+      'array-indexing': 'array-indexing-and-access',
+      'for-each-loop': 'enhanced-for-loop',
+      'for-each': 'enhanced-for-loop',
+      'updating-searching-and-counting': 'common-array-operations',
+      'sum-average-min-max': 'common-array-operations',
+      'array-operations': 'common-array-operations',
+      'copying-arrays': 'updating-copying-and-comparing-arrays',
+      'copying-and-arrays-utility-methods': 'the-arrays-utility-class',
+      'arrays-utility': 'the-arrays-utility-class',
+      '2d-arrays': 'multidimensional-arrays',
+      'common-array-errors-and-output-prediction': 'array-bugs-and-output-prediction',
+      'array-errors': 'array-bugs-and-output-prediction',
+      'arrays-practice': 'array-practice',
+      'arrays-practice-and-interview-challenge': 'arrays-final-challenge'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

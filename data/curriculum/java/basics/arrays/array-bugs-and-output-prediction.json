@@ -1,0 +1,645 @@
+{
+  "id": "les-arrays-array-bugs-and-output-prediction",
+  "slug": "array-bugs-and-output-prediction",
+  "sectionSlug": "basics",
+  "moduleSlug": "arrays",
+  "title": "Array Bugs & Output Prediction",
+  "summary": "Analyze classic placement bugs: ArrayIndexOutOfBoundsException, off-by-one errors (i <= arr.length), and printing arrays directly.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 10,
+  "prerequisites": [
+    "mod-methods"
+  ],
+  "subtopics": [
+    "ArrayIndexOutOfBoundsException & Loop Boundaries",
+    "Cryptic Memory Hash when Printing Directly",
+    "Reference Aliasing Bugs vs Cloning",
+    "NullPointer on Unallocated Object Elements"
+  ],
+  "learningOutcomes": [
+    "Diagnose and eliminate array boundary exceptions",
+    "Predict exact output of array manipulation questions",
+    "Avoid object array NullPointerExceptions"
+  ],
+  "activities": [
+    {
+      "id": "act-array-bugs-and-output-prediction-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Array Bugs & Output Prediction",
+      "content": "### The Top 5 Array Interview Traps\n\nIn technical placement interviews and coding exams, interviewers frequently test your deep understanding of Java array memory and syntax using subtle traps.\n\nLet's dissect the top 5 traps so you can diagnose and solve them instantly.\n\n---\n\n### Bug 1: The Off-By-One `ArrayIndexOutOfBoundsException`\n\n```java\n// BUG: i <= arr.length\nint[] numbers = {10, 20, 30};\nfor (int i = 0; i <= numbers.length; i++) {\n    System.out.println(numbers[i]);\n}\n```\n**Why it fails**: When `i == 3`, `numbers[3]` is accessed. But valid indices are only `0, 1, 2`. The program crashes with `ArrayIndexOutOfBoundsException`.\n**Fix**: Always use `<`: `i < numbers.length`.\n\n---\n\n### Bug 2: Printing an Array Directly\n\n```java\nint[] nums = {1, 2, 3};\nSystem.out.println(nums); // Prints: [I@15db9742\n```\n**Why it happens**: Arrays inherit `Object.toString()`, printing the type descriptor (`[I` = int array) and hash code.\n**Fix**: Use `Arrays.toString(nums)` for 1D arrays, and `Arrays.deepToString(matrix)` for 2D arrays.\n\n---\n\n### Bug 3: Confusing Reference Assignment with Copying\n\n```java\nint[] original = {10, 20};\nint[] copy = original; // NOT A COPY!\ncopy[0] = 99; // original[0] is now 99!\n```\n**Fix**: Use `Arrays.copyOf(original, original.length)` or `clone()`.\n\n---\n\n### Bug 4: Modifying Elements in an Enhanced for Loop\n\n```java\nint[] data = {1, 2, 3};\nfor (int val : data) {\n    val = val * 10; // Changes ONLY the local copy 'val'!\n}\n// data is STILL {1, 2, 3}!\n```\n**Fix**: If you need in-place mutation, use a standard index-based loop: `for (int i = 0; i < data.length; i++) data[i] *= 10;`.\n\n---\n\n### Bug 5: `NullPointerException` on Object/String Arrays\n\n```java\nString[] names = new String[3]; // Elements default to null!\nSystem.out.println(names[0].toUpperCase()); // CRASH: NullPointerException!\n```\n**Why it fails**: Instantiating an array of reference types fills the slots with `null`. Calling any method on `null` crashes the JVM.\n**Fix**: Assign non-null objects before invoking methods, or guard with `if (names[i] != null)`.\n",
+      "breakdown": {
+        "whatIsIt": "Comprehensive exploration of Array Bugs & Output Prediction in Java.",
+        "whyItMatters": "Essential for building robust, scalable algorithms and mastering placement interview challenges.",
+        "howItWorks": [
+          "JVM bounds checker intercepts index < 0 or index >= length.",
+          "Object.toString prints type descriptor and memory hash.",
+          "Stack references share Heap objects during method passing.",
+          "Null checks prevent JVM dereferencing crashes."
+        ],
+        "keyTakeaways": [
+          "Use i < arr.length to prevent off-by-one exceptions.",
+          "Arrays.toString(arr) is required for readable output.",
+          "Methods mutate caller array elements because reference addresses are passed.",
+          "Enhanced for loops cannot mutate elements in-place."
+        ]
+      }
+    },
+    {
+      "id": "act-array-bugs-and-output-prediction-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Top Array Pitfalls & Output Traces",
+      "codeSnippet": "import java.util.Arrays;\n\npublic class ArrayBugsDemo {\n    public static void main(String[] args) {\n        // Bug 1: Aliasing mutation\n        int[] a = {5, 10};\n        int[] b = a;\n        b[0] = 50;\n        System.out.println(\"a[0] was mutated: \" + a[0]); // 50\n\n        // Bug 2: for-each mutation failure\n        int[] c = {1, 2, 3};\n        for (int x : c) x = 0;\n        System.out.println(\"c array unchanged: \" + Arrays.toString(c)); // [1, 2, 3]\n\n        // Bug 3: Safe boundary check\n        System.out.println(\"Last valid index of c is: \" + (c.length - 1));\n    }\n}",
+      "description": "Demonstrates reference aliasing, for-each mutation limits, and boundary check rules.",
+      "steps": [
+        {
+          "line": 4,
+          "explanation": "Demonstrates aliasing mutation: updating b[0] inadvertently mutates a[0]."
+        },
+        {
+          "line": 10,
+          "explanation": "Demonstrates why for-each does not modify primitive arrays."
+        },
+        {
+          "line": 16,
+          "explanation": "Demonstrates off-by-one boundary check safety."
+        }
+      ]
+    },
+    {
+      "id": "act-array-bugs-and-output-prediction-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Essential Concept & Bug Detection Check",
+      "questions": [
+        {
+          "id": "q-array-bugs-and-output-prediction-1",
+          "type": "mcq",
+          "prompt": "What happens if you execute: 'String[] names = new String[3]; System.out.println(names[0].length());'?",
+          "options": [
+            "Prints 0",
+            "Throws NullPointerException at runtime",
+            "Prints null",
+            "Compile error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "names[0] defaults to null. Attempting to call .length() on a null reference throws a NullPointerException.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-2",
+          "type": "mcq",
+          "prompt": "What is printed by:\nint[] a = {10, 20};\nint[] b = a;\nb[1] = 50;\nSystem.out.println(a[1]);?",
+          "options": [
+            "20",
+            "50",
+            "0",
+            "ArrayIndexOutOfBoundsException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "b and a point to the same array object. Mutating b[1] mutates a[1] to 50.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-3",
+          "type": "mcq",
+          "prompt": "What exception occurs when executing: 'int[] arr = {1, 2}; for (int i = 0; i <= arr.length; i++) System.out.println(arr[i]);'?",
+          "options": [
+            "NullPointerException",
+            "ArrayIndexOutOfBoundsException",
+            "ArithmeticException",
+            "No exception occurs"
+          ],
+          "correctAnswer": 1,
+          "explanation": "When i reaches arr.length (2), arr[2] is out of bounds, throwing an ArrayIndexOutOfBoundsException.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-4",
+          "type": "mcq",
+          "prompt": "What is the output of:\nint[] x = {2, 4, 6};\nfor (int n : x) {\n    n = n + 1;\n}\nSystem.out.println(x[0] + \",\" + x[1]);?",
+          "options": [
+            "3,5",
+            "2,4",
+            "3,4",
+            "2,5"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The loop variable n is a local copy. Modifications to n have zero effect on the array x. It prints 2,4.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-5",
+          "type": "mcq",
+          "prompt": "How do you avoid NullPointerException when working with an array of objects like String[]?",
+          "options": [
+            "Declare the array with keyword nonnull",
+            "Verify that elements are not null before dereferencing: if (arr[i] != null) { ... }",
+            "Object arrays cannot cause NullPointerException",
+            "Use while loops instead of for loops"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Checking for null before calling methods or fields on object array elements prevents NullPointerExceptions.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-6",
+          "type": "mcq",
+          "prompt": "What is printed by: 'int[] arr = {1, 2, 3}; System.out.println(Arrays.toString(arr));'?",
+          "options": [
+            "[1, 2, 3]",
+            "1, 2, 3",
+            "[I@...",
+            "{1, 2, 3}"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Arrays.toString formats the elements in brackets with comma separation: [1, 2, 3].",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-7",
+          "type": "mcq",
+          "prompt": "Given: 'int[] a = {1, 2}; int[] b = {1, 2};'. What does '(a.equals(b))' evaluate to?",
+          "options": [
+            "true",
+            "false (because Object.equals performs reference == comparison on arrays)",
+            "Compile error",
+            "NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays inherit Object.equals, which compares memory addresses. Since a and b are distinct objects, it evaluates to false.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-array-bugs-and-output-prediction-8",
+          "type": "mcq",
+          "prompt": "What happens if you execute: 'int[] nums = null; System.out.println(nums.length);'?",
+          "options": [
+            "Prints 0",
+            "Throws NullPointerException",
+            "Prints null",
+            "Compile error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Accessing any field or method on a null reference throws a NullPointerException.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-array-bugs-and-output-prediction-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Fix Off-By-One Loop Boundary",
+      "practice": {
+        "title": "Fix Off-By-One Loop Boundary",
+        "problemStatement": "Fix the flawed code in main that crashes with ArrayIndexOutOfBoundsException by changing the loop condition so it iterates safely through all 4 elements. Print all elements separated by spaces: '10 20 30 40 '.",
+        "initialCode": "public class Main {\n    public static void main(String[] args) {\n        int[] data = {10, 20, 30, 40};\n        // Fix loop boundary:\n        for (int i = 0; i <= data.length; i++) {\n            System.out.print(data[i] + \" \");\n        }\n        System.out.println();\n    }\n}",
+        "expectedOutput": "10 20 30 40 ",
+        "hints": [
+          "The bug is using <= instead of <.",
+          "Use: for (int i = 0; i < data.length; i++)"
+        ],
+        "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int[] data = {10, 20, 30, 40};\n        for (int i = 0; i < data.length; i++) {\n            System.out.print(data[i] + \" \");\n        }\n        System.out.println();\n    }\n}"
+      }
+    },
+    {
+      "id": "act-array-bugs-and-output-prediction-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Placement Interview Questions",
+      "interviewQA": [
+        {
+          "id": "qa-array-bugs-and-output-prediction-1",
+          "question": "Why does passing an array to a method allow the method to mutate the caller's array, while passing a primitive int does not?",
+          "expectedAnswer": "Java is strictly pass-by-value. When a primitive int is passed, its literal value is copied; modifying the parameter affects only that local stack copy. When an array is passed, the value of the reference address (pointer) is copied. Both the caller and the callee hold copies pointing to the exact same array object on the Heap. Dereferencing that shared address (arr[i] = val) modifies the actual object in memory.",
+          "companyTags": [
+            "Meta",
+            "Uber",
+            "Goldman Sachs"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-array-bugs-and-output-prediction-2",
+          "question": "What happens if a method reassigns the array parameter itself, e.g. 'void reset(int[] arr) { arr = new int[5]; }'?",
+          "expectedAnswer": "The caller's array is NOT changed! Reassigning 'arr' only points the callee's local reference variable to a new array on the Heap. The caller's reference variable still points to the original array. This proves Java is 100% pass-by-value.",
+          "companyTags": [
+            "Google",
+            "Morgan Stanley",
+            "Flipkart"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-array-bugs-and-output-prediction-3",
+          "question": "Why does 'System.out.println(new int[]{1, 2})' print '[I@15db9742'?",
+          "expectedAnswer": "Because Java arrays do not override Object.toString(). Object's default toString() implementation prints getClass().getName() + '@' + Integer.toHexString(hashCode()). '[I' denotes a 1D integer array. To print contents, use Arrays.toString().",
+          "companyTags": [
+            "Google",
+            "Amazon",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-array-bugs-and-output-prediction-4",
+          "question": "What is the difference between an uninitialized array reference and an array of nulls?",
+          "expectedAnswer": "An uninitialized reference (or 'String[] arr = null;') contains no memory address; attempting to access 'arr.length' immediately throws NullPointerException. An array of nulls ('String[] arr = new String[3];') is an instantiated array object on the Heap of length 3 whose slots contain null; 'arr.length' is 3, but accessing 'arr[0].length()' throws NullPointerException.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Cisco"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-array-bugs-and-output-prediction-5",
+          "question": "How can you make an array effectively immutable in Java?",
+          "expectedAnswer": "Declaring 'final int[] arr = {1, 2, 3};' only prevents the variable 'arr' from being reassigned to a different array; the elements themselves CAN still be mutated ('arr[0] = 99' is legal). To achieve true immutability, wrap the array in an unmodifiable List: 'List<Integer> list = Collections.unmodifiableList(Arrays.asList(1, 2, 3));' or use Java 9+ 'List.of(1, 2, 3)'.",
+          "companyTags": [
+            "Microsoft",
+            "TCS",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-array-bugs-and-output-prediction-6",
+          "question": "What is bounds check elimination in the JVM HotSpot compiler?",
+          "expectedAnswer": "Bounds Check Elimination (BCE) is an optimization where the JIT compiler analyzes array access patterns in loops. If the compiler can mathematically prove that the loop index is strictly bounded between 0 and arr.length - 1, it eliminates the runtime boundary check machine instructions, improving loop performance.",
+          "companyTags": [
+            "Oracle",
+            "Adobe",
+            "Salesforce"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-array-bugs-and-output-prediction-7",
+          "question": "What is the most effective way to debug array index issues in production?",
+          "expectedAnswer": "Inspect the exception message: ArrayIndexOutOfBoundsException always prints the offending index (e.g. 'Index 5 out of bounds for length 5'). Add defensive logging of array.length before the loop, use enhanced for loops where possible, and write unit tests for boundary edge cases (empty array, size 1, first/last elements).",
+          "companyTags": [
+            "Meta",
+            "Uber",
+            "Goldman Sachs"
+          ],
+          "keyPoints": [
+            "Emphasize memory layout, time complexity, and edge cases."
+          ],
+          "followUpQuestions": []
+        }
+      ]
+    },
+    {
+      "id": "act-array-bugs-and-output-prediction-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist",
+      "checklist": [
+        "Off-by-One Guard: Always loop with i < arr.length, never <= arr.length.",
+        "Direct Print Trap: Use Arrays.toString(arr); printing arr directly yields cryptic [I@... hashes.",
+        "Reference Mutability: Passing an array to a method allows the method to mutate the caller's array elements.",
+        "for-each Immutability: Enhanced for loops iterate on value copies; cannot mutate array elements in-place.",
+        "Object Array Nulls: new String[n] initializes elements to null; guard against NullPointerException."
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-m8-l10-1",
+      "question": "What happens if you execute: 'String[] names = new String[3]; System.out.println(names[0].length());'?",
+      "options": [
+        "Prints 0",
+        "Throws NullPointerException at runtime",
+        "Prints null",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "names[0] defaults to null. Attempting to call .length() on a null reference throws a NullPointerException."
+    },
+    {
+      "id": "mcq-m8-l10-2",
+      "question": "What is printed by:\nint[] a = {10, 20};\nint[] b = a;\nb[1] = 50;\nSystem.out.println(a[1]);?",
+      "options": [
+        "20",
+        "50",
+        "0",
+        "ArrayIndexOutOfBoundsException"
+      ],
+      "correctOption": 1,
+      "explanation": "b and a point to the same array object. Mutating b[1] mutates a[1] to 50."
+    },
+    {
+      "id": "mcq-m8-l10-3",
+      "question": "What exception occurs when executing: 'int[] arr = {1, 2}; for (int i = 0; i <= arr.length; i++) System.out.println(arr[i]);'?",
+      "options": [
+        "NullPointerException",
+        "ArrayIndexOutOfBoundsException",
+        "ArithmeticException",
+        "No exception occurs"
+      ],
+      "correctOption": 1,
+      "explanation": "When i reaches arr.length (2), arr[2] is out of bounds, throwing an ArrayIndexOutOfBoundsException."
+    },
+    {
+      "id": "mcq-m8-l10-4",
+      "question": "What is the output of:\nint[] x = {2, 4, 6};\nfor (int n : x) {\n    n = n + 1;\n}\nSystem.out.println(x[0] + \",\" + x[1]);?",
+      "options": [
+        "3,5",
+        "2,4",
+        "3,4",
+        "2,5"
+      ],
+      "correctOption": 1,
+      "explanation": "The loop variable n is a local copy. Modifications to n have zero effect on the array x. It prints 2,4."
+    },
+    {
+      "id": "mcq-m8-l10-5",
+      "question": "How do you avoid NullPointerException when working with an array of objects like String[]?",
+      "options": [
+        "Declare the array with keyword nonnull",
+        "Verify that elements are not null before dereferencing: if (arr[i] != null) { ... }",
+        "Object arrays cannot cause NullPointerException",
+        "Use while loops instead of for loops"
+      ],
+      "correctOption": 1,
+      "explanation": "Checking for null before calling methods or fields on object array elements prevents NullPointerExceptions."
+    },
+    {
+      "id": "mcq-m8-l10-6",
+      "question": "What is printed by: 'int[] arr = {1, 2, 3}; System.out.println(Arrays.toString(arr));'?",
+      "options": [
+        "[1, 2, 3]",
+        "1, 2, 3",
+        "[I@...",
+        "{1, 2, 3}"
+      ],
+      "correctOption": 0,
+      "explanation": "Arrays.toString formats the elements in brackets with comma separation: [1, 2, 3]."
+    },
+    {
+      "id": "mcq-m8-l10-7",
+      "question": "Given: 'int[] a = {1, 2}; int[] b = {1, 2};'. What does '(a.equals(b))' evaluate to?",
+      "options": [
+        "true",
+        "false (because Object.equals performs reference == comparison on arrays)",
+        "Compile error",
+        "NullPointerException"
+      ],
+      "correctOption": 1,
+      "explanation": "Arrays inherit Object.equals, which compares memory addresses. Since a and b are distinct objects, it evaluates to false."
+    },
+    {
+      "id": "mcq-m8-l10-8",
+      "question": "What happens if you execute: 'int[] nums = null; System.out.println(nums.length);'?",
+      "options": [
+        "Prints 0",
+        "Throws NullPointerException",
+        "Prints null",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "Accessing any field or method on a null reference throws a NullPointerException."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prac-m8-l10-1",
+      "title": "Fix Off-By-One Loop Boundary",
+      "difficulty": "Easy",
+      "description": "Fix the flawed code in main that crashes with ArrayIndexOutOfBoundsException by changing the loop condition so it iterates safely through all 4 elements. Print all elements separated by spaces: '10 20 30 40 '.",
+      "problemStatement": "Fix the flawed code in main that crashes with ArrayIndexOutOfBoundsException by changing the loop condition so it iterates safely through all 4 elements. Print all elements separated by spaces: '10 20 30 40 '.",
+      "hint": "Change 'i <= data.length' to 'i < data.length'.",
+      "hints": [
+        "The bug is using <= instead of <.",
+        "Use: for (int i = 0; i < data.length; i++)"
+      ],
+      "starterCode": "public class Main {\n    public static void main(String[] args) {\n        int[] data = {10, 20, 30, 40};\n        // Fix loop boundary:\n        for (int i = 0; i <= data.length; i++) {\n            System.out.print(data[i] + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int[] data = {10, 20, 30, 40};\n        for (int i = 0; i < data.length; i++) {\n            System.out.print(data[i] + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "10 20 30 40 "
+        }
+      ],
+      "targetOutput": "10 20 30 40 "
+    },
+    {
+      "id": "prac-m8-l10-2",
+      "title": "Safe String Array Traversal Guarding Nulls",
+      "difficulty": "Easy",
+      "description": "Given 'String[] names = new String[3]; names[1] = \"Sarah\";'. Traverse with a loop. If names[i] != null, print 'Name: ' + names[i]. Otherwise print 'Slot Empty'.",
+      "problemStatement": "Given 'String[] names = new String[3]; names[1] = \"Sarah\";'. Traverse with a loop. If names[i] != null, print 'Name: ' + names[i]. Otherwise print 'Slot Empty'.",
+      "hint": "Check if (names[i] != null) before using it.",
+      "hints": [
+        "Check null status of each slot.",
+        "Slots 0 and 2 are empty; slot 1 is Sarah."
+      ],
+      "starterCode": "public class Main {\n    public static void main(String[] args) {\n        String[] names = new String[3];\n        names[1] = \"Sarah\";\n        // Safe traversal\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        String[] names = new String[3];\n        names[1] = \"Sarah\";\n        for (int i = 0; i < names.length; i++) {\n            if (names[i] != null) {\n                System.out.println(\"Name: \" + names[i]);\n            } else {\n                System.out.println(\"Slot Empty\");\n            }\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Slot Empty\nName: Sarah\nSlot Empty"
+        }
+      ],
+      "targetOutput": "Slot Empty\nName: Sarah\nSlot Empty"
+    },
+    {
+      "id": "prac-m8-l10-3",
+      "title": "Output Prediction: Aliasing Side Effect",
+      "difficulty": "Medium",
+      "description": "Implement the following method: 'static void modify(int[] arr) { arr[0] = 999; }'. In main(), declare 'int[] x = {10, 20};'. Call modify(x). Print 'x[0]=' + x[0]. Proves methods mutate arrays passed by reference value.",
+      "problemStatement": "Implement the following method: 'static void modify(int[] arr) { arr[0] = 999; }'. In main(), declare 'int[] x = {10, 20};'. Call modify(x). Print 'x[0]=' + x[0]. Proves methods mutate arrays passed by reference value.",
+      "hint": "The array reference is passed by value, so modifying elements mutates the caller's array.",
+      "hints": [
+        "Pass x into modify(x).",
+        "x[0] becomes 999."
+      ],
+      "starterCode": "public class Main {\n    // Define modify method\n\n    public static void main(String[] args) {\n        int[] x = {10, 20};\n        // Call modify and print\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void modify(int[] arr) {\n        arr[0] = 999;\n    }\n\n    public static void main(String[] args) {\n        int[] x = {10, 20};\n        modify(x);\n        System.out.println(\"x[0]=\" + x[0]);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "x[0]=999"
+        }
+      ],
+      "targetOutput": "x[0]=999"
+    },
+    {
+      "id": "prac-m8-l10-4",
+      "title": "Fix Failed for-each In-Place Update",
+      "difficulty": "Medium",
+      "description": "Refactor a buggy program where a developer tried to square every number in '{2, 3, 4}' using an enhanced for loop. Use a standard for loop instead so that the array is actually modified in-place to '{4, 9, 16}'. Print using Arrays.toString().",
+      "problemStatement": "Refactor a buggy program where a developer tried to square every number in '{2, 3, 4}' using an enhanced for loop. Use a standard for loop instead so that the array is actually modified in-place to '{4, 9, 16}'. Print using Arrays.toString().",
+      "hint": "for (int i = 0; i < nums.length; i++) nums[i] = nums[i] * nums[i];",
+      "hints": [
+        "Replace enhanced for with standard index for loop.",
+        "Print Arrays.toString(nums)."
+      ],
+      "starterCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] nums = {2, 3, 4};\n        // Replace with index-based in-place squaring:\n        for (int n : nums) {\n            n = n * n;\n        }\n        System.out.println(Arrays.toString(nums));\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] nums = {2, 3, 4};\n        for (int i = 0; i < nums.length; i++) {\n            nums[i] = nums[i] * nums[i];\n        }\n        System.out.println(Arrays.toString(nums));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "[4, 9, 16]"
+        }
+      ],
+      "targetOutput": "[4, 9, 16]"
+    },
+    {
+      "id": "prac-m8-l10-5",
+      "title": "Safe Null Array Parameter Checker",
+      "difficulty": "Hard",
+      "description": "Write a method 'safeArrayLength(int[] arr)' that returns 0 if arr is null, otherwise returns arr.length. In main(), test with 'null' and array '{1, 2, 3}'. Print 'Length of null: 0 | Length of data: 3'.",
+      "problemStatement": "Write a method 'safeArrayLength(int[] arr)' that returns 0 if arr is null, otherwise returns arr.length. In main(), test with 'null' and array '{1, 2, 3}'. Print 'Length of null: 0 | Length of data: 3'.",
+      "hint": "if (arr == null) return 0; return arr.length;",
+      "hints": [
+        "Guard against null.",
+        "Print 'Length of null: 0 | Length of data: 3'."
+      ],
+      "starterCode": "public class Main {\n    // Define safeArrayLength\n\n    public static void main(String[] args) {\n        // Test null and {1, 2, 3}\n    }\n}",
+      "solutionCode": "public class Main {\n    public static int safeArrayLength(int[] arr) {\n        if (arr == null) {\n            return 0;\n        }\n        return arr.length;\n    }\n\n    public static void main(String[] args) {\n        int len1 = safeArrayLength(null);\n        int len2 = safeArrayLength(new int[]{1, 2, 3});\n        System.out.println(\"Length of null: \" + len1 + \" | Length of data: \" + len2);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Length of null: 0 | Length of data: 3"
+        }
+      ],
+      "targetOutput": "Length of null: 0 | Length of data: 3"
+    },
+    {
+      "id": "prac-m8-l10-6",
+      "title": "Output Prediction: Chained Method Array Swaps",
+      "difficulty": "Hard",
+      "description": "Write method 'swapFirstTwo(int[] arr)' that swaps arr[0] and arr[1]. In main(), declare 'int[] data = {10, 20, 30};'. Call swapFirstTwo(data). Print 'After swap: ' + Arrays.toString(data).",
+      "problemStatement": "Write method 'swapFirstTwo(int[] arr)' that swaps arr[0] and arr[1]. In main(), declare 'int[] data = {10, 20, 30};'. Call swapFirstTwo(data). Print 'After swap: ' + Arrays.toString(data).",
+      "hint": "int temp = arr[0]; arr[0] = arr[1]; arr[1] = temp;",
+      "hints": [
+        "Swapping array elements through a method persists in the caller.",
+        "Result: [20, 10, 30]."
+      ],
+      "starterCode": "import java.util.Arrays;\n\npublic class Main {\n    // Define swapFirstTwo\n\n    public static void main(String[] args) {\n        int[] data = {10, 20, 30};\n        // Call and print\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic class Main {\n    public static void swapFirstTwo(int[] arr) {\n        int temp = arr[0];\n        arr[0] = arr[1];\n        arr[1] = temp;\n    }\n\n    public static void main(String[] args) {\n        int[] data = {10, 20, 30};\n        swapFirstTwo(data);\n        System.out.println(\"After swap: \" + Arrays.toString(data));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "After swap: [20, 10, 30]"
+        }
+      ],
+      "targetOutput": "After swap: [20, 10, 30]"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "qa-m8-l10-1",
+      "question": "Why does passing an array to a method allow the method to mutate the caller's array, while passing a primitive int does not?",
+      "answer": "Java is strictly pass-by-value. When a primitive int is passed, its literal value is copied; modifying the parameter affects only that local stack copy. When an array is passed, the value of the reference address (pointer) is copied. Both the caller and the callee hold copies pointing to the exact same array object on the Heap. Dereferencing that shared address (arr[i] = val) modifies the actual object in memory."
+    },
+    {
+      "id": "qa-m8-l10-2",
+      "question": "What happens if a method reassigns the array parameter itself, e.g. 'void reset(int[] arr) { arr = new int[5]; }'?",
+      "answer": "The caller's array is NOT changed! Reassigning 'arr' only points the callee's local reference variable to a new array on the Heap. The caller's reference variable still points to the original array. This proves Java is 100% pass-by-value."
+    },
+    {
+      "id": "qa-m8-l10-3",
+      "question": "Why does 'System.out.println(new int[]{1, 2})' print '[I@15db9742'?",
+      "answer": "Because Java arrays do not override Object.toString(). Object's default toString() implementation prints getClass().getName() + '@' + Integer.toHexString(hashCode()). '[I' denotes a 1D integer array. To print contents, use Arrays.toString()."
+    },
+    {
+      "id": "qa-m8-l10-4",
+      "question": "What is the difference between an uninitialized array reference and an array of nulls?",
+      "answer": "An uninitialized reference (or 'String[] arr = null;') contains no memory address; attempting to access 'arr.length' immediately throws NullPointerException. An array of nulls ('String[] arr = new String[3];') is an instantiated array object on the Heap of length 3 whose slots contain null; 'arr.length' is 3, but accessing 'arr[0].length()' throws NullPointerException."
+    },
+    {
+      "id": "qa-m8-l10-5",
+      "question": "How can you make an array effectively immutable in Java?",
+      "answer": "Declaring 'final int[] arr = {1, 2, 3};' only prevents the variable 'arr' from being reassigned to a different array; the elements themselves CAN still be mutated ('arr[0] = 99' is legal). To achieve true immutability, wrap the array in an unmodifiable List: 'List<Integer> list = Collections.unmodifiableList(Arrays.asList(1, 2, 3));' or use Java 9+ 'List.of(1, 2, 3)'."
+    },
+    {
+      "id": "qa-m8-l10-6",
+      "question": "What is bounds check elimination in the JVM HotSpot compiler?",
+      "answer": "Bounds Check Elimination (BCE) is an optimization where the JIT compiler analyzes array access patterns in loops. If the compiler can mathematically prove that the loop index is strictly bounded between 0 and arr.length - 1, it eliminates the runtime boundary check machine instructions, improving loop performance."
+    },
+    {
+      "id": "qa-m8-l10-7",
+      "question": "What is the most effective way to debug array index issues in production?",
+      "answer": "Inspect the exception message: ArrayIndexOutOfBoundsException always prints the offending index (e.g. 'Index 5 out of bounds for length 5'). Add defensive logging of array.length before the loop, use enhanced for loops where possible, and write unit tests for boundary edge cases (empty array, size 1, first/last elements)."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "label": "Off-by-One Guard",
+      "description": "Always loop with i < arr.length, never <= arr.length."
+    },
+    {
+      "label": "Direct Print Trap",
+      "description": "Use Arrays.toString(arr); printing arr directly yields cryptic [I@... hashes."
+    },
+    {
+      "label": "Reference Mutability",
+      "description": "Passing an array to a method allows the method to mutate the caller's array elements."
+    },
+    {
+      "label": "for-each Immutability",
+      "description": "Enhanced for loops iterate on value copies; cannot mutate array elements in-place."
+    },
+    {
+      "label": "Object Array Nulls",
+      "description": "new String[n] initializes elements to null; guard against NullPointerException."
+    }
+  ]
+}

@@ -538,4 +538,80 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
       expect(lesson?.slug).toBe(expectedCanonical);
     }
   });
+
+  it('resolves the 12 canonical Arrays lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'arrays');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(12);
+
+    const expectedSlugs = [
+      'what-is-an-array',
+      'creating-and-initializing-arrays',
+      'array-indexing-and-access',
+      'traversing-arrays',
+      'enhanced-for-loop',
+      'common-array-operations',
+      'updating-copying-and-comparing-arrays',
+      'the-arrays-utility-class',
+      'multidimensional-arrays',
+      'array-bugs-and-output-prediction',
+      'array-practice',
+      'arrays-final-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'arrays', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 8 MCQs`).toBeGreaterThanOrEqual(8);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 12 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(12);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 6 self-paced practice problems`).toBeGreaterThanOrEqual(6);
+      
+      // Ensure all self-paced practice problems have both problemStatement and description
+      for (const prob of lesson?.practiceProblems || []) {
+        expect(prob.problemStatement || prob.description, `${slug} problem ${prob.id} must have description/problemStatement`).toBeDefined();
+      }
+
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 08 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'indexes-and-accessing-elements': 'array-indexing-and-access',
+      'array-indexing': 'array-indexing-and-access',
+      'for-each-loop': 'enhanced-for-loop',
+      'for-each': 'enhanced-for-loop',
+      'updating-searching-and-counting': 'common-array-operations',
+      'sum-average-min-max': 'common-array-operations',
+      'array-operations': 'common-array-operations',
+      'copying-arrays': 'updating-copying-and-comparing-arrays',
+      'copying-and-arrays-utility-methods': 'the-arrays-utility-class',
+      'arrays-utility': 'the-arrays-utility-class',
+      '2d-arrays': 'multidimensional-arrays',
+      'common-array-errors-and-output-prediction': 'array-bugs-and-output-prediction',
+      'array-errors': 'array-bugs-and-output-prediction',
+      'arrays-practice': 'array-practice',
+      'arrays-practice-and-interview-challenge': 'arrays-final-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'arrays', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
 });
