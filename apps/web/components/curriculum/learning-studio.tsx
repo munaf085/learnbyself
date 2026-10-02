@@ -111,7 +111,10 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     currentLesson.moduleSlug === 'mini-projects' ||
     currentLesson.isMiniProject ||
     !!currentLesson.miniProject ||
-    !!currentLesson.project;
+    !!currentLesson.project ||
+    currentLesson.title.toLowerCase().includes('mini project') ||
+    currentLesson.title.toLowerCase().includes('capstone') ||
+    currentLesson.title.toLowerCase().includes('final project:');
 
   const studioTabs: TabItem[] = [
     { id: 'concept', label: '1. Learn' },

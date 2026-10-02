@@ -334,6 +334,177 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       const summary = mod?.lessons.find(l => l.slug === lessonSlug);
       if (!summary) return null;
 
+      const isProjectLesson =
+        (summary as any).isMiniProject ||
+        summary.title.toLowerCase().includes('mini project') ||
+        summary.title.toLowerCase().includes('capstone') ||
+        summary.title.toLowerCase().includes('final project');
+
+      let miniProjectData: any = undefined;
+      if (isProjectLesson) {
+        miniProjectData = {
+          id: `mp-${summary.slug}`,
+          slug: summary.slug,
+          title: summary.title,
+          projectBrief: {
+            problemItSolves: summary.summary,
+            realWorldUse: `Applied in real-world Java engineering systems modeling domain logic with high reliability.`,
+            estimatedTime: `${summary.estimatedMinutes || 35} mins`,
+            difficulty: summary.difficulty || 'intermediate',
+            motivatingQuote: `Building real projects is where syntax transforms into engineering confidence.`
+          },
+          realWorldScenario: {
+            headline: `Professional Engineering Scenario: ${summary.title}`,
+            story: `You have been tasked by your team lead with developing a robust, object-oriented component for ${summary.title}. The solution must be well-structured, follow strict encapsulation, and handle invalid inputs gracefully.`,
+            context: `Java Enterprise / Core System Architecture`
+          },
+          requirements: {
+            functional: [
+              `Implement primary domain entities with appropriate state and behavior`,
+              `Ensure all methods validate input arguments before mutating state`,
+              `Provide clean console logging to verify program execution`
+            ],
+            technical: [
+              `Compile without warnings using OpenJDK 21 LTS`,
+              `Organize classes cleanly with appropriate access modifiers`,
+              `Implement defensive state checks to prevent invalid object states`
+            ],
+            edgeCases: [
+              `Null or empty string inputs`,
+              `Negative numerical values or boundary overflow`,
+              `Consecutive method invocations under varying states`
+            ]
+          },
+          beforeYouCode: {
+            mentalModel: `Sketch the class diagram on paper first: identify fields, access modifiers, constructors, and methods before opening your IDE.`,
+            commonPitfalls: [
+              `Directly exposing mutable fields with public access`,
+              `Missing constructor parameter validation guards`,
+              `Overcomplicating the class hierarchy unnecessarily`
+            ],
+            tips: [
+              `Write and test one class at a time in isolation`,
+              `Run with sample data and verify edge case outputs`
+            ]
+          },
+          buildRoadmap: [
+            {
+              stepNumber: 1,
+              title: "Scaffold Domain Classes",
+              tasks: [
+                "Define instance variables with private access",
+                "Create parameterized constructors with validation",
+                "Implement getter and business behavior methods"
+              ]
+            },
+            {
+              stepNumber: 2,
+              title: "Implement Validation & Invariants",
+              tasks: [
+                "Add defensive guards for null or invalid inputs",
+                "Return safe copies of mutable state if applicable",
+                "Ensure clean error reporting upon violation"
+              ]
+            },
+            {
+              stepNumber: 3,
+              title: "Build Driver & Test Suite",
+              tasks: [
+                "Instantiate multiple test instances in Main.java",
+                "Simulate happy-path business workflows",
+                "Execute negative test cases to confirm guard behavior"
+              ]
+            }
+          ],
+          thinkBeforeYouCode: [
+            {
+              question: "What real-world entity does each class represent?",
+              hint: "Classes are nouns representing blueprints; methods are verbs representing behaviors."
+            },
+            {
+              question: "How should invalid state transitions be prevented?",
+              hint: "Validate inside constructors and mutator methods before modifying instance fields."
+            }
+          ],
+          hintSystem: [
+            {
+              step: 1,
+              hint: "Start with a clean Main.java file and write your class declarations sequentially or in separate files."
+            },
+            {
+              step: 2,
+              hint: "Keep fields private and use getters to inspect state from outside the class."
+            },
+            {
+              step: 3,
+              hint: "Use System.out.println() with descriptive prefixes to trace each operation in the console."
+            }
+          ],
+          testYourProject: {
+            normalCases: [
+              "Create valid object instances with standard constructor parameters",
+              "Execute core business methods and verify expected state updates",
+              "Print formatted object status to console"
+            ],
+            boundaryCases: [
+              "Pass minimum and maximum permissible numeric boundaries",
+              "Test single-character or boundary length strings"
+            ],
+            invalidInputCases: [
+              "Attempt object creation with null arguments",
+              "Invoke operations that violate business invariants"
+            ],
+            edgeCases: [
+              "Repeated operations in rapid sequence",
+              "Zero-value operations where applicable"
+            ]
+          },
+          debuggingGuide: [
+            "NullPointerException: Check that all reference fields are initialized before dereferencing.",
+            "Unexpected state values: Verify that your constructor assigns parameters to instance fields using this.field = param."
+          ],
+          projectPolish: [
+            "Organize code with clean indentation and descriptive variable names.",
+            "Add JavaDoc comments explaining method purpose and parameter constraints."
+          ],
+          gitHubReady: {
+            repoName: summary.slug,
+            commitMessages: [
+              "feat: initialize domain entities and constructors",
+              "feat: implement business methods and validation guards",
+              "test: add comprehensive console test cases",
+              "docs: add professional README with architecture overview"
+            ],
+            suggestedReadme: `# ${summary.title}\n\nA clean, robust Java application modeling ${summary.title} with solid object-oriented design principles.\n\n## Features\n- Encapsulated domain entities\n- Defensive input validation\n- Comprehensive console test driver\n\n## How to Run\n\`\`\`bash\njavac Main.java\njava Main\n\`\`\`\n`
+          },
+          portfolioChecklist: [
+            "All classes follow clean OOP design principles",
+            "Project compiles cleanly with zero warnings",
+            "README.md explains the problem, architecture, and instructions",
+            "Repository is committed and pushed to GitHub"
+          ],
+          explainYourProject: [
+            "I built this project to master object-oriented modeling in Java.",
+            "I prioritized encapsulation and state invariants to ensure runtime robustness.",
+            "The architecture separates data fields from business operations cleanly."
+          ],
+          projectCompletion: {
+            celebrationMessage: `Congratulations! You have completed ${summary.title}. You have an authentic, portfolio-ready Java project ready for GitHub!`,
+            resumeBullets: [
+              `Architected a modular Java application for ${summary.title} enforcing clean OOP design and input validation.`,
+              `Designed and executed a multi-case test driver covering normal, boundary, and negative scenarios.`
+            ],
+            nextSteps: [
+              "Push your code to a public GitHub repository.",
+              "Add the repository link to your LinkedIn and developer resume.",
+              "Proceed to the next module in your Java learning journey!"
+            ]
+          },
+          scaffoldingCode: `// ${summary.title}\n// Starter Template\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("=== ${summary.title} ===");\n        // TODO: Instantiate and test your classes here\n    }\n}`,
+          sampleConsoleRun: `=== ${summary.title} ===\nStatus: Initialized successfully\nExecuting test scenarios...\n✓ All operations completed with expected state.`
+        };
+      }
+
       lesson = {
         id: summary.id,
         slug: summary.slug,
@@ -344,6 +515,8 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
         summary: summary.summary,
         difficulty: summary.difficulty,
         estimatedMinutes: summary.estimatedMinutes,
+        isMiniProject: isProjectLesson,
+        miniProject: miniProjectData,
         prerequisites: [],
         learningObjectives: [
           `Understand the core concept and execution model of ${summary.title}`,
