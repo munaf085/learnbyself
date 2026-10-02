@@ -141,7 +141,23 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'type-conversion-narrowing-casting': 'type-conversion-and-casting',
       'overflow-and-underflow-gotchas': 'overflow-precision-common-mistakes',
       'common-beginner-mistakes-with-variables': 'overflow-precision-common-mistakes',
-      'mini-project-variable-mastery-challenge': 'variables-data-types-final-challenge'
+      'mini-project-variable-mastery-challenge': 'variables-data-types-final-challenge',
+
+      // Module 03 aliases:
+      'arithmetic-operators': 'arithmetic-operators-doing-calculations',
+      'assignment-operators': 'assignment-and-compound-assignment',
+      'relational-operators': 'relational-and-equality-operators',
+      'equality-operators': 'relational-and-equality-operators',
+      'logical-operators': 'logical-operators-and-or-not',
+      'unary-operators': 'increment-and-decrement',
+      'increment-or-decrement-pitfalls': 'increment-and-decrement',
+      'operator-precedence': 'operator-precedence-and-expression-evaluation',
+      'expression-evaluation': 'operator-precedence-and-expression-evaluation',
+      'bitwise-operators': 'bitwise-and-shift-operators',
+      'shift-operators': 'bitwise-and-shift-operators',
+      'output-prediction': 'operators-final-challenge',
+      'debugging-challenges': 'operators-final-challenge',
+      'interview-questions': 'operators-final-challenge'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

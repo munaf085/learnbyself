@@ -214,5 +214,72 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
       expect(lesson?.slug).toBe(expectedCanonical);
     }
   });
+
+  it('resolves the 10 canonical Operators lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'operators');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(10);
+
+    const expectedSlugs = [
+      'arithmetic-operators-doing-calculations',
+      'assignment-and-compound-assignment',
+      'relational-and-equality-operators',
+      'logical-operators-and-or-not',
+      'increment-and-decrement',
+      'short-circuit-evaluation',
+      'ternary-operator',
+      'operator-precedence-and-expression-evaluation',
+      'bitwise-and-shift-operators',
+      'operators-final-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'operators', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 5 MCQs`).toBeGreaterThanOrEqual(5);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 12 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(12);
+      expect(lesson?.practiceProblems?.length, `${slug} must have 5 self-paced practice problems`).toBe(5);
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 03 skeleton slugs to canonical lessons via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'arithmetic-operators': 'arithmetic-operators-doing-calculations',
+      'assignment-operators': 'assignment-and-compound-assignment',
+      'relational-operators': 'relational-and-equality-operators',
+      'equality-operators': 'relational-and-equality-operators',
+      'logical-operators': 'logical-operators-and-or-not',
+      'unary-operators': 'increment-and-decrement',
+      'increment-or-decrement-pitfalls': 'increment-and-decrement',
+      'short-circuit-evaluation': 'short-circuit-evaluation',
+      'ternary-operator': 'ternary-operator',
+      'operator-precedence': 'operator-precedence-and-expression-evaluation',
+      'expression-evaluation': 'operator-precedence-and-expression-evaluation',
+      'bitwise-operators': 'bitwise-and-shift-operators',
+      'shift-operators': 'bitwise-and-shift-operators'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'operators', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
 });
+
 

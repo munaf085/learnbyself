@@ -713,6 +713,707 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
           </div>
         </Card>
       )}
+
+      {/* ==================================================== */}
+      {/* MODULE 03: OPERATORS CHEAT SHEETS                    */}
+      {/* ==================================================== */}
+
+      {/* Lesson 1: arithmetic-operators-doing-calculations */}
+      {(slug === 'arithmetic-operators-doing-calculations' || slug === 'arithmetic-operators') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Arithmetic Operators &amp; Truncation Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Operator</th>
+                  <th className="p-2.5">Name</th>
+                  <th className="p-2.5">Example</th>
+                  <th className="p-2.5">Result</th>
+                  <th className="p-2.5 rounded-r-lg">Critical Evaluation Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">+</td>
+                  <td className="p-2.5 font-sans text-slate-700">Addition / Concatenation</td>
+                  <td className="p-2.5 text-slate-800">10 + 5 / &quot;A&quot; + 1</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">15 / &quot;A1&quot;</td>
+                  <td className="p-2.5 font-sans text-slate-600">If either operand is String, performs concatenation</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">-</td>
+                  <td className="p-2.5 font-sans text-slate-700">Subtraction</td>
+                  <td className="p-2.5 text-slate-800">10 - 4</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">6</td>
+                  <td className="p-2.5 font-sans text-slate-600">Standard binary subtraction or unary negation</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">*</td>
+                  <td className="p-2.5 font-sans text-slate-700">Multiplication</td>
+                  <td className="p-2.5 text-slate-800">7 * 6</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">42</td>
+                  <td className="p-2.5 font-sans text-slate-600">Product of operands; subject to integer overflow if excessive</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-amber-50/30">
+                  <td className="p-2.5 font-bold text-amber-700">/ (integer)</td>
+                  <td className="p-2.5 font-sans text-slate-700">Integer Division</td>
+                  <td className="p-2.5 text-slate-800">7 / 2</td>
+                  <td className="p-2.5 text-amber-800 font-bold">3</td>
+                  <td className="p-2.5 font-sans text-slate-600">Truncates fraction completely towards zero (NOT rounded)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">/ (floating)</td>
+                  <td className="p-2.5 font-sans text-slate-700">Floating Division</td>
+                  <td className="p-2.5 text-slate-800">7.0 / 2</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">3.5</td>
+                  <td className="p-2.5 font-sans text-slate-600">Promotes operand to double when one side is decimal</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-brand-50/30">
+                  <td className="p-2.5 font-bold text-brand-700">%</td>
+                  <td className="p-2.5 font-sans text-slate-700">Modulus (Remainder)</td>
+                  <td className="p-2.5 text-slate-800">17 % 5</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">2</td>
+                  <td className="p-2.5 font-sans text-slate-600">Result sign strictly follows the numerator sign (-17 % 5 = -2)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+            <span className="font-bold text-slate-900 block">Division by Zero Rules:</span>
+            <p>• Integer: <code className="font-mono text-rose-700">10 / 0</code> throws <code className="font-mono text-rose-700">ArithmeticException: / by zero</code> at runtime.</p>
+            <p>• Floating-point: <code className="font-mono text-indigo-700">10.0 / 0.0</code> evaluates to <code className="font-mono text-indigo-700">Infinity</code>, and <code className="font-mono text-indigo-700">0.0 / 0.0</code> evaluates to <code className="font-mono text-indigo-700">NaN</code> (No exception thrown).</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: assignment-and-compound-assignment */}
+      {(slug === 'assignment-and-compound-assignment' || slug === 'assignment-operators') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Compound Assignment &amp; Automatic Implicit Cast Reference
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Compound Form</th>
+                  <th className="p-2.5">Equivalent Long Expression</th>
+                  <th className="p-2.5">Exact Internal Compilation</th>
+                  <th className="p-2.5 rounded-r-lg">Why Compound Prevents Compile Error</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">x += y</td>
+                  <td className="p-2.5 text-slate-700">x = x + y</td>
+                  <td className="p-2.5 text-indigo-700">x = (typeOf(x))(x + y)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Implicit cast inserted automatically by compiler</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">x -= y</td>
+                  <td className="p-2.5 text-slate-700">x = x - y</td>
+                  <td className="p-2.5 text-indigo-700">x = (typeOf(x))(x - y)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Subtracts and casts back into left variable&apos;s type</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">x *= y</td>
+                  <td className="p-2.5 text-slate-700">x = x * y</td>
+                  <td className="p-2.5 text-indigo-700">x = (typeOf(x))(x * y)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Multiplies and downcasts if right operand is wider</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">x /= y</td>
+                  <td className="p-2.5 text-slate-700">x = x / y</td>
+                  <td className="p-2.5 text-indigo-700">x = (typeOf(x))(x / y)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Divides and stores result back into left variable</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">x %= y</td>
+                  <td className="p-2.5 text-slate-700">x = x % y</td>
+                  <td className="p-2.5 text-indigo-700">x = (typeOf(x))(x % y)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Computes remainder and casts back into left operand</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+            <span className="font-bold block">Interview Trap Comparison:</span>
+            <p>• <code className="font-mono text-rose-800">byte b = 10; b = b + 5;</code> → <strong>Compiler Error!</strong> (b + 5 promotes to int, cannot assign int to byte without cast)</p>
+            <p>• <code className="font-mono text-emerald-800">byte b = 10; b += 5;</code> → <strong>Compiles successfully!</strong> (Compiler inserts <code className="font-mono">(byte)(b + 5)</code> automatically)</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: relational-and-equality-operators */}
+      {(slug === 'relational-and-equality-operators' || slug === 'relational-operators' || slug === 'equality-operators') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Relational &amp; Equality Comparison Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Operator</th>
+                  <th className="p-2.5">Comparison Meaning</th>
+                  <th className="p-2.5">Example (a=10, b=20)</th>
+                  <th className="p-2.5">Evaluates To</th>
+                  <th className="p-2.5 rounded-r-lg">Application Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">&lt;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Strictly Less Than</td>
+                  <td className="p-2.5 text-slate-800">a &lt; b</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">Exclusive lower bound check</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">&lt;=</td>
+                  <td className="p-2.5 font-sans text-slate-700">Less Than or Equal</td>
+                  <td className="p-2.5 text-slate-800">a &lt;= 10</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">Inclusive threshold testing</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">&gt;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Strictly Greater Than</td>
+                  <td className="p-2.5 text-slate-800">a &gt; b</td>
+                  <td className="p-2.5 text-rose-700 font-bold">false</td>
+                  <td className="p-2.5 font-sans text-slate-600">Exclusive upper bound check</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">&gt;=</td>
+                  <td className="p-2.5 font-sans text-slate-700">Greater Than or Equal</td>
+                  <td className="p-2.5 text-slate-800">b &gt;= 20</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">Inclusive upper threshold testing</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-indigo-50/30">
+                  <td className="p-2.5 font-bold text-indigo-700">==</td>
+                  <td className="p-2.5 font-sans text-slate-700">Equal To</td>
+                  <td className="p-2.5 text-slate-800">a == 10</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">Tests primitive value equality OR object reference equality</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">!=</td>
+                  <td className="p-2.5 font-sans text-slate-700">Not Equal To</td>
+                  <td className="p-2.5 text-slate-800">a != b</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">Inversion of equality check</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+            <span className="font-bold text-slate-900 block">Critical Distinction: Primitives vs Objects</span>
+            <p>• Primitives (<code className="font-mono text-brand-700">int, double, char</code>): <code className="font-mono">==</code> compares their actual binary numeric value.</p>
+            <p>• Object References (<code className="font-mono text-purple-700">String, Object</code>): <code className="font-mono">==</code> compares memory heap addresses. To compare string text contents, always call <code className="font-mono text-emerald-700">str1.equals(str2)</code>.</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: logical-operators-and-or-not */}
+      {(slug === 'logical-operators-and-or-not' || slug === 'logical-operators') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Boolean Logic Truth Table &amp; De Morgan&apos;s Laws
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg font-mono">Condition A</th>
+                  <th className="p-2.5 font-mono">Condition B</th>
+                  <th className="p-2.5 font-mono text-brand-700">A &amp;&amp; B (AND)</th>
+                  <th className="p-2.5 font-mono text-indigo-700">A || B (OR)</th>
+                  <th className="p-2.5 font-mono text-purple-700">!A (NOT)</th>
+                  <th className="p-2.5 rounded-r-lg">Summary Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 font-sans text-slate-600">Both true: AND &amp; OR are satisfied</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 font-sans text-slate-600">OR is true because A is true</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">OR is true because B is true</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-rose-700">false</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true</td>
+                  <td className="p-2.5 font-sans text-slate-600">Both false: neither condition holds</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 text-xs text-indigo-900 space-y-1">
+            <span className="font-bold block">De Morgan&apos;s Laws (Code Simplification):</span>
+            <p>1. <code className="font-mono">!(A &amp;&amp; B)</code> is equivalent to <code className="font-mono">!A || !B</code></p>
+            <p>2. <code className="font-mono">!(A || B)</code> is equivalent to <code className="font-mono">!A &amp;&amp; !B</code></p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: increment-and-decrement */}
+      {(slug === 'increment-and-decrement' || slug === 'unary-operators' || slug === 'increment-or-decrement-pitfalls') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Prefix vs Postfix Increment &amp; Decrement Execution Guide
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Syntax</th>
+                  <th className="p-2.5">Name</th>
+                  <th className="p-2.5">Value Produced in Expression</th>
+                  <th className="p-2.5">Variable State After Evaluation</th>
+                  <th className="p-2.5 rounded-r-lg">Mental Model Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">++x</td>
+                  <td className="p-2.5 font-sans text-slate-700">Pre-Increment</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Updated (x + 1)</td>
+                  <td className="p-2.5 text-slate-800">x + 1</td>
+                  <td className="p-2.5 font-sans text-slate-600">Increment FIRST, then yield the new value</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-amber-50/30">
+                  <td className="p-2.5 font-bold text-amber-700">x++</td>
+                  <td className="p-2.5 font-sans text-slate-700">Post-Increment</td>
+                  <td className="p-2.5 text-amber-800 font-bold">Current (original x)</td>
+                  <td className="p-2.5 text-slate-800">x + 1</td>
+                  <td className="p-2.5 font-sans text-slate-600">Yield the old value FIRST, then increment memory</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">--x</td>
+                  <td className="p-2.5 font-sans text-slate-700">Pre-Decrement</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Updated (x - 1)</td>
+                  <td className="p-2.5 text-slate-800">x - 1</td>
+                  <td className="p-2.5 font-sans text-slate-600">Decrement FIRST, then yield the new value</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-amber-50/30">
+                  <td className="p-2.5 font-bold text-amber-700">x--</td>
+                  <td className="p-2.5 font-sans text-slate-700">Post-Decrement</td>
+                  <td className="p-2.5 text-amber-800 font-bold">Current (original x)</td>
+                  <td className="p-2.5 text-slate-800">x - 1</td>
+                  <td className="p-2.5 font-sans text-slate-600">Yield the old value FIRST, then decrement memory</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+            <span className="font-bold text-slate-900 block">Classic Puzzle Trace:</span>
+            <p className="font-mono text-slate-800">int a = 5; int result = a++ + ++a;</p>
+            <p>1. Left operand <code className="font-mono">a++</code> yields <strong className="text-amber-700">5</strong>, and <code className="font-mono">a</code> becomes 6.</p>
+            <p>2. Right operand <code className="font-mono">++a</code> increments <code className="font-mono">a</code> from 6 to 7, and yields <strong className="text-emerald-700">7</strong>.</p>
+            <p>3. <code className="font-mono">result = 5 + 7 = 12</code>, with final <code className="font-mono">a = 7</code>.</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: short-circuit-evaluation */}
+      {slug === 'short-circuit-evaluation' && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Short-Circuit (&amp;&amp;, ||) vs Logical (&amp;, |) Evaluation
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Operator</th>
+                  <th className="p-2.5">Evaluation Mode</th>
+                  <th className="p-2.5">Short-Circuit Trigger</th>
+                  <th className="p-2.5">Right-Hand Side Evaluated?</th>
+                  <th className="p-2.5 rounded-r-lg">Defensive Guard Pattern</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80 bg-emerald-50/30">
+                  <td className="p-2.5 font-bold text-emerald-700">&amp;&amp;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Short-Circuit AND</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Left is false</td>
+                  <td className="p-2.5 font-sans text-emerald-700 font-bold">NO (Skipped completely)</td>
+                  <td className="p-2.5 text-slate-700">str != null &amp;&amp; str.length() &gt; 0</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-700">&amp;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Logical AND (Non-short)</td>
+                  <td className="p-2.5 font-sans text-slate-500">None</td>
+                  <td className="p-2.5 font-sans text-rose-700 font-bold">YES (Always evaluates)</td>
+                  <td className="p-2.5 font-sans text-rose-600">Throws NullPointerException if str is null!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-emerald-50/30">
+                  <td className="p-2.5 font-bold text-emerald-700">||</td>
+                  <td className="p-2.5 font-sans text-slate-700">Short-Circuit OR</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Left is true</td>
+                  <td className="p-2.5 font-sans text-emerald-700 font-bold">NO (Skipped completely)</td>
+                  <td className="p-2.5 text-slate-700">count == 0 || total / count &gt; 5</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-700">|</td>
+                  <td className="p-2.5 font-sans text-slate-700">Logical OR (Non-short)</td>
+                  <td className="p-2.5 font-sans text-slate-500">None</td>
+                  <td className="p-2.5 font-sans text-rose-700 font-bold">YES (Always evaluates)</td>
+                  <td className="p-2.5 font-sans text-rose-600">Throws ArithmeticException if count is 0!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+            <span className="font-bold block">Production Best Practice:</span>
+            <p>Always use short-circuit <code className="font-mono text-emerald-800">&amp;&amp;</code> and <code className="font-mono text-emerald-800">||</code> for conditional branching to safeguard your application from crashes.</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: ternary-operator */}
+      {slug === 'ternary-operator' && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Ternary Operator (?:) Anatomy &amp; Numeric Promotion
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Clause</th>
+                  <th className="p-2.5">Position in Syntax</th>
+                  <th className="p-2.5">Expected Type</th>
+                  <th className="p-2.5 rounded-r-lg">Evaluation Behavior</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">Condition</td>
+                  <td className="p-2.5 font-sans text-slate-700">Before &apos;?&apos;</td>
+                  <td className="p-2.5 text-indigo-700">boolean</td>
+                  <td className="p-2.5 font-sans text-slate-600">Must evaluate strictly to true or false</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">True Expression</td>
+                  <td className="p-2.5 font-sans text-slate-700">Between &apos;?&apos; and &apos;:&apos;</td>
+                  <td className="p-2.5 text-slate-800">Any compatible type</td>
+                  <td className="p-2.5 font-sans text-slate-600">Evaluated ONLY if condition is true; false branch is skipped</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">False Expression</td>
+                  <td className="p-2.5 font-sans text-slate-700">After &apos;:&apos;</td>
+                  <td className="p-2.5 text-slate-800">Any compatible type</td>
+                  <td className="p-2.5 font-sans text-slate-600">Evaluated ONLY if condition is false; true branch is skipped</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+            <span className="font-bold text-slate-900 block">Numeric Promotion Across Branches:</span>
+            <p className="font-mono text-slate-800">double val = (score &gt; 50) ? 100 : 85.5;</p>
+            <p>Even though <code className="font-mono">100</code> is an <code className="font-mono">int</code>, the entire ternary expression type resolves to <code className="font-mono text-indigo-700">double</code> because the false branch is a double. If true, it yields <code className="font-mono text-emerald-700">100.0</code>.</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: operator-precedence-and-expression-evaluation */}
+      {(slug === 'operator-precedence-and-expression-evaluation' || slug === 'operator-precedence' || slug === 'expression-evaluation') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Operator Precedence &amp; Associativity Hierarchy
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Precedence Rank</th>
+                  <th className="p-2.5">Operator Category</th>
+                  <th className="p-2.5 font-mono">Operators</th>
+                  <th className="p-2.5 rounded-r-lg">Associativity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80 bg-brand-50/20">
+                  <td className="p-2.5 font-sans font-bold text-brand-700">1 (Highest)</td>
+                  <td className="p-2.5 font-sans text-slate-700">Postfix</td>
+                  <td className="p-2.5 font-bold text-brand-700">expr++  expr--</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">2</td>
+                  <td className="p-2.5 font-sans text-slate-700">Unary</td>
+                  <td className="p-2.5 font-bold text-indigo-700">++expr  --expr  +  -  !  ~</td>
+                  <td className="p-2.5 font-sans text-purple-700 font-semibold">Right to Left</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">3</td>
+                  <td className="p-2.5 font-sans text-slate-700">Multiplicative</td>
+                  <td className="p-2.5 font-bold text-slate-800">*  /  %</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">4</td>
+                  <td className="p-2.5 font-sans text-slate-700">Additive</td>
+                  <td className="p-2.5 font-bold text-slate-800">+  -</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">5</td>
+                  <td className="p-2.5 font-sans text-slate-700">Shift</td>
+                  <td className="p-2.5 font-bold text-slate-800">&lt;&lt;  &gt;&gt;  &gt;&gt;&gt;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">6</td>
+                  <td className="p-2.5 font-sans text-slate-700">Relational</td>
+                  <td className="p-2.5 font-bold text-slate-800">&lt;  &lt;=  &gt;  &gt;=</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">7</td>
+                  <td className="p-2.5 font-sans text-slate-700">Equality</td>
+                  <td className="p-2.5 font-bold text-slate-800">==  !=</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">8</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise AND</td>
+                  <td className="p-2.5 font-bold text-slate-800">&amp;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">9</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise XOR</td>
+                  <td className="p-2.5 font-bold text-slate-800">^</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">10</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise OR</td>
+                  <td className="p-2.5 font-bold text-slate-800">|</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">11</td>
+                  <td className="p-2.5 font-sans text-slate-700">Logical AND</td>
+                  <td className="p-2.5 font-bold text-emerald-700">&amp;&amp;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">12</td>
+                  <td className="p-2.5 font-sans text-slate-700">Logical OR</td>
+                  <td className="p-2.5 font-bold text-emerald-700">||</td>
+                  <td className="p-2.5 font-sans text-slate-600">Left to Right</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">13</td>
+                  <td className="p-2.5 font-sans text-slate-700">Ternary</td>
+                  <td className="p-2.5 font-bold text-purple-700">? :</td>
+                  <td className="p-2.5 font-sans text-purple-700 font-semibold">Right to Left</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-slate-100/50">
+                  <td className="p-2.5 font-sans font-bold text-slate-700">14 (Lowest)</td>
+                  <td className="p-2.5 font-sans text-slate-700">Assignment</td>
+                  <td className="p-2.5 font-bold text-slate-800">=  +=  -=  *=  /=  %=</td>
+                  <td className="p-2.5 font-sans text-purple-700 font-semibold">Right to Left</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700">
+            <span className="font-bold text-slate-900 block mb-1">Golden Rule of Precedence:</span>
+            When in doubt, always use parentheses <code className="font-mono text-brand-700">( )</code> to explicitly define evaluation order. It guarantees zero ambiguity for yourself, the compiler, and future maintainers.
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: bitwise-and-shift-operators */}
+      {(slug === 'bitwise-and-shift-operators' || slug === 'bitwise-operators' || slug === 'shift-operators') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Bitwise &amp; Shift Operations Reference Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Operator</th>
+                  <th className="p-2.5">Name</th>
+                  <th className="p-2.5">Binary Operation</th>
+                  <th className="p-2.5">Example (5 = 0101, 3 = 0011)</th>
+                  <th className="p-2.5 rounded-r-lg">Mathematical Effect</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">&amp;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise AND</td>
+                  <td className="p-2.5 text-slate-700">1 if both bits are 1</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">5 &amp; 3 = 1 (0001)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Bit masking and permission testing</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">|</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise OR</td>
+                  <td className="p-2.5 text-slate-700">1 if either bit is 1</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">5 | 3 = 7 (0111)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Setting specific flag bits</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">^</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise XOR</td>
+                  <td className="p-2.5 text-slate-700">1 if bits are different</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">5 ^ 3 = 6 (0110)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Toggling bits / finding unique non-duplicate</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700">~</td>
+                  <td className="p-2.5 font-sans text-slate-700">Bitwise NOT</td>
+                  <td className="p-2.5 text-slate-700">Inverts every bit (0 to 1, 1 to 0)</td>
+                  <td className="p-2.5 text-rose-700 font-bold">~5 = -6</td>
+                  <td className="p-2.5 font-sans text-slate-600">Two&apos;s complement inversion formula: ~x = -x - 1</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-indigo-50/20">
+                  <td className="p-2.5 font-bold text-indigo-700">&lt;&lt;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Left Shift</td>
+                  <td className="p-2.5 text-slate-700">Shifts bits left, fills right with 0</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">5 &lt;&lt; 2 = 20</td>
+                  <td className="p-2.5 font-sans text-slate-600">Fast multiplication: x * 2^n</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-indigo-50/20">
+                  <td className="p-2.5 font-bold text-indigo-700">&gt;&gt;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Arithmetic Right Shift</td>
+                  <td className="p-2.5 text-slate-700">Shifts right, preserves sign bit</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">20 &gt;&gt; 2 = 5</td>
+                  <td className="p-2.5 font-sans text-slate-600">Fast division: x / 2^n (-8 &gt;&gt; 1 = -4)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-amber-50/30">
+                  <td className="p-2.5 font-bold text-amber-700">&gt;&gt;&gt;</td>
+                  <td className="p-2.5 font-sans text-slate-700">Logical Right Shift</td>
+                  <td className="p-2.5 text-slate-700">Shifts right, always fills with 0</td>
+                  <td className="p-2.5 text-purple-700 font-bold">-1 &gt;&gt;&gt; 1 = 2147483647</td>
+                  <td className="p-2.5 font-sans text-slate-600">Unsigned shift, makes negative values large positive</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 10: operators-final-challenge */}
+      {(slug === 'operators-final-challenge' || slug === 'output-prediction' || slug === 'debugging-challenges' || slug === 'interview-questions') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Module 03 Capstone: Operator Evaluation &amp; Safety Blueprint
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept Domain</th>
+                  <th className="p-2.5">Core Mechanism</th>
+                  <th className="p-2.5">Interview Bug Trap</th>
+                  <th className="p-2.5 rounded-r-lg">Defensive Programming Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Arithmetic Division</td>
+                  <td className="p-2.5 text-slate-700 font-mono">int / int vs double / int</td>
+                  <td className="p-2.5 text-rose-700 font-mono">17 / 20 = 0 (truncation)</td>
+                  <td className="p-2.5 text-slate-600">Cast at least one operand to double: <code className="font-mono text-indigo-700">(double) a / b</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Compound Assignment</td>
+                  <td className="p-2.5 text-slate-700 font-mono">+=, -=, *=, /=</td>
+                  <td className="p-2.5 text-rose-700 font-mono">byte b = 10; b = b + 1;</td>
+                  <td className="p-2.5 text-slate-600">Use <code className="font-mono text-emerald-700">b += 1</code> to allow automatic implicit cast without compile error</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Equality vs Identity</td>
+                  <td className="p-2.5 text-slate-700 font-mono">== vs .equals()</td>
+                  <td className="p-2.5 text-rose-700 font-mono">str1 == str2 (reference check)</td>
+                  <td className="p-2.5 text-slate-600">Always use <code className="font-mono text-emerald-700">str1.equals(str2)</code> for String text comparisons</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Logical Guards</td>
+                  <td className="p-2.5 text-slate-700 font-mono">&amp;&amp; vs &amp; / || vs |</td>
+                  <td className="p-2.5 text-rose-700 font-mono">obj != null &amp; obj.isValid()</td>
+                  <td className="p-2.5 text-slate-600">Always use short-circuit <code className="font-mono text-emerald-700">&amp;&amp;</code> to prevent NullPointerException</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Unary Mutations</td>
+                  <td className="p-2.5 text-slate-700 font-mono">++x vs x++</td>
+                  <td className="p-2.5 text-rose-700 font-mono">x = x++ (no-op bug)</td>
+                  <td className="p-2.5 text-slate-600">Avoid re-assigning post-increment to itself; keep expressions simple</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Bitwise Masking</td>
+                  <td className="p-2.5 text-slate-700 font-mono">&amp;, |, ^, &lt;&lt;, &gt;&gt;, &gt;&gt;&gt;</td>
+                  <td className="p-2.5 text-rose-700 font-mono">Negative shift sign extension</td>
+                  <td className="p-2.5 text-slate-600">Use <code className="font-mono text-indigo-700">&gt;&gt;&gt;</code> for logical unsigned bit manipulation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
     </div>
   );
 };

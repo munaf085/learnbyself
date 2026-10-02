@@ -1,0 +1,302 @@
+{
+  "id": "les-operators-short-circuit-evaluation",
+  "slug": "short-circuit-evaluation",
+  "sectionSlug": "basics",
+  "moduleSlug": "operators",
+  "languageSlug": "java",
+  "title": "Short-Circuit Evaluation",
+  "summary": "Understand how && and || optimize execution by skipping unnecessary right-hand expressions, and learn to write safe guard patterns.",
+  "difficulty": "easy",
+  "estimatedMinutes": 18,
+  "sequence": 6,
+  "prerequisites": [
+    "les-operators-increment-and-decrement"
+  ],
+  "learningObjectives": [
+    "Understand why and how Java short-circuits && and || operators",
+    "Use short-circuiting to build safe guard conditions against division by zero and null pointers",
+    "Identify bugs caused by side-effects (like increment) inside short-circuited expressions",
+    "Differentiate between short-circuit (&&, ||) and non-short-circuit (&, |) operators"
+  ],
+  "expectedOutcomes": [
+    "Write crash-proof conditional guards in enterprise Java code",
+    "Confidently answer technical interview questions regarding short-circuit evaluation"
+  ],
+  "activities": [
+    {
+      "id": "act-short-circuit-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Smart Evaluation with Short-Circuiting",
+      "content": "### What is Short-Circuit Evaluation?\n\nWhen Java evaluates a logical expression, it doesn't waste CPU cycles computing parts of the expression whose outcome is already guaranteed.\n\n**Short-Circuit Evaluation** means the second condition is evaluated **ONLY if necessary**:\n\n1. **In Logical AND (`&&`)**:\n   - If the first condition is `false`, the entire expression **MUST be false** (since `false && anything` is always `false`).\n   - Java **stops immediately** and does NOT execute the right-hand condition!\n\n2. **In Logical OR (`||`)**:\n   - If the first condition is `true`, the entire expression **MUST be true** (since `true || anything` is always `true`).\n   - Java **stops immediately** and does NOT execute the right-hand condition!\n\n---\n\n### 1. The Superpower: Safe Guard Conditions\n\nShort-circuit evaluation is one of the most important defensive programming tools in Java. It allows you to place a **guard condition** on the left to protect dangerous code on the right from executing:\n\n#### Guard Against Division by Zero:\n```java\nint totalItems = 0;\nint totalCost = 500;\n\n// SAFE: totalItems != 0 is false, so (totalCost / totalItems) NEVER runs!\nif (totalItems != 0 && (totalCost / totalItems) > 50) {\n    System.out.println(\"High average price\");\n} else {\n    System.out.println(\"No crash! Zero items safely handled.\");\n}\n```\nIf Java did NOT short-circuit, `totalCost / totalItems` would execute and crash your application with an `ArithmeticException`!\n\n---\n\n### 2. The Dangerous Trap: Side Effects in Conditions\n\nNever put mutating operations (like `++` or `--`) inside the right-hand operand of a logical condition:\n\n```java\nint count = 0;\nboolean condition = (5 < 2) && (++count > 0);\n\nSystem.out.println(condition); // false\nSystem.out.println(count);     // Still 0! ++count NEVER executed!\n```\nBecause `5 < 2` is `false`, Java short-circuits. `++count` was never touched! This leads to subtle, hard-to-find bugs.\n\n---\n\n### 3. Short-Circuit (`&&`, `||`) vs Non-Short-Circuit (`&`, `|`)\n\n| Operator | Short-Circuits? | Behavior |\n|---|---|---|\n| `&&` | **Yes** | Skips right side if left is `false` |\n| `&` | **No** | Always evaluates both sides (can cause crashes if guarding!) |\n| `\\|\\|` | **Yes** | Skips right side if left is `true` |\n| `\\|` | **No** | Always evaluates both sides |\n\nAlways use `&&` and `||` for standard application boolean logic.\n\n---\n\n### Code Walkthrough\n\n```java\npublic class Main {\n    public static void main(String[] args) {\n        int studentsCount = 0;\n        int totalMarks = 450;\n        \n        // Safe division guard using &&:\n        boolean hasPassingAverage = (studentsCount > 0) && ((totalMarks / studentsCount) >= 40);\n        System.out.println(\"Has Passing Average: \" + hasPassingAverage); // false, zero division avoided\n        \n        // Fast-path authorization using ||:\n        boolean isSuperAdmin = true;\n        int securityCode = 999;\n        \n        // Because isSuperAdmin is true, the securityCode check is skipped:\n        boolean accessGranted = isSuperAdmin || (securityCode == 1234);\n        System.out.println(\"Access Granted: \" + accessGranted); // true\n    }\n}\n```\n",
+      "breakdown": {
+        "whatIsIt": "Short-circuit evaluation skips evaluating the second condition in && (if the first is false) or in || (if the first is true).",
+        "whyItMatters": "It prevents runtime crashes (like dividing by zero or NullPointerExceptions) and improves performance.",
+        "howItWorks": [
+          "false && [skipped] -> result is immediately false.",
+          "true || [skipped] -> result is immediately true.",
+          "Evaluates strictly from left to right."
+        ],
+        "keyTakeaways": [
+          "Use short-circuiting to build safe guard conditions on the left.",
+          "Never put side-effects like count++ inside logical conditions.",
+          "Use && and ||, not single & and | for boolean logic."
+        ]
+      }
+    },
+    {
+      "id": "act-short-circuit-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Division Guard",
+      "codeSnippet": "public class Main {\n    public static void main(String[] args) {\n        int divisor = 0;\n        int dividend = 100;\n        \n        if (divisor != 0 && (dividend / divisor) > 2) {\n            System.out.println(\"Calculated\");\n        } else {\n            System.out.println(\"Safely guarded against division by zero!\");\n        }\n    }\n}",
+      "description": "Inspect how the condition cleanly prints the safe message without triggering an ArithmeticException."
+    },
+    {
+      "id": "act-short-circuit-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Essential Concept Check",
+      "questions": [
+        {
+          "id": "m3-l6-q1",
+          "type": "mcq",
+          "prompt": "In the expression (false && rightExpression), will rightExpression be evaluated?",
+          "question": "In the expression (false && rightExpression), will rightExpression be evaluated?",
+          "options": [
+            "Yes, always",
+            "No, never (short-circuit)",
+            "Only if in debug mode",
+            "Only if rightExpression is boolean"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because the left operand is false, the result of && must be false regardless. Java skips rightExpression.",
+          "hints": [
+            "false AND anything is always false."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 20
+        },
+        {
+          "id": "m3-l6-q2",
+          "type": "mcq",
+          "prompt": "In the expression (true || rightExpression), will rightExpression be evaluated?",
+          "question": "In the expression (true || rightExpression), will rightExpression be evaluated?",
+          "options": [
+            "Yes, always",
+            "No, never (short-circuit)",
+            "Only on 64-bit JVMs",
+            "Only if rightExpression has parentheses"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because the left operand is true, the result of || must be true regardless. Java skips rightExpression.",
+          "hints": [
+            "true OR anything is always true."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 20
+        },
+        {
+          "id": "m3-l6-q3",
+          "type": "mcq",
+          "prompt": "What is the value of count after: int count = 5; boolean b = (10 > 2) || (++count > 0); ?",
+          "question": "What is the value of count after: int count = 5; boolean b = (10 > 2) || (++count > 0); ?",
+          "options": [
+            "6",
+            "5",
+            "0",
+            "Compilation error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because (10 > 2) is true, the || operator short-circuits. ++count is NEVER executed, leaving count at 5.",
+          "hints": [
+            "The left side of || is true, so the right side is skipped."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "m3-l6-q4",
+          "type": "mcq",
+          "prompt": "What happens when running: int denom = 0; if (denom != 0 & 10 / denom > 1) {} (note single &)?",
+          "question": "What happens when running: int denom = 0; if (denom != 0 & 10 / denom > 1) {} (note single &)?",
+          "options": [
+            "It short-circuits safely",
+            "It throws java.lang.ArithmeticException: / by zero",
+            "It compiles with a warning and prints false",
+            "It prints 0"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Single & is a non-short-circuiting operator. It evaluates both sides unconditionally. When evaluating 10 / denom, it crashes with an ArithmeticException.",
+          "hints": [
+            "Single & does NOT short-circuit."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "m3-l6-q5",
+          "type": "mcq",
+          "prompt": "What is the primary benefit of short-circuit evaluation in enterprise applications?",
+          "question": "What is the primary benefit of short-circuit evaluation in enterprise applications?",
+          "options": [
+            "It avoids unnecessary expensive method calls and prevents null/zero runtime crashes",
+            "It makes code run in parallel threads",
+            "It replaces the need for loops",
+            "It automatically rounds floating-point numbers"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Short-circuiting avoids executing expensive secondary operations and allows writing safe guards (like checking non-null or non-zero).",
+          "hints": [
+            "Think about performance and avoiding crashes."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 30
+        }
+      ]
+    },
+    {
+      "id": "act-short-circuit-evaluation-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Safe Division Guard",
+      "practice": {
+        "title": "Safe Division Guard",
+        "problemStatement": "Given int count = 0; and int total = 100;. Use short-circuiting (count > 0 && total / count > 10) to safely evaluate whether average > 10 without throwing an ArithmeticException.",
+        "initialCode": "public class Main {\n    public static void main(String[] args) {\n        // TODO: Complete the practice challenge below\n        \n    }\n}",
+        "expectedOutput": "Count: 0 | Safe Evaluation Result: false",
+        "hints": [
+          "boolean safe = count > 0 && (total / count > 10);"
+        ]
+      }
+    },
+    {
+      "id": "act-short-circuit-interview-qa",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Top Placement Interview Questions: Short-Circuit Evaluation",
+      "interviewQA": [
+        {
+          "id": "qa-sc-1",
+          "question": "Explain short-circuit evaluation in Java with an example.",
+          "expectedAnswer": "Short-circuit evaluation is a language optimization where the second operand in a logical expression (`&&` or `||`) is only evaluated if the first operand does not definitively determine the result. For example, in `(x != 0 && y / x > 2)`, if `x` is `0`, `x != 0` is `false`. Since `false && anything` is always `false`, Java skips `y / x`, safely preventing an `ArithmeticException: / by zero`.",
+          "companyTags": [
+            "Amazon",
+            "TCS"
+          ],
+          "keyPoints": [
+            "&& skips if left is false; || skips if left is true; used to guard against crashes."
+          ]
+        },
+        {
+          "id": "qa-sc-2",
+          "question": "What is the difference between '&&' and '&' when used with boolean operands?",
+          "expectedAnswer": "`&&` is a short-circuit operator: if the left operand is `false`, the right operand is skipped. `&` is a logical (bitwise) operator that does NOT short-circuit: it forces evaluation of both operands regardless of the left operand's value.",
+          "companyTags": [
+            "Infosys",
+            "Oracle"
+          ],
+          "keyPoints": [
+            "&& short-circuits; & always evaluates both operands."
+          ]
+        },
+        {
+          "id": "qa-sc-3",
+          "question": "Why is it considered dangerous to use increment or decrement operators inside boolean conditions?",
+          "expectedAnswer": "Because short-circuiting can cause the increment/decrement to be skipped conditionally. For instance, in `if (flag && count++ > 0)`, `count` is only incremented when `flag` is `true`. If `flag` is `false`, `count` is unchanged, leading to erratic state and intermittent bugs.",
+          "companyTags": [
+            "Google",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Side-effects in short-circuited expressions may execute intermittently, causing subtle bugs."
+          ]
+        },
+        {
+          "id": "qa-sc-4",
+          "question": "How does short-circuit evaluation help prevent NullPointerExceptions in Java?",
+          "expectedAnswer": "You can guard an object method call by checking if the reference is non-null first: `if (user != null && user.isActive())`. If `user` is `null`, the left condition evaluates to `false`, and Java short-circuits, never calling `.isActive()` on a null reference.",
+          "companyTags": [
+            "Amazon",
+            "Adobe"
+          ],
+          "keyPoints": [
+            "Guards like (obj != null && obj.method()) safely prevent NullPointerExceptions."
+          ]
+        },
+        {
+          "id": "qa-sc-5",
+          "question": "What will be printed by: int a = 1; if (a < 0 && a++ > 0) {} System.out.println(a);?",
+          "expectedAnswer": "It will print `1`. Because `a < 0` (`1 < 0`) is `false`, the `&&` operator short-circuits immediately. The second operand `a++ > 0` is never evaluated, so `a` remains `1`.",
+          "companyTags": [
+            "TCS",
+            "Cognizant"
+          ],
+          "keyPoints": [
+            "Left false skips right operand, preserving a at 1."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-short-circuit-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Topic Confidence Checklist",
+      "checklist": [
+        "I know that false && skips the second condition.",
+        "I know that true || skips the second condition.",
+        "I can write safe guards to prevent division by zero.",
+        "I never put mutating operations (like ++) inside logical conditions.",
+        "I understand the difference between && and single &."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-sc-1",
+      "title": "Safe Division Guard",
+      "difficulty": "beginner",
+      "description": "Given int count = 0; and int total = 100;. Use short-circuiting (count > 0 && total / count > 10) to safely evaluate whether average > 10 without throwing an ArithmeticException.",
+      "expectedOutput": "Count: 0 | Safe Evaluation Result: false",
+      "hint": "boolean safe = count > 0 && (total / count > 10);",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int count = 0;\n        int total = 100;\n        boolean safe = count > 0 && (total / count > 10);\n        System.out.println(\"Count: \" + count + \" | Safe Evaluation Result: \" + safe);\n    }\n}"
+    },
+    {
+      "id": "p-sc-2",
+      "title": "Short-Circuit OR Skip Verification",
+      "difficulty": "easy",
+      "description": "Demonstrate that the right side of || is skipped when the left side is true. Declare boolean isVip = true; int bonus = 0;. In boolean eligible = isVip || (++bonus > 0);, print bonus to prove it remains 0.",
+      "expectedOutput": "Eligible: true | Bonus Value: 0",
+      "hint": "Because isVip is true, ++bonus is never evaluated.",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        boolean isVip = true;\n        int bonus = 0;\n        boolean eligible = isVip || (++bonus > 0);\n        System.out.println(\"Eligible: \" + eligible + \" | Bonus Value: \" + bonus);\n    }\n}"
+    },
+    {
+      "id": "p-sc-3",
+      "title": "Short-Circuit AND Skip Verification",
+      "difficulty": "easy",
+      "description": "Demonstrate that the right side of && is skipped when the left side is false. Declare int x = 0; int counter = 10;. In boolean test = (x > 5) && (++counter > 10);, print counter to prove it remains 10.",
+      "expectedOutput": "Test: false | Counter Value: 10",
+      "hint": "x > 5 is false, so ++counter is skipped.",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int x = 0;\n        int counter = 10;\n        boolean test = (x > 5) && (++counter > 10);\n        System.out.println(\"Test: \" + test + \" | Counter Value: \" + counter);\n    }\n}"
+    },
+    {
+      "id": "p-sc-4",
+      "title": "Multi-Condition Safe Guard",
+      "difficulty": "medium",
+      "description": "Given int length = 5; int width = 0;. Write a condition that checks: length > 0 && width > 0 && (100 / (length * width) > 1). Verify it returns false safely when width is 0.",
+      "expectedOutput": "Dimensions Valid & Ratio Checked: false",
+      "hint": "The width > 0 check stops execution before the division.",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int length = 5;\n        int width = 0;\n        boolean valid = length > 0 && width > 0 && (100 / (length * width) > 1);\n        System.out.println(\"Dimensions Valid & Ratio Checked: \" + valid);\n    }\n}"
+    },
+    {
+      "id": "p-sc-5",
+      "title": "Simulate Login Guard",
+      "difficulty": "medium",
+      "description": "Given boolean isLoggedIn = false; int attempts = 3;. Write a guard: isLoggedIn && attempts < 5;. Print the check result and verify attempts remains 3.",
+      "expectedOutput": "Access Allowed: false | Attempts: 3",
+      "hint": "isLoggedIn is false so right side is not needed.",
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        boolean isLoggedIn = false;\n        int attempts = 3;\n        boolean access = isLoggedIn && (attempts < 5);\n        System.out.println(\"Access Allowed: \" + access + \" | Attempts: \" + attempts);\n    }\n}"
+    }
+  ]
+}
