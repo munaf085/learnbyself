@@ -403,4 +403,139 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
       expect(lesson?.slug).toBe(expectedCanonical);
     }
   });
+
+  it('resolves the 10 canonical Loops lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'loops');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(10);
+
+    const expectedSlugs = [
+      'why-loops',
+      'for-loop',
+      'while-and-do-while',
+      'understanding-loop-flow',
+      'counters-and-accumulators',
+      'nested-loops',
+      'break-and-continue',
+      'infinite-loops-and-common-bugs',
+      'pattern-and-number-problems',
+      'loops-practice-and-final-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'loops', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 7 MCQs`).toBeGreaterThanOrEqual(7);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 12 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(12);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 5 self-paced practice problems`).toBeGreaterThanOrEqual(5);
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 06 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'for-loops': 'for-loop',
+      'while-loops': 'while-and-do-while',
+      'do-while': 'while-and-do-while',
+      'break-continue': 'break-and-continue',
+      'nested-loop': 'nested-loops',
+      'loop-bugs': 'infinite-loops-and-common-bugs',
+      'infinite-loops': 'infinite-loops-and-common-bugs',
+      'patterns': 'pattern-and-number-problems',
+      'loop-practice': 'loops-practice-and-final-challenge',
+      'loops-final-challenge': 'loops-practice-and-final-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'loops', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
+
+  it('resolves the 12 canonical Methods lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'methods');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(12);
+
+    const expectedSlugs = [
+      'why-methods',
+      'method-anatomy',
+      'parameters-and-arguments',
+      'return-values-and-void',
+      'calling-methods-and-scope',
+      'local-variables-and-method-memory',
+      'static-methods',
+      'method-overloading',
+      'pass-by-value-in-java',
+      'recursion-basics',
+      'method-bugs-and-output-prediction',
+      'methods-practice-and-interview-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'methods', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 7 MCQs`).toBeGreaterThanOrEqual(7);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 12 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(12);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 5 self-paced practice problems`).toBeGreaterThanOrEqual(5);
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 07 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'method-basics': 'why-methods',
+      'anatomy-of-a-method': 'method-anatomy',
+      'parameters': 'parameters-and-arguments',
+      'arguments': 'parameters-and-arguments',
+      'return-values': 'return-values-and-void',
+      'void-methods': 'return-values-and-void',
+      'method-scope': 'calling-methods-and-scope',
+      'call-stack': 'local-variables-and-method-memory',
+      'stack-memory': 'local-variables-and-method-memory',
+      'static': 'static-methods',
+      'overloading': 'method-overloading',
+      'pass-by-value': 'pass-by-value-in-java',
+      'recursion': 'recursion-basics',
+      'recursion-intro': 'recursion-basics',
+      'method-bugs': 'method-bugs-and-output-prediction',
+      'methods-practice': 'methods-practice-and-interview-challenge',
+      'methods-final-challenge': 'methods-practice-and-interview-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'methods', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
 });

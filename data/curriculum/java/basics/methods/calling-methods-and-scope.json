@@ -1,0 +1,638 @@
+{
+  "id": "les-methods-calling-methods-and-scope",
+  "slug": "calling-methods-and-scope",
+  "title": "Calling Methods & Scope",
+  "summary": "Understand execution control transfer: jumping from caller to callee, argument passing, and returning to the caller.",
+  "sectionSlug": "basics",
+  "moduleSlug": "methods",
+  "difficulty": "beginner",
+  "estimatedMinutes": 18,
+  "orderIndex": 5,
+  "prerequisites": [
+    "les-methods-return-values-and-void"
+  ],
+  "subtopics": [
+    "Method Invocation Mechanics",
+    "Caller vs Callee Roles",
+    "Passing Computed Expressions as Arguments",
+    "Chaining Method Calls"
+  ],
+  "learningOutcomes": [
+    "Trace program flow across multiple method boundaries",
+    "Nest and chain method calls cleanly",
+    "Understand control transfer between caller and callee"
+  ],
+  "activities": [
+    {
+      "id": "act-calling-methods-and-scope-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Calling Methods & Scope",
+      "content": "### The Dance Between Caller and Callee\n\nIn software engineering, every method invocation involves two distinct parties:\n1. **The Caller**: The method that issues the invocation (e.g. `main`).\n2. **The Callee**: The method being called to perform a task.\n\nWhen a method is called, an exact sequence of events occurs:\n1. **Pause**: The caller pauses execution at the call site.\n2. **Evaluate**: Any argument expressions in the parentheses are evaluated from left to right.\n3. **Jump**: Control transfers to the callee's first line of code.\n4. **Execute**: The callee executes its statements.\n5. **Resume**: When the callee hits a `return` statement (or reaches the closing brace `}` if `void`), control jumps back to the caller, right where it left off.\n\n```\nCaller (main)                      Callee (calculateTax)\nLine 10: int total = 100;\nLine 11: double t = calculateTax(total); \u2500\u2500\u25ba Line 2: double rate = 0.05;\n                                              Line 3: return total * rate;\nLine 12: System.out.println(t); \u25c4\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518 (returns 5.0)\n```\n\n### Methods Calling Other Methods\n\nA method does not have to be called only from `main()`. A method can call another method, which in turn calls yet another method!\n\n```java\npublic static double getSubtotal(int quantity, double unitPrice) {\n    return quantity * unitPrice;\n}\n\npublic static double getFinalTotal(int quantity, double unitPrice, double taxRate) {\n    // Callee getFinalTotal calls helper getSubtotal\n    double subtotal = getSubtotal(quantity, unitPrice);\n    return subtotal + (subtotal * taxRate);\n}\n```\n\nThis multi-tiered delegation is called **functional decomposition**. You break big problems into smaller, reusable helper methods.\n\n### Composing and Chaining Calls\n\nBecause a method call evaluates directly to its return value, you can pass the result of one method call directly as an argument into another:\n\n```java\n// Method composition:\nint larger = Math.max(10, Math.max(25, 18));\n// Inner Math.max(25, 18) evaluates to 25 first.\n// Then outer Math.max(10, 25) evaluates to 25.\n```\n\n### Scope Isolation\n\nVariables declared inside the caller method are **completely invisible** to the callee method, and vice-versa. Even if two methods declare a variable with the exact same name (e.g., `int x`), they reside in different worlds. There is no naming collision!\n",
+      "breakdown": {
+        "whatIsIt": "Comprehensive exploration of Calling Methods & Scope in Java.",
+        "whyItMatters": "Crucial for writing maintainable, reusable, and bug-free Java applications.",
+        "howItWorks": [
+          "Decomposes complex logic into self-contained subprograms.",
+          "Allocates local variables on Call Stack frames.",
+          "Passes arguments by value, copying parameter data into frames.",
+          "Returns execution control back to caller upon reaching return statement."
+        ],
+        "keyTakeaways": [
+          "Mastering Calling Methods & Scope is essential for Java placement interviews and clean architecture.",
+          "Methods enforce the DRY principle by eliminating redundant duplicate code.",
+          "Parameters act as local placeholders; arguments provide runtime values.",
+          "Always consider edge cases such as invalid input parameters or stack overflow."
+        ]
+      }
+    },
+    {
+      "id": "act-calling-methods-and-scope-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Calling Methods & Scope",
+      "codeSnippet": "public class MultiStepPipeline {\n    public static int multiplyByTwo(int n) {\n        System.out.println(\"  -> Inside multiplyByTwo: n = \" + n);\n        return n * 2;\n    }\n\n    public static int processOrder(int units) {\n        System.out.println(\"-> Entering processOrder: units = \" + units);\n        // Method calls another method\n        int doubled = multiplyByTwo(units);\n        System.out.println(\"-> processOrder received doubled = \" + doubled);\n        return doubled + 10;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Main starts\");\n        int finalResult = processOrder(5);\n        System.out.println(\"Main finished: result = \" + finalResult);\n    }\n}",
+      "description": "Trace how execution flows from main into step1, which calls step2, before returning back."
+    },
+    {
+      "id": "act-calling-methods-and-scope-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Essential Concept & Bug Detection Check",
+      "questions": [
+        {
+          "id": "q-calling-methods-and-scope-1",
+          "type": "mcq",
+          "prompt": "What happens to the caller method while the callee method is executing?",
+          "options": [
+            "The caller method is destroyed from memory",
+            "The caller method pauses execution at the call site and waits for the callee to return",
+            "The caller method continues executing concurrently on another thread",
+            "The caller method restarts from line 1"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In standard synchronous Java execution, the caller method pauses at the call site until the callee finishes and returns.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-2",
+          "type": "mcq",
+          "prompt": "Can a user-defined method call another user-defined method in the same class?",
+          "options": [
+            "No, only main() is allowed to invoke methods",
+            "Yes, any method can invoke any other visible method",
+            "Only if they have the exact same parameter types",
+            "Only if they have the word 'Helper' in their name"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Methods can freely call each other. This is the cornerstone of modular functional decomposition.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-3",
+          "type": "mcq",
+          "prompt": "If both methodA() and methodB() declare a local variable named 'int total', what happens?",
+          "options": [
+            "A compile-time error occurs due to duplicate variable name",
+            "They share the exact same memory address and overwrite each other",
+            "Each variable exists independently within its own method scope without conflict",
+            "The first method to run deletes the other variable"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Local variables are scoped strictly to the method in which they are declared. Identical names in different methods do not conflict.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-4",
+          "type": "mcq",
+          "prompt": "In the expression 'int res = doubleValue(square(3));', which method executes first?",
+          "options": [
+            "doubleValue executes first",
+            "square(3) executes first, and its return value (9) is then passed into doubleValue",
+            "Both execute at the exact same millisecond",
+            "Neither executes until printed"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Inner nested method calls evaluate first. square(3) evaluates to 9, so doubleValue(9) is subsequently invoked.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-5",
+          "type": "mcq",
+          "prompt": "What is 'functional decomposition' in software engineering?",
+          "options": [
+            "Deleting unused functions before deploying",
+            "Breaking a complex algorithm into smaller, focused helper methods that collaborate",
+            "Converting all functions into while loops",
+            "Crashing a server by memory exhaustion"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Functional decomposition is the architectural process of breaking a complex task into smaller, modular sub-tasks.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-6",
+          "type": "mcq",
+          "prompt": "What happens if methodA calls methodB, and methodB tries to access a variable declared inside methodA?",
+          "options": [
+            "methodB accesses it automatically",
+            "A compile-time error occurs: cannot find symbol, because local variables are out of scope",
+            "methodB reads it as 0",
+            "Java prompts the user on the console"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Method B cannot access Method A's local variables directly. The only way Method A can share data with Method B is by passing it as an argument.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-7",
+          "type": "mcq",
+          "prompt": "What is the return value of 'Math.min(Math.max(5, 12), 20)'?",
+          "options": [
+            "5",
+            "12",
+            "20",
+            "0"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Math.max(5, 12) evaluates to 12. Then Math.min(12, 20) evaluates to 12.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-calling-methods-and-scope-8",
+          "type": "mcq",
+          "prompt": "Can a method call itself in Java?",
+          "options": [
+            "No, Java explicitly forbids recursive calls",
+            "Yes, this is known as recursion",
+            "Only inside try-catch blocks",
+            "Only if marked with @Self keyword"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A method calling itself is recursive, a fundamental programming technique supported by Java.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-calling-methods-and-scope-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Helper Method for Cubing Numbers",
+      "practice": {
+        "title": "Helper Method for Cubing Numbers",
+        "problemStatement": "Write a method 'square(int n)' returning n * n. Then write 'cube(int n)' that calls 'square(n)' and multiplies the result by n. In main(), print the cube of 4.",
+        "initialCode": "public class Main {\n    // Define square and cube\n\n    public static void main(String[] args) {\n        // Test cube(4)\n    }\n}",
+        "expectedOutput": "Cube of 4: 64",
+        "hints": [
+          "square(n) returns n * n",
+          "cube(n) returns square(n) * n",
+          "Print 'Cube of 4: ' + cube(4)"
+        ],
+        "solutionCode": "public class Main {\n    public static int square(int n) {\n        return n * n;\n    }\n\n    public static int cube(int n) {\n        return square(n) * n;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Cube of 4: \" + cube(4));\n    }\n}"
+      }
+    },
+    {
+      "id": "act-calling-methods-and-scope-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Placement Interview Questions",
+      "interviewQA": [
+        {
+          "id": "qa-calling-methods-and-scope-1",
+          "question": "How does execution control transfer between caller and callee in Java?",
+          "expectedAnswer": "When a method call occurs, the caller's execution is paused at that exact line. The runtime evaluates arguments, places them onto a newly created stack frame for the callee, and directs the instruction pointer to the callee's first statement. When the callee returns, control and the return value transfer back to the caller's paused position.",
+          "companyTags": [
+            "Google",
+            "Amazon",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-calling-methods-and-scope-2",
+          "question": "Can two methods share a local variable without passing it as an argument?",
+          "expectedAnswer": "No. Local variables exist only within the method stack frame where they are declared. To share data, the caller must pass it as an argument, or the data must be stored in a class-level (static) or instance-level field.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Cisco"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-calling-methods-and-scope-3",
+          "question": "What is method chaining and composition?",
+          "expectedAnswer": "Method composition occurs when the return value of one method call is passed directly as an argument to another method (e.g. Math.sqrt(sq(x))). Method chaining occurs when a method returns an object reference on which another method is immediately invoked (e.g. str.trim().toUpperCase()).",
+          "companyTags": [
+            "Microsoft",
+            "TCS",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-calling-methods-and-scope-4",
+          "question": "What is the danger of circular method calls (methodA calls methodB, and methodB calls methodA)?",
+          "expectedAnswer": "Circular calls without a terminating condition create an infinite recursion loop. Stack frames keep accumulating on the Call Stack until memory is exhausted, throwing a java.lang.StackOverflowError.",
+          "companyTags": [
+            "Oracle",
+            "Adobe",
+            "Salesforce"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-calling-methods-and-scope-5",
+          "question": "Why is functional decomposition considered essential in clean code?",
+          "expectedAnswer": "Functional decomposition breaks large monolithic logic into small, single-responsibility methods. This makes methods readable, reusable, independently testable, and easier to debug.",
+          "companyTags": [
+            "Meta",
+            "Uber",
+            "Goldman Sachs"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-calling-methods-and-scope-6",
+          "question": "How does Java determine which method to call when names are similar?",
+          "expectedAnswer": "Java's compiler checks the method name, number of arguments, and argument types at compile time. It matches the call against the most specific signature available.",
+          "companyTags": [
+            "Google",
+            "Morgan Stanley",
+            "Flipkart"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-calling-methods-and-scope-7",
+          "question": "What happens if a callee method throws an unhandled exception?",
+          "expectedAnswer": "If an unhandled exception occurs inside a callee, execution aborts immediately. The exception propagates up the call stack to the caller. If no caller in the stack catches the exception, the thread terminates and prints a stack trace.",
+          "companyTags": [
+            "Google",
+            "Amazon",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        }
+      ]
+    },
+    {
+      "id": "act-calling-methods-and-scope-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist",
+      "checklist": [
+        "Caller vs Callee: The caller initiates the invocation and pauses; the callee executes and returns the result.",
+        "Method Delegation: Methods can freely invoke other methods to break complex problems into smaller subproblems.",
+        "Scope Isolation: Local variables in different methods are completely isolated from one another.",
+        "Method Composition: The output of one method can serve directly as the input argument to another method.",
+        "Stack Traces: When errors occur, Java prints the exact chain of inter-method calls leading up to the failure."
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-m7-l5-1",
+      "question": "What happens to the caller method while the callee method is executing?",
+      "options": [
+        "The caller method is destroyed from memory",
+        "The caller method pauses execution at the call site and waits for the callee to return",
+        "The caller method continues executing concurrently on another thread",
+        "The caller method restarts from line 1"
+      ],
+      "correctOption": 1,
+      "explanation": "In standard synchronous Java execution, the caller method pauses at the call site until the callee finishes and returns."
+    },
+    {
+      "id": "mcq-m7-l5-2",
+      "question": "Can a user-defined method call another user-defined method in the same class?",
+      "options": [
+        "No, only main() is allowed to invoke methods",
+        "Yes, any method can invoke any other visible method",
+        "Only if they have the exact same parameter types",
+        "Only if they have the word 'Helper' in their name"
+      ],
+      "correctOption": 1,
+      "explanation": "Methods can freely call each other. This is the cornerstone of modular functional decomposition."
+    },
+    {
+      "id": "mcq-m7-l5-3",
+      "question": "If both methodA() and methodB() declare a local variable named 'int total', what happens?",
+      "options": [
+        "A compile-time error occurs due to duplicate variable name",
+        "They share the exact same memory address and overwrite each other",
+        "Each variable exists independently within its own method scope without conflict",
+        "The first method to run deletes the other variable"
+      ],
+      "correctOption": 2,
+      "explanation": "Local variables are scoped strictly to the method in which they are declared. Identical names in different methods do not conflict."
+    },
+    {
+      "id": "mcq-m7-l5-4",
+      "question": "In the expression 'int res = doubleValue(square(3));', which method executes first?",
+      "options": [
+        "doubleValue executes first",
+        "square(3) executes first, and its return value (9) is then passed into doubleValue",
+        "Both execute at the exact same millisecond",
+        "Neither executes until printed"
+      ],
+      "correctOption": 1,
+      "explanation": "Inner nested method calls evaluate first. square(3) evaluates to 9, so doubleValue(9) is subsequently invoked."
+    },
+    {
+      "id": "mcq-m7-l5-5",
+      "question": "What is 'functional decomposition' in software engineering?",
+      "options": [
+        "Deleting unused functions before deploying",
+        "Breaking a complex algorithm into smaller, focused helper methods that collaborate",
+        "Converting all functions into while loops",
+        "Crashing a server by memory exhaustion"
+      ],
+      "correctOption": 1,
+      "explanation": "Functional decomposition is the architectural process of breaking a complex task into smaller, modular sub-tasks."
+    },
+    {
+      "id": "mcq-m7-l5-6",
+      "question": "What happens if methodA calls methodB, and methodB tries to access a variable declared inside methodA?",
+      "options": [
+        "methodB accesses it automatically",
+        "A compile-time error occurs: cannot find symbol, because local variables are out of scope",
+        "methodB reads it as 0",
+        "Java prompts the user on the console"
+      ],
+      "correctOption": 1,
+      "explanation": "Method B cannot access Method A's local variables directly. The only way Method A can share data with Method B is by passing it as an argument."
+    },
+    {
+      "id": "mcq-m7-l5-7",
+      "question": "What is the return value of 'Math.min(Math.max(5, 12), 20)'?",
+      "options": [
+        "5",
+        "12",
+        "20",
+        "0"
+      ],
+      "correctOption": 1,
+      "explanation": "Math.max(5, 12) evaluates to 12. Then Math.min(12, 20) evaluates to 12."
+    },
+    {
+      "id": "mcq-m7-l5-8",
+      "question": "Can a method call itself in Java?",
+      "options": [
+        "No, Java explicitly forbids recursive calls",
+        "Yes, this is known as recursion",
+        "Only inside try-catch blocks",
+        "Only if marked with @Self keyword"
+      ],
+      "correctOption": 1,
+      "explanation": "A method calling itself is recursive, a fundamental programming technique supported by Java."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prac-m7-l5-1",
+      "title": "Helper Method for Cubing Numbers",
+      "difficulty": "Easy",
+      "description": "Write a method 'square(int n)' returning n * n. Then write 'cube(int n)' that calls 'square(n)' and multiplies the result by n. In main(), print the cube of 4.",
+      "problemStatement": "Write a method 'square(int n)' returning n * n. Then write 'cube(int n)' that calls 'square(n)' and multiplies the result by n. In main(), print the cube of 4.",
+      "hint": "Inside cube(int n): return square(n) * n;",
+      "hints": [
+        "square(n) returns n * n",
+        "cube(n) returns square(n) * n",
+        "Print 'Cube of 4: ' + cube(4)"
+      ],
+      "starterCode": "public class Main {\n    // Define square and cube\n\n    public static void main(String[] args) {\n        // Test cube(4)\n    }\n}",
+      "solutionCode": "public class Main {\n    public static int square(int n) {\n        return n * n;\n    }\n\n    public static int cube(int n) {\n        return square(n) * n;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Cube of 4: \" + cube(4));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Cube of 4: 64"
+        }
+      ],
+      "targetOutput": "Cube of 4: 64"
+    },
+    {
+      "id": "prac-m7-l5-2",
+      "title": "Nested Math Max Composition",
+      "difficulty": "Easy",
+      "description": "Write a method 'maxOfThree(int a, int b, int c)' that returns the largest of three numbers using nested calls to 'Math.max'. Test in main with 14, 82, and 45.",
+      "problemStatement": "Write a method 'maxOfThree(int a, int b, int c)' that returns the largest of three numbers using nested calls to 'Math.max'. Test in main with 14, 82, and 45.",
+      "hint": "return Math.max(a, Math.max(b, c));",
+      "hints": [
+        "Use Math.max inside another Math.max call.",
+        "Print 'Max: ' + maxOfThree(14, 82, 45)."
+      ],
+      "starterCode": "public class Main {\n    // Define maxOfThree\n\n    public static void main(String[] args) {\n        // Test with 14, 82, 45\n    }\n}",
+      "solutionCode": "public class Main {\n    public static int maxOfThree(int a, int b, int c) {\n        return Math.max(a, Math.max(b, c));\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Max: \" + maxOfThree(14, 82, 45));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Max: 82"
+        }
+      ],
+      "targetOutput": "Max: 82"
+    },
+    {
+      "id": "prac-m7-l5-3",
+      "title": "Two-Tier Salary Calculator",
+      "difficulty": "Medium",
+      "description": "Write a method 'calcBaseSalary(double hourlyRate, int hours)' returning rate * hours. Write 'calcGrossSalary(double hourlyRate, int hours, double bonus)' that calls calcBaseSalary and adds bonus. In main(), test with 25.0, 40, and 200.0.",
+      "problemStatement": "Write a method 'calcBaseSalary(double hourlyRate, int hours)' returning rate * hours. Write 'calcGrossSalary(double hourlyRate, int hours, double bonus)' that calls calcBaseSalary and adds bonus. In main(), test with 25.0, 40, and 200.0.",
+      "hint": "calcGrossSalary delegates base calculation to calcBaseSalary.",
+      "hints": [
+        "calcBaseSalary: return hourlyRate * hours;",
+        "calcGrossSalary: return calcBaseSalary(hourlyRate, hours) + bonus;",
+        "Print 'Gross: $' + calcGrossSalary(25.0, 40, 200.0)"
+      ],
+      "starterCode": "public class Main {\n    // Define both salary methods\n\n    public static void main(String[] args) {\n        // Test with 25.0, 40, 200.0\n    }\n}",
+      "solutionCode": "public class Main {\n    public static double calcBaseSalary(double hourlyRate, int hours) {\n        return hourlyRate * hours;\n    }\n\n    public static double calcGrossSalary(double hourlyRate, int hours, double bonus) {\n        return calcBaseSalary(hourlyRate, hours) + bonus;\n    }\n\n    public static void main(String[] args) {\n        double gross = calcGrossSalary(25.0, 40, 200.0);\n        System.out.println(\"Gross: $\" + gross);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Gross: $1200.0"
+        }
+      ],
+      "targetOutput": "Gross: $1200.0"
+    },
+    {
+      "id": "prac-m7-l5-4",
+      "title": "Even Number Filter Delegate",
+      "difficulty": "Medium",
+      "description": "Write method 'isEven(int n)' returning boolean (n % 2 == 0). Then write method 'countEvensInRange(int start, int end)' that loops through the range, calls 'isEven(i)', and counts how many numbers are even. Test from 1 to 10 in main.",
+      "problemStatement": "Write method 'isEven(int n)' returning boolean (n % 2 == 0). Then write method 'countEvensInRange(int start, int end)' that loops through the range, calls 'isEven(i)', and counts how many numbers are even. Test from 1 to 10 in main.",
+      "hint": "Loop from start to end inclusive. If isEven(i) is true, increment count.",
+      "hints": [
+        "isEven: return n % 2 == 0;",
+        "countEvensInRange: loop i from start to end, call isEven(i)",
+        "Test with (1, 10) in main."
+      ],
+      "starterCode": "public class Main {\n    // Define isEven and countEvensInRange\n\n    public static void main(String[] args) {\n        // Test range 1 to 10\n    }\n}",
+      "solutionCode": "public class Main {\n    public static boolean isEven(int n) {\n        return n % 2 == 0;\n    }\n\n    public static int countEvensInRange(int start, int end) {\n        int count = 0;\n        for (int i = start; i <= end; i++) {\n            if (isEven(i)) {\n                count++;\n            }\n        }\n        return count;\n    }\n\n    public static void main(String[] args) {\n        int count = countEvensInRange(1, 10);\n        System.out.println(\"Evens in 1..10: \" + count);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Evens in 1..10: 5"
+        }
+      ],
+      "targetOutput": "Evens in 1..10: 5"
+    },
+    {
+      "id": "prac-m7-l5-5",
+      "title": "String Processing Pipeline",
+      "difficulty": "Hard",
+      "description": "Create three methods: 'cleanSpaces(String s)' which trims whitespace, 'toTitleCase(String s)' which returns s.toUpperCase(), and 'formatTag(String s)' which returns '#' + s. Chain them together in main() for input '  java methods  '.",
+      "problemStatement": "Create three methods: 'cleanSpaces(String s)' which trims whitespace, 'toTitleCase(String s)' which returns s.toUpperCase(), and 'formatTag(String s)' which returns '#' + s. Chain them together in main() for input '  java methods  '.",
+      "hint": "Chain: formatTag(toTitleCase(cleanSpaces('  java methods  '))).",
+      "hints": [
+        "cleanSpaces: return s.trim();",
+        "toTitleCase: return s.toUpperCase();",
+        "formatTag: return \"#\" + s;",
+        "Print the chained result in main."
+      ],
+      "starterCode": "public class Main {\n    // Define the three string transformation methods\n\n    public static void main(String[] args) {\n        String input = \"  java methods  \";\n        // Chain methods and print\n    }\n}",
+      "solutionCode": "public class Main {\n    public static String cleanSpaces(String s) {\n        return s.trim();\n    }\n\n    public static String toTitleCase(String s) {\n        return s.toUpperCase();\n    }\n\n    public static String formatTag(String s) {\n        return \"#\" + s;\n    }\n\n    public static void main(String[] args) {\n        String input = \"  java methods  \";\n        String tag = formatTag(toTitleCase(cleanSpaces(input)));\n        System.out.println(\"Formatted Tag: \" + tag);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Formatted Tag: #JAVA METHODS"
+        }
+      ],
+      "targetOutput": "Formatted Tag: #JAVA METHODS"
+    },
+    {
+      "id": "prac-m7-l5-6",
+      "title": "Pythagorean Hypotenuse with Delegated Squares",
+      "difficulty": "Hard",
+      "description": "Write method 'sq(double x)' returning x * x. Write method 'hypotenuse(double a, double b)' that uses 'sq' and Math.sqrt to return sqrt(a^2 + b^2). In main(), compute hypotenuse for 3.0 and 4.0.",
+      "problemStatement": "Write method 'sq(double x)' returning x * x. Write method 'hypotenuse(double a, double b)' that uses 'sq' and Math.sqrt to return sqrt(a^2 + b^2). In main(), compute hypotenuse for 3.0 and 4.0.",
+      "hint": "Inside hypotenuse: return Math.sqrt(sq(a) + sq(b));",
+      "hints": [
+        "sq returns x * x.",
+        "hypotenuse returns Math.sqrt(sq(a) + sq(b)).",
+        "Print 'Hypotenuse: ' + hypotenuse(3.0, 4.0)."
+      ],
+      "starterCode": "public class Main {\n    // Define sq and hypotenuse\n\n    public static void main(String[] args) {\n        // Test with 3.0 and 4.0\n    }\n}",
+      "solutionCode": "public class Main {\n    public static double sq(double x) {\n        return x * x;\n    }\n\n    public static double hypotenuse(double a, double b) {\n        return Math.sqrt(sq(a) + sq(b));\n    }\n\n    public static void main(String[] args) {\n        double hyp = hypotenuse(3.0, 4.0);\n        System.out.println(\"Hypotenuse: \" + hyp);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Hypotenuse: 5.0"
+        }
+      ],
+      "targetOutput": "Hypotenuse: 5.0"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "qa-m7-l5-1",
+      "question": "How does execution control transfer between caller and callee in Java?",
+      "answer": "When a method call occurs, the caller's execution is paused at that exact line. The runtime evaluates arguments, places them onto a newly created stack frame for the callee, and directs the instruction pointer to the callee's first statement. When the callee returns, control and the return value transfer back to the caller's paused position."
+    },
+    {
+      "id": "qa-m7-l5-2",
+      "question": "Can two methods share a local variable without passing it as an argument?",
+      "answer": "No. Local variables exist only within the method stack frame where they are declared. To share data, the caller must pass it as an argument, or the data must be stored in a class-level (static) or instance-level field."
+    },
+    {
+      "id": "qa-m7-l5-3",
+      "question": "What is method chaining and composition?",
+      "answer": "Method composition occurs when the return value of one method call is passed directly as an argument to another method (e.g. Math.sqrt(sq(x))). Method chaining occurs when a method returns an object reference on which another method is immediately invoked (e.g. str.trim().toUpperCase())."
+    },
+    {
+      "id": "qa-m7-l5-4",
+      "question": "What is the danger of circular method calls (methodA calls methodB, and methodB calls methodA)?",
+      "answer": "Circular calls without a terminating condition create an infinite recursion loop. Stack frames keep accumulating on the Call Stack until memory is exhausted, throwing a java.lang.StackOverflowError."
+    },
+    {
+      "id": "qa-m7-l5-5",
+      "question": "Why is functional decomposition considered essential in clean code?",
+      "answer": "Functional decomposition breaks large monolithic logic into small, single-responsibility methods. This makes methods readable, reusable, independently testable, and easier to debug."
+    },
+    {
+      "id": "qa-m7-l5-6",
+      "question": "How does Java determine which method to call when names are similar?",
+      "answer": "Java's compiler checks the method name, number of arguments, and argument types at compile time. It matches the call against the most specific signature available."
+    },
+    {
+      "id": "qa-m7-l5-7",
+      "question": "What happens if a callee method throws an unhandled exception?",
+      "answer": "If an unhandled exception occurs inside a callee, execution aborts immediately. The exception propagates up the call stack to the caller. If no caller in the stack catches the exception, the thread terminates and prints a stack trace."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "label": "Caller vs Callee",
+      "description": "The caller initiates the invocation and pauses; the callee executes and returns the result."
+    },
+    {
+      "label": "Method Delegation",
+      "description": "Methods can freely invoke other methods to break complex problems into smaller subproblems."
+    },
+    {
+      "label": "Scope Isolation",
+      "description": "Local variables in different methods are completely isolated from one another."
+    },
+    {
+      "label": "Method Composition",
+      "description": "The output of one method can serve directly as the input argument to another method."
+    },
+    {
+      "label": "Stack Traces",
+      "description": "When errors occur, Java prints the exact chain of inter-method calls leading up to the failure."
+    }
+  ]
+}

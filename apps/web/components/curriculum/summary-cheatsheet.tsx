@@ -1763,6 +1763,219 @@ Row 2</td>
         </Card>
       )}
 
+
+      {/* ---------------------------------------------------- */}
+      {/* MODULE 06: LOOPS CHEAT SHEETS                        */}
+      {/* ---------------------------------------------------- */}
+
+      {/* Module 06: Loops Selection Matrix */}
+      {(slug === 'why-loops' || slug === 'for-loop' || slug === 'while-and-do-while' || slug === 'understanding-loop-flow' || slug === 'for-loops' || slug === 'while-loops' || slug === 'do-while') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Loop Constructs &mdash; Comparison Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Loop Type</th>
+                  <th className="p-2.5">Condition Check Timing</th>
+                  <th className="p-2.5">Min. Iterations</th>
+                  <th className="p-2.5">Idiomatic Use Case</th>
+                  <th className="p-2.5 rounded-r-lg">Syntax Blueprint</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-sans">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-brand-700">for loop</td>
+                  <td className="p-2.5 text-slate-700">Pre-test (before loop body)</td>
+                  <td className="p-2.5 text-slate-700 font-semibold">0</td>
+                  <td className="p-2.5 text-slate-600">Fixed number of iterations known in advance</td>
+                  <td className="p-2.5 font-mono text-slate-800 text-[11px]">for (int i=0; i&lt;n; i++) &#123;...&#125;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-indigo-700">while loop</td>
+                  <td className="p-2.5 text-slate-700">Pre-test (before loop body)</td>
+                  <td className="p-2.5 text-slate-700 font-semibold">0</td>
+                  <td className="p-2.5 text-slate-600">Condition-driven where iteration count is unknown</td>
+                  <td className="p-2.5 font-mono text-slate-800 text-[11px]">while (condition) &#123;...&#125;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-amber-700">do-while loop</td>
+                  <td className="p-2.5 text-slate-700">Post-test (after loop body)</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">1 (guaranteed)</td>
+                  <td className="p-2.5 text-slate-600">Menu prompts, user input validation</td>
+                  <td className="p-2.5 font-mono text-slate-800 text-[11px]">do &#123;...&#125; while (cond);</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 06: Jump Statements & Common Traps */}
+      {(slug === 'break-and-continue' || slug === 'infinite-loops-and-common-bugs' || slug === 'pattern-and-number-problems' || slug === 'loops-practice-and-final-challenge' || slug === 'break-continue' || slug === 'loop-bugs' || slug === 'infinite-loops') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Loops Diagnostic &amp; Bug Prevention Reference
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept / Pitfall</th>
+                  <th className="p-2.5">Behavior / Cause</th>
+                  <th className="p-2.5">Flawed Code</th>
+                  <th className="p-2.5 rounded-r-lg">Correct Practice</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">break statement</td>
+                  <td className="p-2.5 text-slate-700">Immediately exits innermost loop; skips all remaining iterations</td>
+                  <td className="p-2.5 font-mono text-slate-600">for (...) &#123; if (found) break; &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Use for early termination (linear search, threshold stop)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">continue statement</td>
+                  <td className="p-2.5 text-slate-700">Skips remainder of CURRENT iteration; jumps straight to next step</td>
+                  <td className="p-2.5 font-mono text-slate-600">while (i &lt; n) &#123; if (x) continue; i++; &#125;</td>
+                  <td className="p-2.5 text-rose-700 font-medium">In while loops, update counter BEFORE continue to avoid infinite freeze!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Stray Semicolon on Loop</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Loop body becomes empty statement; curly block runs once after loop finishes</td>
+                  <td className="p-2.5 font-mono text-rose-700">for (int i=0; i&lt;5; i++); &#123;...&#125;</td>
+                  <td className="p-2.5 text-slate-700">Never place a semicolon directly after for(...) or while(...) headers</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Off-By-One Boundary</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Loop runs one time too many or too few (e.g. &lt;= vs &lt;)</td>
+                  <td className="p-2.5 font-mono text-rose-700">for (int i=0; i &lt;= n; i++) (runs n+1 times)</td>
+                  <td className="p-2.5 text-slate-700">Use <code className="font-mono text-emerald-700">i = 0; i &lt; n</code> for zero-indexed runs of size n</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Nested Loop Complexity</td>
+                  <td className="p-2.5 text-slate-700">Outer loop runs N times; inner loop runs M times per outer iteration</td>
+                  <td className="p-2.5 font-mono text-slate-600">Total iterations = N &times; M</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Ensure inner loop variable resets on every outer iteration (j = 0)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODULE 07: METHODS CHEAT SHEETS                      */}
+      {/* ---------------------------------------------------- */}
+
+      {/* Module 07: Method Anatomy & Scope */}
+      {(slug === 'why-methods' || slug === 'method-anatomy' || slug === 'parameters-and-arguments' || slug === 'return-values-and-void' || slug === 'calling-methods-and-scope' || slug === 'local-variables-and-method-memory' || slug === 'method-basics' || slug === 'anatomy-of-a-method') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Method Anatomy &amp; Call Stack Reference
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Component</th>
+                  <th className="p-2.5">Example Token</th>
+                  <th className="p-2.5">Purpose &amp; Compiler Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Access Modifier</td>
+                  <td className="p-2.5 font-mono text-indigo-700">public</td>
+                  <td className="p-2.5 text-slate-700">Determines visibility. public allows invocation from any class in any package.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">static Modifier</td>
+                  <td className="p-2.5 font-mono text-indigo-700">static</td>
+                  <td className="p-2.5 text-slate-700">Binds method to the class itself. Invoked directly without creating an object instance.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Return Type</td>
+                  <td className="p-2.5 font-mono text-emerald-700">double / void</td>
+                  <td className="p-2.5 text-slate-700">Declared data type returned to caller. Use void if method returns no data.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Method Signature</td>
+                  <td className="p-2.5 font-mono text-brand-700">calcArea(double, int)</td>
+                  <td className="p-2.5 text-slate-700">Strictly: Method Name + Parameter Types (in order). Return type is NOT part of the signature!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Stack Frame (LIFO)</td>
+                  <td className="p-2.5 font-mono text-slate-700">Call Stack Frame</td>
+                  <td className="p-2.5 text-slate-700">Pushed onto Call Stack when method is called; popped and destroyed immediately upon return.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 07: Overloading, Pass-by-Value & Recursion */}
+      {(slug === 'static-methods' || slug === 'method-overloading' || slug === 'pass-by-value-in-java' || slug === 'recursion-basics' || slug === 'method-bugs-and-output-prediction' || slug === 'methods-practice-and-interview-challenge' || slug === 'overloading' || slug === 'pass-by-value' || slug === 'recursion') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Advanced Method Mechanics: Overloading, Pass-by-Value &amp; Recursion
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept</th>
+                  <th className="p-2.5">Key Java Rule</th>
+                  <th className="p-2.5">Classic Interview Trap</th>
+                  <th className="p-2.5 rounded-r-lg">Golden Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Method Overloading</td>
+                  <td className="p-2.5 text-slate-700">Same name, different parameter lists (count, types, or order)</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Changing ONLY the return type is a compile error!</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Resolved at compile time (Static Binding / Compile-Time Polymorphism)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Pass-by-Value</td>
+                  <td className="p-2.5 text-slate-700">Java ALWAYS copies the bits of values into parameter slots</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Primitive swap(int a, int b) fails to alter caller variables</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Return the updated value from method and reassign in caller: x = update(x)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Recursion</td>
+                  <td className="p-2.5 text-slate-700">Method solving problem by calling a smaller instance of itself</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Missing base case causes StackOverflowError</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Every recursive call MUST strictly progress closer toward the base case</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Parameter Shadowing</td>
+                  <td className="p-2.5 text-slate-700">Local parameter hides class field of the same name</td>
+                  <td className="p-2.5 text-rose-700 font-medium">count = count assigns parameter to itself; class field untouched</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Qualify with ClassName (ClassName.count) or use this for instance fields</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
     </div>
   );
 };

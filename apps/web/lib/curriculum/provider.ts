@@ -182,7 +182,38 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'switch-arrow-syntax': 'modern-switch-expressions',
       'conditional-bugs': 'conditional-bugs-and-output-prediction',
       'conditions-practice': 'conditional-practice',
-      'conditional-final-challenge': 'conditional-statements-final-challenge'
+      'conditional-final-challenge': 'conditional-statements-final-challenge',
+
+      // Module 06 (Loops) aliases:
+      'for-loops': 'for-loop',
+      'while-loops': 'while-and-do-while',
+      'do-while': 'while-and-do-while',
+      'break-continue': 'break-and-continue',
+      'nested-loop': 'nested-loops',
+      'loop-bugs': 'infinite-loops-and-common-bugs',
+      'infinite-loops': 'infinite-loops-and-common-bugs',
+      'patterns': 'pattern-and-number-problems',
+      'loop-practice': 'loops-practice-and-final-challenge',
+      'loops-final-challenge': 'loops-practice-and-final-challenge',
+
+      // Module 07 (Methods) aliases:
+      'method-basics': 'why-methods',
+      'anatomy-of-a-method': 'method-anatomy',
+      'parameters': 'parameters-and-arguments',
+      'arguments': 'parameters-and-arguments',
+      'return-values': 'return-values-and-void',
+      'void-methods': 'return-values-and-void',
+      'method-scope': 'calling-methods-and-scope',
+      'call-stack': 'local-variables-and-method-memory',
+      'stack-memory': 'local-variables-and-method-memory',
+      'static': 'static-methods',
+      'overloading': 'method-overloading',
+      'pass-by-value': 'pass-by-value-in-java',
+      'recursion': 'recursion-basics',
+      'recursion-intro': 'recursion-basics',
+      'method-bugs': 'method-bugs-and-output-prediction',
+      'methods-practice': 'methods-practice-and-interview-challenge',
+      'methods-final-challenge': 'methods-practice-and-interview-challenge'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

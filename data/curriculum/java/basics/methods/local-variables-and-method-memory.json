@@ -1,0 +1,639 @@
+{
+  "id": "les-methods-local-variables-and-method-memory",
+  "slug": "local-variables-and-method-memory",
+  "title": "Local Variables & Method Memory",
+  "summary": "Visualize Call Stack memory: stack frames pushed on invocation, local variable lifespans, and stack frame popping on return.",
+  "sectionSlug": "basics",
+  "moduleSlug": "methods",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 6,
+  "prerequisites": [
+    "les-methods-calling-methods-and-scope"
+  ],
+  "subtopics": [
+    "Call Stack Mechanics",
+    "Stack Frame Push and Pop",
+    "Local Variable Isolation",
+    "Stack Overflow Intuition"
+  ],
+  "learningOutcomes": [
+    "Explain why variables in different methods with the same name do not conflict",
+    "Trace stack frame lifecycles (push on call, pop on return)",
+    "Understand the physical causes of StackOverflowError"
+  ],
+  "activities": [
+    {
+      "id": "act-local-variables-and-method-memory-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Local Variables & Method Memory",
+      "content": "### Inside the Java Virtual Machine: The Call Stack\n\nWhenever a Java program runs, the JVM allocates a region of high-speed memory called the **Call Stack** (or execution stack).\n\nThe Call Stack operates strictly on a **LIFO** (Last-In, First-Out) principle:\n- **Push**: Every time a method is called, the JVM creates a new memory block called a **Stack Frame** (or Activation Record) and pushes it onto the top of the Call Stack.\n- **Pop**: As soon as that method reaches a `return` statement or its closing brace `}`, its stack frame is instantly **popped** off the stack and destroyed. All local variables inside that frame vanish permanently from RAM.\n\n```\n       [ Call Stack Visualization ]\n\n       \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\nTop \u2500\u2500\u25ba\u2502 calcDiscount() Stack Frame    \u2502  <-- Active currently\n       \u2502  price = 100, percent = 10    \u2502\n       \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524\n       \u2502 checkout() Stack Frame        \u2502  <-- Paused waiting\n       \u2502  cartTotal = 100              \u2502\n       \u251c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524\nBottom \u2502 main() Stack Frame            \u2502  <-- Paused waiting\n       \u2502  args = [...]                 \u2502\n       \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518\n```\n\n### What Lives Inside a Stack Frame?\n\nEach stack frame contains:\n1. **Parameters**: The formal parameters passed by the caller.\n2. **Local Variables**: Any variables declared inside the method body.\n3. **Instruction Pointer (Return Address)**: The exact line of code in the caller method where execution must resume after this method returns.\n\n### Why Local Variable Collisions Never Happen\n\nBeginners often ask: *\"Can I have a variable named `int score` in `main()`, and another variable named `int score` in `calculateScore()`?\"*\n\n**Yes, absolutely!** They exist in two completely distinct stack frames in different physical memory slots on the stack.\n- When `calculateScore()` is running, the CPU looks up `score` in the top stack frame.\n- The `score` inside `main()` is asleep in a separate stack frame lower down the stack. They cannot interfere with or overwrite each other.\n\n### The Stack Overflow Nightmare\n\nBecause stack memory is fixed and finite (usually 1 MB per thread in standard JVMs), stack frames take up real physical bytes.\n\nIf a method keeps calling another method (or calling itself) without ever returning, stack frames keep getting pushed onto the Call Stack until the stack runs out of memory:\n\n```\n[Frame 9999]\n[Frame 9998]\n...\n[Frame 1]\n\u2500\u2500\u25ba java.lang.StackOverflowError\n```\n\nUnderstanding stack frames gives you the exact mental model needed for debugging stack traces, understanding local variable lifecycles, and mastering recursion!\n",
+      "breakdown": {
+        "whatIsIt": "Comprehensive exploration of Local Variables & Method Memory in Java.",
+        "whyItMatters": "Crucial for writing maintainable, reusable, and bug-free Java applications.",
+        "howItWorks": [
+          "Decomposes complex logic into self-contained subprograms.",
+          "Allocates local variables on Call Stack frames.",
+          "Passes arguments by value, copying parameter data into frames.",
+          "Returns execution control back to caller upon reaching return statement."
+        ],
+        "keyTakeaways": [
+          "Mastering Local Variables & Method Memory is essential for Java placement interviews and clean architecture.",
+          "Methods enforce the DRY principle by eliminating redundant duplicate code.",
+          "Parameters act as local placeholders; arguments provide runtime values.",
+          "Always consider edge cases such as invalid input parameters or stack overflow."
+        ]
+      }
+    },
+    {
+      "id": "act-local-variables-and-method-memory-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Local Variables & Method Memory",
+      "codeSnippet": "public class StackMemoryDemo {\n    public static int addFive(int x) {\n        // Frame 3 pushed: x = 10, local result\n        int result = x + 5;\n        return result; // Frame 3 popped! Memory reclaimed.\n    }\n\n    public static int compute(int a) {\n        // Frame 2 pushed: a = 10, local val\n        int val = addFive(a); \n        return val * 2; // Frame 2 popped!\n    }\n\n    public static void main(String[] args) {\n        // Frame 1 pushed: main() starts\n        int num = 10;\n        int output = compute(num);\n        System.out.println(\"Final Output: \" + output);\n        // Frame 1 popped! Program finishes.\n    }\n}",
+      "description": "Watch how the Call Stack grows when entering methods and shrinks when methods return."
+    },
+    {
+      "id": "act-local-variables-and-method-memory-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Essential Concept & Bug Detection Check",
+      "questions": [
+        {
+          "id": "q-local-variables-and-method-memory-1",
+          "type": "mcq",
+          "prompt": "What data structure does the JVM use to track active method calls and local variables?",
+          "options": [
+            "A Queue (FIFO)",
+            "A Call Stack (LIFO)",
+            "A Binary Search Tree",
+            "A Hash Map"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The JVM uses a Call Stack operating on Last-In, First-Out (LIFO) principles to manage active method executions and stack frames.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-2",
+          "type": "mcq",
+          "prompt": "When is a stack frame created and pushed onto the Call Stack?",
+          "options": [
+            "When the Java file is compiled",
+            "When a method is invoked at runtime",
+            "When an int variable is initialized",
+            "When the computer boots up"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A new stack frame is created and pushed onto the Call Stack whenever a method is invoked during program execution.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-3",
+          "type": "mcq",
+          "prompt": "What happens to the local variables inside a method when that method returns?",
+          "options": [
+            "They remain in memory forever until program shutdown",
+            "Their stack frame is popped, and all its local variables are immediately destroyed",
+            "They are automatically copied into main()",
+            "They are written to a temp file on the hard drive"
+          ],
+          "correctAnswer": 1,
+          "explanation": "When a method returns, its stack frame is popped off the stack, and all local variables and parameters allocated inside that frame cease to exist.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-4",
+          "type": "mcq",
+          "prompt": "Why can two different methods declare local variables with the exact same name without conflict?",
+          "options": [
+            "Because Java renames them behind the scenes to random numbers",
+            "Because each method has its own independent stack frame in memory",
+            "Because Java ignores variable names and only checks line numbers",
+            "Because variables in methods are always global"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Each method execution has its own isolated stack frame. Local variables in different stack frames occupy different memory slots and have separate scopes.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-5",
+          "type": "mcq",
+          "prompt": "What error is thrown when excessive nested method calls exhaust Call Stack memory?",
+          "options": [
+            "java.lang.OutOfMemoryError: Heap Space",
+            "java.lang.StackOverflowError",
+            "java.lang.NullPointerException",
+            "java.lang.MethodNotFoundException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A java.lang.StackOverflowError is thrown when the Call Stack exceeds its allocated memory limit, usually due to infinite recursion.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-6",
+          "type": "mcq",
+          "prompt": "Which of the following is NOT stored inside a method's stack frame?",
+          "options": [
+            "Formal parameters passed into the method",
+            "Local primitive variables declared inside the method",
+            "The return address (where to resume in the caller)",
+            "The entire compiled bytecode of the operating system"
+          ],
+          "correctAnswer": 3,
+          "explanation": "Stack frames store parameters, local variables, and return addresses. OS bytecode is not stored in method stack frames.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-7",
+          "type": "mcq",
+          "prompt": "At any given instant, which method's stack frame is active on the CPU?",
+          "options": [
+            "The frame at the very top of the Call Stack",
+            "The frame at the very bottom (main)",
+            "All frames execute simultaneously",
+            "The frame that was created first"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The stack frame at the very top of the Call Stack represents the currently executing method. All frames beneath it are paused waiting for it to return.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-local-variables-and-method-memory-8",
+          "type": "mcq",
+          "prompt": "Are local primitive variables inside methods stored on the Stack or on the Heap?",
+          "options": [
+            "Always on the Stack within that method's stack frame",
+            "Always on the Heap",
+            "In CPU L1 cache exclusively",
+            "In the class constant pool"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Local primitive variables and references are allocated on the Stack within the currently executing method's stack frame.",
+          "hints": [
+            "Review the core principle."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-local-variables-and-method-memory-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Demonstrate Local Variable Isolation",
+      "practice": {
+        "title": "Demonstrate Local Variable Isolation",
+        "problemStatement": "Write a method 'modifyNumber(int n)' that sets n = n + 100 and prints 'Inside method: ' + n. In main(), declare int n = 50, call modifyNumber(n), and then print 'Inside main: ' + n. Observe that main's n is unchanged.",
+        "initialCode": "public class Main {\n    // Define modifyNumber\n\n    public static void main(String[] args) {\n        int n = 50;\n        // Call modifyNumber and print both\n    }\n}",
+        "expectedOutput": "Inside method: 150\nInside main: 50",
+        "hints": [
+          "modifyNumber sets n = n + 100 and prints it.",
+          "main prints its own n before and after.",
+          "Target output matches isolated stack frames."
+        ],
+        "solutionCode": "public class Main {\n    public static void modifyNumber(int n) {\n        n = n + 100;\n        System.out.println(\"Inside method: \" + n);\n    }\n\n    public static void main(String[] args) {\n        int n = 50;\n        modifyNumber(n);\n        System.out.println(\"Inside main: \" + n);\n    }\n}"
+      }
+    },
+    {
+      "id": "act-local-variables-and-method-memory-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Placement Interview Questions",
+      "interviewQA": [
+        {
+          "id": "qa-local-variables-and-method-memory-1",
+          "question": "What is a Stack Frame (Activation Record) and what does it contain?",
+          "expectedAnswer": "A stack frame is a dedicated block of memory allocated on the thread's Call Stack each time a method is invoked. It contains: 1) formal parameters, 2) local variables declared within the method, 3) operand stack for intermediate calculations, and 4) the return address pointing back to the caller.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Cisco"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-local-variables-and-method-memory-2",
+          "question": "Explain the lifecycle of a stack frame during method execution.",
+          "expectedAnswer": "1) Allocation/Push: When a method is called, a stack frame is pushed onto the top of the Call Stack. 2) Execution: The CPU executes statements using the local memory in this active top frame. 3) Deallocation/Pop: When the method reaches a return statement or finishes, the frame is popped off, and its memory is instantly freed.",
+          "companyTags": [
+            "Microsoft",
+            "TCS",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-local-variables-and-method-memory-3",
+          "question": "What is the difference between Stack Memory and Heap Memory in Java?",
+          "expectedAnswer": "Stack memory is thread-private, fast, fixed in size, and used for method execution frames, primitive local variables, and object reference variables. Heap memory is shared across the entire JVM, managed by the Garbage Collector, and used for allocating actual object instances (e.g. new String(), new Scanner()).",
+          "companyTags": [
+            "Oracle",
+            "Adobe",
+            "Salesforce"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-local-variables-and-method-memory-4",
+          "question": "What causes a StackOverflowError and how can it be diagnosed?",
+          "expectedAnswer": "A StackOverflowError occurs when the Call Stack exceeds its allocated memory limit. This is almost always caused by unintended infinite recursion (a recursive method missing its base case or failing to progress toward it). It is diagnosed by inspecting the top of the stack trace to see the repeated method call.",
+          "companyTags": [
+            "Meta",
+            "Uber",
+            "Goldman Sachs"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-local-variables-and-method-memory-5",
+          "question": "Why are local variables in Java not given default values like instance fields?",
+          "expectedAnswer": "Local variables are allocated directly on the high-speed Stack inside transient stack frames. Initializing every local variable to default values (0, null, false) on every method push would impose an unnecessary CPU performance penalty. Java requires explicit initialization to enforce safety at compile-time.",
+          "companyTags": [
+            "Google",
+            "Morgan Stanley",
+            "Flipkart"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-local-variables-and-method-memory-6",
+          "question": "What does a stack trace represent when an exception is thrown?",
+          "expectedAnswer": "A stack trace is a snapshot printout of the Call Stack at the moment an exception was thrown. It lists every active method frame from the top of the stack (where the error occurred) all the way down to the bottom (the main method entry point), including file names and line numbers.",
+          "companyTags": [
+            "Google",
+            "Amazon",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-local-variables-and-method-memory-7",
+          "question": "Can multiple threads share the same Call Stack?",
+          "expectedAnswer": "No. In Java, each thread has its own completely independent Call Stack. Local variables and method calls on one thread are physically isolated from other threads, making local primitive variables inherently thread-safe.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Cisco"
+          ],
+          "keyPoints": [
+            "Focus on memory lifecycle and compile-time contract enforcement."
+          ],
+          "followUpQuestions": []
+        }
+      ]
+    },
+    {
+      "id": "act-local-variables-and-method-memory-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist",
+      "checklist": [
+        "Call Stack (LIFO): Last-In, First-Out memory region tracking currently active method invocations.",
+        "Stack Frame: Memory block allocated on call and popped on return, housing parameters, local variables, and return address.",
+        "Local Scope Isolation: Variables in different frames never collide, even if they share the exact same identifier name.",
+        "Stack vs Heap: Stack holds execution frames and local variables; Heap holds object instances managed by GC.",
+        "StackOverflowError: Occurs when too many recursive frames fill available stack memory without returning."
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-m7-l6-1",
+      "question": "What data structure does the JVM use to track active method calls and local variables?",
+      "options": [
+        "A Queue (FIFO)",
+        "A Call Stack (LIFO)",
+        "A Binary Search Tree",
+        "A Hash Map"
+      ],
+      "correctOption": 1,
+      "explanation": "The JVM uses a Call Stack operating on Last-In, First-Out (LIFO) principles to manage active method executions and stack frames."
+    },
+    {
+      "id": "mcq-m7-l6-2",
+      "question": "When is a stack frame created and pushed onto the Call Stack?",
+      "options": [
+        "When the Java file is compiled",
+        "When a method is invoked at runtime",
+        "When an int variable is initialized",
+        "When the computer boots up"
+      ],
+      "correctOption": 1,
+      "explanation": "A new stack frame is created and pushed onto the Call Stack whenever a method is invoked during program execution."
+    },
+    {
+      "id": "mcq-m7-l6-3",
+      "question": "What happens to the local variables inside a method when that method returns?",
+      "options": [
+        "They remain in memory forever until program shutdown",
+        "Their stack frame is popped, and all its local variables are immediately destroyed",
+        "They are automatically copied into main()",
+        "They are written to a temp file on the hard drive"
+      ],
+      "correctOption": 1,
+      "explanation": "When a method returns, its stack frame is popped off the stack, and all local variables and parameters allocated inside that frame cease to exist."
+    },
+    {
+      "id": "mcq-m7-l6-4",
+      "question": "Why can two different methods declare local variables with the exact same name without conflict?",
+      "options": [
+        "Because Java renames them behind the scenes to random numbers",
+        "Because each method has its own independent stack frame in memory",
+        "Because Java ignores variable names and only checks line numbers",
+        "Because variables in methods are always global"
+      ],
+      "correctOption": 1,
+      "explanation": "Each method execution has its own isolated stack frame. Local variables in different stack frames occupy different memory slots and have separate scopes."
+    },
+    {
+      "id": "mcq-m7-l6-5",
+      "question": "What error is thrown when excessive nested method calls exhaust Call Stack memory?",
+      "options": [
+        "java.lang.OutOfMemoryError: Heap Space",
+        "java.lang.StackOverflowError",
+        "java.lang.NullPointerException",
+        "java.lang.MethodNotFoundException"
+      ],
+      "correctOption": 1,
+      "explanation": "A java.lang.StackOverflowError is thrown when the Call Stack exceeds its allocated memory limit, usually due to infinite recursion."
+    },
+    {
+      "id": "mcq-m7-l6-6",
+      "question": "Which of the following is NOT stored inside a method's stack frame?",
+      "options": [
+        "Formal parameters passed into the method",
+        "Local primitive variables declared inside the method",
+        "The return address (where to resume in the caller)",
+        "The entire compiled bytecode of the operating system"
+      ],
+      "correctOption": 3,
+      "explanation": "Stack frames store parameters, local variables, and return addresses. OS bytecode is not stored in method stack frames."
+    },
+    {
+      "id": "mcq-m7-l6-7",
+      "question": "At any given instant, which method's stack frame is active on the CPU?",
+      "options": [
+        "The frame at the very top of the Call Stack",
+        "The frame at the very bottom (main)",
+        "All frames execute simultaneously",
+        "The frame that was created first"
+      ],
+      "correctOption": 0,
+      "explanation": "The stack frame at the very top of the Call Stack represents the currently executing method. All frames beneath it are paused waiting for it to return."
+    },
+    {
+      "id": "mcq-m7-l6-8",
+      "question": "Are local primitive variables inside methods stored on the Stack or on the Heap?",
+      "options": [
+        "Always on the Stack within that method's stack frame",
+        "Always on the Heap",
+        "In CPU L1 cache exclusively",
+        "In the class constant pool"
+      ],
+      "correctOption": 0,
+      "explanation": "Local primitive variables and references are allocated on the Stack within the currently executing method's stack frame."
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prac-m7-l6-1",
+      "title": "Demonstrate Local Variable Isolation",
+      "difficulty": "Easy",
+      "description": "Write a method 'modifyNumber(int n)' that sets n = n + 100 and prints 'Inside method: ' + n. In main(), declare int n = 50, call modifyNumber(n), and then print 'Inside main: ' + n. Observe that main's n is unchanged.",
+      "problemStatement": "Write a method 'modifyNumber(int n)' that sets n = n + 100 and prints 'Inside method: ' + n. In main(), declare int n = 50, call modifyNumber(n), and then print 'Inside main: ' + n. Observe that main's n is unchanged.",
+      "hint": "Each method has its own stack frame. Changing n inside modifyNumber has zero effect on n in main.",
+      "hints": [
+        "modifyNumber sets n = n + 100 and prints it.",
+        "main prints its own n before and after.",
+        "Target output matches isolated stack frames."
+      ],
+      "starterCode": "public class Main {\n    // Define modifyNumber\n\n    public static void main(String[] args) {\n        int n = 50;\n        // Call modifyNumber and print both\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void modifyNumber(int n) {\n        n = n + 100;\n        System.out.println(\"Inside method: \" + n);\n    }\n\n    public static void main(String[] args) {\n        int n = 50;\n        modifyNumber(n);\n        System.out.println(\"Inside main: \" + n);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Inside method: 150\nInside main: 50"
+        }
+      ],
+      "targetOutput": "Inside method: 150\nInside main: 50"
+    },
+    {
+      "id": "prac-m7-l6-2",
+      "title": "Three-Level Stack Call Trace",
+      "difficulty": "Easy",
+      "description": "Create three methods: 'alpha()', 'beta()', and 'gamma()'. gamma prints 'Gamma executed'. beta prints 'Beta calling gamma', calls gamma(), and prints 'Beta done'. alpha calls beta(). In main(), call alpha().",
+      "problemStatement": "Create three methods: 'alpha()', 'beta()', and 'gamma()'. gamma prints 'Gamma executed'. beta prints 'Beta calling gamma', calls gamma(), and prints 'Beta done'. alpha calls beta(). In main(), call alpha().",
+      "hint": "Trace how frames are pushed: main -> alpha -> beta -> gamma.",
+      "hints": [
+        "alpha calls beta().",
+        "beta calls gamma().",
+        "Verify console output follows the exact call sequence."
+      ],
+      "starterCode": "public class Main {\n    // Define alpha, beta, gamma\n\n    public static void main(String[] args) {\n        // Call alpha\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void gamma() {\n        System.out.println(\"Gamma executed\");\n    }\n\n    public static void beta() {\n        System.out.println(\"Beta calling gamma\");\n        gamma();\n        System.out.println(\"Beta done\");\n    }\n\n    public static void alpha() {\n        beta();\n    }\n\n    public static void main(String[] args) {\n        alpha();\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Beta calling gamma\nGamma executed\nBeta done"
+        }
+      ],
+      "targetOutput": "Beta calling gamma\nGamma executed\nBeta done"
+    },
+    {
+      "id": "prac-m7-l6-3",
+      "title": "Stack Frame Value Accumulation",
+      "difficulty": "Medium",
+      "description": "Write a method 'calculateTripCost(int days, double hotelRatePerDay, double flightCost)' that computes hotelTotal = days * hotelRatePerDay, then calls a helper 'addTax(double amount)' which returns amount * 1.10. Return hotelTotal + flightCost + tax on hotel. Test with 3, 100.0, 250.0.",
+      "problemStatement": "Write a method 'calculateTripCost(int days, double hotelRatePerDay, double flightCost)' that computes hotelTotal = days * hotelRatePerDay, then calls a helper 'addTax(double amount)' which returns amount * 1.10. Return hotelTotal + flightCost + tax on hotel. Test with 3, 100.0, 250.0.",
+      "hint": "hotelTotal = 300.0. Taxed hotel = 330.0. Total = 330.0 + 250.0 = 580.0.",
+      "hints": [
+        "addTax returns amount * 1.10",
+        "calculateTripCost calls addTax on hotelTotal",
+        "Print 'Trip Cost: $' + calculateTripCost(3, 100.0, 250.0)"
+      ],
+      "starterCode": "public class Main {\n    // Define addTax and calculateTripCost\n\n    public static void main(String[] args) {\n        // Test with 3, 100.0, 250.0\n    }\n}",
+      "solutionCode": "public class Main {\n    public static double addTax(double amount) {\n        return amount * 1.10;\n    }\n\n    public static double calculateTripCost(int days, double hotelRatePerDay, double flightCost) {\n        double hotelTotal = days * hotelRatePerDay;\n        double taxedHotel = addTax(hotelTotal);\n        return taxedHotel + flightCost;\n    }\n\n    public static void main(String[] args) {\n        double cost = calculateTripCost(3, 100.0, 250.0);\n        System.out.println(\"Trip Cost: $\" + cost);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Trip Cost: $580.0"
+        }
+      ],
+      "targetOutput": "Trip Cost: $580.0"
+    },
+    {
+      "id": "prac-m7-l6-4",
+      "title": "Simulate Countdown Call Stack Frame Depth",
+      "difficulty": "Medium",
+      "description": "Write a method 'traceDepth(int n)' that prints 'Enter depth ' + n. If n > 1, call traceDepth(n - 1). Then print 'Exit depth ' + n. In main(), call traceDepth(3). Notice how exits occur in reverse (LIFO) order.",
+      "problemStatement": "Write a method 'traceDepth(int n)' that prints 'Enter depth ' + n. If n > 1, call traceDepth(n - 1). Then print 'Exit depth ' + n. In main(), call traceDepth(3). Notice how exits occur in reverse (LIFO) order.",
+      "hint": "The recursive call creates new frames. As they return, exits print in reverse order: 1, 2, 3.",
+      "hints": [
+        "Print Enter depth n first.",
+        "If n > 1 call traceDepth(n - 1).",
+        "Print Exit depth n last."
+      ],
+      "starterCode": "public class Main {\n    // Define traceDepth\n\n    public static void main(String[] args) {\n        // Call traceDepth(3)\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void traceDepth(int n) {\n        System.out.println(\"Enter depth \" + n);\n        if (n > 1) {\n            traceDepth(n - 1);\n        }\n        System.out.println(\"Exit depth \" + n);\n    }\n\n    public static void main(String[] args) {\n        traceDepth(3);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Enter depth 3\nEnter depth 2\nEnter depth 1\nExit depth 1\nExit depth 2\nExit depth 3"
+        }
+      ],
+      "targetOutput": "Enter depth 3\nEnter depth 2\nEnter depth 1\nExit depth 1\nExit depth 2\nExit depth 3"
+    },
+    {
+      "id": "prac-m7-l6-5",
+      "title": "Independent Counter Invocations",
+      "difficulty": "Hard",
+      "description": "Write a method 'runCycle(int cycleId)' with local variable 'int count = 0'. Inside runCycle, increment count by 5 and print 'Cycle ' + cycleId + ' count: ' + count. In main(), call runCycle(1) and runCycle(2). Observe that count starts fresh at 0 in both cycles.",
+      "problemStatement": "Write a method 'runCycle(int cycleId)' with local variable 'int count = 0'. Inside runCycle, increment count by 5 and print 'Cycle ' + cycleId + ' count: ' + count. In main(), call runCycle(1) and runCycle(2). Observe that count starts fresh at 0 in both cycles.",
+      "hint": "Local variables reinitialize every time a stack frame is created.",
+      "hints": [
+        "Inside runCycle: int count = 0; count += 5;",
+        "Print 'Cycle ' + cycleId + ' count: ' + count;",
+        "Call in main with 1 and 2."
+      ],
+      "starterCode": "public class Main {\n    // Define runCycle\n\n    public static void main(String[] args) {\n        // Call runCycle(1) and runCycle(2)\n    }\n}",
+      "solutionCode": "public class Main {\n    public static void runCycle(int cycleId) {\n        int count = 0;\n        count += 5;\n        System.out.println(\"Cycle \" + cycleId + \" count: \" + count);\n    }\n\n    public static void main(String[] args) {\n        runCycle(1);\n        runCycle(2);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Cycle 1 count: 5\nCycle 2 count: 5"
+        }
+      ],
+      "targetOutput": "Cycle 1 count: 5\nCycle 2 count: 5"
+    },
+    {
+      "id": "prac-m7-l6-6",
+      "title": "Stack Frame Calculation Trace",
+      "difficulty": "Hard",
+      "description": "Write method 'first(int x)' returning x + 2. Write method 'second(int y)' returning first(y) * 3. Write method 'third(int z)' returning second(z) - 5. In main(), compute and print third(4).",
+      "problemStatement": "Write method 'first(int x)' returning x + 2. Write method 'second(int y)' returning first(y) * 3. Write method 'third(int z)' returning second(z) - 5. In main(), compute and print third(4).",
+      "hint": "Trace: third(4) -> second(4) -> first(4) = 6 -> second returns 6 * 3 = 18 -> third returns 18 - 5 = 13.",
+      "hints": [
+        "first: return x + 2",
+        "second: return first(y) * 3",
+        "third: return second(z) - 5",
+        "Print 'Result: ' + third(4)"
+      ],
+      "starterCode": "public class Main {\n    // Define first, second, third\n\n    public static void main(String[] args) {\n        // Compute third(4)\n    }\n}",
+      "solutionCode": "public class Main {\n    public static int first(int x) {\n        return x + 2;\n    }\n\n    public static int second(int y) {\n        return first(y) * 3;\n    }\n\n    public static int third(int z) {\n        return second(z) - 5;\n    }\n\n    public static void main(String[] args) {\n        int res = third(4);\n        System.out.println(\"Result: \" + res);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: 13"
+        }
+      ],
+      "targetOutput": "Result: 13"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "qa-m7-l6-1",
+      "question": "What is a Stack Frame (Activation Record) and what does it contain?",
+      "answer": "A stack frame is a dedicated block of memory allocated on the thread's Call Stack each time a method is invoked. It contains: 1) formal parameters, 2) local variables declared within the method, 3) operand stack for intermediate calculations, and 4) the return address pointing back to the caller."
+    },
+    {
+      "id": "qa-m7-l6-2",
+      "question": "Explain the lifecycle of a stack frame during method execution.",
+      "answer": "1) Allocation/Push: When a method is called, a stack frame is pushed onto the top of the Call Stack. 2) Execution: The CPU executes statements using the local memory in this active top frame. 3) Deallocation/Pop: When the method reaches a return statement or finishes, the frame is popped off, and its memory is instantly freed."
+    },
+    {
+      "id": "qa-m7-l6-3",
+      "question": "What is the difference between Stack Memory and Heap Memory in Java?",
+      "answer": "Stack memory is thread-private, fast, fixed in size, and used for method execution frames, primitive local variables, and object reference variables. Heap memory is shared across the entire JVM, managed by the Garbage Collector, and used for allocating actual object instances (e.g. new String(), new Scanner())."
+    },
+    {
+      "id": "qa-m7-l6-4",
+      "question": "What causes a StackOverflowError and how can it be diagnosed?",
+      "answer": "A StackOverflowError occurs when the Call Stack exceeds its allocated memory limit. This is almost always caused by unintended infinite recursion (a recursive method missing its base case or failing to progress toward it). It is diagnosed by inspecting the top of the stack trace to see the repeated method call."
+    },
+    {
+      "id": "qa-m7-l6-5",
+      "question": "Why are local variables in Java not given default values like instance fields?",
+      "answer": "Local variables are allocated directly on the high-speed Stack inside transient stack frames. Initializing every local variable to default values (0, null, false) on every method push would impose an unnecessary CPU performance penalty. Java requires explicit initialization to enforce safety at compile-time."
+    },
+    {
+      "id": "qa-m7-l6-6",
+      "question": "What does a stack trace represent when an exception is thrown?",
+      "answer": "A stack trace is a snapshot printout of the Call Stack at the moment an exception was thrown. It lists every active method frame from the top of the stack (where the error occurred) all the way down to the bottom (the main method entry point), including file names and line numbers."
+    },
+    {
+      "id": "qa-m7-l6-7",
+      "question": "Can multiple threads share the same Call Stack?",
+      "answer": "No. In Java, each thread has its own completely independent Call Stack. Local variables and method calls on one thread are physically isolated from other threads, making local primitive variables inherently thread-safe."
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "label": "Call Stack (LIFO)",
+      "description": "Last-In, First-Out memory region tracking currently active method invocations."
+    },
+    {
+      "label": "Stack Frame",
+      "description": "Memory block allocated on call and popped on return, housing parameters, local variables, and return address."
+    },
+    {
+      "label": "Local Scope Isolation",
+      "description": "Variables in different frames never collide, even if they share the exact same identifier name."
+    },
+    {
+      "label": "Stack vs Heap",
+      "description": "Stack holds execution frames and local variables; Heap holds object instances managed by GC."
+    },
+    {
+      "label": "StackOverflowError",
+      "description": "Occurs when too many recursive frames fill available stack memory without returning."
+    }
+  ]
+}
