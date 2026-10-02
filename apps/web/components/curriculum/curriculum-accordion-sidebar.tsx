@@ -59,14 +59,24 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
     }
   }, [activeModuleSlug]);
 
-  // Auto-scroll the sidebar container to keep the active lesson in view
+  // Auto-scroll the sidebar container ONLY to keep the active lesson in view without scrolling the main window
   useEffect(() => {
-    if (activeItemRef.current) {
-      // Use smooth scrollIntoView with nearest block alignment
-      activeItemRef.current.scrollIntoView({
-        block: 'nearest',
-        behavior: 'smooth'
-      });
+    if (scrollContainerRef.current && activeItemRef.current) {
+      const container = scrollContainerRef.current;
+      const item = activeItemRef.current;
+
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+
+      // Check if item is above or below visible portion of sidebar container
+      const isAbove = itemRect.top < containerRect.top;
+      const isBelow = itemRect.bottom > containerRect.bottom;
+
+      if (isAbove) {
+        container.scrollTop -= (containerRect.top - itemRect.top + 20);
+      } else if (isBelow) {
+        container.scrollTop += (itemRect.bottom - containerRect.bottom + 20);
+      }
     }
   }, [activeLessonSlug, activeModuleSlug]);
 
@@ -291,10 +301,14 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                           <Link
                             key={lesson.id}
                             href={href}
+                            scroll={false}
                             ref={isCurrentLesson ? (el => { activeItemRef.current = el; }) : undefined}
-                            onClick={() => {
-                              onSelectLesson(mod.slug, lesson.slug);
-                              onCloseMobileDrawer?.();
+                            onClick={(e) => {
+                              if (!e.metaKey && !e.ctrlKey) {
+                                e.preventDefault();
+                                onSelectLesson(mod.slug, lesson.slug);
+                                onCloseMobileDrawer?.();
+                              }
                             }}
                             className={itemClasses}
                           >

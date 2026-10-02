@@ -48,7 +48,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     setActiveLessonSlug(initialLesson.slug);
     setActiveTab('concept');
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
     }
   }, [initialLesson]);
 
@@ -71,10 +71,10 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     setActiveLessonSlug(lessonSlug);
     setActiveTab('concept');
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo(0, 0);
     }
 
-    router.push(`/${languageSlug}/${section.slug}/${moduleSlug}/${lessonSlug}`);
+    router.push(`/${languageSlug}/${section.slug}/${moduleSlug}/${lessonSlug}`, { scroll: false });
   }, [languageSlug, section.slug, router]);
 
   // Compute Prev / Next lesson pointers in current section
