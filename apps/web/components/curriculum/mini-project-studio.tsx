@@ -18,10 +18,7 @@ import {
   Layers,
   ListChecks,
   FileText,
-  Flame,
-  ShieldAlert,
   Clock,
-  Award,
   ArrowRight,
   Code2,
   CheckSquare,
@@ -29,7 +26,7 @@ import {
   Wrench,
   BookOpen,
   MessageSquare,
-  AlertTriangle
+  Laptop
 } from 'lucide-react';
 
 interface MiniProjectStudioProps {
@@ -47,7 +44,7 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
   const [expandedMentors, setExpandedMentors] = useState<Record<number, boolean>>({});
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
-  // Load progress from localStorage
+  // Load saved progress from localStorage
   useEffect(() => {
     if (!project?.slug) return;
     try {
@@ -103,7 +100,7 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
 
   if (!project) {
     return (
-      <Card className="p-8 text-center">
+      <Card className="p-8 text-center bg-white border border-slate-200/90 rounded-2xl shadow-subtle">
         <p className="text-slate-600">Project specifications are loading...</p>
       </Card>
     );
@@ -139,75 +136,70 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
   const doneTests = Object.values(verifiedTests).filter(Boolean).length;
 
   return (
-    <div className="space-y-8 animate-fadeIn">
-      {/* 1. HERO BANNER */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-indigo-900/50">
-        <div className="absolute -right-12 -top-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-12 -bottom-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 space-y-4">
+    <div className="space-y-6 animate-fadeIn">
+      {/* 1. HERO CARD (Clean white with platform branding) */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-7 shadow-subtle space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="primary" className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 uppercase tracking-wider text-xs font-bold">
-              Java Basics Portfolio Project
-            </Badge>
-            <Badge variant="outline" className="border-slate-700 text-slate-300 text-xs flex items-center gap-1.5">
-              <Clock className="w-3 h-3 text-indigo-400" />
+            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200/80">
+              Hands-On Project
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200/80">
+              <Clock className="w-3 h-3 text-slate-500" />
               {projectBrief.estimatedTime}
-            </Badge>
-            <Badge
-              variant={projectBrief.difficulty === 'advanced' ? 'danger' : projectBrief.difficulty === 'intermediate' ? 'warning' : 'success'}
-              className="text-xs font-semibold capitalize"
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${
+                projectBrief.difficulty === 'advanced'
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                  : projectBrief.difficulty === 'intermediate'
+                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              }`}
             >
               {projectBrief.difficulty}
-            </Badge>
-            <span className="text-xs text-amber-300/90 font-medium px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-              Strictly No OOP • Core Java Fundamentals
             </span>
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              {project.title}
-            </h1>
-            <p className="text-slate-300 text-sm sm:text-base max-w-3xl leading-relaxed">
-              {projectBrief.problemItSolves}
-            </p>
+          <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+            <span>Tasks: <strong className="text-slate-800">{doneTasks}/{totalTasks}</strong></span>
+            <span>•</span>
+            <span>Tests: <strong className="text-slate-800">{doneTests}/{totalTests}</strong></span>
           </div>
+        </div>
 
-          {/* Motivating Quote Callout */}
-          <div className="bg-slate-800/60 backdrop-blur-xs border-l-4 border-indigo-400 p-3 sm:p-4 rounded-r-xl max-w-2xl">
-            <p className="text-xs sm:text-sm text-indigo-100 italic">
-              &ldquo;{projectBrief.motivatingQuote}&rdquo;
-            </p>
-          </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            {project.title}
+          </h1>
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl">
+            {projectBrief.problemItSolves}
+          </p>
+        </div>
 
-          {/* Quick Metrics */}
-          <div className="flex flex-wrap items-center gap-6 pt-2 text-xs sm:text-sm text-slate-300 border-t border-slate-800/80">
-            <div>
-              <span className="text-slate-400">Milestone Progress: </span>
-              <span className="font-bold text-white">{doneTasks} / {totalTasks} tasks</span>
-            </div>
-            <div>
-              <span className="text-slate-400">Tests Verified: </span>
-              <span className="font-bold text-white">{doneTests} / {totalTests} verified</span>
-            </div>
-            <div>
-              <span className="text-slate-400">Architecture: </span>
-              <span className="font-bold text-emerald-400">Standard Output CLI</span>
-            </div>
-          </div>
+        {/* Motivating note in friendly clean card */}
+        <div className="bg-slate-50 border-l-3 border-brand-500 p-3 sm:p-4 rounded-r-xl text-xs sm:text-sm text-slate-700 italic">
+          &ldquo;{projectBrief.motivatingQuote}&rdquo;
+        </div>
+
+        {/* Works in any IDE / Editor Banner */}
+        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs text-slate-700">
+          <Laptop className="w-4 h-4 text-brand-600 shrink-0" />
+          <span>
+            <strong>Build in your favorite tool:</strong> You can code this project in <strong>VS Code</strong>, <strong>IntelliJ IDEA</strong>, <strong>Eclipse</strong>, <strong>NetBeans</strong>, or using the <strong>command line</strong> (`javac` & `java`).
+          </span>
         </div>
       </div>
 
-      {/* 2. FIVE-STAGE WORKFLOW NAVIGATION TABS */}
-      <div className="sticky top-16 z-30 bg-slate-50/95 backdrop-blur-md py-2 border-b border-slate-200/80">
-        <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto pb-1 scrollbar-none" aria-label="Project Stages">
+      {/* 2. FIVE-STAGE WORKFLOW NAVIGATION */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-2 shadow-subtle">
+        <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto pb-0.5 scrollbar-none" aria-label="Project Steps">
           {[
-            { id: 'overview', label: '1. Overview & Scenario', icon: BookOpen },
-            { id: 'blueprint', label: '2. Requirements & Blueprint', icon: Layers },
-            { id: 'roadmap', label: '3. Build Roadmap & Hints', icon: Wrench },
-            { id: 'testing', label: '4. Testing & Debugging', icon: Bug },
-            { id: 'launch', label: '5. GitHub & Portfolio Launch', icon: FolderGit2 },
+            { id: 'overview', label: '1. Overview', icon: BookOpen },
+            { id: 'blueprint', label: '2. Plan & Requirements', icon: Layers },
+            { id: 'roadmap', label: '3. Build & Hints', icon: Wrench },
+            { id: 'testing', label: '4. Test & Debug', icon: Bug },
+            { id: 'launch', label: '5. GitHub & Portfolio', icon: FolderGit2 },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeStage === tab.id;
@@ -215,10 +207,10 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
               <button
                 key={tab.id}
                 onClick={() => setActiveStage(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                    : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/60'
+                    ? 'bg-brand-600 text-white shadow-subtle'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
@@ -231,82 +223,78 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
 
       {/* 3. STAGE CONTENTS */}
 
-      {/* STAGE 1: OVERVIEW & SCENARIO */}
+      {/* STAGE 1: OVERVIEW */}
       {activeStage === 'overview' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Real-World Context Card */}
-          <Card className="p-6 space-y-4 border-l-4 border-l-blue-500 shadow-sm">
-            <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
+          {/* Story & Context */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-subtle space-y-3">
+            <div className="flex items-center gap-2 text-brand-600 font-bold text-xs uppercase tracking-wider">
               <Sparkles className="w-4 h-4" />
-              Real-World Engineering Scenario
+              The Scenario
             </div>
             <h2 className="text-xl font-bold text-slate-900">
               {realWorldScenario.headline}
             </h2>
-            <div className="prose prose-slate max-w-none text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
               {realWorldScenario.story}
             </div>
-            <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-4 text-xs sm:text-sm text-blue-900">
-              <span className="font-bold">Scenario Context: </span>
-              {realWorldScenario.context}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700">
+              <strong>Context: </strong>{realWorldScenario.context}
             </div>
-          </Card>
-
-          {/* Project Overview Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="p-6 space-y-3 shadow-sm">
-              <div className="flex items-center gap-2 text-indigo-600 font-semibold text-sm">
-                <Rocket className="w-4 h-4" />
-                What You Are Building
-              </div>
-              <p className="text-sm text-slate-700 leading-relaxed">
-                {projectBrief.whatAreWeBuilding}
-              </p>
-            </Card>
-
-            <Card className="p-6 space-y-3 shadow-sm">
-              <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm">
-                <CheckCircle2 className="w-4 h-4" />
-                Finished App Experience
-              </div>
-              <p className="text-sm text-slate-700 leading-relaxed">
-                {projectBrief.finishedAppDescription}
-              </p>
-            </Card>
           </div>
 
-          {/* Core Java Fundamentals Exercised */}
-          <Card className="p-6 space-y-4 shadow-sm">
+          {/* What you are building & finished app */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 font-semibold text-sm">
+                <Rocket className="w-4 h-4" />
+                What You Will Build
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {projectBrief.whatAreWeBuilding}
+              </p>
+            </div>
+
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-2">
+              <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm">
+                <CheckCircle2 className="w-4 h-4" />
+                What the Finished App Does
+              </div>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {projectBrief.finishedAppDescription}
+              </p>
+            </div>
+          </div>
+
+          {/* Concepts Used */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-indigo-500" />
-              Java Basics Fundamentals Exercised
+              <Layers className="w-4 h-4 text-brand-600" />
+              Key Concepts You Will Practice
             </h3>
-            <p className="text-xs text-slate-600">
-              This project is specifically engineered to test your mastery of these foundational Java topics without needing OOP:
-            </p>
             <div className="flex flex-wrap gap-2">
               {projectBrief.javaFundamentals.map((item, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200/80"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200/80"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
                   {item}
                 </span>
               ))}
             </div>
-          </Card>
+          </div>
 
-          {/* Terminal Console Execution Preview */}
+          {/* Terminal Console Output Demo */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                <Terminal className="w-4 h-4 text-slate-900" />
-                Verified Terminal Console Run Preview
+                <Terminal className="w-4 h-4 text-slate-700" />
+                Sample Terminal Run
               </div>
               <button
                 onClick={() => handleCopy(sampleConsoleRun, 'sampleConsoleRun')}
-                className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2.5 py-1 rounded-md transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2.5 py-1 rounded-lg transition cursor-pointer"
               >
                 {copiedSection === 'sampleConsoleRun' ? (
                   <>
@@ -322,15 +310,15 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
               </button>
             </div>
 
-            <div className="bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-800">
-              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-950/80 border-b border-slate-800/80 text-xs text-slate-400 font-mono">
+            <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-elevated border border-slate-800">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-slate-950/90 border-b border-slate-800 text-xs text-slate-400 font-mono">
                 <div className="flex items-center space-x-2">
                   <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
                   <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
                   <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
                 </div>
-                <span>Terminal Output Preview</span>
-                <span className="text-[11px] text-slate-500">bash / zsh</span>
+                <span>Terminal Output</span>
+                <span className="text-[11px] text-slate-500">bash / powershell</span>
               </div>
               <pre className="p-4 sm:p-5 text-xs sm:text-sm font-mono text-emerald-400 overflow-x-auto leading-relaxed max-h-96 whitespace-pre">
                 {sampleConsoleRun}
@@ -338,14 +326,13 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
             </div>
           </div>
 
-          {/* Call to Action to Next Stage */}
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-2">
             <Button
               variant="primary"
               onClick={() => setActiveStage('blueprint')}
-              className="inline-flex items-center gap-2 cursor-pointer"
+              className="inline-flex items-center gap-2 cursor-pointer font-semibold"
             >
-              Continue to Requirements & Blueprint
+              Next: Plan & Requirements
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
@@ -355,97 +342,86 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
       {/* STAGE 2: REQUIREMENTS & BLUEPRINT */}
       {activeStage === 'blueprint' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Functional Requirements */}
-          <Card className="p-6 space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider">
+          {/* Feature Requirements */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-subtle space-y-3">
+            <div className="flex items-center gap-2 text-brand-600 font-bold text-xs uppercase tracking-wider">
               <ListChecks className="w-4 h-4" />
-              Functional Specifications
+              Feature Requirements
             </div>
             <h3 className="text-lg font-bold text-slate-900">
-              What Your Program Must Implement
+              What Your Program Needs to Do
             </h3>
-            <p className="text-xs text-slate-600">
-              Build each requirement cleanly. Notice that these specify <em>what</em> to build, giving you the freedom to choose your internal variable names and method organization:
-            </p>
-            <div className="space-y-2.5">
+            <div className="space-y-2.5 pt-1">
               {requirements.functional.map((req, idx) => (
                 <div
                   key={idx}
                   className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-sm text-slate-800"
                 >
-                  <span className="font-mono font-bold text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded shrink-0 mt-0.5">
-                    REQ-{idx + 1}
+                  <span className="font-mono font-bold text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded shrink-0 mt-0.5">
+                    #{idx + 1}
                   </span>
                   <span className="leading-relaxed">{req}</span>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          {/* Technical Constraints & Learner Decisions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="p-6 space-y-3 border-l-4 border-l-rose-500 shadow-sm">
-              <div className="flex items-center gap-2 text-rose-600 font-semibold text-sm">
-                <ShieldAlert className="w-4 h-4" />
-                Strict Technical Constraints
-              </div>
-              <ul className="space-y-2 text-xs sm:text-sm text-slate-700 list-disc pl-4">
+          {/* Guidelines & Your Decisions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-2">
+              <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Project Guidelines
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-slate-600 list-disc pl-4">
                 {requirements.technicalConstraints.map((item, idx) => (
                   <li key={idx} className="leading-relaxed">{item}</li>
                 ))}
               </ul>
-            </Card>
+            </div>
 
-            <Card className="p-6 space-y-3 border-l-4 border-l-emerald-500 shadow-sm">
-              <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm">
-                <Lightbulb className="w-4 h-4" />
-                Your Architectural Decisions
-              </div>
-              <p className="text-xs text-slate-600">
-                As the software engineer, you make these product and implementation decisions:
-              </p>
-              <ul className="space-y-2 text-xs sm:text-sm text-slate-700 list-disc pl-4">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-2">
+              <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                Decisions You Can Make
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-slate-600 list-disc pl-4">
                 {requirements.userDecisions.map((item, idx) => (
                   <li key={idx} className="leading-relaxed">{item}</li>
                 ))}
               </ul>
-            </Card>
+            </div>
           </div>
 
-          {/* Before You Code Planning Blueprint */}
-          <Card className="p-6 space-y-6 shadow-sm">
+          {/* Planning Blueprint */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-subtle space-y-5">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider">
-                <Layers className="w-4 h-4" />
-                Architecture Blueprint (Before You Code)
-              </div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Plan Your Data & Flow Before Writing a Single Line
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-brand-600" />
+                Planning Your Program Before Writing Code
               </h3>
-              <p className="text-xs text-slate-600">
-                Professional developers never write code immediately. Use this blueprint to visualize your state, methods, and loops:
+              <p className="text-xs text-slate-500">
+                Review this quick checklist of variables, methods, and loops to make coding straightforward:
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                  Required Inputs
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Inputs to Read
                 </h4>
-                <ul className="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc pl-4">
+                <ul className="text-xs sm:text-sm text-slate-600 space-y-1 list-disc pl-4">
                   {beforeYouCode.inputsRequired.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
                 </ul>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-emerald-600" />
-                  Expected Outputs
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Outputs to Display
                 </h4>
-                <ul className="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc pl-4">
+                <ul className="text-xs sm:text-sm text-slate-600 space-y-1 list-disc pl-4">
                   {beforeYouCode.outputsRequired.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -453,12 +429,11 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                <Code2 className="w-3.5 h-3.5 text-indigo-600" />
-                Variables & State Management
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                Variables to Track
               </h4>
-              <ul className="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc pl-4">
+              <ul className="text-xs sm:text-sm text-slate-600 space-y-1 list-disc pl-4">
                 {beforeYouCode.variablesNeeded.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -466,81 +441,54 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
             </div>
 
             {beforeYouCode.arrayUsage && (
-              <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-1.5">
-                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">
-                  Array Architecture (Zero OOP Storage)
+              <div className="p-4 rounded-xl bg-brand-50/50 border border-brand-200/70 space-y-1">
+                <h4 className="text-xs font-bold text-brand-900 uppercase tracking-wider">
+                  Array Storage Tip
                 </h4>
-                <p className="text-xs sm:text-sm text-indigo-950 leading-relaxed">
+                <p className="text-xs sm:text-sm text-brand-950 leading-relaxed">
                   {beforeYouCode.arrayUsage}
                 </p>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  Conditional Logic
-                </h4>
-                <ul className="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc pl-4">
-                  {beforeYouCode.conditionalLogic.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  Loop & Control Flow
-                </h4>
-                <ul className="text-xs sm:text-sm text-slate-700 space-y-1.5 list-disc pl-4">
-                  {beforeYouCode.loopStructures.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Recommended Static Methods Decomposition
+                Suggested Helper Methods
               </h4>
-              <p className="text-xs text-slate-600">
-                Break your program down into small, single-purpose static methods:
-              </p>
               <div className="space-y-1.5 pt-1">
                 {beforeYouCode.recommendedMethods.map((m, i) => (
-                  <div key={i} className="font-mono text-xs bg-white p-2 rounded border border-slate-200 text-slate-800">
+                  <div key={i} className="font-mono text-xs bg-white p-2 rounded-lg border border-slate-200 text-slate-800">
                     {m}
                   </div>
                 ))}
               </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Think Before You Code (Mentor Questions) */}
+          {/* Questions to Consider */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-brand-600 font-bold text-xs uppercase tracking-wider">
               <HelpCircle className="w-4 h-4" />
-              Think Before You Code (Mentor Questions)
+              Questions to Consider
             </div>
-            <p className="text-xs text-slate-600">
-              Software design interview questions for your architecture: reflect on each question before opening the mentor insight:
+            <p className="text-xs text-slate-500">
+              Think through these practical questions before you start coding:
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {thinkBeforeYouCode.map((item, idx) => {
                 const isOpen = !!expandedMentors[idx];
                 return (
-                  <Card key={idx} className="overflow-hidden shadow-sm border border-slate-200">
+                  <div key={idx} className="bg-white rounded-xl border border-slate-200/90 shadow-subtle overflow-hidden">
                     <button
                       onClick={() => setExpandedMentors(p => ({ ...p, [idx]: !p[idx] }))}
                       className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-50 transition cursor-pointer"
                     >
                       <div className="flex items-center gap-3 pr-4">
-                        <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
                           {idx + 1}
                         </span>
-                        <span className="font-semibold text-sm text-slate-900">
+                        <span className="font-medium text-sm text-slate-800">
                           {item.question}
                         </span>
                       </div>
@@ -548,153 +496,95 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                     </button>
 
                     {isOpen && (
-                      <div className="p-4 bg-indigo-50/40 border-t border-indigo-100 text-xs sm:text-sm text-slate-800 space-y-2 animate-fadeIn">
-                        <div className="font-semibold text-indigo-900 flex items-center gap-1.5">
-                          <Lightbulb className="w-3.5 h-3.5 text-indigo-600" />
-                          Mentor Insight & Architectural Recommendation:
+                      <div className="p-4 bg-slate-50 border-t border-slate-200 text-xs sm:text-sm text-slate-700 space-y-1.5 animate-fadeIn">
+                        <div className="font-semibold text-brand-700 flex items-center gap-1.5">
+                          <Lightbulb className="w-3.5 h-3.5" />
+                          Tip:
                         </div>
-                        <p className="leading-relaxed text-slate-700">
-                          {item.mentorInsight}
-                        </p>
+                        <p className="leading-relaxed">{item.mentorInsight}</p>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="flex justify-between pt-4">
+          <div className="flex justify-between pt-2">
             <Button variant="outline" onClick={() => setActiveStage('overview')} className="cursor-pointer">
-              Back to Overview
+              Back
             </Button>
-            <Button variant="primary" onClick={() => setActiveStage('roadmap')} className="inline-flex items-center gap-2 cursor-pointer">
-              Continue to Build Roadmap & Hints
+            <Button variant="primary" onClick={() => setActiveStage('roadmap')} className="inline-flex items-center gap-2 cursor-pointer font-semibold">
+              Next: Build & Hints
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* STAGE 3: BUILD ROADMAP & HINTS */}
+      {/* STAGE 3: BUILD & HINTS */}
       {activeStage === 'roadmap' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Milestone-by-Milestone Build Roadmap */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-indigo-600" />
-                  Progressive Build Milestones
-                </h3>
-                <p className="text-xs text-slate-600">
-                  Build your application step by step. Test each milestone before moving to the next:
-                </p>
+          {/* How to run in IDEs */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-3">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Laptop className="w-4 h-4 text-brand-600" />
+              How to Set Up in Your Favorite IDE
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <strong className="text-slate-800 block font-semibold">VS Code</strong>
+                <p className="text-slate-600">Create `Main.java` in any folder and click the <strong>Run</strong> button at top right.</p>
               </div>
-              <div className="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200/80 px-3 py-1.5 rounded-lg">
-                {doneTasks} / {totalTasks} Tasks Completed
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <strong className="text-slate-800 block font-semibold">IntelliJ IDEA</strong>
+                <p className="text-slate-600">Create a New Java Project, paste into `src/Main.java`, and press <kbd className="px-1 py-0.5 bg-white border rounded text-[10px]">Shift + F10</kbd>.</p>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              {buildRoadmap.map((m) => (
-                <Card key={m.milestoneNumber} className="p-5 space-y-4 shadow-sm border border-slate-200">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                        M{m.milestoneNumber}
-                      </span>
-                      <h4 className="font-bold text-sm sm:text-base text-slate-900">
-                        {m.title}
-                      </h4>
-                    </div>
-                    <span className="text-xs text-slate-500 font-medium italic">
-                      {m.objective}
-                    </span>
-                  </div>
-
-                  {/* Tasks List with Checkboxes */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Implementation Tasks:
-                    </span>
-                    <div className="space-y-1.5">
-                      {m.tasks.map((task, tIdx) => {
-                        const taskId = `${project.slug}_m${m.milestoneNumber}_t${tIdx}`;
-                        const isDone = !!completedTasks[taskId];
-                        return (
-                          <div
-                            key={tIdx}
-                            onClick={() => toggleTask(taskId)}
-                            className={`flex items-start gap-3 p-2.5 rounded-lg border text-xs sm:text-sm cursor-pointer transition select-none ${
-                              isDone
-                                ? 'bg-emerald-50/70 border-emerald-200 text-slate-700 line-through decoration-slate-400'
-                                : 'bg-slate-50/80 border-slate-200/70 text-slate-800 hover:bg-slate-100/80'
-                            }`}
-                          >
-                            {isDone ? (
-                              <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            ) : (
-                              <Square className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-                            )}
-                            <span className="leading-relaxed">{task}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Acceptance Criteria */}
-                  <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-900 space-y-1.5">
-                    <span className="font-bold uppercase tracking-wider text-[11px] text-amber-800 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                      Milestone Acceptance Criteria:
-                    </span>
-                    <ul className="list-disc pl-4 space-y-1 text-slate-700">
-                      {m.acceptanceCriteria.map((crit, cIdx) => (
-                        <li key={cIdx}>{crit}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </Card>
-              ))}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <strong className="text-slate-800 block font-semibold">Eclipse</strong>
+                <p className="text-slate-600">New Java Project &rarr; create class `Main` &rarr; press <kbd className="px-1 py-0.5 bg-white border rounded text-[10px]">Ctrl + F11</kbd> to run.</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                <strong className="text-slate-800 block font-semibold">Terminal / CLI</strong>
+                <p className="text-slate-600">Run `javac Main.java` to compile, then `java Main` to run in any terminal.</p>
+              </div>
             </div>
           </div>
 
-          {/* Starter Scaffolding Code */}
+          {/* Starter Code */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-indigo-600" />
-                  Starter Scaffolding Code
+                  <Code2 className="w-4 h-4 text-brand-600" />
+                  Starter Code Template
                 </h3>
-                <p className="text-xs text-slate-600">
-                  Copy this skeleton into your local Java file (`Main.java`) to get the imports, method signatures, and structure ready:
+                <p className="text-xs text-slate-500">
+                  Copy this starter template into your `Main.java` file to begin:
                 </p>
               </div>
               <button
                 onClick={() => handleCopy(scaffoldingCode, 'scaffoldingCode')}
-                className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition cursor-pointer font-medium"
               >
                 {copiedSection === 'scaffoldingCode' ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="text-emerald-600 font-semibold">Copied to Clipboard!</span>
+                    <span className="text-emerald-600 font-semibold">Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Copy Scaffolding</span>
+                    <Copy className="w-3.5 h-3.5 text-brand-600" />
+                    <span>Copy Code</span>
                   </>
                 )}
               </button>
             </div>
 
-            <div className="bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-800">
+            <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-elevated border border-slate-800">
               <div className="flex items-center justify-between px-4 py-2 bg-slate-950 text-xs text-slate-400 font-mono border-b border-slate-800">
                 <span>Main.java</span>
-                <span>Java 17+</span>
+                <span>Java</span>
               </div>
               <pre className="p-4 sm:p-5 text-xs sm:text-sm font-mono text-slate-200 overflow-x-auto leading-relaxed max-h-96 whitespace-pre">
                 {scaffoldingCode}
@@ -702,26 +592,99 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
             </div>
           </div>
 
-          {/* Progressive 3-Tier Hint System */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-amber-500" />
-                Progressive 3-Tier Hint System
-              </h3>
-              <p className="text-xs text-slate-600">
-                Never get stuck. Uncover hints gradually so you can solve problems on your own before looking at syntax:
-              </p>
+          {/* Step-by-Step Milestones */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-brand-600" />
+                  Step-by-Step Build Steps
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Build in small pieces. Check each step off as you complete it:
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200/80 px-2.5 py-1 rounded-lg">
+                {doneTasks}/{totalTasks} Completed
+              </span>
             </div>
 
             <div className="space-y-3">
+              {buildRoadmap.map((m) => (
+                <div key={m.milestoneNumber} className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-md bg-brand-600 text-white font-bold text-xs flex items-center justify-center">
+                        {m.milestoneNumber}
+                      </span>
+                      <h4 className="font-bold text-sm text-slate-900">
+                        {m.title}
+                      </h4>
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {m.objective}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {m.tasks.map((task, tIdx) => {
+                      const taskId = `${project.slug}_m${m.milestoneNumber}_t${tIdx}`;
+                      const isDone = !!completedTasks[taskId];
+                      return (
+                        <div
+                          key={tIdx}
+                          onClick={() => toggleTask(taskId)}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs sm:text-sm cursor-pointer transition select-none ${
+                            isDone
+                              ? 'bg-emerald-50/70 border-emerald-200 text-slate-700 line-through decoration-slate-400'
+                              : 'bg-slate-50/70 border-slate-200/70 text-slate-800 hover:bg-slate-100/70'
+                          }`}
+                        >
+                          {isDone ? (
+                            <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                          )}
+                          <span className="leading-relaxed">{task}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                    <span className="font-bold text-slate-800 block">
+                      Done when:
+                    </span>
+                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                      {m.acceptanceCriteria.map((crit, cIdx) => (
+                        <li key={cIdx}>{crit}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Progressive Hints */}
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-500" />
+                Need a Hint?
+              </h3>
+              <p className="text-xs text-slate-500">
+                Try solving it on your own first. Open these hints if you get stuck:
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
               {hintSystem.map((hint, hIdx) => {
                 const activeLevel = expandedHints[hint.topic] || 0;
                 return (
-                  <Card key={hIdx} className="p-4 space-y-3 shadow-sm border border-slate-200">
+                  <div key={hIdx} className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-subtle space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-indigo-500" />
+                      <span className="font-semibold text-sm text-slate-800">
                         {hint.topic}
                       </span>
                       <div className="flex items-center gap-1">
@@ -734,81 +697,73 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                                 [hint.topic]: prev[hint.topic] === lvl ? 0 : lvl
                               }))
                             }
-                            className={`px-2.5 py-1 text-xs font-semibold rounded-md transition cursor-pointer ${
+                            className={`px-2 py-0.5 text-xs font-medium rounded-md transition cursor-pointer ${
                               activeLevel >= lvl
-                                ? 'bg-indigo-600 text-white shadow-xs'
+                                ? 'bg-brand-600 text-white shadow-xs'
                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                           >
-                            Level {lvl}
+                            Hint {lvl}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {activeLevel === 0 && (
-                      <p className="text-xs text-slate-500 italic">
-                        Click Level 1 (Concept), Level 2 (Implementation), or Level 3 (Java Syntax) when you need guidance.
+                      <p className="text-xs text-slate-400 italic">
+                        Click Hint 1 for an idea, Hint 2 for logic, or Hint 3 for syntax.
                       </p>
                     )}
 
                     {activeLevel >= 1 && (
-                      <div className="p-3 rounded-lg bg-blue-50/70 border border-blue-100 text-xs sm:text-sm text-blue-950 space-y-1 animate-fadeIn">
-                        <span className="font-bold text-xs uppercase tracking-wider text-blue-800">
-                          Level 1: Conceptual Direction
-                        </span>
-                        <p className="leading-relaxed">{hint.level1Conceptual}</p>
+                      <div className="p-2.5 rounded-lg bg-blue-50/80 border border-blue-100 text-xs text-blue-900 space-y-0.5 animate-fadeIn">
+                        <strong className="block font-semibold">Idea:</strong>
+                        <p>{hint.level1Conceptual}</p>
                       </div>
                     )}
 
                     {activeLevel >= 2 && (
-                      <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 text-xs sm:text-sm text-indigo-950 space-y-1 animate-fadeIn">
-                        <span className="font-bold text-xs uppercase tracking-wider text-indigo-800">
-                          Level 2: Implementation Architecture
-                        </span>
-                        <p className="leading-relaxed">{hint.level2Implementation}</p>
+                      <div className="p-2.5 rounded-lg bg-indigo-50/80 border border-indigo-100 text-xs text-indigo-900 space-y-0.5 animate-fadeIn">
+                        <strong className="block font-semibold">Logic:</strong>
+                        <p>{hint.level2Implementation}</p>
                       </div>
                     )}
 
                     {activeLevel >= 3 && (
-                      <div className="p-3 rounded-lg bg-slate-900 text-slate-200 border border-slate-800 text-xs sm:text-sm space-y-1 animate-fadeIn">
-                        <span className="font-bold text-xs uppercase tracking-wider text-emerald-400 font-mono">
-                          Level 3: Java Syntax & Code Snippet
-                        </span>
-                        <pre className="font-mono text-xs overflow-x-auto text-emerald-300 pt-1 leading-relaxed whitespace-pre-wrap">
+                      <div className="p-3 rounded-lg bg-slate-900 text-slate-200 border border-slate-800 text-xs space-y-1 animate-fadeIn">
+                        <span className="font-mono text-emerald-400 text-[11px] block">Code Snippet:</span>
+                        <pre className="font-mono overflow-x-auto text-emerald-300 leading-relaxed whitespace-pre-wrap">
                           {hint.level3JavaSyntax}
                         </pre>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Project Polish Rules */}
-          <Card className="p-5 space-y-3 shadow-sm border border-slate-200">
+          {/* Clean Code Tips */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-2">
             <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-              Project Polish & Clean Code Standards
+              <Sparkles className="w-4 h-4 text-brand-600" />
+              Clean Code Habits
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
               {projectPolish.map((p, pIdx) => (
-                <div key={pIdx} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-800 space-y-1">
-                  <span className="font-bold text-indigo-700 block">
-                    ✓ {p}
-                  </span>
+                <div key={pIdx} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-700">
+                  ✓ {p}
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          <div className="flex justify-between pt-4">
+          <div className="flex justify-between pt-2">
             <Button variant="outline" onClick={() => setActiveStage('blueprint')} className="cursor-pointer">
-              Back to Blueprint
+              Back
             </Button>
-            <Button variant="primary" onClick={() => setActiveStage('testing')} className="inline-flex items-center gap-2 cursor-pointer">
-              Continue to Testing & Debugging
+            <Button variant="primary" onClick={() => setActiveStage('testing')} className="inline-flex items-center gap-2 cursor-pointer font-semibold">
+              Next: Test & Debug
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
@@ -818,36 +773,33 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
       {/* STAGE 4: TESTING & DEBUGGING */}
       {activeStage === 'testing' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Testing Matrix Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Bug className="w-5 h-5 text-indigo-600" />
-                Quality Assurance & Test Matrix
+                <Bug className="w-5 h-5 text-brand-600" />
+                Testing Checklist
               </h3>
-              <p className="text-xs text-slate-600">
-                Run your application locally and test all categories. Check off each test case as you verify it:
+              <p className="text-xs text-slate-500">
+                Run your program locally in your IDE and test these cases:
               </p>
             </div>
-            <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg">
-              {doneTests} / {totalTests} Tests Verified
-            </div>
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg">
+              {doneTests}/{totalTests} Verified
+            </span>
           </div>
 
-          {/* 4 Test Categories */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Test cases grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* 1. Normal Cases */}
-            <Card className="p-5 space-y-3 shadow-sm border border-slate-200">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-2.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <span className="font-bold text-xs uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  1. Normal Happy Path Cases
+                  1. Normal Inputs
                 </span>
-                <span className="text-xs text-slate-500">
-                  {testYourProject.normalCases.length} tests
-                </span>
+                <span className="text-xs text-slate-400">{testYourProject.normalCases.length} tests</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {testYourProject.normalCases.map((tc, idx) => {
                   const testId = `${project.slug}_norm_${idx}`;
                   const isDone = !!verifiedTests[testId];
@@ -855,8 +807,8 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                     <div
                       key={idx}
                       onClick={() => toggleTest(testId)}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer select-none transition ${
-                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-800 hover:bg-slate-100/70'
+                      className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer select-none transition ${
+                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'
                       }`}
                     >
                       {isDone ? (
@@ -869,20 +821,18 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                   );
                 })}
               </div>
-            </Card>
+            </div>
 
             {/* 2. Boundary Cases */}
-            <Card className="p-5 space-y-3 shadow-sm border border-slate-200">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-2.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <span className="font-bold text-xs uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  2. Boundary Value Cases
+                  <CheckCircle2 className="w-4 h-4 text-amber-600" />
+                  2. Boundary Limits
                 </span>
-                <span className="text-xs text-slate-500">
-                  {testYourProject.boundaryCases.length} tests
-                </span>
+                <span className="text-xs text-slate-400">{testYourProject.boundaryCases.length} tests</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {testYourProject.boundaryCases.map((tc, idx) => {
                   const testId = `${project.slug}_bound_${idx}`;
                   const isDone = !!verifiedTests[testId];
@@ -890,8 +840,8 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                     <div
                       key={idx}
                       onClick={() => toggleTest(testId)}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer select-none transition ${
-                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-800 hover:bg-slate-100/70'
+                      className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer select-none transition ${
+                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'
                       }`}
                     >
                       {isDone ? (
@@ -904,20 +854,18 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                   );
                 })}
               </div>
-            </Card>
+            </div>
 
-            {/* 3. Invalid Input Cases */}
-            <Card className="p-5 space-y-3 shadow-sm border border-slate-200">
+            {/* 3. Invalid Inputs */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-2.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <span className="font-bold text-xs uppercase tracking-wider text-rose-700 flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4 text-rose-600" />
-                  3. Invalid Input Cases
+                  <CheckCircle2 className="w-4 h-4 text-rose-600" />
+                  3. Invalid Inputs
                 </span>
-                <span className="text-xs text-slate-500">
-                  {testYourProject.invalidInputCases.length} tests
-                </span>
+                <span className="text-xs text-slate-400">{testYourProject.invalidInputCases.length} tests</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {testYourProject.invalidInputCases.map((tc, idx) => {
                   const testId = `${project.slug}_inv_${idx}`;
                   const isDone = !!verifiedTests[testId];
@@ -925,8 +873,8 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                     <div
                       key={idx}
                       onClick={() => toggleTest(testId)}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer select-none transition ${
-                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-800 hover:bg-slate-100/70'
+                      className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer select-none transition ${
+                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'
                       }`}
                     >
                       {isDone ? (
@@ -939,20 +887,18 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                   );
                 })}
               </div>
-            </Card>
+            </div>
 
             {/* 4. Edge Cases */}
-            <Card className="p-5 space-y-3 shadow-sm border border-slate-200">
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-subtle space-y-2.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="font-bold text-xs uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-indigo-600" />
-                  4. Zero, Negative & Edge Cases
+                <span className="font-bold text-xs uppercase tracking-wider text-brand-700 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-brand-600" />
+                  4. Edge Cases
                 </span>
-                <span className="text-xs text-slate-500">
-                  {testYourProject.edgeCases.length} tests
-                </span>
+                <span className="text-xs text-slate-400">{testYourProject.edgeCases.length} tests</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {testYourProject.edgeCases.map((tc, idx) => {
                   const testId = `${project.slug}_edge_${idx}`;
                   const isDone = !!verifiedTests[testId];
@@ -960,8 +906,8 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                     <div
                       key={idx}
                       onClick={() => toggleTest(testId)}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer select-none transition ${
-                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-800 hover:bg-slate-100/70'
+                      className={`flex items-start gap-2.5 p-2 rounded-lg border text-xs cursor-pointer select-none transition ${
+                        isDone ? 'bg-emerald-50/70 border-emerald-200 text-slate-700' : 'bg-slate-50 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'
                       }`}
                     >
                       {isDone ? (
@@ -974,82 +920,82 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                   );
                 })}
               </div>
-            </Card>
+            </div>
           </div>
 
-          {/* Diagnostic Debugging Guide */}
-          <Card className="p-6 space-y-4 shadow-sm border-l-4 border-l-indigo-600">
+          {/* Debugging Tips */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-subtle space-y-3">
             <div className="space-y-1">
               <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Bug className="w-4 h-4 text-indigo-600" />
-                Diagnostic Debugging Guide: When Something Breaks
+                <Bug className="w-4 h-4 text-brand-600" />
+                Debugging Tips: When Something Doesn&apos;t Work
               </h4>
-              <p className="text-xs text-slate-600">
-                Don&apos;t guess when a bug occurs. Apply this scientific troubleshooting procedure:
+              <p className="text-xs text-slate-500">
+                Follow these simple steps when tracking down a bug:
               </p>
             </div>
 
-            <div className="space-y-2.5 pt-1">
+            <div className="space-y-2 pt-1">
               {debuggingGuide.map((step, sIdx) => (
                 <div
                   key={sIdx}
-                  className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-800"
+                  className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm text-slate-700"
                 >
-                  <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                     {sIdx + 1}
                   </span>
                   <span className="leading-relaxed">{step}</span>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          <div className="flex justify-between pt-4">
+          <div className="flex justify-between pt-2">
             <Button variant="outline" onClick={() => setActiveStage('roadmap')} className="cursor-pointer">
-              Back to Roadmap
+              Back
             </Button>
-            <Button variant="primary" onClick={() => setActiveStage('launch')} className="inline-flex items-center gap-2 cursor-pointer">
-              Continue to GitHub & Portfolio Launch
+            <Button variant="primary" onClick={() => setActiveStage('launch')} className="inline-flex items-center gap-2 cursor-pointer font-semibold">
+              Next: GitHub & Portfolio
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
       )}
 
-      {/* STAGE 5: GITHUB & PORTFOLIO LAUNCH */}
+      {/* STAGE 5: GITHUB & PORTFOLIO */}
       {activeStage === 'launch' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* GitHub Ready README Template */}
-          <div className="space-y-3">
+          {/* README Template */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-600" />
-                  Production README.md Template
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-brand-600" />
+                  Sample README.md for Your Repository
                 </h3>
-                <p className="text-xs text-slate-600">
-                  Copy and commit this professional README to your GitHub repo to showcase your project to recruiters:
+                <p className="text-xs text-slate-500">
+                  Copy and add this to your GitHub repository:
                 </p>
               </div>
               <button
                 onClick={() => handleCopy(gitHubReady.readmeTemplate, 'readmeTemplate')}
-                className="inline-flex items-center gap-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 rounded-xl shadow-sm transition cursor-pointer font-semibold"
+                className="inline-flex items-center gap-1.5 text-xs text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg shadow-subtle transition cursor-pointer font-medium"
               >
                 {copiedSection === 'readmeTemplate' ? (
                   <>
-                    <Check className="w-4 h-4" />
-                    <span>README Copied!</span>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copy README.md</span>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy README</span>
                   </>
                 )}
               </button>
             </div>
 
-            <div className="bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-slate-800">
+            <div className="bg-slate-900 rounded-2xl overflow-hidden shadow-elevated border border-slate-800">
               <div className="flex items-center justify-between px-4 py-2 bg-slate-950 text-xs text-slate-400 font-mono border-b border-slate-800">
                 <span>README.md</span>
                 <span>Markdown</span>
@@ -1060,21 +1006,21 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
             </div>
           </div>
 
-          {/* Beginner Git CLI Command Guide */}
-          <Card className="p-6 space-y-4 shadow-sm border border-slate-200">
+          {/* Simple Git Commands */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-subtle space-y-3">
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FolderGit2 className="w-5 h-5 text-indigo-600" />
-                Publish to GitHub — Beginner Git CLI Guide
+                <FolderGit2 className="w-4 h-4 text-brand-600" />
+                Publishing to GitHub (Step-by-Step)
               </h3>
-              <p className="text-xs text-slate-600">
-                Run these commands in your project folder one by one to publish your work:
+              <p className="text-xs text-slate-500">
+                Open your terminal in your project folder and run these commands:
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-2 pt-1">
               {gitHubReady.gitCommands.map((cmd, cIdx) => (
-                <div key={cIdx} className="rounded-xl bg-slate-900 p-4 border border-slate-800 text-xs sm:text-sm space-y-2">
+                <div key={cIdx} className="rounded-xl bg-slate-900 p-3.5 border border-slate-800 text-xs sm:text-sm space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 font-mono text-emerald-400 font-semibold">
                       <span className="text-slate-500">$</span>
@@ -1091,54 +1037,54 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                       )}
                     </button>
                   </div>
-                  <p className="text-slate-400 text-xs border-t border-slate-800 pt-2">
+                  <p className="text-slate-400 text-xs border-t border-slate-800/80 pt-1.5">
                     {cmd.explanation}
                   </p>
                 </div>
               ))}
             </div>
-          </Card>
+          </div>
 
-          {/* Can You Explain Your Project? Interview Reflection */}
-          <Card className="p-6 space-y-4 shadow-sm border border-slate-200">
+          {/* Explaining Your Project */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-subtle space-y-3">
             <div className="space-y-1">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-indigo-600" />
-                &ldquo;Can You Explain Your Project?&rdquo; — Portfolio Interview Prep
+                <MessageSquare className="w-4 h-4 text-brand-600" />
+                Can You Explain Your Code?
               </h3>
-              <p className="text-xs text-slate-600">
-                Recruiters and senior engineers will ask you these exact questions about your code. Practice explaining them out loud:
-              </p>
-            </div>
-
-            <div className="space-y-2.5 pt-1">
-              {explainYourProject.map((q, qIdx) => (
-                <div
-                  key={qIdx}
-                  className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800"
-                >
-                  <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    {qIdx + 1}
-                  </span>
-                  <span className="leading-relaxed font-medium">{q}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Portfolio Launch Readiness Checklist */}
-          <Card className="p-6 space-y-4 shadow-sm border border-slate-200">
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                Portfolio Readiness Checklist
-              </h3>
-              <p className="text-xs text-slate-600">
-                Confirm every standard before adding this project link to your resume:
+              <p className="text-xs text-slate-500">
+                Practice answering these questions out loud so you can speak about your project with confidence:
               </p>
             </div>
 
             <div className="space-y-2 pt-1">
+              {explainYourProject.map((q, qIdx) => (
+                <div
+                  key={qIdx}
+                  className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800"
+                >
+                  <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    {qIdx + 1}
+                  </span>
+                  <span className="leading-relaxed">{q}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Portfolio Checklist */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-subtle space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                Portfolio Checklist
+              </h3>
+              <p className="text-xs text-slate-500">
+                Check these off before adding the project to your resume or portfolio:
+              </p>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
               {portfolioChecklist.map((item, pIdx) => {
                 const checkId = `${project.slug}_port_${pIdx}`;
                 const isChecked = !!portfolioChecked[checkId];
@@ -1146,10 +1092,10 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                   <div
                     key={pIdx}
                     onClick={() => togglePortfolioItem(checkId)}
-                    className={`flex items-start gap-3 p-3 rounded-xl border text-xs sm:text-sm cursor-pointer select-none transition ${
+                    className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-xs sm:text-sm cursor-pointer select-none transition ${
                       isChecked
                         ? 'bg-emerald-50/70 border-emerald-200 text-slate-800'
-                        : 'bg-slate-50 border-slate-200/80 text-slate-800 hover:bg-slate-100/80'
+                        : 'bg-slate-50 border-slate-200/80 text-slate-700 hover:bg-slate-100/80'
                     }`}
                   >
                     {isChecked ? (
@@ -1162,27 +1108,27 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
                 );
               })}
             </div>
-          </Card>
+          </div>
 
-          {/* Project Completion & Skills Demonstrated Banner */}
-          <div className="rounded-2xl bg-gradient-to-br from-emerald-900 via-slate-900 to-indigo-950 p-6 sm:p-8 text-white space-y-4 border border-emerald-700/50 shadow-xl">
-            <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
-              <Award className="w-5 h-5" />
+          {/* Completion Card */}
+          <div className="rounded-2xl bg-white border border-emerald-200 p-6 sm:p-7 shadow-subtle space-y-3">
+            <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
               {projectCompletion.headline}
             </div>
-            <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
+            <p className="text-sm text-slate-700 leading-relaxed">
               {projectCompletion.congratulations}
             </p>
 
             <div className="space-y-2 pt-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Proven Skills Demonstrated in this Project:
+              <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                What you practiced:
               </span>
               <div className="flex flex-wrap gap-2">
                 {projectCompletion.skillsDemonstrated.map((skill, sIdx) => (
                   <span
                     key={sIdx}
-                    className="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
                   >
                     ✓ {skill}
                   </span>
@@ -1190,16 +1136,14 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4">
-              <p className="text-xs sm:text-sm text-indigo-300 font-medium">
-                🚀 {projectCompletion.nextStepAction}
-              </p>
+            <div className="pt-3 border-t border-slate-100 text-xs sm:text-sm text-slate-600 font-medium">
+              👉 {projectCompletion.nextStepAction}
             </div>
           </div>
 
-          <div className="flex justify-start pt-4">
+          <div className="flex justify-start pt-2">
             <Button variant="outline" onClick={() => setActiveStage('testing')} className="cursor-pointer">
-              Back to Testing & Debugging
+              Back
             </Button>
           </div>
         </div>
