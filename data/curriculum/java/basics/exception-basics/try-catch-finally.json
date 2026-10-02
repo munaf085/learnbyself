@@ -1,0 +1,658 @@
+{
+  "id": "les-exception-basics-try-catch-finally",
+  "slug": "try-catch-finally",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "try, catch & finally",
+  "summary": "Master the try-catch-finally architecture: guaranteed resource cleanup, execution flow scenarios, return handling traps, and when finally does not execute.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 22,
+  "orderIndex": 4,
+  "prerequisites": [
+    "les-exception-basics-exception-hierarchy"
+  ],
+  "subtopics": [
+    "try, catch, and finally Roles",
+    "Execution Flow Scenarios",
+    "Return Inside try vs finally",
+    "Guaranteed Resource Cleanup"
+  ],
+  "learningOutcomes": [
+    "Implement robust error handling with guaranteed cleanup using finally",
+    "Predict exact execution flow when exceptions and returns interact",
+    "Avoid dangerous anti-patterns like returning from finally blocks"
+  ],
+  "activities": [
+    {
+      "id": "act-try-catch-finally-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: try, catch & finally",
+      "content": "### 1. Concept: The `try-catch-finally` Architecture\nJava provides a three-part construct to handle exceptions and guarantee resource cleanup:\n- **`try` Block**: Encloses dangerous code that might throw an exception.\n- **`catch` Block**: Encloses recovery code that executes **only** if a matching exception is thrown inside the `try` block.\n- **`finally` Block**: Encloses cleanup code that **ALWAYS executes**, regardless of whether an exception occurred, whether an exception was caught, or whether the method encountered an early `return`!\n\n### 2. Why `finally` is Indispensable: Guaranteed Resource Cleanup\nWhen an application opens external operating system resources—such as database connections, network sockets, or files—those resources must be closed to avoid resource leaks.\nIf an exception occurs while reading a file, subsequent lines in the `try` block are skipped. If closing logic were placed at the end of the `try` block, it would never run!\nThe `finally` block guarantees that cleanup logic runs under all circumstances.\n\n### 3. Execution Flow Scenarios\n1. **Scenario A (Normal Flow - No Exception)**:\n   - `try` block executes completely.\n   - `catch` block is **skipped**.\n   - `finally` block **executes**.\n2. **Scenario B (Exception Thrown & Caught)**:\n   - `try` block executes up to the failing line.\n   - Remaining statements in `try` are skipped.\n   - Matching `catch` block **executes**.\n   - `finally` block **executes**.\n3. **Scenario C (Exception Thrown & NOT Caught)**:\n   - `try` block executes up to the failing line.\n   - `finally` block **executes** first!\n   - The unhandled exception continues propagating up the Call Stack.\n\n### 4. The Famous Interview Trap: Return Inside `try` vs `finally`\nWhat happens if the `try` block has a `return` statement?\n```java\npublic static int test() {\n    try {\n        return 10;\n    } finally {\n        System.out.println(\"Finally executed!\");\n    }\n}\n```\nThe JVM evaluates the return value `10`, pauses the return, executes the `finally` block (printing `\"Finally executed!\"`), and then completes the return of `10`!\nIf the `finally` block also has an explicit `return 20;`, the `finally` block's return **overrides and discards** the `try` block's return value! (This is considered an anti-pattern).\n\n### 5. When Does `finally` NOT Execute?\nThere are only two rare situations where a `finally` block will not run:\n1. If `System.exit(0)` is invoked (which terminates the JVM process immediately).\n2. If the physical machine suffers an immediate catastrophic power failure or the OS kills the process with `kill -9`.\n\n### 6. Common Beginner Mistakes\n- **Putting `try` without `catch` or `finally`**: A `try` block MUST be followed by at least one `catch` block OR a `finally` block (or use try-with-resources).\n- **Putting `return` inside `finally`**: Suppresses exceptions and overrides return values unexpectedly.\n- **Leaving resource close methods outside `finally`**: Causing connection leaks when exceptions occur.\n\n### 7. Key Takeaways\n- `try` monitors for exceptions; `catch` handles matching exceptions.\n- `finally` always executes, ensuring resource cleanup.\n- A `try` block requires at least one `catch` or a `finally`.\n- `finally` executes even if `return` is called inside `try` or `catch`.\n- Only `System.exit()` prevents `finally` from executing.",
+      "breakdown": [
+        {
+          "topic": "try Block",
+          "details": "Monitors code for thrown exceptions. Must be paired with at least one catch or finally."
+        },
+        {
+          "topic": "catch Block",
+          "details": "Executes conditionally only when a matching exception is raised in the associated try block."
+        },
+        {
+          "topic": "finally Block",
+          "details": "Guaranteed to execute regardless of exceptions or return statements. Ideal for closing resources."
+        },
+        {
+          "topic": "return in finally Trap",
+          "details": "A return statement in finally overrides any pending return value or active exception from try/catch."
+        }
+      ]
+    },
+    {
+      "id": "act-try-catch-finally-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: try-catch-finally Flow Suite",
+      "codeSnippet": "public class TryCatchFinallyDemo {\n    public static int computeWithFinally(int divisor) {\n        System.out.println(\"\\n--- Executing computeWithFinally(\" + divisor + \") ---\");\n        try {\n            System.out.println(\"1. Entering try block\");\n            int result = 100 / divisor;\n            System.out.println(\"2. Division success: \" + result);\n            return result; // Pauses here to run finally!\n        } catch (ArithmeticException e) {\n            System.out.println(\"3. Caught ArithmeticException in catch block\");\n            return -1;\n        } finally {\n            System.out.println(\"4. FINALLY block executed! (Cleanup guaranteed)\");\n        }\n    }\n\n    public static void main(String[] args) {\n        // Scenario 1: Normal flow (divisor = 4)\n        int normalResult = computeWithFinally(4);\n        System.out.println(\"Final return value: \" + normalResult);\n        \n        // Scenario 2: Exception flow (divisor = 0)\n        int errorResult = computeWithFinally(0);\n        System.out.println(\"Final return value: \" + errorResult);\n    }\n}",
+      "description": "Demonstrates normal flow vs exception flow with return statements and guaranteed finally execution.",
+      "steps": [
+        {
+          "line": 5,
+          "description": "Enters try block for divisor = 4."
+        },
+        {
+          "line": 6,
+          "description": "100 / 4 evaluates cleanly to 25."
+        },
+        {
+          "line": 8,
+          "description": "return result is prepared, but JVM pauses return to execute finally block."
+        },
+        {
+          "line": 13,
+          "description": "finally executes: prints 'FINALLY block executed!'."
+        },
+        {
+          "line": 21,
+          "description": "Return completes and outputs 25."
+        },
+        {
+          "line": 24,
+          "description": "divisor = 0 triggers catch block, followed strictly by finally block."
+        }
+      ]
+    },
+    {
+      "id": "act-try-catch-finally-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: try, catch & finally",
+      "questions": [
+        {
+          "id": "mcq-tcf-1",
+          "question": "Under what circumstance does a `finally` block execute in Java?",
+          "options": [
+            "Only when an exception is thrown and caught",
+            "Only when no exception occurs",
+            "Almost always, regardless of whether an exception occurs, is caught, or a return statement is executed",
+            "Only when the code is executed in an IDE"
+          ],
+          "correctOption": 2,
+          "explanation": "The `finally` block is designed to guarantee cleanup; it executes whether the try block completes normally, throws an exception, or executes an early return.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-tcf-2",
+          "question": "Which single line of code can prevent a `finally` block from executing?",
+          "options": [
+            "return;",
+            "throw new RuntimeException();",
+            "System.exit(0);",
+            "break;"
+          ],
+          "correctOption": 2,
+          "explanation": "`System.exit(status)` immediately halts the JVM process, preventing any remaining instructions (including finally blocks) from running.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-tcf-3",
+          "question": "What is the minimum valid syntax structure for a `try` statement?",
+          "options": [
+            "A try block alone with no catch or finally",
+            "A try block followed by at least one catch block OR a finally block",
+            "A try block must have both catch and finally",
+            "A try block must have at least two catch blocks"
+          ],
+          "correctOption": 1,
+          "explanation": "In standard Java, a `try` block must be followed by at least one `catch` block, a `finally` block, or both.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-tcf-4",
+          "question": "What will be returned by the following method?\n```java\npublic static int test() {\n    try {\n        return 1;\n    } finally {\n        return 2;\n    }\n}\n```",
+          "options": [
+            "1",
+            "2",
+            "Compile error",
+            "0"
+          ],
+          "correctOption": 1,
+          "explanation": "A return statement in a finally block takes precedence over and overrides any pending return value from the try block, returning 2.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-tcf-5",
+          "question": "What will be printed by the following code?\n```java\ntry {\n    System.out.print(\"A\");\n    int x = 1 / 0;\n    System.out.print(\"B\");\n} catch (ArithmeticException e) {\n    System.out.print(\"C\");\n} finally {\n    System.out.print(\"D\");\n}\n```",
+          "options": [
+            "ABCD",
+            "ACD",
+            "ABD",
+            "AD"
+          ],
+          "correctOption": 1,
+          "explanation": "\"A\" prints. 1/0 throws ArithmeticException, skipping \"B\". Catch block prints \"C\". Finally block prints \"D\". Result: \"ACD\".",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-tcf-6",
+          "question": "What will be printed by this code?\n```java\ntry {\n    System.out.print(\"A\");\n} finally {\n    System.out.print(\"B\");\n}\nSystem.out.print(\"C\");\n```",
+          "options": [
+            "ABC",
+            "AB",
+            "AC",
+            "BCA"
+          ],
+          "correctOption": 0,
+          "explanation": "Try prints \"A\". Finally prints \"B\". Control continues outside try-finally to print \"C\". Result: \"ABC\".",
+          "correctIndex": 0
+        },
+        {
+          "id": "mcq-tcf-7",
+          "question": "Why is it considered bad practice to place a `return` statement inside a `finally` block?",
+          "options": [
+            "It causes the JVM to run out of memory",
+            "It discards and silences any active exceptions thrown in the try block, making bugs impossible to detect",
+            "It is deprecated in Java 21",
+            "It makes the return type void"
+          ],
+          "correctOption": 1,
+          "explanation": "Returning from a finally block swallows any unhandled exception that was in-flight from the try block, silently masking critical errors.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-tcf-8",
+          "question": "Can variable declarations inside a `try` block be accessed directly inside the `finally` block?",
+          "options": [
+            "Yes, they share the same scope",
+            "No, variables declared in try have block scope limited strictly to the try block",
+            "Only if marked public",
+            "Only if marked static"
+          ],
+          "correctOption": 1,
+          "explanation": "Variables declared inside curly braces `{}` of a try block are local to that block and out of scope in catch or finally.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-tcf-9",
+          "question": "Predict the output of the following:\n```java\nint x = 5;\ntry {\n    x = 10;\n    return;\n} finally {\n    x = 20;\n    System.out.print(x);\n}\n```",
+          "options": [
+            "10",
+            "20",
+            "5",
+            "Nothing is printed"
+          ],
+          "correctOption": 1,
+          "explanation": "Even though return is called, the finally block executes before the method exits, setting x = 20 and printing 20.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-tcf-10",
+          "question": "What is the primary real-world purpose of the `finally` block in enterprise Java?",
+          "options": [
+            "To calculate mathematical equations",
+            "To guarantee closing of resources like database connections, files, and sockets",
+            "To format output text",
+            "To restart failed threads"
+          ],
+          "correctOption": 1,
+          "explanation": "Finally ensures deterministic resource cleanup, releasing native handles even if operations fail abruptly.",
+          "correctIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-try-catch-finally-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Finally with Return",
+      "practice": {
+        "id": "prac-act-tcf",
+        "title": "Hands-On: Test Finally with Return",
+        "description": "Write a method that returns from try and prints from finally to verify execution sequence.",
+        "starterCode": "public class PracticeTryFinally {\n    static String testFlow() {\n        // TODO: return \"Result\" in try, print \"Finally executed\" in finally\n        return \"\";\n    }\n    public static void main(String[] args) {\n        System.out.println(testFlow());\n    }\n}",
+        "solutionCode": "public class PracticeTryFinally {\n    static String testFlow() {\n        try {\n            return \"Result\";\n        } finally {\n            System.out.println(\"Finally executed\");\n        }\n    }\n    public static void main(String[] args) {\n        System.out.println(testFlow());\n    }\n}",
+        "expectedOutput": "Finally executed\nResult"
+      }
+    },
+    {
+      "id": "act-try-catch-finally-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: try, catch & finally",
+      "interviewQA": [
+        {
+          "id": "iq-tcf-1",
+          "question": "What is the primary role of the finally block in Java?",
+          "answer": "The primary role of the `finally` block is to guarantee execution of cleanup logic (such as closing database connections, file streams, network sockets, or releasing locks) regardless of whether an exception was thrown, whether it was caught, or whether an early `return` was executed.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-tcf-2",
+          "question": "Can a finally block execute if there is a return statement in the try block?",
+          "answer": "Yes, absolutely. If a `try` block encounters a `return` statement, the JVM pauses the return operation, executes the `finally` block completely, and only then delivers the return value to the calling method.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-tcf-3",
+          "question": "In what scenarios will a finally block NOT execute?",
+          "answer": "A `finally` block will fail to execute only in extreme circumstances: 1) If `System.exit(int status)` is explicitly called, 2) If the JVM process crashes or receives an uncatchable OS signal (like `kill -9`), or 3) If an infinite loop or deadlock occurs in the try or catch block.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-tcf-4",
+          "question": "Why is putting a return statement in a finally block considered bad practice?",
+          "answer": "Putting a `return` inside `finally` discards any pending return value from `try` or `catch`, and more critically, it completely silences and suppresses any in-flight unhandled exception. If an unexpected `NullPointerException` occurs in `try`, a `return` in `finally` swallows it, causing subtle, untraceable bugs.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-tcf-5",
+          "question": "Can a try block exist with only a finally block (no catch block)?",
+          "answer": "Yes. `try { ... } finally { ... }` is completely valid Java syntax. It is used when a method does not intend to handle the exception itself (allowing it to bubble up to the caller), but must guarantee that local resources are closed before leaving the stack frame.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-tcf-6",
+          "question": "What happens if an exception is thrown inside the finally block itself?",
+          "answer": "If an exception is thrown inside `finally`, that new exception immediately interrupts execution of the finally block and replaces any prior exception that was in-flight from the `try` or `catch` block. The original exception is lost (suppressed), which is why cleanup in finally must be coded defensively.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-tcf-7",
+          "question": "What is the modern alternative to try-finally for resource cleanup in Java 7+?",
+          "answer": "The modern alternative is **try-with-resources** (`try (Resource r = new Resource()) { ... }`). Any class implementing `java.lang.AutoCloseable` or `java.io.Closeable` is automatically closed at the end of the block in reverse order of declaration, eliminating verbose boilerplate `finally` blocks.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-try-catch-finally-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: try, catch & finally",
+      "checklist": [
+        {
+          "id": "chk-tcf-1",
+          "text": "I can predict the execution flow of try, catch, and finally under all scenarios."
+        },
+        {
+          "id": "chk-tcf-2",
+          "text": "I know that finally always runs even when return is called in try or catch."
+        },
+        {
+          "id": "chk-tcf-3",
+          "text": "I know the only realistic command that prevents finally: System.exit()."
+        },
+        {
+          "id": "chk-tcf-4",
+          "text": "I understand why returning from a finally block is a dangerous anti-pattern."
+        },
+        {
+          "id": "chk-tcf-5",
+          "text": "I know that try can be paired with finally without a catch block."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-tcf-1",
+      "question": "Under what circumstance does a `finally` block execute in Java?",
+      "options": [
+        "Only when an exception is thrown and caught",
+        "Only when no exception occurs",
+        "Almost always, regardless of whether an exception occurs, is caught, or a return statement is executed",
+        "Only when the code is executed in an IDE"
+      ],
+      "correctOption": 2,
+      "explanation": "The `finally` block is designed to guarantee cleanup; it executes whether the try block completes normally, throws an exception, or executes an early return.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-tcf-2",
+      "question": "Which single line of code can prevent a `finally` block from executing?",
+      "options": [
+        "return;",
+        "throw new RuntimeException();",
+        "System.exit(0);",
+        "break;"
+      ],
+      "correctOption": 2,
+      "explanation": "`System.exit(status)` immediately halts the JVM process, preventing any remaining instructions (including finally blocks) from running.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-tcf-3",
+      "question": "What is the minimum valid syntax structure for a `try` statement?",
+      "options": [
+        "A try block alone with no catch or finally",
+        "A try block followed by at least one catch block OR a finally block",
+        "A try block must have both catch and finally",
+        "A try block must have at least two catch blocks"
+      ],
+      "correctOption": 1,
+      "explanation": "In standard Java, a `try` block must be followed by at least one `catch` block, a `finally` block, or both.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-tcf-4",
+      "question": "What will be returned by the following method?\n```java\npublic static int test() {\n    try {\n        return 1;\n    } finally {\n        return 2;\n    }\n}\n```",
+      "options": [
+        "1",
+        "2",
+        "Compile error",
+        "0"
+      ],
+      "correctOption": 1,
+      "explanation": "A return statement in a finally block takes precedence over and overrides any pending return value from the try block, returning 2.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-tcf-5",
+      "question": "What will be printed by the following code?\n```java\ntry {\n    System.out.print(\"A\");\n    int x = 1 / 0;\n    System.out.print(\"B\");\n} catch (ArithmeticException e) {\n    System.out.print(\"C\");\n} finally {\n    System.out.print(\"D\");\n}\n```",
+      "options": [
+        "ABCD",
+        "ACD",
+        "ABD",
+        "AD"
+      ],
+      "correctOption": 1,
+      "explanation": "\"A\" prints. 1/0 throws ArithmeticException, skipping \"B\". Catch block prints \"C\". Finally block prints \"D\". Result: \"ACD\".",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-tcf-6",
+      "question": "What will be printed by this code?\n```java\ntry {\n    System.out.print(\"A\");\n} finally {\n    System.out.print(\"B\");\n}\nSystem.out.print(\"C\");\n```",
+      "options": [
+        "ABC",
+        "AB",
+        "AC",
+        "BCA"
+      ],
+      "correctOption": 0,
+      "explanation": "Try prints \"A\". Finally prints \"B\". Control continues outside try-finally to print \"C\". Result: \"ABC\".",
+      "correctIndex": 0
+    },
+    {
+      "id": "mcq-tcf-7",
+      "question": "Why is it considered bad practice to place a `return` statement inside a `finally` block?",
+      "options": [
+        "It causes the JVM to run out of memory",
+        "It discards and silences any active exceptions thrown in the try block, making bugs impossible to detect",
+        "It is deprecated in Java 21",
+        "It makes the return type void"
+      ],
+      "correctOption": 1,
+      "explanation": "Returning from a finally block swallows any unhandled exception that was in-flight from the try block, silently masking critical errors.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-tcf-8",
+      "question": "Can variable declarations inside a `try` block be accessed directly inside the `finally` block?",
+      "options": [
+        "Yes, they share the same scope",
+        "No, variables declared in try have block scope limited strictly to the try block",
+        "Only if marked public",
+        "Only if marked static"
+      ],
+      "correctOption": 1,
+      "explanation": "Variables declared inside curly braces `{}` of a try block are local to that block and out of scope in catch or finally.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-tcf-9",
+      "question": "Predict the output of the following:\n```java\nint x = 5;\ntry {\n    x = 10;\n    return;\n} finally {\n    x = 20;\n    System.out.print(x);\n}\n```",
+      "options": [
+        "10",
+        "20",
+        "5",
+        "Nothing is printed"
+      ],
+      "correctOption": 1,
+      "explanation": "Even though return is called, the finally block executes before the method exits, setting x = 20 and printing 20.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-tcf-10",
+      "question": "What is the primary real-world purpose of the `finally` block in enterprise Java?",
+      "options": [
+        "To calculate mathematical equations",
+        "To guarantee closing of resources like database connections, files, and sockets",
+        "To format output text",
+        "To restart failed threads"
+      ],
+      "correctOption": 1,
+      "explanation": "Finally ensures deterministic resource cleanup, releasing native handles even if operations fail abruptly.",
+      "correctIndex": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-tcf-1",
+      "title": "Track Try-Catch-Finally Execution Flow",
+      "difficulty": "Easy",
+      "problemStatement": "Write a program that uses `System.out.print()` to output: \"T\" from try, \"C\" from catch (triggering `10 / 0`), \"F\" from finally, and \"E\" from after the structure. Output should be `\"TCFE\"`.",
+      "description": "Write a program that uses `System.out.print()` to output: \"T\" from try, \"C\" from catch (triggering `10 / 0`), \"F\" from finally, and \"E\" from after the structure. Output should be `\"TCFE\"`.",
+      "hint": "Use System.out.print() without ln to chain on one line.",
+      "hints": [
+        "Use System.out.print() without ln to chain on one line."
+      ],
+      "starterCode": "public class FlowTrackingPractice {\n    public static void main(String[] args) {\n        // TODO: Print T, C, F, E\n    }\n}",
+      "solutionCode": "public class FlowTrackingPractice {\n    public static void main(String[] args) {\n        try {\n            System.out.print(\"T\");\n            int x = 10 / 0;\n        } catch (ArithmeticException e) {\n            System.out.print(\"C\");\n        } finally {\n            System.out.print(\"F\");\n        }\n        System.out.println(\"E\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "TCFE"
+        }
+      ],
+      "targetOutput": "TCFE"
+    },
+    {
+      "id": "prob-tcf-2",
+      "title": "Resource Cleanup Simulation",
+      "difficulty": "Easy",
+      "problemStatement": "Simulate closing a connection: Create a boolean `boolean connectionOpen = true;`. In a try block, print \"Working with DB\". In a finally block, set `connectionOpen = false;` and print \"Connection closed: true\".",
+      "description": "Simulate closing a connection: Create a boolean `boolean connectionOpen = true;`. In a try block, print \"Working with DB\". In a finally block, set `connectionOpen = false;` and print \"Connection closed: true\".",
+      "hint": "Put connection cleanup in finally.",
+      "hints": [
+        "Put connection cleanup in finally."
+      ],
+      "starterCode": "public class ResourceCleanupDemo {\n    public static void main(String[] args) {\n        boolean connectionOpen = true;\n        // TODO: Try-finally resource cleanup\n    }\n}",
+      "solutionCode": "public class ResourceCleanupDemo {\n    public static void main(String[] args) {\n        boolean connectionOpen = true;\n        try {\n            System.out.println(\"Working with DB\");\n        } finally {\n            connectionOpen = false;\n            System.out.println(\"Connection closed: \" + (!connectionOpen));\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Working with DB\nConnection closed: true"
+        }
+      ],
+      "targetOutput": "Working with DB\nConnection closed: true"
+    },
+    {
+      "id": "prob-tcf-3",
+      "title": "Evaluate Return with Finally Execution",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method `int getScore()` with `try { return 100; } finally { System.out.println(\"Finally ran\"); }`. Call it from `main` and print \"Score: \" + result. Verify Finally prints before Score.",
+      "description": "Write a method `int getScore()` with `try { return 100; } finally { System.out.println(\"Finally ran\"); }`. Call it from `main` and print \"Score: \" + result. Verify Finally prints before Score.",
+      "hint": "Finally runs before return completes.",
+      "hints": [
+        "Finally runs before return completes."
+      ],
+      "starterCode": "public class ReturnWithFinally {\n    static int getScore() {\n        // TODO: return in try, print in finally\n        return 0;\n    }\n    public static void main(String[] args) {\n        int score = getScore();\n        System.out.println(\"Score: \" + score);\n    }\n}",
+      "solutionCode": "public class ReturnWithFinally {\n    static int getScore() {\n        try {\n            return 100;\n        } finally {\n            System.out.println(\"Finally ran\");\n        }\n    }\n    public static void main(String[] args) {\n        int score = getScore();\n        System.out.println(\"Score: \" + score);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Finally ran\nScore: 100"
+        }
+      ],
+      "targetOutput": "Finally ran\nScore: 100"
+    },
+    {
+      "id": "prob-tcf-4",
+      "title": "Try-Finally Without Catch Block",
+      "difficulty": "Medium",
+      "problemStatement": "Demonstrate that `try` can be paired with `finally` without a `catch` block when no exception is thrown: In try print \"Processing Task\". In finally print \"Audit Log Completed\". Print \"Done\" after the structure.",
+      "description": "Demonstrate that `try` can be paired with `finally` without a `catch` block when no exception is thrown: In try print \"Processing Task\". In finally print \"Audit Log Completed\". Print \"Done\" after the structure.",
+      "hint": "try { ... } finally { ... } is valid syntax.",
+      "hints": [
+        "try { ... } finally { ... } is valid syntax."
+      ],
+      "starterCode": "public class TryFinallyNoCatch {\n    public static void main(String[] args) {\n        // TODO: Try-finally without catch\n    }\n}",
+      "solutionCode": "public class TryFinallyNoCatch {\n    public static void main(String[] args) {\n        try {\n            System.out.println(\"Processing Task\");\n        } finally {\n            System.out.println(\"Audit Log Completed\");\n        }\n        System.out.println(\"Done\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Processing Task\nAudit Log Completed\nDone"
+        }
+      ],
+      "targetOutput": "Processing Task\nAudit Log Completed\nDone"
+    },
+    {
+      "id": "prob-tcf-5",
+      "title": "Exception in Try Handled and Finally Executed",
+      "difficulty": "Medium",
+      "problemStatement": "Create a method `parseConfig(String text)`: inside try print \"Parsing...\" and parse integer. If `NumberFormatException` occurs, catch and print \"Defaulting to port 8080\". In finally print \"Parser closed\". Test with `\"invalid\"`.",
+      "description": "Create a method `parseConfig(String text)`: inside try print \"Parsing...\" and parse integer. If `NumberFormatException` occurs, catch and print \"Defaulting to port 8080\". In finally print \"Parser closed\". Test with `\"invalid\"`.",
+      "hint": "try-catch-finally ordering.",
+      "hints": [
+        "try-catch-finally ordering."
+      ],
+      "starterCode": "public class ConfigParserFinally {\n    static void parseConfig(String text) {\n        // TODO: Implement parsing with finally\n    }\n    public static void main(String[] args) {\n        parseConfig(\"invalid\");\n    }\n}",
+      "solutionCode": "public class ConfigParserFinally {\n    static void parseConfig(String text) {\n        try {\n            System.out.println(\"Parsing...\");\n            int port = Integer.parseInt(text);\n        } catch (NumberFormatException e) {\n            System.out.println(\"Defaulting to port 8080\");\n        } finally {\n            System.out.println(\"Parser closed\");\n        }\n    }\n    public static void main(String[] args) {\n        parseConfig(\"invalid\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Parsing...\nDefaulting to port 8080\nParser closed"
+        }
+      ],
+      "targetOutput": "Parsing...\nDefaulting to port 8080\nParser closed"
+    },
+    {
+      "id": "prob-tcf-6",
+      "title": "Demonstrate Finally Overriding Return Anti-Pattern",
+      "difficulty": "Easy",
+      "problemStatement": "Demonstrate the return override: Write a method `int getValue()` where `try { return 10; } finally { return 20; }`. Print the returned value (should be 20) and observe the override.",
+      "description": "Demonstrate the return override: Write a method `int getValue()` where `try { return 10; } finally { return 20; }`. Print the returned value (should be 20) and observe the override.",
+      "hint": "return in finally overrides return in try.",
+      "hints": [
+        "return in finally overrides return in try."
+      ],
+      "starterCode": "public class ReturnOverrideDemo {\n    static int getValue() {\n        // TODO: Demonstrate return in finally\n        return 0;\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Result: \" + getValue());\n    }\n}",
+      "solutionCode": "public class ReturnOverrideDemo {\n    @SuppressWarnings(\"finally\")\n    static int getValue() {\n        try {\n            return 10;\n        } finally {\n            return 20;\n        }\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Result: \" + getValue());\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Result: 20"
+        }
+      ],
+      "targetOutput": "Result: 20"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-tcf-1",
+      "question": "What is the primary role of the finally block in Java?",
+      "answer": "The primary role of the `finally` block is to guarantee execution of cleanup logic (such as closing database connections, file streams, network sockets, or releasing locks) regardless of whether an exception was thrown, whether it was caught, or whether an early `return` was executed.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-tcf-2",
+      "question": "Can a finally block execute if there is a return statement in the try block?",
+      "answer": "Yes, absolutely. If a `try` block encounters a `return` statement, the JVM pauses the return operation, executes the `finally` block completely, and only then delivers the return value to the calling method.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-tcf-3",
+      "question": "In what scenarios will a finally block NOT execute?",
+      "answer": "A `finally` block will fail to execute only in extreme circumstances: 1) If `System.exit(int status)` is explicitly called, 2) If the JVM process crashes or receives an uncatchable OS signal (like `kill -9`), or 3) If an infinite loop or deadlock occurs in the try or catch block.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-tcf-4",
+      "question": "Why is putting a return statement in a finally block considered bad practice?",
+      "answer": "Putting a `return` inside `finally` discards any pending return value from `try` or `catch`, and more critically, it completely silences and suppresses any in-flight unhandled exception. If an unexpected `NullPointerException` occurs in `try`, a `return` in `finally` swallows it, causing subtle, untraceable bugs.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-tcf-5",
+      "question": "Can a try block exist with only a finally block (no catch block)?",
+      "answer": "Yes. `try { ... } finally { ... }` is completely valid Java syntax. It is used when a method does not intend to handle the exception itself (allowing it to bubble up to the caller), but must guarantee that local resources are closed before leaving the stack frame.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-tcf-6",
+      "question": "What happens if an exception is thrown inside the finally block itself?",
+      "answer": "If an exception is thrown inside `finally`, that new exception immediately interrupts execution of the finally block and replaces any prior exception that was in-flight from the `try` or `catch` block. The original exception is lost (suppressed), which is why cleanup in finally must be coded defensively.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-tcf-7",
+      "question": "What is the modern alternative to try-finally for resource cleanup in Java 7+?",
+      "answer": "The modern alternative is **try-with-resources** (`try (Resource r = new Resource()) { ... }`). Any class implementing `java.lang.AutoCloseable` or `java.io.Closeable` is automatically closed at the end of the block in reverse order of declaration, eliminating verbose boilerplate `finally` blocks.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-tcf-1",
+      "text": "I can predict the execution flow of try, catch, and finally under all scenarios."
+    },
+    {
+      "id": "chk-tcf-2",
+      "text": "I know that finally always runs even when return is called in try or catch."
+    },
+    {
+      "id": "chk-tcf-3",
+      "text": "I know the only realistic command that prevents finally: System.exit()."
+    },
+    {
+      "id": "chk-tcf-4",
+      "text": "I understand why returning from a finally block is a dangerous anti-pattern."
+    },
+    {
+      "id": "chk-tcf-5",
+      "text": "I know that try can be paired with finally without a catch block."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-tcf-1",
+      "text": "I can predict the execution flow of try, catch, and finally under all scenarios."
+    },
+    {
+      "id": "chk-tcf-2",
+      "text": "I know that finally always runs even when return is called in try or catch."
+    },
+    {
+      "id": "chk-tcf-3",
+      "text": "I know the only realistic command that prevents finally: System.exit()."
+    },
+    {
+      "id": "chk-tcf-4",
+      "text": "I understand why returning from a finally block is a dangerous anti-pattern."
+    },
+    {
+      "id": "chk-tcf-5",
+      "text": "I know that try can be paired with finally without a catch block."
+    }
+  ]
+}

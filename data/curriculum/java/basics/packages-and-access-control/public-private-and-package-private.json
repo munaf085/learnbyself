@@ -1,0 +1,518 @@
+{
+  "id": "les-packages-and-access-control-public-private-and-package-private",
+  "slug": "public-private-and-package-private",
+  "sectionSlug": "basics",
+  "moduleSlug": "packages-and-access-control",
+  "title": "Public, Private & Package-Private Encapsulation",
+  "summary": "Master professional encapsulation patterns: designing clean public API surfaces, protecting internal invariants with private fields, and using package-private collaboration within cohesive modules.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 30,
+  "orderIndex": 5,
+  "prerequisites": [
+    "access-modifiers"
+  ],
+  "subtopics": [
+    "Public, Private & Package-Private Encapsulation",
+    "Key Mechanics",
+    "Best Practices",
+    "Common Bugs"
+  ],
+  "learningOutcomes": [
+    "Design robust classes following information hiding principles: private state and public accessors",
+    "Implement defensive copying in getters and setters to protect mutable internal objects",
+    "Use package-private classes and members for clean intra-package collaboration",
+    "Identify and fix common encapsulation leaks and state corruption vulnerabilities"
+  ],
+  "activities": [
+    {
+      "id": "act-public-private-and-package-private-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Public, Private & Package-Private Encapsulation",
+      "content": "Encapsulation is not just about making variables private and generating getters and setters. True encapsulation is about information hiding: minimizing the surface area that external clients can interact with, while maintaining complete control over class invariants. In this lesson, you will master the synergy between `public`, `private`, and `package-private` access.\n\n### 1. Public API Surface vs. Private State\n- **Public API Surface**: The set of public classes, methods, and constructors exposed to external consumers. Once published, changing public members breaks backward compatibility!\n- **Private State**: Internal variables and helper methods hidden completely inside the class. You can refactor private internals at any time without impacting any outside code.\n\n*Effective Java Principle*: Make each class or member as inaccessible as possible. Start with `private`, widen to `package-private` if needed for collaboration, and only make something `public` if it is genuinely part of the public API.\n\n### 2. The Perils of Mutable Leaks & Defensive Copying\nSimply marking a field `private` does not guarantee safety if you expose mutable objects:\n```java\npublic class UserProfile {\n    private Date createdDate;\n    public Date getCreatedDate() { return createdDate; } // LEAK!\n}\n```\nBecause `Date` is mutable, an external caller can do `profile.getCreatedDate().setTime(0);`, mutating internal state!\n\n**The Solution: Defensive Copying**:\nReturn a clone or new instance: `return new Date(createdDate.getTime());`, or better yet, use immutable types like `java.time.Instant` or `LocalDate`.\n\n### 3. Package-Private: The Unsung Hero of Modular Design\nConsider a package `com.bank.payment`:\n- `PaymentGateway` is `public` (entry point for callers).\n- `PaymentValidator`, `SignatureVerifier`, and `CardTokenCache` are **package-private** (`class PaymentValidator { ... }`).\n\nExternal callers cannot see or depend on the helper classes. If you decide to rewrite `CardTokenCache` next year, not a single external consumer will break!\n\n### 4. Immutable Value Objects\nA class is truly immutable when:\n1. All fields are `private final`.\n2. No mutator (setter) methods exist.\n3. The class cannot be subclassed (marked `final`).\n4. All mutable objects passed in or out are defensively copied (or replaced with immutable equivalents).",
+      "breakdown": [
+        {
+          "topic": "1. Public API Surface vs. Private State",
+          "details": "- **Public API Surface**: The set of public classes, methods, and constructors exposed to external consumers. Once published, changing public members breaks backward compatibility!\n- **Private State**..."
+        },
+        {
+          "topic": "2. The Perils of Mutable Leaks & Defensive Copying",
+          "details": "Simply marking a field `private` does not guarantee safety if you expose mutable objects:\n```java\npublic class UserProfile {\n    private Date createdDate;\n    public Date getCreatedDate() { return cre..."
+        },
+        {
+          "topic": "3. Package-Private: The Unsung Hero of Modular Design",
+          "details": "Consider a package `com.bank.payment`:\n- `PaymentGateway` is `public` (entry point for callers).\n- `PaymentValidator`, `SignatureVerifier`, and `CardTokenCache` are **package-private** (`class Payment..."
+        },
+        {
+          "topic": "4. Immutable Value Objects",
+          "details": "A class is truly immutable when:\n1. All fields are `private final`.\n2. No mutator (setter) methods exist.\n3. The class cannot be subclassed (marked `final`).\n4. All mutable objects passed in or out ar..."
+        }
+      ]
+    },
+    {
+      "id": "act-public-private-and-package-private-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Public, Private & Package-Private Encapsulation",
+      "codeSnippet": "class ImmutableMoney {\n    private final double amount;\n    private final String currency;\n\n    public ImmutableMoney(double amount, String currency) {\n        if (amount < 0) throw new IllegalArgumentException(\"Amount cannot be negative\");\n        this.amount = amount;\n        this.currency = (currency != null) ? currency : \"USD\";\n    }\n\n    public double getAmount() { return amount; }\n    public String getCurrency() { return currency; }\n\n    public ImmutableMoney add(double more) {\n        return new ImmutableMoney(this.amount + more, this.currency);\n    }\n}\n\npublic class EncapsulationDemo {\n    public static void main(String[] args) {\n        ImmutableMoney wallet = new ImmutableMoney(50.0, \"USD\");\n        ImmutableMoney updated = wallet.add(25.0);\n        \n        System.out.println(\"Original: $\" + wallet.getAmount());\n        System.out.println(\"Updated: $\" + updated.getAmount());\n    }\n}",
+      "description": "Step-by-step verified execution demonstrating Public, Private & Package-Private Encapsulation.",
+      "steps": [
+        {
+          "line": 2,
+          "description": "Initial declaration and setup for Public, Private & Package-Private Encapsulation."
+        },
+        {
+          "line": 5,
+          "description": "Core operation execution and state evaluation."
+        },
+        {
+          "line": 8,
+          "description": "Verification of expected output and invariants."
+        }
+      ]
+    },
+    {
+      "id": "act-public-private-and-package-private-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Public, Private & Package-Private Encapsulation",
+      "questions": [
+        {
+          "id": "mcq-ppp-1",
+          "question": "What is 'defensive copying' in Java encapsulation?",
+          "options": [
+            "Copying files from source to bin directory during build",
+            "Creating copies of mutable objects during object construction and in getters to protect internal state from external tampering",
+            "Backing up the JVM heap before running garbage collection",
+            "Encrypting class variables in memory"
+          ],
+          "correctIndex": 1,
+          "explanation": "Defensive copying clones mutable parameters in constructors and getters so callers cannot mutate the object's internal state directly.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-ppp-2",
+          "question": "Why should you prefer package-private access over public access for helper classes in a package?",
+          "options": [
+            "Package-private classes run faster in the JVM",
+            "It reduces the public API surface, keeping internal helpers hidden so they can be changed without breaking external clients",
+            "Package-private classes do not require memory allocation",
+            "Public classes are deprecated in Java 17"
+          ],
+          "correctIndex": 1,
+          "explanation": "Package-private restricts visibility to the package, preventing outside code from forming tight coupling with internal implementation details.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-ppp-3",
+          "question": "What happens if a getter returns a reference to an internal mutable Date object directly: `return this.date;`?",
+          "options": [
+            "Compilation error",
+            "The caller receives a read-only view automatically",
+            "The caller can call date.setTime(...) and silently corrupt the class's internal state",
+            "The JVM throws a SecurityException"
+          ],
+          "correctIndex": 2,
+          "explanation": "Returning direct references to mutable objects allows callers to mutate internal state from outside, violating encapsulation.",
+          "correctOption": 2
+        },
+        {
+          "id": "mcq-ppp-4",
+          "question": "What is the primary purpose of a `private` constructor in a utility class?",
+          "options": [
+            "To prevent the class from being garbage collected",
+            "To prevent clients from instantiating the utility class with `new`",
+            "To make all methods in the class static automatically",
+            "To allow subclasses to override it"
+          ],
+          "correctIndex": 1,
+          "explanation": "Utility classes containing only static methods (like java.lang.Math) declare a private constructor to prevent unnecessary instantiation.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-ppp-5",
+          "question": "How do you create an unmodifiable view of a `List<String>` in Java?",
+          "options": [
+            "list.lock()",
+            "Collections.unmodifiableList(list)",
+            "new ImmutableList(list)",
+            "list.setReadOnly(true)"
+          ],
+          "correctIndex": 1,
+          "explanation": "Collections.unmodifiableList() wraps a list in a read-only proxy that throws UnsupportedOperationException upon any modification attempt.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-ppp-6",
+          "question": "According to 'Effective Java', what should be your default access level when creating a new member?",
+          "options": [
+            "public",
+            "protected",
+            "Make each member as inaccessible as possible (start private)",
+            "default"
+          ],
+          "correctIndex": 2,
+          "explanation": "Joshua Bloch's rule is: 'Minimize the accessibility of classes and members'. Start private, and only widen when strictly necessary.",
+          "correctOption": 2
+        },
+        {
+          "id": "mcq-ppp-7",
+          "question": "Can private members be accessed by other instances of the SAME class?",
+          "options": [
+            "No, private means accessible only through `this`",
+            "Yes, private access is class-level, not instance-level; one instance can access private members of another instance of the same class",
+            "Only if both instances have the same hashcode",
+            "Only in JUnit tests"
+          ],
+          "correctIndex": 1,
+          "explanation": "In Java, access modifiers are class-based, not object-based. An instance of Foo can access private fields of another Foo instance (e.g. in equals()).",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-ppp-8",
+          "question": "Why is the use of `public` instance fields (e.g. `public int count;`) widely considered an anti-pattern?",
+          "options": [
+            "It violates encapsulation, prevents invariant validation, and couples callers directly to the internal representation",
+            "It is illegal in Java syntax",
+            "It prevents garbage collection",
+            "It causes infinite loops"
+          ],
+          "correctIndex": 0,
+          "explanation": "Public fields allow arbitrary modification without validation, eliminating control over state consistency and breaking modularity.",
+          "correctOption": 0
+        }
+      ]
+    },
+    {
+      "id": "act-public-private-and-package-private-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Defensive Copying with Arrays",
+      "practice": {
+        "title": "Defensive Copying with Arrays",
+        "description": "Create a class `ScoresTracker` with a private `int[] scores` array. Implement constructor and getter using defensive copying so external modifications to the array do not mutate internal state.",
+        "problemStatement": "Create a class `ScoresTracker` with a private `int[] scores` array. Implement constructor and getter using defensive copying so external modifications to the array do not mutate internal state.",
+        "starterCode": "public class ScoresTracker {\n    private final int[] scores;\n    public ScoresTracker(int[] raw) {\n        // Defensively copy\n        this.scores = null;\n    }\n    public int[] getScores() {\n        // Defensively copy\n        return null;\n    }\n\n    public static void main(String[] args) {\n        int[] src = {90, 80};\n        ScoresTracker tracker = new ScoresTracker(src);\n        src[0] = 0;\n        System.out.println(\"Internal first score: \" + tracker.getScores()[0]);\n    }\n}",
+        "solution": "public class ScoresTracker {\n    private final int[] scores;\n    public ScoresTracker(int[] raw) {\n        this.scores = (raw != null) ? raw.clone() : new int[0];\n    }\n    public int[] getScores() {\n        return scores.clone();\n    }\n\n    public static void main(String[] args) {\n        int[] src = {90, 80};\n        ScoresTracker tracker = new ScoresTracker(src);\n        src[0] = 0;\n        System.out.println(\"Internal first score: \" + tracker.getScores()[0]);\n    }\n}",
+        "expectedOutput": "Internal first score: 90",
+        "hint": "Use raw.clone() in both constructor and getter.",
+        "hints": [
+          "Use raw.clone() in both constructor and getter."
+        ]
+      }
+    },
+    {
+      "id": "act-public-private-and-package-private-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Public, Private & Package-Private Encapsulation",
+      "interviewQA": [
+        {
+          "id": "iq-ppp-1",
+          "question": "What is the difference between class-based and object-based access control, and which does Java use?",
+          "answer": "Java uses **class-based** access control. This means `private` restricts access to the enclosing *class*, not to the specific *object instance*. Consequently, any instance of class `Point` can directly access the private fields of another `Point` instance (for example, inside an `equals(Object o)` or `compareTo(Point o)` method).",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-ppp-2",
+          "question": "What is an encapsulation leak and how do you prevent it with mutable collections?",
+          "answer": "An encapsulation leak occurs when a class unwittingly gives external code direct access to its internal mutable data structures. For example, returning a private `List<Order>` directly from `getOrders()`. Callers can call `.clear()` or `.add()` on that list, altering internal state without the owning class knowing. Prevention:\n1. Return an unmodifiable view: `Collections.unmodifiableList(orders)`.\n2. Or return a shallow copy: `new ArrayList<>(orders)`.",
+          "category": "best-practices"
+        },
+        {
+          "id": "iq-ppp-3",
+          "question": "Why do utility classes like java.lang.Math and java.util.Collections have private constructors?",
+          "answer": "Utility classes contain only `static` methods and constants and are never meant to be instantiated. If no constructor is declared, Java automatically inserts a `public` default constructor, allowing callers to mistakenly create useless `new Math()` instances. Declaring a `private Math() {}` suppresses this default constructor and makes instantiation impossible.",
+          "category": "design-patterns"
+        },
+        {
+          "id": "iq-ppp-4",
+          "question": "How does package-private access promote clean modular architectures?",
+          "answer": "Package-private access acts as a boundary shield. In a well-designed package, only one or two primary service classes or interfaces are `public` (the API surface). All helper classes, internal algorithms, validators, and DAOs are left package-private. This allows team members to refactor internal classes freely without worrying about breaking external code that depends on the package.",
+          "category": "architecture"
+        },
+        {
+          "id": "iq-ppp-5",
+          "question": "What are the requirements for making a Java class truly immutable?",
+          "answer": "1. Declare class `final` so it cannot be subclassed.\n2. Make all fields `private` and `final`.\n3. Do not provide any mutator (setter) methods.\n4. Perform defensive copying on any mutable objects passed into the constructor.\n5. Perform defensive copying (or unmodifiable wrapping) on any mutable objects returned by getters.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-ppp-6",
+          "question": "Can reflection bypass `private` access in Java?",
+          "answer": "Traditionally in Java 8 and earlier, reflection via `field.setAccessible(true)` could bypass `private` modifier boundaries. However, starting with Java 9 and the Java Platform Module System (JPMS), strong encapsulation is enforced across modules: reflective access into non-exported packages is blocked at the JVM level unless explicitly opened via module declarations or command line flags (`--add-opens`).",
+          "category": "jvm-security"
+        },
+        {
+          "id": "iq-ppp-7",
+          "question": "What is the difference between shallow copy and deep copy in defensive copying?",
+          "answer": "A shallow copy creates a new collection or array, but the elements inside still reference the exact same underlying objects in memory. A deep copy recursively clones or instantiates copies of each nested object as well. For primitive values or immutable objects (`String`, `Integer`), shallow copying is sufficient; for mutable complex objects, deep copying is required.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-public-private-and-package-private-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Public, Private & Package-Private Encapsulation",
+      "checklist": [
+        "I understand the difference between public API surface and private implementation state",
+        "I know how to perform defensive copying in constructors and getters to prevent state leaks",
+        "I know how to use package-private visibility to hide helper classes within a package",
+        "I understand why utility classes declare private constructors",
+        "I know how to return unmodifiable collections using Collections.unmodifiableList"
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-ppp-1",
+      "question": "What is 'defensive copying' in Java encapsulation?",
+      "options": [
+        "Copying files from source to bin directory during build",
+        "Creating copies of mutable objects during object construction and in getters to protect internal state from external tampering",
+        "Backing up the JVM heap before running garbage collection",
+        "Encrypting class variables in memory"
+      ],
+      "correctIndex": 1,
+      "explanation": "Defensive copying clones mutable parameters in constructors and getters so callers cannot mutate the object's internal state directly.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-ppp-2",
+      "question": "Why should you prefer package-private access over public access for helper classes in a package?",
+      "options": [
+        "Package-private classes run faster in the JVM",
+        "It reduces the public API surface, keeping internal helpers hidden so they can be changed without breaking external clients",
+        "Package-private classes do not require memory allocation",
+        "Public classes are deprecated in Java 17"
+      ],
+      "correctIndex": 1,
+      "explanation": "Package-private restricts visibility to the package, preventing outside code from forming tight coupling with internal implementation details.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-ppp-3",
+      "question": "What happens if a getter returns a reference to an internal mutable Date object directly: `return this.date;`?",
+      "options": [
+        "Compilation error",
+        "The caller receives a read-only view automatically",
+        "The caller can call date.setTime(...) and silently corrupt the class's internal state",
+        "The JVM throws a SecurityException"
+      ],
+      "correctIndex": 2,
+      "explanation": "Returning direct references to mutable objects allows callers to mutate internal state from outside, violating encapsulation.",
+      "correctOption": 2
+    },
+    {
+      "id": "mcq-ppp-4",
+      "question": "What is the primary purpose of a `private` constructor in a utility class?",
+      "options": [
+        "To prevent the class from being garbage collected",
+        "To prevent clients from instantiating the utility class with `new`",
+        "To make all methods in the class static automatically",
+        "To allow subclasses to override it"
+      ],
+      "correctIndex": 1,
+      "explanation": "Utility classes containing only static methods (like java.lang.Math) declare a private constructor to prevent unnecessary instantiation.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-ppp-5",
+      "question": "How do you create an unmodifiable view of a `List<String>` in Java?",
+      "options": [
+        "list.lock()",
+        "Collections.unmodifiableList(list)",
+        "new ImmutableList(list)",
+        "list.setReadOnly(true)"
+      ],
+      "correctIndex": 1,
+      "explanation": "Collections.unmodifiableList() wraps a list in a read-only proxy that throws UnsupportedOperationException upon any modification attempt.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-ppp-6",
+      "question": "According to 'Effective Java', what should be your default access level when creating a new member?",
+      "options": [
+        "public",
+        "protected",
+        "Make each member as inaccessible as possible (start private)",
+        "default"
+      ],
+      "correctIndex": 2,
+      "explanation": "Joshua Bloch's rule is: 'Minimize the accessibility of classes and members'. Start private, and only widen when strictly necessary.",
+      "correctOption": 2
+    },
+    {
+      "id": "mcq-ppp-7",
+      "question": "Can private members be accessed by other instances of the SAME class?",
+      "options": [
+        "No, private means accessible only through `this`",
+        "Yes, private access is class-level, not instance-level; one instance can access private members of another instance of the same class",
+        "Only if both instances have the same hashcode",
+        "Only in JUnit tests"
+      ],
+      "correctIndex": 1,
+      "explanation": "In Java, access modifiers are class-based, not object-based. An instance of Foo can access private fields of another Foo instance (e.g. in equals()).",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-ppp-8",
+      "question": "Why is the use of `public` instance fields (e.g. `public int count;`) widely considered an anti-pattern?",
+      "options": [
+        "It violates encapsulation, prevents invariant validation, and couples callers directly to the internal representation",
+        "It is illegal in Java syntax",
+        "It prevents garbage collection",
+        "It causes infinite loops"
+      ],
+      "correctIndex": 0,
+      "explanation": "Public fields allow arbitrary modification without validation, eliminating control over state consistency and breaking modularity.",
+      "correctOption": 0
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p1-defensive-copying-date",
+      "title": "Defensive Copying with Arrays",
+      "difficulty": "Easy",
+      "description": "Create a class `ScoresTracker` with a private `int[] scores` array. Implement constructor and getter using defensive copying so external modifications to the array do not mutate internal state.",
+      "problemStatement": "Create a class `ScoresTracker` with a private `int[] scores` array. Implement constructor and getter using defensive copying so external modifications to the array do not mutate internal state.",
+      "starterCode": "public class ScoresTracker {\n    private final int[] scores;\n    public ScoresTracker(int[] raw) {\n        // Defensively copy\n        this.scores = null;\n    }\n    public int[] getScores() {\n        // Defensively copy\n        return null;\n    }\n\n    public static void main(String[] args) {\n        int[] src = {90, 80};\n        ScoresTracker tracker = new ScoresTracker(src);\n        src[0] = 0;\n        System.out.println(\"Internal first score: \" + tracker.getScores()[0]);\n    }\n}",
+      "solution": "public class ScoresTracker {\n    private final int[] scores;\n    public ScoresTracker(int[] raw) {\n        this.scores = (raw != null) ? raw.clone() : new int[0];\n    }\n    public int[] getScores() {\n        return scores.clone();\n    }\n\n    public static void main(String[] args) {\n        int[] src = {90, 80};\n        ScoresTracker tracker = new ScoresTracker(src);\n        src[0] = 0;\n        System.out.println(\"Internal first score: \" + tracker.getScores()[0]);\n    }\n}",
+      "hint": "Use raw.clone() in both constructor and getter.",
+      "hints": [
+        "Use raw.clone() in both constructor and getter."
+      ],
+      "expectedOutput": "Internal first score: 90"
+    },
+    {
+      "id": "p2-package-private-dao",
+      "title": "Package-Private DAO Helper",
+      "difficulty": "Easy",
+      "description": "Implement a public `UserService` that calls a package-private `UserDao` to fetch a username by ID. Demonstrate that external callers use only UserService.",
+      "problemStatement": "Implement a public `UserService` that calls a package-private `UserDao` to fetch a username by ID. Demonstrate that external callers use only UserService.",
+      "starterCode": "public class UserModuleDemo {\n    // Implement package-private UserDao and public UserService\n    public static void main(String[] args) {\n        // Test UserService\n    }\n}",
+      "solution": "class UserDao {\n    String findById(int id) {\n        return (id == 101) ? \"Alice\" : \"Unknown\";\n    }\n}\n\npublic class UserModuleDemo {\n    static class UserService {\n        private final UserDao dao = new UserDao();\n        public String getUser(int id) {\n            return dao.findById(id);\n        }\n    }\n\n    public static void main(String[] args) {\n        UserService service = new UserService();\n        System.out.println(\"User: \" + service.getUser(101));\n    }\n}",
+      "hint": "Make UserDao package-private (no modifier) and UserService public.",
+      "hints": [
+        "Make UserDao package-private (no modifier) and UserService public."
+      ],
+      "expectedOutput": "User: Alice"
+    },
+    {
+      "id": "p3-immutable-person-record",
+      "title": "Handcrafted Immutable Record",
+      "difficulty": "Medium",
+      "description": "Create an immutable `Person` class with `name` (String) and `birthDate` (long epoch). Include constructor validation, getters, and an `equals` method.",
+      "problemStatement": "Create an immutable `Person` class with `name` (String) and `birthDate` (long epoch). Include constructor validation, getters, and an `equals` method.",
+      "starterCode": "public class PersonDemo {\n    static final class Person {\n        // Fields, constructor, getters\n    }\n\n    public static void main(String[] args) {\n        Person p = new Person(\"Bob\", 946684800000L);\n        System.out.println(p.getName() + \" : \" + p.getBirthDate());\n    }\n}",
+      "solution": "public class PersonDemo {\n    static final class Person {\n        private final String name;\n        private final long birthDate;\n\n        public Person(String name, long birthDate) {\n            if (name == null || name.trim().isEmpty()) {\n                throw new IllegalArgumentException(\"Name cannot be blank\");\n            }\n            this.name = name;\n            this.birthDate = birthDate;\n        }\n\n        public String getName() { return name; }\n        public long getBirthDate() { return birthDate; }\n    }\n\n    public static void main(String[] args) {\n        Person p = new Person(\"Bob\", 946684800000L);\n        System.out.println(p.getName() + \" : \" + p.getBirthDate());\n    }\n}",
+      "hint": "Mark class final, fields private final, and add validation.",
+      "hints": [
+        "Mark class final, fields private final, and add validation."
+      ],
+      "expectedOutput": "Bob : 946684800000"
+    },
+    {
+      "id": "p4-singleton-private-constructor",
+      "title": "Private Constructor Singleton",
+      "difficulty": "Medium",
+      "description": "Implement a classic thread-safe Singleton using a private constructor, a private static instance, and a public static `getInstance()` method.",
+      "problemStatement": "Implement a classic thread-safe Singleton using a private constructor, a private static instance, and a public static `getInstance()` method.",
+      "starterCode": "public class SingletonDemo {\n    static class AppConfig {\n        // Private constructor and static instance\n    }\n\n    public static void main(String[] args) {\n        // Test single instance\n    }\n}",
+      "solution": "public class SingletonDemo {\n    static class AppConfig {\n        private static final AppConfig INSTANCE = new AppConfig();\n        private String appName = \"LearnBySelf\";\n\n        private AppConfig() {}\n\n        public static AppConfig getInstance() {\n            return INSTANCE;\n        }\n        public String getAppName() { return appName; }\n    }\n\n    public static void main(String[] args) {\n        AppConfig c1 = AppConfig.getInstance();\n        AppConfig c2 = AppConfig.getInstance();\n        System.out.println(\"Same instance: \" + (c1 == c2));\n        System.out.println(\"App: \" + c1.getAppName());\n    }\n}",
+      "hint": "Make constructor private and expose public static getInstance().",
+      "hints": [
+        "Make constructor private and expose public static getInstance()."
+      ],
+      "expectedOutput": "Same instance: true\nApp: LearnBySelf"
+    },
+    {
+      "id": "p5-factory-method-encapsulation",
+      "title": "Static Factory Method Encapsulation",
+      "difficulty": "Hard",
+      "description": "Create an interface `Notification` and a package-private implementation `EmailNotification`. Expose only a public static factory method `Notification.createEmail(...)` so clients never instantiate implementations directly.",
+      "problemStatement": "Create an interface `Notification` and a package-private implementation `EmailNotification`. Expose only a public static factory method `Notification.createEmail(...)` so clients never instantiate implementations directly.",
+      "starterCode": "public class NotificationFactoryDemo {\n    // Define interface Notification and package-private EmailNotification\n    public static void main(String[] args) {\n        // Test createEmail\n    }\n}",
+      "solution": "interface Notification {\n    void send(String message);\n\n    static Notification createEmail(String recipient) {\n        return new EmailNotification(recipient);\n    }\n}\n\nclass EmailNotification implements Notification {\n    private final String recipient;\n    EmailNotification(String recipient) {\n        this.recipient = recipient;\n    }\n    public void send(String message) {\n        System.out.println(\"Email to \" + recipient + \": \" + message);\n    }\n}\n\npublic class NotificationFactoryDemo {\n    public static void main(String[] args) {\n        Notification n = Notification.createEmail(\"user@example.com\");\n        n.send(\"Welcome!\");\n    }\n}",
+      "hint": "Make EmailNotification package-private and use Notification.createEmail static factory.",
+      "hints": [
+        "Make EmailNotification package-private and use Notification.createEmail static factory."
+      ],
+      "expectedOutput": "Email to user@example.com: Welcome!"
+    },
+    {
+      "id": "p6-read-only-collection-shield",
+      "title": "Read-Only Collection Shield",
+      "difficulty": "Hard",
+      "description": "Implement a `TeamRoster` class that maintains a list of player names. Ensure `getPlayers()` returns an unmodifiable list (`Collections.unmodifiableList`) to prevent callers from adding or removing items.",
+      "problemStatement": "Implement a `TeamRoster` class that maintains a list of player names. Ensure `getPlayers()` returns an unmodifiable list (`Collections.unmodifiableList`) to prevent callers from adding or removing items.",
+      "starterCode": "import java.util.*;\n\npublic class TeamRosterDemo {\n    static class TeamRoster {\n        // Manage players list safely\n    }\n\n    public static void main(String[] args) {\n        // Test add and unmodifiable list\n    }\n}",
+      "solution": "import java.util.*;\n\npublic class TeamRosterDemo {\n    static class TeamRoster {\n        private final List<String> players = new ArrayList<>();\n\n        public void addPlayer(String name) {\n            if (name != null) players.add(name);\n        }\n\n        public List<String> getPlayers() {\n            return Collections.unmodifiableList(players);\n        }\n    }\n\n    public static void main(String[] args) {\n        TeamRoster team = new TeamRoster();\n        team.addPlayer(\"Lionel\");\n        team.addPlayer(\"Cristiano\");\n        System.out.println(\"Team size: \" + team.getPlayers().size());\n        try {\n            team.getPlayers().add(\"Neymar\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Protected: Cannot modify list from outside!\");\n        }\n    }\n}",
+      "hint": "Return Collections.unmodifiableList(players) to reject external mutations.",
+      "hints": [
+        "Return Collections.unmodifiableList(players) to reject external mutations."
+      ],
+      "expectedOutput": "Team size: 2\nProtected: Cannot modify list from outside!"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-ppp-1",
+      "question": "What is the difference between class-based and object-based access control, and which does Java use?",
+      "answer": "Java uses **class-based** access control. This means `private` restricts access to the enclosing *class*, not to the specific *object instance*. Consequently, any instance of class `Point` can directly access the private fields of another `Point` instance (for example, inside an `equals(Object o)` or `compareTo(Point o)` method).",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-ppp-2",
+      "question": "What is an encapsulation leak and how do you prevent it with mutable collections?",
+      "answer": "An encapsulation leak occurs when a class unwittingly gives external code direct access to its internal mutable data structures. For example, returning a private `List<Order>` directly from `getOrders()`. Callers can call `.clear()` or `.add()` on that list, altering internal state without the owning class knowing. Prevention:\n1. Return an unmodifiable view: `Collections.unmodifiableList(orders)`.\n2. Or return a shallow copy: `new ArrayList<>(orders)`.",
+      "category": "best-practices"
+    },
+    {
+      "id": "iq-ppp-3",
+      "question": "Why do utility classes like java.lang.Math and java.util.Collections have private constructors?",
+      "answer": "Utility classes contain only `static` methods and constants and are never meant to be instantiated. If no constructor is declared, Java automatically inserts a `public` default constructor, allowing callers to mistakenly create useless `new Math()` instances. Declaring a `private Math() {}` suppresses this default constructor and makes instantiation impossible.",
+      "category": "design-patterns"
+    },
+    {
+      "id": "iq-ppp-4",
+      "question": "How does package-private access promote clean modular architectures?",
+      "answer": "Package-private access acts as a boundary shield. In a well-designed package, only one or two primary service classes or interfaces are `public` (the API surface). All helper classes, internal algorithms, validators, and DAOs are left package-private. This allows team members to refactor internal classes freely without worrying about breaking external code that depends on the package.",
+      "category": "architecture"
+    },
+    {
+      "id": "iq-ppp-5",
+      "question": "What are the requirements for making a Java class truly immutable?",
+      "answer": "1. Declare class `final` so it cannot be subclassed.\n2. Make all fields `private` and `final`.\n3. Do not provide any mutator (setter) methods.\n4. Perform defensive copying on any mutable objects passed into the constructor.\n5. Perform defensive copying (or unmodifiable wrapping) on any mutable objects returned by getters.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-ppp-6",
+      "question": "Can reflection bypass `private` access in Java?",
+      "answer": "Traditionally in Java 8 and earlier, reflection via `field.setAccessible(true)` could bypass `private` modifier boundaries. However, starting with Java 9 and the Java Platform Module System (JPMS), strong encapsulation is enforced across modules: reflective access into non-exported packages is blocked at the JVM level unless explicitly opened via module declarations or command line flags (`--add-opens`).",
+      "category": "jvm-security"
+    },
+    {
+      "id": "iq-ppp-7",
+      "question": "What is the difference between shallow copy and deep copy in defensive copying?",
+      "answer": "A shallow copy creates a new collection or array, but the elements inside still reference the exact same underlying objects in memory. A deep copy recursively clones or instantiates copies of each nested object as well. For primitive values or immutable objects (`String`, `Integer`), shallow copying is sufficient; for mutable complex objects, deep copying is required.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    "I understand the difference between public API surface and private implementation state",
+    "I know how to perform defensive copying in constructors and getters to prevent state leaks",
+    "I know how to use package-private visibility to hide helper classes within a package",
+    "I understand why utility classes declare private constructors",
+    "I know how to return unmodifiable collections using Collections.unmodifiableList"
+  ],
+  "checklist": [
+    "I understand the difference between public API surface and private implementation state",
+    "I know how to perform defensive copying in constructors and getters to prevent state leaks",
+    "I know how to use package-private visibility to hide helper classes within a package",
+    "I understand why utility classes declare private constructors",
+    "I know how to return unmodifiable collections using Collections.unmodifiableList"
+  ]
+}

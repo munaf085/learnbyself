@@ -1,0 +1,606 @@
+{
+  "id": "les-exception-basics-throw-and-throws",
+  "slug": "throw-and-throws",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "throw & throws",
+  "summary": "Master the critical distinction between throw (raising an exception instance inside a method) and throws (declaring exception contracts in method signatures).",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "les-exception-basics-multiple-catch-and-exception-flow"
+  ],
+  "subtopics": [
+    "throw Statement Mechanics",
+    "throws Method Signature Clause",
+    "Checked Exception Contracts",
+    "Overriding Rules for Exceptions"
+  ],
+  "learningOutcomes": [
+    "Differentiate between throw and throws accurately in code and interviews",
+    "Enforce input validation invariants using throw new Exception()",
+    "Design clean method API contracts using throws clauses"
+  ],
+  "activities": [
+    {
+      "id": "act-throw-and-throws-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: throw & throws",
+      "content": "### 1. Concept: `throw` vs `throws`\nOne of the most frequent technical interview questions in core Java is the distinction between the two keywords: **`throw`** and **`throws`**. While they sound identical, their roles are completely distinct:\n\n- **`throw` (Verb / Action)**:\n  - An **executable statement** used inside a method body to **explicitly raise / instantiate and throw an exception object**:\n  - `throw new IllegalArgumentException(\"Age cannot be negative\");`\n- **`throws` (Declaration / Contract)**:\n  - A **clause in a method signature** used to **declare that this method might throw specific checked exceptions**, warning callers that they must handle them:\n  - `public void readFile(String path) throws IOException, SQLException`\n\n### 2. Why It Matters: Establishing Explicit Method Contracts\nA method signature in Java is a binding contract. By declaring `throws IOException`, you explicitly inform every developer who calls your method:\n> *\"Warning: When you call me, this operation might encounter an I/O failure. You are required by the Java compiler to either handle it in a `try-catch` block or declare `throws` yourself.\"*\n\nConversely, `throw` is how you enforce **business invariants** and **input validation**: if a caller passes `balance < 0`, you do not continue with corrupted data; you explicitly `throw new IllegalArgumentException(...)`.\n\n### 3. Mental Model: Throwing a Ball vs Warning Sign\n- **`throw` is throwing a fastball**: You hold a ball (an Exception object) in your hand inside the method and physically hurl it down the field (`throw new BallException()`).\n- **`throws` is a warning sign on the stadium door**: Before entering the batting cage, the sign says *\"Danger: Flying Balls Possible\"* (`void enterStadium() throws BallException`). It warns callers to wear a helmet (`try-catch`).\n\n### 4. Java Mechanics: Comprehensive Comparison\n| Feature | `throw` | `throws` |\n| :--- | :--- | :--- |\n| **Location** | Inside method body / blocks | In method signature declaration |\n| **Followed By** | An **instance** of Throwable (`throw new Exception()`) | Exception **class names** (`throws IOException`) |\n| **Quantity** | Throws **one** exception instance at a time | Can declare **multiple** classes comma-separated |\n| **Purpose** | Actually raises / triggers an exception | Declares possible exceptions to callers |\n| **Usage** | `throw new CustomException();` | `void run() throws IOException, SQLException` |\n\n### 5. Practical Java Example\n```java\npublic class ThrowVsThrowsDemo {\n    // 'throws' in method signature warns caller about checked exception\n    public static void validateAge(int age) throws Exception {\n        if (age < 0) {\n            // 'throw' inside method body actively raises the exception\n            throw new Exception(\"Age cannot be negative: \" + age);\n        }\n        System.out.println(\"Valid age: \" + age);\n    }\n\n    public static void main(String[] args) {\n        try {\n            validateAge(-5);\n        } catch (Exception e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}\n```\n\n### 6. Common Beginner Mistakes\n- **Confusing spelling**: Writing `throw IOException;` or `void test() throw Exception`.\n- **Passing class name to `throw`**: Writing `throw ArithmeticException;` instead of `throw new ArithmeticException();`. `throw` requires an **instance** created with `new`.\n- **Declaring `throws` for unchecked exceptions**: While legal, declaring `throws NullPointerException` is redundant because unchecked exceptions are not enforced by the compiler.\n\n### 7. Key Takeaways\n- `throw` is an action inside a method that instantiates and throws a single exception object.\n- `throws` is a clause in a method signature declaring possible checked exception classes.\n- Callers of methods declaring checked exceptions in `throws` must handle them or declare them.\n- Always validate method parameters early and `throw` descriptive exceptions.",
+      "breakdown": [
+        {
+          "topic": "throw Statement",
+          "details": "Executes inside a method body to throw a single Exception instance: throw new MyException()."
+        },
+        {
+          "topic": "throws Clause",
+          "details": "Appended to a method declaration to announce potential checked exceptions to callers: throws IOException, SQLException."
+        },
+        {
+          "topic": "Instance vs Class Name",
+          "details": "throw is followed by an object instance (new ...); throws is followed by class type names."
+        },
+        {
+          "topic": "Enforcing Method Contracts",
+          "details": "throws mandates that callers either catch the exception or re-declare throws up the chain."
+        }
+      ]
+    },
+    {
+      "id": "act-throw-and-throws-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: throw and throws Suite",
+      "codeSnippet": "public class ThrowThrowsContractDemo {\n    // 1. Method declaring 'throws' in signature (Contract with caller)\n    public static void withdrawMoney(double balance, double amount) throws IllegalArgumentException {\n        System.out.println(\"Processing withdrawal: Balance=$\" + balance + \", Amount=$\" + amount);\n        \n        if (amount <= 0) {\n            // 2. 'throw' statement actively raising exception instance\n            throw new IllegalArgumentException(\"Withdrawal amount must be greater than zero!\");\n        }\n        if (amount > balance) {\n            throw new IllegalArgumentException(\"Insufficient funds! Cannot withdraw $\" + amount + \" from $\" + balance);\n        }\n        \n        double remaining = balance - amount;\n        System.out.println(\"Withdrawal successful! Remaining balance: $\" + remaining);\n    }\n\n    public static void main(String[] args) {\n        // Test 1: Valid transaction\n        withdrawMoney(500.0, 150.0);\n        \n        // Test 2: Triggering throw for negative amount\n        try {\n            withdrawMoney(500.0, -20.0);\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Handler 1: \" + e.getMessage());\n        }\n        \n        // Test 3: Triggering throw for overdraft\n        try {\n            withdrawMoney(100.0, 300.0);\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Handler 2: \" + e.getMessage());\n        }\n    }\n}",
+      "description": "Demonstrates method signature throws declarations paired with throw statements for input validation.",
+      "steps": [
+        {
+          "line": 2,
+          "description": "throws IllegalArgumentException in method signature defines failure contract."
+        },
+        {
+          "line": 6,
+          "description": "throw new IllegalArgumentException(...) instantiates and throws error object for amount <= 0."
+        },
+        {
+          "line": 9,
+          "description": "Second throw statement raises error for insufficient funds."
+        },
+        {
+          "line": 18,
+          "description": "Test 1 completes normal execution without throwing."
+        },
+        {
+          "line": 23,
+          "description": "Test 2 catches negative amount exception."
+        },
+        {
+          "line": 30,
+          "description": "Test 3 catches insufficient funds exception."
+        }
+      ]
+    },
+    {
+      "id": "act-throw-and-throws-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: throw & throws",
+      "questions": [
+        {
+          "id": "mcq-twt-1",
+          "question": "What is the primary difference between `throw` and `throws`?",
+          "options": [
+            "throw is for numbers; throws is for Strings",
+            "throw is an executable statement inside a method body to raise an exception; throws is a declaration in a method signature specifying potential exceptions",
+            "throws creates an exception; throw catches an exception",
+            "They are completely interchangeable"
+          ],
+          "correctOption": 1,
+          "explanation": "`throw` is an action verb used in code blocks to raise an exception object. `throws` is a keyword in method signatures declaring what exceptions the method might emit.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-twt-2",
+          "question": "What must follow the `throw` keyword in Java?",
+          "options": [
+            "A class name (e.g. throw Exception;)",
+            "An instance of Throwable or its subclasses (e.g. throw new Exception(\"error\");)",
+            "A boolean condition",
+            "A method name"
+          ],
+          "correctOption": 1,
+          "explanation": "`throw` requires an instantiated object of type `Throwable` (or any subclass). Writing `throw Exception;` is a compile error.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-twt-3",
+          "question": "How many exception classes can be declared in a single `throws` clause?",
+          "options": [
+            "Only one",
+            "At most two",
+            "Multiple classes, separated by commas (e.g. throws IOException, SQLException)",
+            "Unlimited, but separated by colons"
+          ],
+          "correctOption": 2,
+          "explanation": "A method signature can declare multiple exception classes separated by commas: `public void test() throws IOException, SQLException, TimeoutException`.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-twt-4",
+          "question": "If a method declares `void readFile() throws IOException`, what does the compiler require of any caller method?",
+          "options": [
+            "Nothing; throws is purely informational",
+            "The caller MUST either enclose the call in a try-catch block for IOException OR declare throws IOException in its own signature",
+            "The caller must run in a separate thread",
+            "The caller must be marked public"
+          ],
+          "correctOption": 1,
+          "explanation": "For checked exceptions like IOException, Java's compiler strictly enforces the 'Catch or Specify' rule on all calling methods.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-twt-5",
+          "question": "What will be printed by the following code?\n```java\ntry {\n    throw new ArithmeticException(\"Custom Calc Error\");\n} catch (ArithmeticException e) {\n    System.out.println(e.getMessage());\n}\n```",
+          "options": [
+            "Custom Calc Error",
+            "/ by zero",
+            "null",
+            "ArithmeticException"
+          ],
+          "correctOption": 0,
+          "explanation": "`e.getMessage()` returns the exact message string passed into the exception constructor: \"Custom Calc Error\".",
+          "correctIndex": 0
+        },
+        {
+          "id": "mcq-twt-6",
+          "question": "Can `throw` be used to throw a `null` reference (e.g. `throw null;`)?",
+          "options": [
+            "Yes, it throws a NullPointerException at runtime",
+            "No, it causes a compile-time error",
+            "Yes, it creates an empty exception",
+            "It shuts down the JVM"
+          ],
+          "correctOption": 0,
+          "explanation": "`throw null;` compiles because null can match any reference type, but at runtime the JVM attempts to throw it and immediately throws a `NullPointerException`.",
+          "correctIndex": 0
+        },
+        {
+          "id": "mcq-twt-7",
+          "question": "Is it mandatory to declare unchecked exceptions (`RuntimeException` subclasses) in a `throws` clause?",
+          "options": [
+            "Yes, all exceptions must be declared",
+            "No, unchecked exceptions do not require declaration in throws, though doing so can serve as documentation",
+            "Only in interface methods",
+            "Only in abstract classes"
+          ],
+          "correctOption": 1,
+          "explanation": "Unchecked exceptions (subclasses of RuntimeException) are exempt from compile-time checking and are not mandatory in `throws` clauses.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-twt-8",
+          "question": "What happens if code appears directly after a `throw` statement in the same block without being inside an if-statement?\n```java\nthrow new RuntimeException();\nSystem.out.println(\"Hello\");\n```",
+          "options": [
+            "\"Hello\" is printed",
+            "Compile error: Unreachable code",
+            "Runtime exception is suppressed",
+            "Both execute"
+          ],
+          "correctOption": 1,
+          "explanation": "Because `throw` transfers control out of the method unconditionally, any statements directly following it in the same block are completely unreachable, causing a compile error.",
+          "correctIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-throw-and-throws-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Validate Input with throw",
+      "practice": {
+        "id": "prac-act-twt",
+        "title": "Hands-On: Validate Input with throw",
+        "description": "Write a validation method that throws an IllegalArgumentException for invalid input.",
+        "starterCode": "public class PracticeThrow {\n    static void checkAge(int age) {\n        // TODO: If age < 18, throw IllegalArgumentException(\"Must be 18+\")\n    }\n    public static void main(String[] args) {\n        try {\n            checkAge(16);\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+        "solutionCode": "public class PracticeThrow {\n    static void checkAge(int age) {\n        if (age < 18) {\n            throw new IllegalArgumentException(\"Must be 18+\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            checkAge(16);\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+        "expectedOutput": "Caught: Must be 18+"
+      }
+    },
+    {
+      "id": "act-throw-and-throws-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: throw & throws",
+      "interviewQA": [
+        {
+          "id": "iq-twt-1",
+          "question": "What is the difference between throw and throws in Java?",
+          "answer": "`throw` is an executable keyword used inside a method or block to explicitly raise a single instance of `Throwable`: `throw new MyException();`. `throws` is a keyword used in a method declaration to declare that the method may emit one or more checked exception classes: `void read() throws IOException, SQLException`. Callers of a method with `throws` must handle or re-declare those exceptions.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-twt-2",
+          "question": "Can we throw multiple exceptions simultaneously using the throw keyword?",
+          "answer": "No. The `throw` keyword can only throw **one** exception instance at a time (`throw new Exception()`). Once a `throw` statement executes, execution of the method halts immediately and control transfers out.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-twt-3",
+          "question": "What happens if you throw an exception inside a method that is not declared in its throws clause?",
+          "answer": "If the exception is an **unchecked exception** (`RuntimeException` or `Error`), the code compiles and runs fine without declaration. If the exception is a **checked exception** (like `IOException`), the code will fail to compile with an 'unreported exception; must be caught or declared to be thrown' error.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-twt-4",
+          "question": "What is the consequence of declaring throws for unchecked exceptions like NullPointerException?",
+          "answer": "It is syntactically legal, but the compiler does not enforce it on callers. It serves purely as documentation for developers reading the method signature.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-twt-5",
+          "question": "Can an overriding method in a subclass declare broader checked exceptions than the superclass method?",
+          "answer": "No! In Java method overriding, a subclass method **cannot** declare broader or new checked exceptions than the superclass method it overrides (it can only declare the same exceptions, narrower subclass exceptions, or fewer/no checked exceptions). Doing so would violate the Liskov Substitution Principle.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-twt-6",
+          "question": "What is the difference between throw new Exception() and throw new RuntimeException()?",
+          "answer": "`new Exception()` creates a checked exception, requiring the enclosing method to either catch it or declare `throws Exception`. `new RuntimeException()` creates an unchecked exception, which requires neither `try-catch` nor `throws` declarations.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-twt-7",
+          "question": "Why should methods throw specific exceptions instead of generic Exception?",
+          "answer": "Throwing specific exceptions (like `IllegalArgumentException` or `NoSuchElementException`) clearly communicates the exact root failure to callers. It allows callers to catch and recover from specific problems while letting unexpected errors propagate.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-throw-and-throws-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: throw & throws",
+      "checklist": [
+        {
+          "id": "chk-twt-1",
+          "text": "I can explain the difference between throw and throws in an interview."
+        },
+        {
+          "id": "chk-twt-2",
+          "text": "I know that throw takes an instance (new ...) while throws takes class names."
+        },
+        {
+          "id": "chk-twt-3",
+          "text": "I understand the 'Catch or Specify' compiler requirement for throws."
+        },
+        {
+          "id": "chk-twt-4",
+          "text": "I know the method overriding rule for checked exceptions."
+        },
+        {
+          "id": "chk-twt-5",
+          "text": "I use throw to enforce input validation and business invariants."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-twt-1",
+      "question": "What is the primary difference between `throw` and `throws`?",
+      "options": [
+        "throw is for numbers; throws is for Strings",
+        "throw is an executable statement inside a method body to raise an exception; throws is a declaration in a method signature specifying potential exceptions",
+        "throws creates an exception; throw catches an exception",
+        "They are completely interchangeable"
+      ],
+      "correctOption": 1,
+      "explanation": "`throw` is an action verb used in code blocks to raise an exception object. `throws` is a keyword in method signatures declaring what exceptions the method might emit.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-twt-2",
+      "question": "What must follow the `throw` keyword in Java?",
+      "options": [
+        "A class name (e.g. throw Exception;)",
+        "An instance of Throwable or its subclasses (e.g. throw new Exception(\"error\");)",
+        "A boolean condition",
+        "A method name"
+      ],
+      "correctOption": 1,
+      "explanation": "`throw` requires an instantiated object of type `Throwable` (or any subclass). Writing `throw Exception;` is a compile error.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-twt-3",
+      "question": "How many exception classes can be declared in a single `throws` clause?",
+      "options": [
+        "Only one",
+        "At most two",
+        "Multiple classes, separated by commas (e.g. throws IOException, SQLException)",
+        "Unlimited, but separated by colons"
+      ],
+      "correctOption": 2,
+      "explanation": "A method signature can declare multiple exception classes separated by commas: `public void test() throws IOException, SQLException, TimeoutException`.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-twt-4",
+      "question": "If a method declares `void readFile() throws IOException`, what does the compiler require of any caller method?",
+      "options": [
+        "Nothing; throws is purely informational",
+        "The caller MUST either enclose the call in a try-catch block for IOException OR declare throws IOException in its own signature",
+        "The caller must run in a separate thread",
+        "The caller must be marked public"
+      ],
+      "correctOption": 1,
+      "explanation": "For checked exceptions like IOException, Java's compiler strictly enforces the 'Catch or Specify' rule on all calling methods.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-twt-5",
+      "question": "What will be printed by the following code?\n```java\ntry {\n    throw new ArithmeticException(\"Custom Calc Error\");\n} catch (ArithmeticException e) {\n    System.out.println(e.getMessage());\n}\n```",
+      "options": [
+        "Custom Calc Error",
+        "/ by zero",
+        "null",
+        "ArithmeticException"
+      ],
+      "correctOption": 0,
+      "explanation": "`e.getMessage()` returns the exact message string passed into the exception constructor: \"Custom Calc Error\".",
+      "correctIndex": 0
+    },
+    {
+      "id": "mcq-twt-6",
+      "question": "Can `throw` be used to throw a `null` reference (e.g. `throw null;`)?",
+      "options": [
+        "Yes, it throws a NullPointerException at runtime",
+        "No, it causes a compile-time error",
+        "Yes, it creates an empty exception",
+        "It shuts down the JVM"
+      ],
+      "correctOption": 0,
+      "explanation": "`throw null;` compiles because null can match any reference type, but at runtime the JVM attempts to throw it and immediately throws a `NullPointerException`.",
+      "correctIndex": 0
+    },
+    {
+      "id": "mcq-twt-7",
+      "question": "Is it mandatory to declare unchecked exceptions (`RuntimeException` subclasses) in a `throws` clause?",
+      "options": [
+        "Yes, all exceptions must be declared",
+        "No, unchecked exceptions do not require declaration in throws, though doing so can serve as documentation",
+        "Only in interface methods",
+        "Only in abstract classes"
+      ],
+      "correctOption": 1,
+      "explanation": "Unchecked exceptions (subclasses of RuntimeException) are exempt from compile-time checking and are not mandatory in `throws` clauses.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-twt-8",
+      "question": "What happens if code appears directly after a `throw` statement in the same block without being inside an if-statement?\n```java\nthrow new RuntimeException();\nSystem.out.println(\"Hello\");\n```",
+      "options": [
+        "\"Hello\" is printed",
+        "Compile error: Unreachable code",
+        "Runtime exception is suppressed",
+        "Both execute"
+      ],
+      "correctOption": 1,
+      "explanation": "Because `throw` transfers control out of the method unconditionally, any statements directly following it in the same block are completely unreachable, causing a compile error.",
+      "correctIndex": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-twt-1",
+      "title": "Validate Bank Account Deposit",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `validateDeposit(double amount)`: If `amount <= 0`, throw an `IllegalArgumentException(\"Deposit must be positive\")`. In `main`, call `validateDeposit(-100)` inside a try-catch block and print \"Caught: Deposit must be positive\".",
+      "description": "Write a method `validateDeposit(double amount)`: If `amount <= 0`, throw an `IllegalArgumentException(\"Deposit must be positive\")`. In `main`, call `validateDeposit(-100)` inside a try-catch block and print \"Caught: Deposit must be positive\".",
+      "hint": "throw new IllegalArgumentException(\"Deposit must be positive\");",
+      "hints": [
+        "throw new IllegalArgumentException(\"Deposit must be positive\");"
+      ],
+      "starterCode": "public class DepositValidator {\n    static void validateDeposit(double amount) {\n        // TODO: Validate and throw IllegalArgumentException\n    }\n    public static void main(String[] args) {\n        // TODO: Call with -100 and catch\n    }\n}",
+      "solutionCode": "public class DepositValidator {\n    static void validateDeposit(double amount) {\n        if (amount <= 0) {\n            throw new IllegalArgumentException(\"Deposit must be positive\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            validateDeposit(-100);\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught: Deposit must be positive"
+        }
+      ],
+      "targetOutput": "Caught: Deposit must be positive"
+    },
+    {
+      "id": "prob-twt-2",
+      "title": "Declare Checked Exception with throws",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `checkServerStatus(boolean online) throws Exception`: If `!online`, throw `new Exception(\"Server Offline\")`. In `main`, call `checkServerStatus(false)` and catch `Exception`, printing \"Error: Server Offline\".",
+      "description": "Write a method `checkServerStatus(boolean online) throws Exception`: If `!online`, throw `new Exception(\"Server Offline\")`. In `main`, call `checkServerStatus(false)` and catch `Exception`, printing \"Error: Server Offline\".",
+      "hint": "Use throws Exception in signature and throw new Exception() in body.",
+      "hints": [
+        "Use throws Exception in signature and throw new Exception() in body."
+      ],
+      "starterCode": "public class ServerStatusContract {\n    static void checkServerStatus(boolean online) throws Exception {\n        // TODO: Validate server status\n    }\n    public static void main(String[] args) {\n        // TODO: Call checkServerStatus(false) in try-catch\n    }\n}",
+      "solutionCode": "public class ServerStatusContract {\n    static void checkServerStatus(boolean online) throws Exception {\n        if (!online) {\n            throw new Exception(\"Server Offline\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            checkServerStatus(false);\n        } catch (Exception e) {\n            System.out.println(\"Error: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Error: Server Offline"
+        }
+      ],
+      "targetOutput": "Error: Server Offline"
+    },
+    {
+      "id": "prob-twt-3",
+      "title": "Validate String Length Boundary",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method `setPassword(String pwd)`: If `pwd == null || pwd.length() < 8`, throw `new IllegalArgumentException(\"Password must have at least 8 characters\")`. In `main`, test with `\"short\"` and print the exception message.",
+      "description": "Write a method `setPassword(String pwd)`: If `pwd == null || pwd.length() < 8`, throw `new IllegalArgumentException(\"Password must have at least 8 characters\")`. In `main`, test with `\"short\"` and print the exception message.",
+      "hint": "Check pwd == null || pwd.length() < 8.",
+      "hints": [
+        "Check pwd == null || pwd.length() < 8."
+      ],
+      "starterCode": "public class PasswordValidatorPractice {\n    static void setPassword(String pwd) {\n        // TODO: Validate password length\n    }\n    public static void main(String[] args) {\n        // TODO: Test with \"short\"\n    }\n}",
+      "solutionCode": "public class PasswordValidatorPractice {\n    static void setPassword(String pwd) {\n        if (pwd == null || pwd.length() < 8) {\n            throw new IllegalArgumentException(\"Password must have at least 8 characters\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            setPassword(\"short\");\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Validation Error: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Validation Error: Password must have at least 8 characters"
+        }
+      ],
+      "targetOutput": "Validation Error: Password must have at least 8 characters"
+    },
+    {
+      "id": "prob-twt-4",
+      "title": "Propagate Checked Exception Across Methods",
+      "difficulty": "Medium",
+      "problemStatement": "Write `level2() throws Exception` which executes `throw new Exception(\"Database Timeout\")`. Write `level1() throws Exception` which calls `level2()`. In `main`, call `level1()` in a try-catch and print \"Caught in main: Database Timeout\".",
+      "description": "Write `level2() throws Exception` which executes `throw new Exception(\"Database Timeout\")`. Write `level1() throws Exception` which calls `level2()`. In `main`, call `level1()` in a try-catch and print \"Caught in main: Database Timeout\".",
+      "hint": "Both level1 and level2 declare throws Exception.",
+      "hints": [
+        "Both level1 and level2 declare throws Exception."
+      ],
+      "starterCode": "public class PropagationContract {\n    static void level2() throws Exception {\n        // TODO: Throw checked exception\n    }\n    static void level1() throws Exception {\n        // TODO: Call level2()\n    }\n    public static void main(String[] args) {\n        // TODO: Call level1() in try-catch\n    }\n}",
+      "solutionCode": "public class PropagationContract {\n    static void level2() throws Exception {\n        throw new Exception(\"Database Timeout\");\n    }\n    static void level1() throws Exception {\n        level2();\n    }\n    public static void main(String[] args) {\n        try {\n            level1();\n        } catch (Exception e) {\n            System.out.println(\"Caught in main: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught in main: Database Timeout"
+        }
+      ],
+      "targetOutput": "Caught in main: Database Timeout"
+    },
+    {
+      "id": "prob-twt-5",
+      "title": "Validate Positive Array Size",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `createBuffer(int size)`: If `size <= 0`, throw `new NegativeArraySizeException(\"Size must be > 0\")`. Test with size = -5 in try-catch and print \"Caught invalid size: Size must be > 0\".",
+      "description": "Write a method `createBuffer(int size)`: If `size <= 0`, throw `new NegativeArraySizeException(\"Size must be > 0\")`. Test with size = -5 in try-catch and print \"Caught invalid size: Size must be > 0\".",
+      "hint": "throw new NegativeArraySizeException(\"Size must be > 0\");",
+      "hints": [
+        "throw new NegativeArraySizeException(\"Size must be > 0\");"
+      ],
+      "starterCode": "public class BufferValidatorPractice {\n    static void createBuffer(int size) {\n        // TODO: Validate size\n    }\n    public static void main(String[] args) {\n        // TODO: Test createBuffer(-5)\n    }\n}",
+      "solutionCode": "public class BufferValidatorPractice {\n    static void createBuffer(int size) {\n        if (size <= 0) {\n            throw new NegativeArraySizeException(\"Size must be > 0\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            createBuffer(-5);\n        } catch (NegativeArraySizeException e) {\n            System.out.println(\"Caught invalid size: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught invalid size: Size must be > 0"
+        }
+      ],
+      "targetOutput": "Caught invalid size: Size must be > 0"
+    },
+    {
+      "id": "prob-twt-6",
+      "title": "Differentiate Keyword Syntax Rules",
+      "difficulty": "Easy",
+      "problemStatement": "Print a comparison summary: Print line 1: \"throw: statement inside method body\". Print line 2: \"throws: clause in method declaration\". Verify understanding of both keywords.",
+      "description": "Print a comparison summary: Print line 1: \"throw: statement inside method body\". Print line 2: \"throws: clause in method declaration\". Verify understanding of both keywords.",
+      "hint": "Print both descriptive lines.",
+      "hints": [
+        "Print both descriptive lines."
+      ],
+      "starterCode": "public class ThrowVsThrowsSummary {\n    public static void main(String[] args) {\n        // TODO: Print the summary\n    }\n}",
+      "solutionCode": "public class ThrowVsThrowsSummary {\n    public static void main(String[] args) {\n        System.out.println(\"throw: statement inside method body\");\n        System.out.println(\"throws: clause in method declaration\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "throw: statement inside method body\nthrows: clause in method declaration"
+        }
+      ],
+      "targetOutput": "throw: statement inside method body\nthrows: clause in method declaration"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-twt-1",
+      "question": "What is the difference between throw and throws in Java?",
+      "answer": "`throw` is an executable keyword used inside a method or block to explicitly raise a single instance of `Throwable`: `throw new MyException();`. `throws` is a keyword used in a method declaration to declare that the method may emit one or more checked exception classes: `void read() throws IOException, SQLException`. Callers of a method with `throws` must handle or re-declare those exceptions.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-twt-2",
+      "question": "Can we throw multiple exceptions simultaneously using the throw keyword?",
+      "answer": "No. The `throw` keyword can only throw **one** exception instance at a time (`throw new Exception()`). Once a `throw` statement executes, execution of the method halts immediately and control transfers out.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-twt-3",
+      "question": "What happens if you throw an exception inside a method that is not declared in its throws clause?",
+      "answer": "If the exception is an **unchecked exception** (`RuntimeException` or `Error`), the code compiles and runs fine without declaration. If the exception is a **checked exception** (like `IOException`), the code will fail to compile with an 'unreported exception; must be caught or declared to be thrown' error.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-twt-4",
+      "question": "What is the consequence of declaring throws for unchecked exceptions like NullPointerException?",
+      "answer": "It is syntactically legal, but the compiler does not enforce it on callers. It serves purely as documentation for developers reading the method signature.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-twt-5",
+      "question": "Can an overriding method in a subclass declare broader checked exceptions than the superclass method?",
+      "answer": "No! In Java method overriding, a subclass method **cannot** declare broader or new checked exceptions than the superclass method it overrides (it can only declare the same exceptions, narrower subclass exceptions, or fewer/no checked exceptions). Doing so would violate the Liskov Substitution Principle.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-twt-6",
+      "question": "What is the difference between throw new Exception() and throw new RuntimeException()?",
+      "answer": "`new Exception()` creates a checked exception, requiring the enclosing method to either catch it or declare `throws Exception`. `new RuntimeException()` creates an unchecked exception, which requires neither `try-catch` nor `throws` declarations.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-twt-7",
+      "question": "Why should methods throw specific exceptions instead of generic Exception?",
+      "answer": "Throwing specific exceptions (like `IllegalArgumentException` or `NoSuchElementException`) clearly communicates the exact root failure to callers. It allows callers to catch and recover from specific problems while letting unexpected errors propagate.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-twt-1",
+      "text": "I can explain the difference between throw and throws in an interview."
+    },
+    {
+      "id": "chk-twt-2",
+      "text": "I know that throw takes an instance (new ...) while throws takes class names."
+    },
+    {
+      "id": "chk-twt-3",
+      "text": "I understand the 'Catch or Specify' compiler requirement for throws."
+    },
+    {
+      "id": "chk-twt-4",
+      "text": "I know the method overriding rule for checked exceptions."
+    },
+    {
+      "id": "chk-twt-5",
+      "text": "I use throw to enforce input validation and business invariants."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-twt-1",
+      "text": "I can explain the difference between throw and throws in an interview."
+    },
+    {
+      "id": "chk-twt-2",
+      "text": "I know that throw takes an instance (new ...) while throws takes class names."
+    },
+    {
+      "id": "chk-twt-3",
+      "text": "I understand the 'Catch or Specify' compiler requirement for throws."
+    },
+    {
+      "id": "chk-twt-4",
+      "text": "I know the method overriding rule for checked exceptions."
+    },
+    {
+      "id": "chk-twt-5",
+      "text": "I use throw to enforce input validation and business invariants."
+    }
+  ]
+}

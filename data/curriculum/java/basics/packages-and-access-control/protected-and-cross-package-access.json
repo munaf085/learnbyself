@@ -1,0 +1,519 @@
+{
+  "id": "les-packages-and-access-control-protected-and-cross-package-access",
+  "slug": "protected-and-cross-package-access",
+  "sectionSlug": "basics",
+  "moduleSlug": "packages-and-access-control",
+  "title": "Protected Access & Cross-Package Inheritance",
+  "summary": "Master Java's most misunderstood access modifier: protected. Understand the inheritance vs reference access rule across packages and how frameworks use protected template hooks.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 30,
+  "orderIndex": 6,
+  "prerequisites": [
+    "access-modifiers",
+    "public-private-and-package-private"
+  ],
+  "subtopics": [
+    "Protected Access & Cross-Package Inheritance",
+    "Key Mechanics",
+    "Best Practices",
+    "Common Bugs"
+  ],
+  "learningOutcomes": [
+    "Explain the exact dual role of protected: package-private PLUS cross-package subclass inheritance",
+    "Master the foreign package reference restriction: why a subclass cannot access protected members on another superclass instance",
+    "Recognize protected template method patterns commonly used in frameworks (e.g., HttpServlet)",
+    "Understand why protected fields should still be guarded with getters/setters"
+  ],
+  "activities": [
+    {
+      "id": "act-protected-and-cross-package-access-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Protected Access & Cross-Package Inheritance",
+      "content": "`protected` is widely recognized as the most frequently misunderstood access modifier in Java. Many developers incorrectly think `protected` means 'subclasses can access it anywhere, anytime'. But Java enforces a subtle, strict rule regarding cross-package references. In this lesson, you will master the mechanics and real-world design patterns of `protected`.\n\n### 1. What `protected` Really Means\n`protected` grants access under two specific conditions:\n1. **Package Access**: Any class residing in the **same package** can access protected members directly, whether it is a subclass or not!\n2. **Inheritance Access Across Packages**: A subclass in a **different package** can access protected members of its superclass, but **ONLY through inheritance**.\n\n### 2. The Foreign Package Reference Trap (Classic Interview Trick)\nConsider this exact scenario:\n- `package com.framework; public class Base { protected int code; }`\n- `package com.app; public class Sub extends Base { ... }`\n\nInside `Sub`:\n```java\nthis.code = 42;          // COMPILES! Accessed via inheritance on 'this'.\nsuper.code = 42;         // COMPILES! Accessed via inheritance on 'super'.\n\nBase b = new Base();\nb.code = 42;             // COMPILE ERROR! Cannot access protected member on Base reference!\n\nSub otherSub = new Sub();\notherSub.code = 42;      // COMPILES! otherSub is of type Sub.\n```\n**Why?** In a foreign package, a subclass is only trusted with protected members through its **own inherited lineage**. It has no special privilege to inspect or modify arbitrary instances of the superclass!\n\n### 3. The Template Method Pattern & Framework Extension Points\nWhy does `protected` exist? Framework designers use `protected` to build extension hooks:\n- The framework provides a `public` entry point (e.g. `HttpServlet.service()`).\n- The internal hook methods (e.g. `HttpServlet.doGet()`, `doPost()`) are declared `protected`.\n- External developers inherit from `HttpServlet` and override `protected void doGet(...)`.\n- End users calling your servlet never invoke `doGet` directly; they call the public `service` method. `protected` ensures only the framework and subclasses participate in the workflow!\n\n### 4. Protected Fields vs. Protected Methods\nExposing fields as `protected` (`protected double balance;`) is generally discouraged in production because any subclass in any package can corrupt the variable without validation.\n\n*Best Practice*: Keep fields `private` and expose `protected` accessor or lifecycle methods instead: `protected void onBalanceUpdated(double newBal) { ... }`.",
+      "breakdown": [
+        {
+          "topic": "1. What `protected` Really Means",
+          "details": "`protected` grants access under two specific conditions:\n1. **Package Access**: Any class residing in the **same package** can access protected members directly, whether it is a subclass or not!\n2. **..."
+        },
+        {
+          "topic": "2. The Foreign Package Reference Trap (Classic Interview Trick)",
+          "details": "Consider this exact scenario:\n- `package com.framework; public class Base { protected int code; }`\n- `package com.app; public class Sub extends Base { ... }`\n\nInside `Sub`:\n```java\nthis.code = 42;    ..."
+        },
+        {
+          "topic": "3. The Template Method Pattern & Framework Extension Points",
+          "details": "Why does `protected` exist? Framework designers use `protected` to build extension hooks:\n- The framework provides a `public` entry point (e.g. `HttpServlet.service()`).\n- The internal hook methods (e..."
+        },
+        {
+          "topic": "4. Protected Fields vs. Protected Methods",
+          "details": "Exposing fields as `protected` (`protected double balance;`) is generally discouraged in production because any subclass in any package can corrupt the variable without validation.\n\n*Best Practice*: K..."
+        }
+      ]
+    },
+    {
+      "id": "act-protected-and-cross-package-access-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Protected Access & Cross-Package Inheritance",
+      "codeSnippet": "abstract class DocumentRenderer {\n    // Public template method orchestrating the workflow\n    public final void renderDocument() {\n        renderHeader();\n        renderBody();\n        renderFooter();\n    }\n\n    // Protected hooks meant to be customized by subclasses\n    protected void renderHeader() {\n        System.out.println(\"=== Default Header ===\");\n    }\n    protected abstract void renderBody();\n    protected void renderFooter() {\n        System.out.println(\"=== Default Footer ===\");\n    }\n}\n\nclass InvoiceRenderer extends DocumentRenderer {\n    @Override\n    protected void renderBody() {\n        System.out.println(\"Invoice #1001: Total $249.99\");\n    }\n}\n\npublic class TemplateMethodDemo {\n    public static void main(String[] args) {\n        DocumentRenderer renderer = new InvoiceRenderer();\n        renderer.renderDocument();\n    }\n}",
+      "description": "Step-by-step verified execution demonstrating Protected Access & Cross-Package Inheritance.",
+      "steps": [
+        {
+          "line": 2,
+          "description": "Initial declaration and setup for Protected Access & Cross-Package Inheritance."
+        },
+        {
+          "line": 5,
+          "description": "Core operation execution and state evaluation."
+        },
+        {
+          "line": 8,
+          "description": "Verification of expected output and invariants."
+        }
+      ]
+    },
+    {
+      "id": "act-protected-and-cross-package-access-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Protected Access & Cross-Package Inheritance",
+      "questions": [
+        {
+          "id": "mcq-pro-1",
+          "question": "Can a non-subclass class in package `com.bank` access a protected member of another class in package `com.bank`?",
+          "options": [
+            "No, protected is strictly for subclasses",
+            "Yes, protected members are fully accessible to ALL classes within the same package",
+            "Only if the member is static",
+            "Only with reflection"
+          ],
+          "correctIndex": 1,
+          "explanation": "protected includes package-private access; any class in the same package can access protected members.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-pro-2",
+          "question": "Class `Base` in package `p1` has `protected int x;`. Class `Sub` in package `p2` extends `Base`. Which code inside `Sub` causes a compilation error?",
+          "options": [
+            "this.x = 10;",
+            "super.x = 10;",
+            "Base b = new Base(); b.x = 10;",
+            "Sub s = new Sub(); s.x = 10;"
+          ],
+          "correctIndex": 2,
+          "explanation": "A subclass in a foreign package cannot access protected members through a raw reference to the superclass (Base b). Access is only permitted through its own inherited lineage.",
+          "correctOption": 2
+        },
+        {
+          "id": "mcq-pro-3",
+          "question": "Why is `java.lang.Object.clone()` declared `protected` instead of `public`?",
+          "options": [
+            "To prevent any object from being cloned",
+            "To force authors of cloneable classes to explicitly override clone(), implement Cloneable, and widen visibility to public",
+            "Because clone() is deprecated",
+            "To improve garbage collection"
+          ],
+          "correctIndex": 1,
+          "explanation": "Object declares clone() protected so that by default objects cannot be cloned from the outside unless the class author explicitly opts in by overriding clone() as public.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-pro-4",
+          "question": "Which design pattern heavily relies on `protected` methods as customizable hooks?",
+          "options": [
+            "Singleton Pattern",
+            "Template Method Pattern",
+            "Flyweight Pattern",
+            "Observer Pattern"
+          ],
+          "correctIndex": 1,
+          "explanation": "The Template Method pattern defines an algorithm's skeleton in a public final method and lets subclasses override protected hook methods.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-pro-5",
+          "question": "Why is declaring fields as `protected` generally discouraged in enterprise codebases?",
+          "options": [
+            "Subclasses across any package can mutate the field directly, bypassing validation and breaking encapsulation invariants",
+            "Protected fields use double memory",
+            "Protected fields cannot be serialized",
+            "The compiler marks them as deprecated"
+          ],
+          "correctIndex": 0,
+          "explanation": "Protected fields expose internal state to any subclass in any package, making it impossible to enforce invariants.",
+          "correctOption": 0
+        },
+        {
+          "id": "mcq-pro-6",
+          "question": "Can an overriding method in a subclass change a `protected` superclass method to `public`?",
+          "options": [
+            "No, visibility must stay identical",
+            "Yes, an overriding method can widen visibility (protected to public is legal)",
+            "Only in interfaces",
+            "Only if marked @SafeVarargs"
+          ],
+          "correctIndex": 1,
+          "explanation": "Overriding methods are allowed to widen visibility (e.g. protected -> public), but not reduce it.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-pro-7",
+          "question": "Can an overriding method change a `protected` superclass method to `private`?",
+          "options": [
+            "Yes",
+            "No, attempting to assign weaker access privileges (narrowing visibility) causes a compile-time error",
+            "Only if the superclass is abstract",
+            "Only in final classes"
+          ],
+          "correctIndex": 1,
+          "explanation": "Narrowing access from protected to private is strictly forbidden in Java.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-pro-8",
+          "question": "What is the visibility difference between default (package-private) and protected?",
+          "options": [
+            "There is no difference",
+            "protected allows access to subclasses in other packages; default does not",
+            "default is accessible everywhere in the world",
+            "protected is only accessible within the same class"
+          ],
+          "correctIndex": 1,
+          "explanation": "protected extends package-private visibility by also granting access to subclasses located in other packages.",
+          "correctOption": 1
+        }
+      ]
+    },
+    {
+      "id": "act-protected-and-cross-package-access-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Data Pipeline Template Hook",
+      "practice": {
+        "title": "Data Pipeline Template Hook",
+        "description": "Create an abstract `DataPipeline` with public final `execute()` method that calls protected hooks `readSource()`, `processData()`, and `writeOutput()`. Implement a `CsvPipeline` subclass.",
+        "problemStatement": "Create an abstract `DataPipeline` with public final `execute()` method that calls protected hooks `readSource()`, `processData()`, and `writeOutput()`. Implement a `CsvPipeline` subclass.",
+        "starterCode": "public class PipelineDemo {\n    // Define abstract DataPipeline and CsvPipeline\n    public static void main(String[] args) {\n        // Run pipeline\n    }\n}",
+        "solution": "abstract class DataPipeline {\n    public final void execute() {\n        readSource();\n        processData();\n        writeOutput();\n    }\n    protected abstract void readSource();\n    protected abstract void processData();\n    protected abstract void writeOutput();\n}\n\nclass CsvPipeline extends DataPipeline {\n    protected void readSource() { System.out.println(\"Read CSV\"); }\n    protected void processData() { System.out.println(\"Filter records\"); }\n    protected void writeOutput() { System.out.println(\"Write Database\"); }\n}\n\npublic class PipelineDemo {\n    public static void main(String[] args) {\n        DataPipeline p = new CsvPipeline();\n        p.execute();\n    }\n}",
+        "expectedOutput": "Read CSV\nFilter records\nWrite Database",
+        "hint": "Declare protected abstract methods and call them in public final execute().",
+        "hints": [
+          "Declare protected abstract methods and call them in public final execute()."
+        ]
+      }
+    },
+    {
+      "id": "act-protected-and-cross-package-access-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Protected Access & Cross-Package Inheritance",
+      "interviewQA": [
+        {
+          "id": "iq-pro-1",
+          "question": "Explain the subtle cross-package reference restriction for protected members.",
+          "answer": "In Java, when a subclass resides in a different package from its superclass, it can only access protected members of the superclass through inheritance on objects of its own type (or subtypes of itself). It CANNOT access protected members through a reference variable of the superclass type (`Super s = new Super(); s.protectedField;` fails). This prevents a subclass in another package from peeking into other sibling instances of the superclass.",
+          "category": "advanced-java"
+        },
+        {
+          "id": "iq-pro-2",
+          "question": "Why is java.lang.Object.clone() protected, and what steps are required to make a class cloneable?",
+          "answer": "`Object.clone()` is protected to prevent arbitrary classes from being cloned externally by default. To make a class cloneable:\n1. Implement the marker interface `java.lang.Cloneable`.\n2. Override `public Object clone() throws CloneNotSupportedException` (widening visibility from protected to public).\n3. In the body, call `super.clone()` and perform any necessary deep copies for mutable fields.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-pro-3",
+          "question": "How does the Template Method pattern utilize protected methods?",
+          "answer": "The Template Method pattern defines an algorithmic skeleton inside a `public final` method (like `HttpServlet.service()` or `GameEngine.run()`). The specific steps or customization points are declared as `protected` methods (e.g. `doGet()`, `initialize()`). External consumers call the public method, while subclasses override the protected hooks to inject custom logic.",
+          "category": "design-patterns"
+        },
+        {
+          "id": "iq-pro-4",
+          "question": "Why is 'protected' considered almost as risky as 'public' for class fields?",
+          "answer": "A protected field is accessible to any class in the same package AND any subclass created anywhere in the entire world. If a library author marks a field `protected`, any downstream consumer can create a subclass in their own package and directly mutate the field without validation. Once published, you cannot rename, remove, or change the type of a protected field without breaking downstream subclasses.",
+          "category": "architecture"
+        },
+        {
+          "id": "iq-pro-5",
+          "question": "Can you call a protected constructor from another package?",
+          "answer": "A protected constructor can ONLY be invoked via `super(...)` from a subclass constructor in another package. External code in another package cannot instantiate the class with `new MyClass()`.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-pro-6",
+          "question": "If Class A has a protected method, and Class B in another package extends A, can a class C in Class B's package access that method on an instance of B?",
+          "answer": "No. Class C is in the same package as B, but it does NOT inherit from A. The inherited protected method on B remains protected and is only accessible within B's lineage or within A's original package.",
+          "category": "edge-case"
+        },
+        {
+          "id": "iq-pro-7",
+          "question": "Can an interface have protected methods in Java?",
+          "answer": "No! In Java, all interface methods are implicitly `public` (or `private` for private helper methods introduced in Java 9). An interface cannot contain `protected` or package-private methods because interfaces define public contracts.",
+          "category": "language-rules"
+        }
+      ]
+    },
+    {
+      "id": "act-protected-and-cross-package-access-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Protected Access & Cross-Package Inheritance",
+      "checklist": [
+        "I understand the exact dual nature of protected access",
+        "I know why foreign-package subclasses cannot access protected members via superclass reference variables",
+        "I can implement the Template Method pattern using public runners and protected hooks",
+        "I know why Object.clone() is protected and how to widen it to public",
+        "I understand why interfaces cannot have protected methods"
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-pro-1",
+      "question": "Can a non-subclass class in package `com.bank` access a protected member of another class in package `com.bank`?",
+      "options": [
+        "No, protected is strictly for subclasses",
+        "Yes, protected members are fully accessible to ALL classes within the same package",
+        "Only if the member is static",
+        "Only with reflection"
+      ],
+      "correctIndex": 1,
+      "explanation": "protected includes package-private access; any class in the same package can access protected members.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-pro-2",
+      "question": "Class `Base` in package `p1` has `protected int x;`. Class `Sub` in package `p2` extends `Base`. Which code inside `Sub` causes a compilation error?",
+      "options": [
+        "this.x = 10;",
+        "super.x = 10;",
+        "Base b = new Base(); b.x = 10;",
+        "Sub s = new Sub(); s.x = 10;"
+      ],
+      "correctIndex": 2,
+      "explanation": "A subclass in a foreign package cannot access protected members through a raw reference to the superclass (Base b). Access is only permitted through its own inherited lineage.",
+      "correctOption": 2
+    },
+    {
+      "id": "mcq-pro-3",
+      "question": "Why is `java.lang.Object.clone()` declared `protected` instead of `public`?",
+      "options": [
+        "To prevent any object from being cloned",
+        "To force authors of cloneable classes to explicitly override clone(), implement Cloneable, and widen visibility to public",
+        "Because clone() is deprecated",
+        "To improve garbage collection"
+      ],
+      "correctIndex": 1,
+      "explanation": "Object declares clone() protected so that by default objects cannot be cloned from the outside unless the class author explicitly opts in by overriding clone() as public.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-pro-4",
+      "question": "Which design pattern heavily relies on `protected` methods as customizable hooks?",
+      "options": [
+        "Singleton Pattern",
+        "Template Method Pattern",
+        "Flyweight Pattern",
+        "Observer Pattern"
+      ],
+      "correctIndex": 1,
+      "explanation": "The Template Method pattern defines an algorithm's skeleton in a public final method and lets subclasses override protected hook methods.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-pro-5",
+      "question": "Why is declaring fields as `protected` generally discouraged in enterprise codebases?",
+      "options": [
+        "Subclasses across any package can mutate the field directly, bypassing validation and breaking encapsulation invariants",
+        "Protected fields use double memory",
+        "Protected fields cannot be serialized",
+        "The compiler marks them as deprecated"
+      ],
+      "correctIndex": 0,
+      "explanation": "Protected fields expose internal state to any subclass in any package, making it impossible to enforce invariants.",
+      "correctOption": 0
+    },
+    {
+      "id": "mcq-pro-6",
+      "question": "Can an overriding method in a subclass change a `protected` superclass method to `public`?",
+      "options": [
+        "No, visibility must stay identical",
+        "Yes, an overriding method can widen visibility (protected to public is legal)",
+        "Only in interfaces",
+        "Only if marked @SafeVarargs"
+      ],
+      "correctIndex": 1,
+      "explanation": "Overriding methods are allowed to widen visibility (e.g. protected -> public), but not reduce it.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-pro-7",
+      "question": "Can an overriding method change a `protected` superclass method to `private`?",
+      "options": [
+        "Yes",
+        "No, attempting to assign weaker access privileges (narrowing visibility) causes a compile-time error",
+        "Only if the superclass is abstract",
+        "Only in final classes"
+      ],
+      "correctIndex": 1,
+      "explanation": "Narrowing access from protected to private is strictly forbidden in Java.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-pro-8",
+      "question": "What is the visibility difference between default (package-private) and protected?",
+      "options": [
+        "There is no difference",
+        "protected allows access to subclasses in other packages; default does not",
+        "default is accessible everywhere in the world",
+        "protected is only accessible within the same class"
+      ],
+      "correctIndex": 1,
+      "explanation": "protected extends package-private visibility by also granting access to subclasses located in other packages.",
+      "correctOption": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p1-template-method-pipeline",
+      "title": "Data Pipeline Template Hook",
+      "difficulty": "Easy",
+      "description": "Create an abstract `DataPipeline` with public final `execute()` method that calls protected hooks `readSource()`, `processData()`, and `writeOutput()`. Implement a `CsvPipeline` subclass.",
+      "problemStatement": "Create an abstract `DataPipeline` with public final `execute()` method that calls protected hooks `readSource()`, `processData()`, and `writeOutput()`. Implement a `CsvPipeline` subclass.",
+      "starterCode": "public class PipelineDemo {\n    // Define abstract DataPipeline and CsvPipeline\n    public static void main(String[] args) {\n        // Run pipeline\n    }\n}",
+      "solution": "abstract class DataPipeline {\n    public final void execute() {\n        readSource();\n        processData();\n        writeOutput();\n    }\n    protected abstract void readSource();\n    protected abstract void processData();\n    protected abstract void writeOutput();\n}\n\nclass CsvPipeline extends DataPipeline {\n    protected void readSource() { System.out.println(\"Read CSV\"); }\n    protected void processData() { System.out.println(\"Filter records\"); }\n    protected void writeOutput() { System.out.println(\"Write Database\"); }\n}\n\npublic class PipelineDemo {\n    public static void main(String[] args) {\n        DataPipeline p = new CsvPipeline();\n        p.execute();\n    }\n}",
+      "hint": "Declare protected abstract methods and call them in public final execute().",
+      "hints": [
+        "Declare protected abstract methods and call them in public final execute()."
+      ],
+      "expectedOutput": "Read CSV\nFilter records\nWrite Database"
+    },
+    {
+      "id": "p2-foreign-reference-simulator",
+      "title": "Protected Reference Legality Checker",
+      "difficulty": "Easy",
+      "description": "Write a method `isLegalReferenceAccess(boolean inSubclass, boolean samePackage, boolean accessedThroughSubclassRef)` that returns true if protected member access is permitted by the compiler.",
+      "problemStatement": "Write a method `isLegalReferenceAccess(boolean inSubclass, boolean samePackage, boolean accessedThroughSubclassRef)` that returns true if protected member access is permitted by the compiler.",
+      "starterCode": "public class ProtectedChecker {\n    public static boolean isLegalReferenceAccess(boolean inSubclass, boolean samePackage, boolean accessedThroughSubclassRef) {\n        // Your logic here\n        return false;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(isLegalReferenceAccess(false, true, false));  // same package non-subclass\n        System.out.println(isLegalReferenceAccess(true, false, false));  // foreign package via super ref\n        System.out.println(isLegalReferenceAccess(true, false, true));   // foreign package via sub ref\n    }\n}",
+      "solution": "public class ProtectedChecker {\n    public static boolean isLegalReferenceAccess(boolean inSubclass, boolean samePackage, boolean accessedThroughSubclassRef) {\n        if (samePackage) return true;\n        if (inSubclass && accessedThroughSubclassRef) return true;\n        return false;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(isLegalReferenceAccess(false, true, false));\n        System.out.println(isLegalReferenceAccess(true, false, false));\n        System.out.println(isLegalReferenceAccess(true, false, true));\n    }\n}",
+      "hint": "Access is legal if same package is true, OR if inSubclass and accessedThroughSubclassRef are both true.",
+      "hints": [
+        "Access is legal if same package is true, OR if inSubclass and accessedThroughSubclassRef are both true."
+      ],
+      "expectedOutput": "true\nfalse\ntrue"
+    },
+    {
+      "id": "p3-protected-event-listener",
+      "title": "Protected Event Listener Hook",
+      "difficulty": "Medium",
+      "description": "Implement a `Button` component with a protected lifecycle method `onClick()`. Create a `SubmitButton` that overrides `onClick()` to log the submit action.",
+      "problemStatement": "Implement a `Button` component with a protected lifecycle method `onClick()`. Create a `SubmitButton` that overrides `onClick()` to log the submit action.",
+      "starterCode": "public class ButtonDemo {\n    static class Button {\n        public void click() {\n            // trigger onClick hook\n        }\n        protected void onClick() {\n            System.out.println(\"Default button clicked\");\n        }\n    }\n\n    public static void main(String[] args) {\n        // Test SubmitButton\n    }\n}",
+      "solution": "public class ButtonDemo {\n    static class Button {\n        public void click() {\n            onClick();\n        }\n        protected void onClick() {\n            System.out.println(\"Default button clicked\");\n        }\n    }\n\n    static class SubmitButton extends Button {\n        @Override\n        protected void onClick() {\n            System.out.println(\"Submit form dispatched!\");\n        }\n    }\n\n    public static void main(String[] args) {\n        Button btn = new SubmitButton();\n        btn.click();\n    }\n}",
+      "hint": "Override protected void onClick() in SubmitButton.",
+      "hints": [
+        "Override protected void onClick() in SubmitButton."
+      ],
+      "expectedOutput": "Submit form dispatched!"
+    },
+    {
+      "id": "p4-subclass-getter-pattern",
+      "title": "Subclass Guarded Getter Pattern",
+      "difficulty": "Medium",
+      "description": "Create a base class `Vehicle` with private `engineStatus` and a protected method `setEngineStatus(String status)` that validates input. Create a subclass `Car` that starts the engine.",
+      "problemStatement": "Create a base class `Vehicle` with private `engineStatus` and a protected method `setEngineStatus(String status)` that validates input. Create a subclass `Car` that starts the engine.",
+      "starterCode": "public class VehicleDemo {\n    static class Vehicle {\n        private String engineStatus = \"OFF\";\n        // protected setter with validation\n        public String getStatus() { return engineStatus; }\n    }\n\n    public static void main(String[] args) {\n        // Test Car subclass\n    }\n}",
+      "solution": "public class VehicleDemo {\n    static class Vehicle {\n        private String engineStatus = \"OFF\";\n        protected void setEngineStatus(String status) {\n            if (status != null) this.engineStatus = status;\n        }\n        public String getStatus() { return engineStatus; }\n    }\n\n    static class Car extends Vehicle {\n        public void startCar() {\n            setEngineStatus(\"RUNNING\");\n        }\n    }\n\n    public static void main(String[] args) {\n        Car car = new Car();\n        car.startCar();\n        System.out.println(\"Car status: \" + car.getStatus());\n    }\n}",
+      "hint": "Subclass calls protected setEngineStatus rather than modifying field directly.",
+      "hints": [
+        "Subclass calls protected setEngineStatus rather than modifying field directly."
+      ],
+      "expectedOutput": "Car status: RUNNING"
+    },
+    {
+      "id": "p5-protected-clone-override",
+      "title": "The java.lang.Object.clone() Conundrum",
+      "difficulty": "Hard",
+      "description": "In `java.lang.Object`, the method `clone()` is declared `protected`. Implement a `Customer` class implementing `Cloneable` that widens `clone()` to `public` so external callers can invoke it.",
+      "problemStatement": "In `java.lang.Object`, the method `clone()` is declared `protected`. Implement a `Customer` class implementing `Cloneable` that widens `clone()` to `public` so external callers can invoke it.",
+      "starterCode": "public class CloneOverrideDemo {\n    static class Customer implements Cloneable {\n        String name;\n        public Customer(String n) { this.name = n; }\n        // Override clone() widening visibility to public\n    }\n\n    public static void main(String[] args) throws Exception {\n        // Clone customer\n    }\n}",
+      "solution": "public class CloneOverrideDemo {\n    static class Customer implements Cloneable {\n        String name;\n        public Customer(String n) { this.name = n; }\n        \n        @Override\n        public Customer clone() throws CloneNotSupportedException {\n            return (Customer) super.clone();\n        }\n    }\n\n    public static void main(String[] args) throws Exception {\n        Customer c1 = new Customer(\"Dana\");\n        Customer c2 = c1.clone();\n        System.out.println(\"Cloned name: \" + c2.name);\n        System.out.println(\"Different references: \" + (c1 != c2));\n    }\n}",
+      "hint": "Declare public Customer clone() and call (Customer) super.clone().",
+      "hints": [
+        "Declare public Customer clone() and call (Customer) super.clone()."
+      ],
+      "expectedOutput": "Cloned name: Dana\nDifferent references: true"
+    },
+    {
+      "id": "p6-protected-subsystem-orchestrator",
+      "title": "Multi-tier Protected Subsystem",
+      "difficulty": "Hard",
+      "description": "Build a two-tier transaction subsystem. Base class `TransactionHandler` provides protected rollback and commit hooks. Subclass `AuditTransactionHandler` overrides hooks to append audit trail strings.",
+      "problemStatement": "Build a two-tier transaction subsystem. Base class `TransactionHandler` provides protected rollback and commit hooks. Subclass `AuditTransactionHandler` overrides hooks to append audit trail strings.",
+      "starterCode": "import java.util.*;\n\npublic class TransactionSubsystem {\n    // Base and audit subclasses\n    public static void main(String[] args) {\n        // Run transaction\n    }\n}",
+      "solution": "import java.util.*;\n\npublic class TransactionSubsystem {\n    static class TransactionHandler {\n        public final void process() {\n            try {\n                executeTask();\n                onCommit();\n            } catch (Exception e) {\n                onRollback();\n            }\n        }\n        protected void executeTask() { System.out.println(\"Task executed\"); }\n        protected void onCommit() { System.out.println(\"Committed\"); }\n        protected void onRollback() { System.out.println(\"Rolled back\"); }\n    }\n\n    static class AuditHandler extends TransactionHandler {\n        @Override\n        protected void onCommit() {\n            super.onCommit();\n            System.out.println(\"Audit: Transaction successfully logged\");\n        }\n    }\n\n    public static void main(String[] args) {\n        TransactionHandler handler = new AuditHandler();\n        handler.process();\n    }\n}",
+      "hint": "Override onCommit and invoke super.onCommit().",
+      "hints": [
+        "Override onCommit and invoke super.onCommit()."
+      ],
+      "expectedOutput": "Task executed\nCommitted\nAudit: Transaction successfully logged"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-pro-1",
+      "question": "Explain the subtle cross-package reference restriction for protected members.",
+      "answer": "In Java, when a subclass resides in a different package from its superclass, it can only access protected members of the superclass through inheritance on objects of its own type (or subtypes of itself). It CANNOT access protected members through a reference variable of the superclass type (`Super s = new Super(); s.protectedField;` fails). This prevents a subclass in another package from peeking into other sibling instances of the superclass.",
+      "category": "advanced-java"
+    },
+    {
+      "id": "iq-pro-2",
+      "question": "Why is java.lang.Object.clone() protected, and what steps are required to make a class cloneable?",
+      "answer": "`Object.clone()` is protected to prevent arbitrary classes from being cloned externally by default. To make a class cloneable:\n1. Implement the marker interface `java.lang.Cloneable`.\n2. Override `public Object clone() throws CloneNotSupportedException` (widening visibility from protected to public).\n3. In the body, call `super.clone()` and perform any necessary deep copies for mutable fields.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-pro-3",
+      "question": "How does the Template Method pattern utilize protected methods?",
+      "answer": "The Template Method pattern defines an algorithmic skeleton inside a `public final` method (like `HttpServlet.service()` or `GameEngine.run()`). The specific steps or customization points are declared as `protected` methods (e.g. `doGet()`, `initialize()`). External consumers call the public method, while subclasses override the protected hooks to inject custom logic.",
+      "category": "design-patterns"
+    },
+    {
+      "id": "iq-pro-4",
+      "question": "Why is 'protected' considered almost as risky as 'public' for class fields?",
+      "answer": "A protected field is accessible to any class in the same package AND any subclass created anywhere in the entire world. If a library author marks a field `protected`, any downstream consumer can create a subclass in their own package and directly mutate the field without validation. Once published, you cannot rename, remove, or change the type of a protected field without breaking downstream subclasses.",
+      "category": "architecture"
+    },
+    {
+      "id": "iq-pro-5",
+      "question": "Can you call a protected constructor from another package?",
+      "answer": "A protected constructor can ONLY be invoked via `super(...)` from a subclass constructor in another package. External code in another package cannot instantiate the class with `new MyClass()`.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-pro-6",
+      "question": "If Class A has a protected method, and Class B in another package extends A, can a class C in Class B's package access that method on an instance of B?",
+      "answer": "No. Class C is in the same package as B, but it does NOT inherit from A. The inherited protected method on B remains protected and is only accessible within B's lineage or within A's original package.",
+      "category": "edge-case"
+    },
+    {
+      "id": "iq-pro-7",
+      "question": "Can an interface have protected methods in Java?",
+      "answer": "No! In Java, all interface methods are implicitly `public` (or `private` for private helper methods introduced in Java 9). An interface cannot contain `protected` or package-private methods because interfaces define public contracts.",
+      "category": "language-rules"
+    }
+  ],
+  "summaryChecklist": [
+    "I understand the exact dual nature of protected access",
+    "I know why foreign-package subclasses cannot access protected members via superclass reference variables",
+    "I can implement the Template Method pattern using public runners and protected hooks",
+    "I know why Object.clone() is protected and how to widen it to public",
+    "I understand why interfaces cannot have protected methods"
+  ],
+  "checklist": [
+    "I understand the exact dual nature of protected access",
+    "I know why foreign-package subclasses cannot access protected members via superclass reference variables",
+    "I can implement the Template Method pattern using public runners and protected hooks",
+    "I know why Object.clone() is protected and how to widen it to public",
+    "I understand why interfaces cannot have protected methods"
+  ]
+}

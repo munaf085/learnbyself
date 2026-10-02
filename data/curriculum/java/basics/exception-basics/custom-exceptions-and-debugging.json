@@ -1,0 +1,523 @@
+{
+  "id": "les-exception-basics-custom-exceptions-and-debugging",
+  "slug": "custom-exceptions-and-debugging",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "Custom Exceptions & Systematic Debugging",
+  "summary": "Learn how to design clean, domain-specific custom exceptions (both checked and unchecked), chain causes, provide contextual metadata, and debug exceptions systematically.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 30,
+  "orderIndex": 9,
+  "prerequisites": [
+    "common-java-exceptions",
+    "checked-vs-unchecked-exceptions"
+  ],
+  "subtopics": [
+    "Custom Exceptions & Systematic Debugging",
+    "Key Mechanics",
+    "Best Practices",
+    "Common Bugs"
+  ],
+  "learningOutcomes": [
+    "Design and implement domain-specific custom exceptions extending Exception or RuntimeException",
+    "Implement standard exception constructors including message and root cause chaining (Throwable cause)",
+    "Attach contextual debugging state (error codes, entity IDs, timestamps) to custom exceptions",
+    "Apply systematic 4-step debugging to isolate, reproduce, and resolve exception stack traces"
+  ],
+  "activities": [
+    {
+      "id": "act-custom-exceptions-and-debugging-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Custom Exceptions & Systematic Debugging",
+      "content": "While Java provides a rich set of built-in exceptions, enterprise applications require domain-specific exceptions to communicate meaningful business failures. An exception named `InsufficientFundsException` or `UserNotFoundException` conveys instant clarity compared to a generic `RuntimeException` or `IllegalArgumentException`. In this lesson, you will master crafting professional custom exceptions, chaining root causes, and applying disciplined debugging workflows.\n\n### 1. Why Create Custom Exceptions?\nCustom exceptions offer several vital advantages:\n1. **Semantic Clarity**: The class name itself documents the failure mode (`OrderAlreadyShippedException`).\n2. **Targeted Catch Blocks**: Callers can catch specific domain failures without catching unrelated system errors:\n   `catch (PaymentDeclinedException e) { notifyUser(); }`\n3. **Domain Metadata**: Custom exceptions can store relevant domain attributes, such as `accountId`, `failedAmount`, or an application error code (`ERR-4001`).\n\n### 2. Designing Checked vs. Unchecked Custom Exceptions\nThe fundamental design decision is choosing the parent class:\n- **Extend `Exception` (Checked)**: If the failure is a recoverable business condition that the caller MUST anticipate and handle (e.g., `InsufficientInventoryException`).\n- **Extend `RuntimeException` (Unchecked)**: If the failure is an unrecoverable system error, programming bug, or invalid input state where recovery at the call site is unrealistic (e.g., `DatabaseConnectionFailedException`, `EntityNotFoundException`). In modern Java frameworks (Spring, Hibernate), unchecked custom exceptions are preferred for cleaner code.\n\n### 3. The 4 Canonical Constructors\nWhen creating any custom exception, convention dictates implementing four standard constructors by delegating to `super`:\n\n```java\npublic class ResourceNotFoundException extends RuntimeException {\n    // 1. Default constructor\n    public ResourceNotFoundException() { super(); }\n    \n    // 2. Message constructor\n    public ResourceNotFoundException(String message) { super(message); }\n    \n    // 3. Message and Cause constructor (Chaining)\n    public ResourceNotFoundException(String message, Throwable cause) { super(message, cause); }\n    \n    // 4. Cause-only constructor\n    public ResourceNotFoundException(Throwable cause) { super(cause); }\n}\n```\nPassing the `cause` ensures the original low-level exception stack trace is preserved.\n\n### 4. Adding Rich Contextual Metadata\nStandard exceptions only contain a message string. Custom exceptions can store rich structured state for logging and alerting:\n```java\npublic class PaymentFailedException extends RuntimeException {\n    private final String transactionId;\n    private final double attemptedAmount;\n    private final String errorCode;\n\n    public PaymentFailedException(String message, String transactionId, double amount, String errorCode) {\n        super(message);\n        this.transactionId = transactionId;\n        this.attemptedAmount = amount;\n        this.errorCode = errorCode;\n    }\n    public String getTransactionId() { return transactionId; }\n    public double getAttemptedAmount() { return attemptedAmount; }\n    public String getErrorCode() { return errorCode; }\n}\n```\n\n### 5. The 4-Step Systematic Debugging Method\nWhen faced with an unexpected exception in production:\n1. **Identify the Type & Message**: Read the first line of the stack trace (`NullPointerException: Cannot invoke 'User.getEmail()' because 'user' is null`).\n2. **Locate the Epicenter**: Scroll down to the first stack trace frame referencing your project package (e.g., `OrderService.java:68`).\n3. **Inspect the State**: Check the variables and expressions at that line. What could be null? What was the input? Check logs right before the error.\n4. **Reproduce & Fix Defensively**: Write a failing unit test reproducing the input, then apply defensive validation or fix the logic bug.",
+      "breakdown": [
+        {
+          "topic": "1. Why Create Custom Exceptions?",
+          "details": "Custom exceptions offer several vital advantages:\n1. **Semantic Clarity**: The class name itself documents the failure mode (`OrderAlreadyShippedException`).\n2. **Targeted Catch Blocks**: Callers can ..."
+        },
+        {
+          "topic": "2. Designing Checked vs. Unchecked Custom Exceptions",
+          "details": "The fundamental design decision is choosing the parent class:\n- **Extend `Exception` (Checked)**: If the failure is a recoverable business condition that the caller MUST anticipate and handle (e.g., `..."
+        },
+        {
+          "topic": "3. The 4 Canonical Constructors",
+          "details": "When creating any custom exception, convention dictates implementing four standard constructors by delegating to `super`:\n\n```java\npublic class ResourceNotFoundException extends RuntimeException {\n   ..."
+        },
+        {
+          "topic": "4. Adding Rich Contextual Metadata",
+          "details": "Standard exceptions only contain a message string. Custom exceptions can store rich structured state for logging and alerting:\n```java\npublic class PaymentFailedException extends RuntimeException {\n  ..."
+        },
+        {
+          "topic": "5. The 4-Step Systematic Debugging Method",
+          "details": "When faced with an unexpected exception in production:\n1. **Identify the Type & Message**: Read the first line of the stack trace (`NullPointerException: Cannot invoke 'User.getEmail()' because 'user'..."
+        }
+      ]
+    },
+    {
+      "id": "act-custom-exceptions-and-debugging-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Custom Exceptions & Systematic Debugging",
+      "codeSnippet": "class InsufficientFundsException extends Exception {\n    private final double deficit;\n\n    public InsufficientFundsException(String message, double deficit) {\n        super(message);\n        this.deficit = deficit;\n    }\n\n    public double getDeficit() {\n        return deficit;\n    }\n}\n\npublic class CustomExceptionDemo {\n    public static void withdraw(double balance, double amount) throws InsufficientFundsException {\n        if (amount > balance) {\n            throw new InsufficientFundsException(\"Cannot withdraw funds\", amount - balance);\n        }\n        System.out.println(\"Withdrawal successful. Remaining: \" + (balance - amount));\n    }\n\n    public static void main(String[] args) {\n        try {\n            withdraw(100.0, 150.0);\n        } catch (InsufficientFundsException e) {\n            System.out.println(\"Caught Custom Exception: \" + e.getMessage());\n            System.out.println(\"Shortfall amount: $\" + e.getDeficit());\n        }\n    }\n}",
+      "description": "Step-by-step verified execution demonstrating Custom Exceptions & Systematic Debugging.",
+      "steps": [
+        {
+          "line": 2,
+          "description": "Initial declaration and setup for Custom Exceptions & Systematic Debugging."
+        },
+        {
+          "line": 5,
+          "description": "Core operation execution and state evaluation."
+        },
+        {
+          "line": 8,
+          "description": "Verification of expected output and invariants."
+        }
+      ]
+    },
+    {
+      "id": "act-custom-exceptions-and-debugging-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Custom Exceptions & Systematic Debugging",
+      "questions": [
+        {
+          "id": "mcq-cst-1",
+          "question": "What class must a custom checked exception extend?",
+          "options": [
+            "java.lang.RuntimeException",
+            "java.lang.Throwable directly",
+            "java.lang.Exception (or any checked subclass, but not RuntimeException)",
+            "java.lang.Error"
+          ],
+          "correctIndex": 2,
+          "explanation": "To create a checked exception, extend java.lang.Exception (or another checked exception). Extending RuntimeException makes it unchecked.",
+          "correctOption": 2
+        },
+        {
+          "id": "mcq-cst-2",
+          "question": "Why is it important to provide a constructor accepting (String message, Throwable cause) in a custom exception?",
+          "options": [
+            "It is required by the Java compiler to compile the class",
+            "It enables exception chaining, preserving the original underlying root cause and its stack trace",
+            "It automatically prints the stack trace to the console",
+            "It increases JVM execution performance"
+          ],
+          "correctIndex": 1,
+          "explanation": "Passing the cause to super(message, cause) enables exception chaining so the original stack trace is retained for debugging.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-cst-3",
+          "question": "What is the primary benefit of custom exceptions over generic RuntimeExceptions?",
+          "options": [
+            "Custom exceptions run faster in bytecode",
+            "They provide clear semantic naming, domain-specific metadata, and allow callers to catch targeted errors",
+            "They do not consume memory on the heap",
+            "They automatically retry failed database queries"
+          ],
+          "correctIndex": 1,
+          "explanation": "Custom exceptions communicate exact domain intent (e.g. OrderNotFoundException) and carry domain-specific context.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-cst-4",
+          "question": "What does calling `e.getCause()` return?",
+          "options": [
+            "The line number where the exception occurred",
+            "The underlying Throwable that caused this exception, or null if none was specified",
+            "The thread name that caused the failure",
+            "The exception message in uppercase"
+          ],
+          "correctIndex": 1,
+          "explanation": "getCause() returns the underlying cause passed to the constructor or set via initCause().",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-cst-5",
+          "question": "In modern Java frameworks like Spring and Hibernate, what type of custom exceptions is favored for business logic?",
+          "options": [
+            "Checked exceptions extending java.lang.Exception",
+            "Unchecked exceptions extending java.lang.RuntimeException",
+            "System errors extending java.lang.Error",
+            "Checked exceptions extending Throwable"
+          ],
+          "correctIndex": 1,
+          "explanation": "Modern frameworks heavily prefer unchecked exceptions (extending RuntimeException) to prevent cluttering method signatures with throws declarations.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-cst-6",
+          "question": "When debugging a production stack trace, what should be your first point of investigation?",
+          "options": [
+            "The last line of the stack trace",
+            "The JDK internal class frames at the very top",
+            "The exception type, message, and the highest stack frame referencing your application code",
+            "Rebooting the server"
+          ],
+          "correctIndex": 2,
+          "explanation": "Always inspect the exception type/message first, then find the topmost stack frame that corresponds to your own codebase.",
+          "correctOption": 2
+        },
+        {
+          "id": "mcq-cst-7",
+          "question": "What happens if a custom exception class does not define any constructors?",
+          "options": [
+            "Compilation error",
+            "The Java compiler provides a default no-argument constructor that calls super()",
+            "The class cannot be instantiated with new",
+            "It automatically inherits the (String message) constructor from Exception"
+          ],
+          "correctIndex": 1,
+          "explanation": "Java only generates a default no-argument constructor. It does NOT automatically inherit the parameterized constructors of Exception.",
+          "correctOption": 1
+        },
+        {
+          "id": "mcq-cst-8",
+          "question": "Can a custom exception class contain instance variables and custom methods?",
+          "options": [
+            "No, exceptions can only contain constructors",
+            "Yes, custom exceptions are standard Java classes and can have fields, getters, and helper methods",
+            "Only if the fields are static",
+            "Only if the exception extends Error"
+          ],
+          "correctIndex": 1,
+          "explanation": "Custom exceptions are regular Java classes and can carry instance fields (like orderId, errorCode, timestamp) and getters.",
+          "correctOption": 1
+        }
+      ]
+    },
+    {
+      "id": "act-custom-exceptions-and-debugging-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Create UserNotFoundException",
+      "practice": {
+        "title": "Create UserNotFoundException",
+        "description": "Create an unchecked exception `UserNotFoundException` that stores the missing `userId`. Write a finder method that throws it when an ID does not exist in an array.",
+        "problemStatement": "Create an unchecked exception `UserNotFoundException` that stores the missing `userId`. Write a finder method that throws it when an ID does not exist in an array.",
+        "starterCode": "// Define UserNotFoundException extending RuntimeException\n\npublic class UserFinder {\n    static String[] users = {\"101\", \"102\", \"103\"};\n\n    public static void findUser(String id) {\n        // Throw UserNotFoundException if not found\n    }\n\n    public static void main(String[] args) {\n        try {\n            findUser(\"999\");\n        } catch (Exception e) {\n            System.out.println(e.getMessage());\n        }\n    }\n}",
+        "solution": "class UserNotFoundException extends RuntimeException {\n    private final String userId;\n    public UserNotFoundException(String userId) {\n        super(\"User not found with ID: \" + userId);\n        this.userId = userId;\n    }\n    public String getUserId() { return userId; }\n}\n\npublic class UserFinder {\n    static String[] users = {\"101\", \"102\", \"103\"};\n\n    public static void findUser(String id) {\n        for (String u : users) {\n            if (u.equals(id)) {\n                System.out.println(\"Found: \" + id);\n                return;\n            }\n        }\n        throw new UserNotFoundException(id);\n    }\n\n    public static void main(String[] args) {\n        try {\n            findUser(\"999\");\n        } catch (UserNotFoundException e) {\n            System.out.println(e.getMessage());\n        }\n    }\n}",
+        "expectedOutput": "User not found with ID: 999",
+        "hint": "Extend RuntimeException and pass a descriptive string to super(...).",
+        "hints": [
+          "Extend RuntimeException and pass a descriptive string to super(...)."
+        ]
+      }
+    },
+    {
+      "id": "act-custom-exceptions-and-debugging-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Custom Exceptions & Systematic Debugging",
+      "interviewQA": [
+        {
+          "id": "iq-cst-1",
+          "question": "How do you decide whether a custom exception should be checked or unchecked?",
+          "answer": "Make it **checked** (extend `Exception`) if the failure is an expected, recoverable business scenario that the calling code can and must deal with (e.g., `InsufficientInventoryException`). Make it **unchecked** (extend `RuntimeException`) if the error is unrecoverable, represents a programming or configuration bug, or if forcing callers to catch it would create verbose, boilerplate-heavy code.",
+          "category": "design"
+        },
+        {
+          "id": "iq-cst-2",
+          "question": "What is exception chaining and why is `Throwable cause` essential?",
+          "answer": "Exception chaining is wrapping a lower-level exception (like `SQLException` or `IOException`) inside a higher-level domain exception (like `DataAccessException`). Passing the lower-level exception as `cause` to `super(message, cause)` ensures the root cause and its full stack trace are preserved. Without chaining, the original technical diagnostic is lost forever.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cst-3",
+          "question": "What are the four standard constructors recommended for any custom exception class?",
+          "answer": "1. `MyException()`: No-arg default constructor.\n2. `MyException(String message)`: Constructor with descriptive message.\n3. `MyException(String message, Throwable cause)`: Constructor for exception chaining.\n4. `MyException(Throwable cause)`: Constructor when wrapping an exception without changing the message.",
+          "category": "best-practices"
+        },
+        {
+          "id": "iq-cst-4",
+          "question": "What extra information should you consider storing in a custom exception for distributed microservices?",
+          "answer": "In microservices, custom exceptions often include:\n1. A machine-readable error code (e.g., `PAYMENT_GATEWAY_TIMEOUT`).\n2. HTTP status code mapping (e.g., 404, 400, 503).\n3. Entity/Correlation IDs (e.g., `orderId`, `traceId`).\n4. Timestamp of the event.\n5. Whether the operation is safe to retry (`isRetryable`).",
+          "category": "architecture"
+        },
+        {
+          "id": "iq-cst-5",
+          "question": "Can you override `fillInStackTrace()` in a custom exception? Why would anyone do that?",
+          "answer": "Yes. Generating a stack trace requires walking the execution call stack, which has a measurable CPU cost. If a custom exception is used strictly for control flow or high-frequency business signaling where the stack trace is never read or logged, overriding `public synchronized Throwable fillInStackTrace() { return this; }` eliminates this overhead.",
+          "category": "performance"
+        },
+        {
+          "id": "iq-cst-6",
+          "question": "What is the risk of creating too many fine-grained custom exception classes?",
+          "answer": "Creating an excessive number of custom exceptions causes 'exception explosion', leading to cluttered packages, redundant classes with identical logic, and bloated `catch` blocks across the codebase. It is often better to use a cohesive hierarchy with error codes or reuse standard Java exceptions (`IllegalArgumentException`, `IllegalStateException`) when appropriate.",
+          "category": "clean-code"
+        },
+        {
+          "id": "iq-cst-7",
+          "question": "Describe your step-by-step methodology when an uncaught exception is reported in production logs.",
+          "answer": "1. **Analyze Header**: Read the exception class and error message.\n2. **Locate Code Boundary**: Scan stack trace for the top-most line belonging to our application package.\n3. **Correlate Logs**: Match the timestamp and thread/request ID with preceding debug logs to reconstruct application state.\n4. **Identify Invariant Failure**: Determine what reference was null, what calculation overflowed, or what assumption broke.\n5. **Write Regression Test**: Replicate the condition with a unit test.\n6. **Apply Defensive Fix & Deploy**: Guard against the condition and verify tests pass.",
+          "category": "debugging"
+        }
+      ]
+    },
+    {
+      "id": "act-custom-exceptions-and-debugging-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Custom Exceptions & Systematic Debugging",
+      "checklist": [
+        "I know how to create custom exceptions extending Exception or RuntimeException",
+        "I implement standard constructors to support exception message and root cause chaining",
+        "I know when to attach custom fields (errorCode, entityId) to an exception",
+        "I understand how modern frameworks favor unchecked exceptions for business logic",
+        "I can systematically debug production stack traces in 4 clear steps"
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-cst-1",
+      "question": "What class must a custom checked exception extend?",
+      "options": [
+        "java.lang.RuntimeException",
+        "java.lang.Throwable directly",
+        "java.lang.Exception (or any checked subclass, but not RuntimeException)",
+        "java.lang.Error"
+      ],
+      "correctIndex": 2,
+      "explanation": "To create a checked exception, extend java.lang.Exception (or another checked exception). Extending RuntimeException makes it unchecked.",
+      "correctOption": 2
+    },
+    {
+      "id": "mcq-cst-2",
+      "question": "Why is it important to provide a constructor accepting (String message, Throwable cause) in a custom exception?",
+      "options": [
+        "It is required by the Java compiler to compile the class",
+        "It enables exception chaining, preserving the original underlying root cause and its stack trace",
+        "It automatically prints the stack trace to the console",
+        "It increases JVM execution performance"
+      ],
+      "correctIndex": 1,
+      "explanation": "Passing the cause to super(message, cause) enables exception chaining so the original stack trace is retained for debugging.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-cst-3",
+      "question": "What is the primary benefit of custom exceptions over generic RuntimeExceptions?",
+      "options": [
+        "Custom exceptions run faster in bytecode",
+        "They provide clear semantic naming, domain-specific metadata, and allow callers to catch targeted errors",
+        "They do not consume memory on the heap",
+        "They automatically retry failed database queries"
+      ],
+      "correctIndex": 1,
+      "explanation": "Custom exceptions communicate exact domain intent (e.g. OrderNotFoundException) and carry domain-specific context.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-cst-4",
+      "question": "What does calling `e.getCause()` return?",
+      "options": [
+        "The line number where the exception occurred",
+        "The underlying Throwable that caused this exception, or null if none was specified",
+        "The thread name that caused the failure",
+        "The exception message in uppercase"
+      ],
+      "correctIndex": 1,
+      "explanation": "getCause() returns the underlying cause passed to the constructor or set via initCause().",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-cst-5",
+      "question": "In modern Java frameworks like Spring and Hibernate, what type of custom exceptions is favored for business logic?",
+      "options": [
+        "Checked exceptions extending java.lang.Exception",
+        "Unchecked exceptions extending java.lang.RuntimeException",
+        "System errors extending java.lang.Error",
+        "Checked exceptions extending Throwable"
+      ],
+      "correctIndex": 1,
+      "explanation": "Modern frameworks heavily prefer unchecked exceptions (extending RuntimeException) to prevent cluttering method signatures with throws declarations.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-cst-6",
+      "question": "When debugging a production stack trace, what should be your first point of investigation?",
+      "options": [
+        "The last line of the stack trace",
+        "The JDK internal class frames at the very top",
+        "The exception type, message, and the highest stack frame referencing your application code",
+        "Rebooting the server"
+      ],
+      "correctIndex": 2,
+      "explanation": "Always inspect the exception type/message first, then find the topmost stack frame that corresponds to your own codebase.",
+      "correctOption": 2
+    },
+    {
+      "id": "mcq-cst-7",
+      "question": "What happens if a custom exception class does not define any constructors?",
+      "options": [
+        "Compilation error",
+        "The Java compiler provides a default no-argument constructor that calls super()",
+        "The class cannot be instantiated with new",
+        "It automatically inherits the (String message) constructor from Exception"
+      ],
+      "correctIndex": 1,
+      "explanation": "Java only generates a default no-argument constructor. It does NOT automatically inherit the parameterized constructors of Exception.",
+      "correctOption": 1
+    },
+    {
+      "id": "mcq-cst-8",
+      "question": "Can a custom exception class contain instance variables and custom methods?",
+      "options": [
+        "No, exceptions can only contain constructors",
+        "Yes, custom exceptions are standard Java classes and can have fields, getters, and helper methods",
+        "Only if the fields are static",
+        "Only if the exception extends Error"
+      ],
+      "correctIndex": 1,
+      "explanation": "Custom exceptions are regular Java classes and can carry instance fields (like orderId, errorCode, timestamp) and getters.",
+      "correctOption": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p1-user-not-found-exception",
+      "title": "Create UserNotFoundException",
+      "difficulty": "Easy",
+      "description": "Create an unchecked exception `UserNotFoundException` that stores the missing `userId`. Write a finder method that throws it when an ID does not exist in an array.",
+      "problemStatement": "Create an unchecked exception `UserNotFoundException` that stores the missing `userId`. Write a finder method that throws it when an ID does not exist in an array.",
+      "starterCode": "// Define UserNotFoundException extending RuntimeException\n\npublic class UserFinder {\n    static String[] users = {\"101\", \"102\", \"103\"};\n\n    public static void findUser(String id) {\n        // Throw UserNotFoundException if not found\n    }\n\n    public static void main(String[] args) {\n        try {\n            findUser(\"999\");\n        } catch (Exception e) {\n            System.out.println(e.getMessage());\n        }\n    }\n}",
+      "solution": "class UserNotFoundException extends RuntimeException {\n    private final String userId;\n    public UserNotFoundException(String userId) {\n        super(\"User not found with ID: \" + userId);\n        this.userId = userId;\n    }\n    public String getUserId() { return userId; }\n}\n\npublic class UserFinder {\n    static String[] users = {\"101\", \"102\", \"103\"};\n\n    public static void findUser(String id) {\n        for (String u : users) {\n            if (u.equals(id)) {\n                System.out.println(\"Found: \" + id);\n                return;\n            }\n        }\n        throw new UserNotFoundException(id);\n    }\n\n    public static void main(String[] args) {\n        try {\n            findUser(\"999\");\n        } catch (UserNotFoundException e) {\n            System.out.println(e.getMessage());\n        }\n    }\n}",
+      "hint": "Extend RuntimeException and pass a descriptive string to super(...).",
+      "hints": [
+        "Extend RuntimeException and pass a descriptive string to super(...)."
+      ],
+      "expectedOutput": "User not found with ID: 999"
+    },
+    {
+      "id": "p2-chained-custom-exception",
+      "title": "Chained Custom Configuration Exception",
+      "difficulty": "Medium",
+      "description": "Create a custom checked exception `ConfigurationException`. In a method `loadConfig`, catch a simulated `NumberFormatException` and rethrow it wrapped inside `ConfigurationException` with the original cause attached.",
+      "problemStatement": "Create a custom checked exception `ConfigurationException`. In a method `loadConfig`, catch a simulated `NumberFormatException` and rethrow it wrapped inside `ConfigurationException` with the original cause attached.",
+      "starterCode": "class ConfigurationException extends Exception {\n    public ConfigurationException(String message, Throwable cause) {\n        super(message, cause);\n    }\n}\n\npublic class ConfigLoader {\n    public static int loadPort(String raw) throws ConfigurationException {\n        // Catch NumberFormatException and rethrow ConfigurationException\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        try {\n            loadPort(\"invalid_port\");\n        } catch (ConfigurationException e) {\n            System.out.println(\"Message: \" + e.getMessage());\n            System.out.println(\"Root Cause: \" + e.getCause().getClass().getSimpleName());\n        }\n    }\n}",
+      "solution": "class ConfigurationException extends Exception {\n    public ConfigurationException(String message, Throwable cause) {\n        super(message, cause);\n    }\n}\n\npublic class ConfigLoader {\n    public static int loadPort(String raw) throws ConfigurationException {\n        try {\n            return Integer.parseInt(raw);\n        } catch (NumberFormatException e) {\n            throw new ConfigurationException(\"Failed to load port configuration\", e);\n        }\n    }\n\n    public static void main(String[] args) {\n        try {\n            loadPort(\"invalid_port\");\n        } catch (ConfigurationException e) {\n            System.out.println(\"Message: \" + e.getMessage());\n            System.out.println(\"Root Cause: \" + e.getCause().getClass().getSimpleName());\n        }\n    }\n}",
+      "hint": "Wrap the caught NumberFormatException e inside new ConfigurationException(\"msg\", e).",
+      "hints": [
+        "Wrap the caught NumberFormatException e inside new ConfigurationException(\"msg\", e)."
+      ],
+      "expectedOutput": "Message: Failed to load port configuration\nRoot Cause: NumberFormatException"
+    },
+    {
+      "id": "p3-error-code-exception",
+      "title": "Structured Error Code Exception",
+      "difficulty": "Medium",
+      "description": "Create a custom exception `AppException` with an `int statusCode` and `String errorCode`. Implement a handler that prints the formatted error badge `[CODE 404: RESOURCE_MISSING] File not found`.",
+      "problemStatement": "Create a custom exception `AppException` with an `int statusCode` and `String errorCode`. Implement a handler that prints the formatted error badge `[CODE 404: RESOURCE_MISSING] File not found`.",
+      "starterCode": "class AppException extends RuntimeException {\n    // Fields and constructor\n}\n\npublic class ErrorCodeDemo {\n    public static void main(String[] args) {\n        // Throw and handle AppException\n    }\n}",
+      "solution": "class AppException extends RuntimeException {\n    private final int statusCode;\n    private final String errorCode;\n\n    public AppException(int statusCode, String errorCode, String message) {\n        super(message);\n        this.statusCode = statusCode;\n        this.errorCode = errorCode;\n    }\n    public int getStatusCode() { return statusCode; }\n    public String getErrorCode() { return errorCode; }\n}\n\npublic class ErrorCodeDemo {\n    public static void main(String[] args) {\n        try {\n            throw new AppException(404, \"RESOURCE_MISSING\", \"File not found\");\n        } catch (AppException e) {\n            System.out.println(\"[CODE \" + e.getStatusCode() + \": \" + e.getErrorCode() + \"] \" + e.getMessage());\n        }\n    }\n}",
+      "hint": "Create fields for statusCode and errorCode and add getters.",
+      "hints": [
+        "Create fields for statusCode and errorCode and add getters."
+      ],
+      "expectedOutput": "[CODE 404: RESOURCE_MISSING] File not found"
+    },
+    {
+      "id": "p4-validation-aggregator",
+      "title": "Multi-Field Validation Exception",
+      "difficulty": "Hard",
+      "description": "Implement a `ValidationException` that collects a list of field error messages. Write a validator that checks multiple fields (username length, age range) and throws the exception containing all errors at once.",
+      "problemStatement": "Implement a `ValidationException` that collects a list of field error messages. Write a validator that checks multiple fields (username length, age range) and throws the exception containing all errors at once.",
+      "starterCode": "import java.util.*;\n\nclass ValidationException extends RuntimeException {\n    // Store list of error strings\n}\n\npublic class RegistrationValidator {\n    public static void validate(String username, int age) {\n        // Add error if username < 3 chars\n        // Add error if age < 18\n        // If errors not empty, throw ValidationException\n    }\n\n    public static void main(String[] args) {\n        try {\n            validate(\"al\", 15);\n        } catch (ValidationException e) {\n            System.out.println(\"Errors: \" + e.getErrors());\n        }\n    }\n}",
+      "solution": "import java.util.*;\n\nclass ValidationException extends RuntimeException {\n    private final List<String> errors;\n    public ValidationException(List<String> errors) {\n        super(\"Validation failed with \" + errors.size() + \" errors\");\n        this.errors = errors;\n    }\n    public List<String> getErrors() { return errors; }\n}\n\npublic class RegistrationValidator {\n    public static void validate(String username, int age) {\n        List<String> errors = new ArrayList<>();\n        if (username == null || username.length() < 3) {\n            errors.add(\"Username must be at least 3 characters\");\n        }\n        if (age < 18) {\n            errors.add(\"Age must be at least 18\");\n        }\n        if (!errors.isEmpty()) {\n            throw new ValidationException(errors);\n        }\n    }\n\n    public static void main(String[] args) {\n        try {\n            validate(\"al\", 15);\n        } catch (ValidationException e) {\n            System.out.println(\"Errors: \" + e.getErrors());\n        }\n    }\n}",
+      "hint": "Collect errors into a List<String> and pass to the ValidationException constructor.",
+      "hints": [
+        "Collect errors into a List<String> and pass to the ValidationException constructor."
+      ],
+      "expectedOutput": "Errors: [Username must be at least 3 characters, Age must be at least 18]"
+    },
+    {
+      "id": "p5-retryable-exception-marker",
+      "title": "Retryable vs Fatal Exception Hierarchy",
+      "difficulty": "Hard",
+      "description": "Design an abstract base class `ServiceException` with two subclasses: `RetryableException` (for temporary network timeouts) and `FatalException` (for invalid credentials). Write a dispatcher that retries up to 2 times for retryable exceptions and aborts immediately for fatal ones.",
+      "problemStatement": "Design an abstract base class `ServiceException` with two subclasses: `RetryableException` (for temporary network timeouts) and `FatalException` (for invalid credentials). Write a dispatcher that retries up to 2 times for retryable exceptions and aborts immediately for fatal ones.",
+      "starterCode": "// Define hierarchy\npublic class RetryExecutor {\n    public static void main(String[] args) {\n        // Test retry behavior\n    }\n}",
+      "solution": "abstract class ServiceException extends Exception {\n    public ServiceException(String msg) { super(msg); }\n}\nclass RetryableException extends ServiceException {\n    public RetryableException(String msg) { super(msg); }\n}\nclass FatalException extends ServiceException {\n    public FatalException(String msg) { super(msg); }\n}\n\npublic class RetryExecutor {\n    static int attempts = 0;\n    public static void executeService() throws ServiceException {\n        attempts++;\n        if (attempts < 2) {\n            throw new RetryableException(\"Connection timeout\");\n        }\n        System.out.println(\"Service succeeded on attempt: \" + attempts);\n    }\n\n    public static void main(String[] args) {\n        int maxRetries = 3;\n        for (int i = 0; i < maxRetries; i++) {\n            try {\n                executeService();\n                break;\n            } catch (RetryableException e) {\n                System.out.println(\"Retryable error: \" + e.getMessage() + \". Retrying...\");\n            } catch (FatalException e) {\n                System.out.println(\"Fatal error: \" + e.getMessage() + \". Aborting.\");\n                break;\n            } catch (ServiceException e) {\n                System.out.println(\"Service error: \" + e.getMessage());\n                break;\n            }\n        }\n    }\n}",
+      "hint": "Catch RetryableException to continue loop; catch FatalException to break immediately.",
+      "hints": [
+        "Catch RetryableException to continue loop; catch FatalException to break immediately."
+      ],
+      "expectedOutput": "Retryable error: Connection timeout. Retrying...\nService succeeded on attempt: 2"
+    },
+    {
+      "id": "p6-stack-trace-sanitizer",
+      "title": "Exception Stack Trace Sanitizer",
+      "difficulty": "Medium",
+      "description": "Write a utility that takes a `Throwable` and returns a sanitized one-line string containing `ExceptionClass: Message` without exposing internal JVM line numbers or file paths.",
+      "problemStatement": "Write a utility that takes a `Throwable` and returns a sanitized one-line string containing `ExceptionClass: Message` without exposing internal JVM line numbers or file paths.",
+      "starterCode": "public class StackSanitizer {\n    public static String sanitize(Throwable t) {\n        // Return formatted string\n        return \"\";\n    }\n\n    public static void main(String[] args) {\n        Exception ex = new IllegalArgumentException(\"Invalid account number\");\n        System.out.println(sanitize(ex));\n    }\n}",
+      "solution": "public class StackSanitizer {\n    public static String sanitize(Throwable t) {\n        if (t == null) return \"\";\n        return t.getClass().getSimpleName() + \": \" + (t.getMessage() != null ? t.getMessage() : \"No message\");\n    }\n\n    public static void main(String[] args) {\n        Exception ex = new IllegalArgumentException(\"Invalid account number\");\n        System.out.println(sanitize(ex));\n    }\n}",
+      "hint": "Use t.getClass().getSimpleName() and t.getMessage().",
+      "hints": [
+        "Use t.getClass().getSimpleName() and t.getMessage()."
+      ],
+      "expectedOutput": "IllegalArgumentException: Invalid account number"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-cst-1",
+      "question": "How do you decide whether a custom exception should be checked or unchecked?",
+      "answer": "Make it **checked** (extend `Exception`) if the failure is an expected, recoverable business scenario that the calling code can and must deal with (e.g., `InsufficientInventoryException`). Make it **unchecked** (extend `RuntimeException`) if the error is unrecoverable, represents a programming or configuration bug, or if forcing callers to catch it would create verbose, boilerplate-heavy code.",
+      "category": "design"
+    },
+    {
+      "id": "iq-cst-2",
+      "question": "What is exception chaining and why is `Throwable cause` essential?",
+      "answer": "Exception chaining is wrapping a lower-level exception (like `SQLException` or `IOException`) inside a higher-level domain exception (like `DataAccessException`). Passing the lower-level exception as `cause` to `super(message, cause)` ensures the root cause and its full stack trace are preserved. Without chaining, the original technical diagnostic is lost forever.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cst-3",
+      "question": "What are the four standard constructors recommended for any custom exception class?",
+      "answer": "1. `MyException()`: No-arg default constructor.\n2. `MyException(String message)`: Constructor with descriptive message.\n3. `MyException(String message, Throwable cause)`: Constructor for exception chaining.\n4. `MyException(Throwable cause)`: Constructor when wrapping an exception without changing the message.",
+      "category": "best-practices"
+    },
+    {
+      "id": "iq-cst-4",
+      "question": "What extra information should you consider storing in a custom exception for distributed microservices?",
+      "answer": "In microservices, custom exceptions often include:\n1. A machine-readable error code (e.g., `PAYMENT_GATEWAY_TIMEOUT`).\n2. HTTP status code mapping (e.g., 404, 400, 503).\n3. Entity/Correlation IDs (e.g., `orderId`, `traceId`).\n4. Timestamp of the event.\n5. Whether the operation is safe to retry (`isRetryable`).",
+      "category": "architecture"
+    },
+    {
+      "id": "iq-cst-5",
+      "question": "Can you override `fillInStackTrace()` in a custom exception? Why would anyone do that?",
+      "answer": "Yes. Generating a stack trace requires walking the execution call stack, which has a measurable CPU cost. If a custom exception is used strictly for control flow or high-frequency business signaling where the stack trace is never read or logged, overriding `public synchronized Throwable fillInStackTrace() { return this; }` eliminates this overhead.",
+      "category": "performance"
+    },
+    {
+      "id": "iq-cst-6",
+      "question": "What is the risk of creating too many fine-grained custom exception classes?",
+      "answer": "Creating an excessive number of custom exceptions causes 'exception explosion', leading to cluttered packages, redundant classes with identical logic, and bloated `catch` blocks across the codebase. It is often better to use a cohesive hierarchy with error codes or reuse standard Java exceptions (`IllegalArgumentException`, `IllegalStateException`) when appropriate.",
+      "category": "clean-code"
+    },
+    {
+      "id": "iq-cst-7",
+      "question": "Describe your step-by-step methodology when an uncaught exception is reported in production logs.",
+      "answer": "1. **Analyze Header**: Read the exception class and error message.\n2. **Locate Code Boundary**: Scan stack trace for the top-most line belonging to our application package.\n3. **Correlate Logs**: Match the timestamp and thread/request ID with preceding debug logs to reconstruct application state.\n4. **Identify Invariant Failure**: Determine what reference was null, what calculation overflowed, or what assumption broke.\n5. **Write Regression Test**: Replicate the condition with a unit test.\n6. **Apply Defensive Fix & Deploy**: Guard against the condition and verify tests pass.",
+      "category": "debugging"
+    }
+  ],
+  "summaryChecklist": [
+    "I know how to create custom exceptions extending Exception or RuntimeException",
+    "I implement standard constructors to support exception message and root cause chaining",
+    "I know when to attach custom fields (errorCode, entityId) to an exception",
+    "I understand how modern frameworks favor unchecked exceptions for business logic",
+    "I can systematically debug production stack traces in 4 clear steps"
+  ],
+  "checklist": [
+    "I know how to create custom exceptions extending Exception or RuntimeException",
+    "I implement standard constructors to support exception message and root cause chaining",
+    "I know when to attach custom fields (errorCode, entityId) to an exception",
+    "I understand how modern frameworks favor unchecked exceptions for business logic",
+    "I can systematically debug production stack traces in 4 clear steps"
+  ]
+}

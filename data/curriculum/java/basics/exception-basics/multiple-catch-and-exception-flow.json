@@ -1,0 +1,658 @@
+{
+  "id": "les-exception-basics-multiple-catch-and-exception-flow",
+  "slug": "multiple-catch-and-exception-flow",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "Multiple catch & Exception Flow",
+  "summary": "Master multiple catch blocks, catch ordering rules, stack unwinding across the Call Stack, nested try-catch blocks, and rethrowing exceptions.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 5,
+  "prerequisites": [
+    "les-exception-basics-try-catch-finally"
+  ],
+  "subtopics": [
+    "Multiple catch Evaluation",
+    "Stack Unwinding & Propagation",
+    "Nested try-catch Blocks",
+    "Rethrowing Patterns"
+  ],
+  "learningOutcomes": [
+    "Implement multi-branch exception handling with tailored recovery logic",
+    "Trace stack unwinding as unhandled exceptions bubble through method calls",
+    "Rethrow exceptions after intermediate logging"
+  ],
+  "activities": [
+    {
+      "id": "act-multiple-catch-and-exception-flow-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Multiple catch & Exception Flow",
+      "content": "### 1. Concept: Multiple Catch Blocks & Stack Unwinding\nIn realistic enterprise code, a single operation might fail in several different ways: parsing a string might throw `NumberFormatException`, dividing two values might throw `ArithmeticException`, and looking up an index might throw `IndexOutOfBoundsException`.\n\nJava allows a single `try` block to be followed by **multiple `catch` blocks** to provide tailored recovery logic for each specific failure mode.\n\nWhen an exception occurs inside a method:\n1. Java scans the attached catch blocks sequentially from top to bottom.\n2. The **first** catch block whose declared type matches the thrown exception (either exact type or a superclass) executes.\n3. Once that catch block finishes, all subsequent catch blocks are skipped, and control proceeds to `finally` (if present) and then normal subsequent code.\n\n### 2. Exception Propagation & Stack Unwinding\nWhat happens if the current method has NO matching catch block?\n- The JVM immediately terminates the current method and pops its stack frame from the thread Call Stack.\n- The exception object is **propagated** (handed up) to the caller method that invoked it.\n- If the caller has a matching `try-catch`, the caller handles it.\n- If not, the caller's frame is popped as well!\nThis process of searching backwards through the Call Stack is called **Stack Unwinding**.\n\n### 3. Nested `try-catch` & Rethrowing Exceptions\nJava fully supports **nested try-catch blocks**: a `try` block can live inside another `try` or `catch` block.\nFurthermore, a catch block can partially handle an exception (e.g. log an audit alert) and then **rethrow** the exception (`throw e;`) to allow higher-level application layers to execute rollback or alert workflows.\n\n### 4. Practical Java Example: Multi-Catch and Propagation\n```java\npublic class PropagationDemo {\n    public static void processData(String input) {\n        // Method throws NumberFormatException if input is non-numeric\n        int val = Integer.parseInt(input);\n        int div = 100 / val; // Might throw ArithmeticException if val == 0\n        System.out.println(\"Result: \" + div);\n    }\n\n    public static void main(String[] args) {\n        try {\n            processData(\"0\"); // Triggers ArithmeticException inside processData\n        } catch (NumberFormatException e) {\n            System.out.println(\"Handled bad input text\");\n        } catch (ArithmeticException e) {\n            System.out.println(\"Handled division by zero from processData!\");\n        }\n    }\n}\n```\n\n### 5. Common Beginner Mistakes\n- **Assuming multiple catch blocks can execute**: Exactly **one** catch block executes for any single thrown exception.\n- **Catching parent before child**: Writing `catch (Exception e)` before `catch (ArithmeticException e)` generates a compile-time unreachable code error.\n- **Losing the original exception when rethrowing**: Wrapping an exception in a new one without passing the original as the `cause` (`new CustomException(\"Failed\", e)`).\n\n### 6. Key Takeaways\n- Multiple catch blocks handle different failure scenarios separately.\n- Always order catch blocks from most specific (child) to most general (parent).\n- If unhandled, exceptions propagate automatically down the call chain via stack unwinding.\n- Exceptions can be rethrown using `throw e;` after logging.",
+      "breakdown": [
+        {
+          "topic": "Multiple catch Blocks",
+          "details": "Sequential evaluation: JVM executes the first matching block and skips the rest."
+        },
+        {
+          "topic": "Specific-to-General Ordering",
+          "details": "Child classes must strictly precede parent classes to avoid unreachable code compile errors."
+        },
+        {
+          "topic": "Stack Unwinding",
+          "details": "Popping stack frames in reverse call order until a matching catch block is found on the Call Stack."
+        },
+        {
+          "topic": "Rethrowing Exceptions",
+          "details": "A catch block can capture an exception, perform local logging, and rethrow it using throw e; for higher-level handling."
+        }
+      ]
+    },
+    {
+      "id": "act-multiple-catch-and-exception-flow-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Multiple Catch Flow Suite",
+      "codeSnippet": "public class MultipleCatchFlowDemo {\n    public static void executeOperation(int scenario) {\n        System.out.println(\"\\nExecuting Scenario: \" + scenario);\n        try {\n            if (scenario == 1) {\n                int[] arr = {10, 20};\n                System.out.println(arr[5]); // ArrayIndexOutOfBoundsException\n            } else if (scenario == 2) {\n                int res = 100 / 0; // ArithmeticException\n            } else if (scenario == 3) {\n                Integer.parseInt(\"NotANumber\"); // NumberFormatException\n            } else {\n                System.out.println(\"Clean execution!\");\n            }\n        } catch (ArithmeticException e) {\n            System.out.println(\"-> Block 1: Caught ArithmeticException: \" + e.getMessage());\n        } catch (ArrayIndexOutOfBoundsException e) {\n            System.out.println(\"-> Block 2: Caught ArrayIndexOutOfBoundsException: \" + e.getMessage());\n        } catch (NumberFormatException e) {\n            System.out.println(\"-> Block 3: Caught NumberFormatException: \" + e.getMessage());\n        } catch (Exception e) {\n            System.out.println(\"-> Block 4: Fallback Generic Exception: \" + e.getClass().getSimpleName());\n        } finally {\n            System.out.println(\"-> Finally: Completed scenario teardown\");\n        }\n    }\n\n    public static void main(String[] args) {\n        executeOperation(1);\n        executeOperation(2);\n        executeOperation(3);\n        executeOperation(4);\n    }\n}",
+      "description": "Demonstrates multiple catch block matching, scenario switching, and finally block execution.",
+      "steps": [
+        {
+          "line": 6,
+          "description": "Scenario 1 throws ArrayIndexOutOfBoundsException."
+        },
+        {
+          "line": 18,
+          "description": "Block 2 catches Scenario 1; Blocks 1, 3, and 4 are skipped."
+        },
+        {
+          "line": 8,
+          "description": "Scenario 2 throws ArithmeticException."
+        },
+        {
+          "line": 15,
+          "description": "Block 1 catches Scenario 2 directly."
+        },
+        {
+          "line": 10,
+          "description": "Scenario 3 throws NumberFormatException, caught by Block 3."
+        },
+        {
+          "line": 23,
+          "description": "Finally executes after every single scenario, ensuring teardown."
+        }
+      ]
+    },
+    {
+      "id": "act-multiple-catch-and-exception-flow-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Multiple catch & Exception Flow",
+      "questions": [
+        {
+          "id": "mcq-mcf-1",
+          "question": "In a try block with multiple catch blocks, how many catch blocks can execute for a single thrown exception?",
+          "options": [
+            "All catch blocks that match the type",
+            "At most ONE matching catch block executes",
+            "Two catch blocks: the specific and the general",
+            "None, catch blocks only execute after finally"
+          ],
+          "correctOption": 1,
+          "explanation": "The JVM evaluates catch blocks sequentially from top to bottom. As soon as the first matching catch block is found, it executes, and all remaining catch blocks are skipped.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-2",
+          "question": "What is 'Stack Unwinding' in Java exception processing?",
+          "options": [
+            "A tool to optimize CPU registers",
+            "The process of removing method stack frames from the Call Stack as an unhandled exception propagates up to caller methods",
+            "A garbage collector algorithm for arrays",
+            "A compile-time bytecode compression step"
+          ],
+          "correctOption": 1,
+          "explanation": "Stack unwinding occurs when an exception is not caught in the method where it was thrown: the JVM pops the current frame and searches the caller frame, repeating until a handler is found or the thread terminates.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-3",
+          "question": "What is the result of placing `catch (Exception e)` BEFORE `catch (IOException e)`?",
+          "options": [
+            "IOException executes first",
+            "The code fails to compile with an 'unreachable catch block' error",
+            "The JVM prints a warning at runtime",
+            "IOException is ignored"
+          ],
+          "correctOption": 1,
+          "explanation": "Since IOException is a subclass of Exception, the first block would catch all IOExceptions, making the second block unreachable. The compiler flags this as an error.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-4",
+          "question": "What will be printed by the following code?\n```java\ntry {\n    int[] arr = new int[2];\n    arr[5] = 10 / 0;\n} catch (ArithmeticException e) {\n    System.out.print(\"A\");\n} catch (ArrayIndexOutOfBoundsException e) {\n    System.out.print(\"B\");\n}\n```",
+          "options": [
+            "A",
+            "B",
+            "AB",
+            "Compile error"
+          ],
+          "correctOption": 0,
+          "explanation": "In `arr[5] = 10 / 0;`, the right-hand side expression `10 / 0` evaluates BEFORE the array assignment occurs. Division by zero throws `ArithmeticException` first, so \"A\" prints.",
+          "correctIndex": 0
+        },
+        {
+          "id": "mcq-mcf-5",
+          "question": "Can a `catch` block rethrow the exact same exception it caught using `throw e;`?",
+          "options": [
+            "No, once an exception is caught, it cannot be thrown again",
+            "Yes, rethrowing an exception allows local logging while delegating recovery to higher layers",
+            "Only if e is cast to RuntimeException",
+            "Only in the main method"
+          ],
+          "correctOption": 1,
+          "explanation": "Rethrowing (`throw e;`) is a standard architectural pattern where an intermediate layer logs diagnostic details and re-raises the exception for upstream handling.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-6",
+          "question": "What happens if an exception is thrown inside a `catch` block while handling another exception?",
+          "options": [
+            "The original catch block restarts",
+            "The new exception immediately interrupts the catch block and begins propagating up the call stack",
+            "Both exceptions merge into a hybrid exception",
+            "The program ignores the new exception"
+          ],
+          "correctOption": 1,
+          "explanation": "An exception thrown inside a catch block interrupts that catch block immediately and propagates outward to any enclosing try-catch or caller method.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-7",
+          "question": "Can try-catch blocks be nested inside another try block?",
+          "options": [
+            "No, Java forbids nested try blocks",
+            "Yes, try blocks can be nested to handle specific inner errors independently",
+            "Only up to 2 levels",
+            "Only inside static methods"
+          ],
+          "correctOption": 1,
+          "explanation": "Nested try-catch blocks are fully supported in Java, enabling granular local recovery before affecting the outer block.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-8",
+          "question": "What will be printed?\n```java\ntry {\n    try {\n        int x = 10 / 0;\n    } catch (NullPointerException e) {\n        System.out.print(\"Inner\");\n    }\n} catch (ArithmeticException e) {\n    System.out.print(\"Outer\");\n}\n```",
+          "options": [
+            "Inner",
+            "Outer",
+            "InnerOuter",
+            "Compile error"
+          ],
+          "correctOption": 1,
+          "explanation": "The inner catch expects NullPointerException, but ArithmeticException was thrown. The inner catch does not match, so the exception propagates to the outer catch, printing \"Outer\".",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-mcf-9",
+          "question": "In multi-catch syntax `catch (ArithmeticException | NumberFormatException e)`, how many catch blocks are created in bytecode?",
+          "options": [
+            "A single catch block in source code that generates a shared bytecode handler",
+            "Two separate methods",
+            "An anonymous class",
+            "A switch statement"
+          ],
+          "correctOption": 0,
+          "explanation": "Multi-catch generates a single shared handler block in bytecode, avoiding code duplication across identical handlers.",
+          "correctIndex": 0
+        },
+        {
+          "id": "mcq-mcf-10",
+          "question": "What happens if a method encounters an exception and has a `finally` block but no matching `catch` block?",
+          "options": [
+            "The finally block is skipped",
+            "The finally block executes completely, and then the exception continues propagating up the call stack",
+            "The exception is canceled",
+            "The JVM hangs"
+          ],
+          "correctOption": 1,
+          "explanation": "Even without a matching catch block, `finally` executes before the method's stack frame is popped during stack unwinding.",
+          "correctIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-multiple-catch-and-exception-flow-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Multi-Catch Branch Selection",
+      "practice": {
+        "id": "prac-act-mcf",
+        "title": "Hands-On: Test Multi-Catch Branch Selection",
+        "description": "Write multiple catch blocks for NumberFormatException and ArithmeticException and verify correct branch execution.",
+        "starterCode": "public class PracticeMultiCatch {\n    public static void main(String[] args) {\n        // TODO: Try parsing \"NaN\" and catch with multiple catch blocks\n    }\n}",
+        "solutionCode": "public class PracticeMultiCatch {\n    public static void main(String[] args) {\n        try {\n            int x = Integer.parseInt(\"NaN\");\n        } catch (ArithmeticException e) {\n            System.out.println(\"Arithmetic caught\");\n        } catch (NumberFormatException e) {\n            System.out.println(\"Parse error caught successfully\");\n        }\n    }\n}",
+        "expectedOutput": "Parse error caught successfully"
+      }
+    },
+    {
+      "id": "act-multiple-catch-and-exception-flow-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Multiple catch & Exception Flow",
+      "interviewQA": [
+        {
+          "id": "iq-mcf-1",
+          "question": "What is the order of execution in a try block with multiple catch blocks?",
+          "answer": "When an exception is thrown in the try block, the JVM examines the catch blocks sequentially from top to bottom. The first catch block whose declared parameter type matches the thrown exception (is assignable from it) executes. Once that catch block finishes, all remaining catch blocks are bypassed.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-mcf-2",
+          "question": "What is Stack Unwinding and how does Java perform it?",
+          "answer": "Stack unwinding is the runtime process of searching for an exception handler across the Call Stack. If the method where the exception occurred lacks a matching catch block, that method's stack frame is popped, and the exception is propagated to the calling method. This repeats up the stack until a matching catch block is found or the main thread terminates.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-mcf-3",
+          "question": "Why would an engineer rethrow an exception using 'throw e' in a catch block?",
+          "answer": "Rethrowing is used when the current method can only partially handle the error (e.g. logging an audit record, rolling back a local transaction, or freeing local resources), but the higher-level caller must still be notified that the business operation failed so it can alert the user or redirect the request.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-mcf-4",
+          "question": "What is Exception Chaining (wrapping) and why is it preferred over throwing a new exception directly?",
+          "answer": "Exception chaining is wrapping a lower-level exception inside a higher-level domain exception (e.g. `throw new OrderProcessingException(\"Order failed\", sqlException)`). Passing the lower-level exception as the `cause` preserves the original root-cause stack trace, allowing engineers to diagnose the underlying technical failure in logs.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-mcf-5",
+          "question": "Can an exception thrown in an inner try block be caught by the outer catch block?",
+          "answer": "Yes. If an exception occurs in an inner `try` block and the inner `catch` blocks do not match its type, the exception immediately bubbles out to the enclosing outer `try-catch` structure.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-mcf-6",
+          "question": "What happens if both the try block and the finally block throw an exception?",
+          "answer": "If an exception is in-flight from the `try` block and another exception is thrown inside `finally`, the exception from `finally` takes precedence and propagates upward. In pre-Java 7, the original exception was lost. In Java 7+ try-with-resources, secondary exceptions are recorded as **Suppressed Exceptions** on the primary exception (`e.getSuppressed()`).",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-mcf-7",
+          "question": "Why does Java enforce that child exceptions must precede parent exceptions in multiple catch blocks?",
+          "answer": "Because polymorphism dictates that an instance of a child class `is-a` parent class. If `catch (Exception e)` were placed above `catch (IOException e)`, the first block would match all `IOExceptions`, leaving the second block completely dead (unreachable). The compiler rejects unreachable code at compile-time.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-multiple-catch-and-exception-flow-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Multiple catch & Exception Flow",
+      "checklist": [
+        {
+          "id": "chk-mcf-1",
+          "text": "I can explain how the JVM evaluates multiple catch blocks sequentially."
+        },
+        {
+          "id": "chk-mcf-2",
+          "text": "I know how stack unwinding propagates exceptions across calling methods."
+        },
+        {
+          "id": "chk-mcf-3",
+          "text": "I understand how and when to rethrow exceptions using throw e;."
+        },
+        {
+          "id": "chk-mcf-4",
+          "text": "I can implement nested try-catch blocks cleanly."
+        },
+        {
+          "id": "chk-mcf-5",
+          "text": "I know why child catch blocks must appear before parent catch blocks."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-mcf-1",
+      "question": "In a try block with multiple catch blocks, how many catch blocks can execute for a single thrown exception?",
+      "options": [
+        "All catch blocks that match the type",
+        "At most ONE matching catch block executes",
+        "Two catch blocks: the specific and the general",
+        "None, catch blocks only execute after finally"
+      ],
+      "correctOption": 1,
+      "explanation": "The JVM evaluates catch blocks sequentially from top to bottom. As soon as the first matching catch block is found, it executes, and all remaining catch blocks are skipped.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-2",
+      "question": "What is 'Stack Unwinding' in Java exception processing?",
+      "options": [
+        "A tool to optimize CPU registers",
+        "The process of removing method stack frames from the Call Stack as an unhandled exception propagates up to caller methods",
+        "A garbage collector algorithm for arrays",
+        "A compile-time bytecode compression step"
+      ],
+      "correctOption": 1,
+      "explanation": "Stack unwinding occurs when an exception is not caught in the method where it was thrown: the JVM pops the current frame and searches the caller frame, repeating until a handler is found or the thread terminates.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-3",
+      "question": "What is the result of placing `catch (Exception e)` BEFORE `catch (IOException e)`?",
+      "options": [
+        "IOException executes first",
+        "The code fails to compile with an 'unreachable catch block' error",
+        "The JVM prints a warning at runtime",
+        "IOException is ignored"
+      ],
+      "correctOption": 1,
+      "explanation": "Since IOException is a subclass of Exception, the first block would catch all IOExceptions, making the second block unreachable. The compiler flags this as an error.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-4",
+      "question": "What will be printed by the following code?\n```java\ntry {\n    int[] arr = new int[2];\n    arr[5] = 10 / 0;\n} catch (ArithmeticException e) {\n    System.out.print(\"A\");\n} catch (ArrayIndexOutOfBoundsException e) {\n    System.out.print(\"B\");\n}\n```",
+      "options": [
+        "A",
+        "B",
+        "AB",
+        "Compile error"
+      ],
+      "correctOption": 0,
+      "explanation": "In `arr[5] = 10 / 0;`, the right-hand side expression `10 / 0` evaluates BEFORE the array assignment occurs. Division by zero throws `ArithmeticException` first, so \"A\" prints.",
+      "correctIndex": 0
+    },
+    {
+      "id": "mcq-mcf-5",
+      "question": "Can a `catch` block rethrow the exact same exception it caught using `throw e;`?",
+      "options": [
+        "No, once an exception is caught, it cannot be thrown again",
+        "Yes, rethrowing an exception allows local logging while delegating recovery to higher layers",
+        "Only if e is cast to RuntimeException",
+        "Only in the main method"
+      ],
+      "correctOption": 1,
+      "explanation": "Rethrowing (`throw e;`) is a standard architectural pattern where an intermediate layer logs diagnostic details and re-raises the exception for upstream handling.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-6",
+      "question": "What happens if an exception is thrown inside a `catch` block while handling another exception?",
+      "options": [
+        "The original catch block restarts",
+        "The new exception immediately interrupts the catch block and begins propagating up the call stack",
+        "Both exceptions merge into a hybrid exception",
+        "The program ignores the new exception"
+      ],
+      "correctOption": 1,
+      "explanation": "An exception thrown inside a catch block interrupts that catch block immediately and propagates outward to any enclosing try-catch or caller method.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-7",
+      "question": "Can try-catch blocks be nested inside another try block?",
+      "options": [
+        "No, Java forbids nested try blocks",
+        "Yes, try blocks can be nested to handle specific inner errors independently",
+        "Only up to 2 levels",
+        "Only inside static methods"
+      ],
+      "correctOption": 1,
+      "explanation": "Nested try-catch blocks are fully supported in Java, enabling granular local recovery before affecting the outer block.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-8",
+      "question": "What will be printed?\n```java\ntry {\n    try {\n        int x = 10 / 0;\n    } catch (NullPointerException e) {\n        System.out.print(\"Inner\");\n    }\n} catch (ArithmeticException e) {\n    System.out.print(\"Outer\");\n}\n```",
+      "options": [
+        "Inner",
+        "Outer",
+        "InnerOuter",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "The inner catch expects NullPointerException, but ArithmeticException was thrown. The inner catch does not match, so the exception propagates to the outer catch, printing \"Outer\".",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-mcf-9",
+      "question": "In multi-catch syntax `catch (ArithmeticException | NumberFormatException e)`, how many catch blocks are created in bytecode?",
+      "options": [
+        "A single catch block in source code that generates a shared bytecode handler",
+        "Two separate methods",
+        "An anonymous class",
+        "A switch statement"
+      ],
+      "correctOption": 0,
+      "explanation": "Multi-catch generates a single shared handler block in bytecode, avoiding code duplication across identical handlers.",
+      "correctIndex": 0
+    },
+    {
+      "id": "mcq-mcf-10",
+      "question": "What happens if a method encounters an exception and has a `finally` block but no matching `catch` block?",
+      "options": [
+        "The finally block is skipped",
+        "The finally block executes completely, and then the exception continues propagating up the call stack",
+        "The exception is canceled",
+        "The JVM hangs"
+      ],
+      "correctOption": 1,
+      "explanation": "Even without a matching catch block, `finally` executes before the method's stack frame is popped during stack unwinding.",
+      "correctIndex": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-mcf-1",
+      "title": "Build Multi-Branch Exception Handler",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `handleInput(String text)`: inside try, parse integer and divide 100 by that integer. Catch `NumberFormatException` printing \"Bad Format\", catch `ArithmeticException` printing \"Divide By Zero\", and finally print \"Done\". Test with text = \"0\".",
+      "description": "Write a method `handleInput(String text)`: inside try, parse integer and divide 100 by that integer. Catch `NumberFormatException` printing \"Bad Format\", catch `ArithmeticException` printing \"Divide By Zero\", and finally print \"Done\". Test with text = \"0\".",
+      "hint": "Catch NumberFormatException and ArithmeticException in separate blocks.",
+      "hints": [
+        "Catch NumberFormatException and ArithmeticException in separate blocks."
+      ],
+      "starterCode": "public class MultiBranchPractice {\n    static void handleInput(String text) {\n        // TODO: Try parse and divide with multiple catches\n    }\n    public static void main(String[] args) {\n        handleInput(\"0\");\n    }\n}",
+      "solutionCode": "public class MultiBranchPractice {\n    static void handleInput(String text) {\n        try {\n            int val = Integer.parseInt(text);\n            int res = 100 / val;\n            System.out.println(\"Result: \" + res);\n        } catch (NumberFormatException e) {\n            System.out.println(\"Bad Format\");\n        } catch (ArithmeticException e) {\n            System.out.println(\"Divide By Zero\");\n        } finally {\n            System.out.println(\"Done\");\n        }\n    }\n    public static void main(String[] args) {\n        handleInput(\"0\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Divide By Zero\nDone"
+        }
+      ],
+      "targetOutput": "Divide By Zero\nDone"
+    },
+    {
+      "id": "prob-mcf-2",
+      "title": "Trace Stack Unwinding Across Three Methods",
+      "difficulty": "Medium",
+      "problemStatement": "Create three methods: `methodC()` throws `ArithmeticException (10 / 0)`. `methodB()` calls `methodC()`. `methodA()` calls `methodB()` inside try-catch. `main` calls `methodA()`. Catch the exception in `methodA()` and print \"Handled in methodA via unwinding\".",
+      "description": "Create three methods: `methodC()` throws `ArithmeticException (10 / 0)`. `methodB()` calls `methodC()`. `methodA()` calls `methodB()` inside try-catch. `main` calls `methodA()`. Catch the exception in `methodA()` and print \"Handled in methodA via unwinding\".",
+      "hint": "Exception bubbles up from C to B to A.",
+      "hints": [
+        "Exception bubbles up from C to B to A."
+      ],
+      "starterCode": "public class StackUnwindingDemo {\n    static void methodC() {\n        int x = 10 / 0;\n    }\n    static void methodB() {\n        methodC();\n    }\n    static void methodA() {\n        // TODO: Call methodB inside try-catch\n    }\n    public static void main(String[] args) {\n        methodA();\n    }\n}",
+      "solutionCode": "public class StackUnwindingDemo {\n    static void methodC() {\n        int x = 10 / 0;\n    }\n    static void methodB() {\n        methodC();\n    }\n    static void methodA() {\n        try {\n            methodB();\n        } catch (ArithmeticException e) {\n            System.out.println(\"Handled in methodA via unwinding\");\n        }\n    }\n    public static void main(String[] args) {\n        methodA();\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Handled in methodA via unwinding"
+        }
+      ],
+      "targetOutput": "Handled in methodA via unwinding"
+    },
+    {
+      "id": "prob-mcf-3",
+      "title": "Rethrow an Exception for Higher-Level Logging",
+      "difficulty": "Medium",
+      "problemStatement": "In method `processPayment(double amount)`, if `amount <= 0`, catch `IllegalArgumentException` triggered by `throw new IllegalArgumentException(\"Negative amount\")`, print \"Audit: Invalid amount logged\", and rethrow it (`throw e;`). In `main`, call `processPayment(-50)` and catch the rethrown exception, printing \"Payment Rejected\".",
+      "description": "In method `processPayment(double amount)`, if `amount <= 0`, catch `IllegalArgumentException` triggered by `throw new IllegalArgumentException(\"Negative amount\")`, print \"Audit: Invalid amount logged\", and rethrow it (`throw e;`). In `main`, call `processPayment(-50)` and catch the rethrown exception, printing \"Payment Rejected\".",
+      "hint": "In catch block: print audit message, then throw e;",
+      "hints": [
+        "In catch block: print audit message, then throw e;"
+      ],
+      "starterCode": "public class RethrowPractice {\n    static void processPayment(double amount) {\n        // TODO: Try, throw, catch, audit log, and rethrow\n    }\n    public static void main(String[] args) {\n        // TODO: Call and catch rethrown exception\n    }\n}",
+      "solutionCode": "public class RethrowPractice {\n    static void processPayment(double amount) {\n        try {\n            if (amount <= 0) {\n                throw new IllegalArgumentException(\"Negative amount\");\n            }\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Audit: Invalid amount logged\");\n            throw e; // Rethrow\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            processPayment(-50);\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Payment Rejected\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Audit: Invalid amount logged\nPayment Rejected"
+        }
+      ],
+      "targetOutput": "Audit: Invalid amount logged\nPayment Rejected"
+    },
+    {
+      "id": "prob-mcf-4",
+      "title": "Execute Nested Try-Catch",
+      "difficulty": "Medium",
+      "problemStatement": "Write a nested try-catch: Outer try block contains an inner try block. Inner try block executes `int x = 10 / 0;` and catches `ArithmeticException`, printing \"Inner catch handled\". Outer try block then prints \"Outer continuing\" and finishes cleanly.",
+      "description": "Write a nested try-catch: Outer try block contains an inner try block. Inner try block executes `int x = 10 / 0;` and catches `ArithmeticException`, printing \"Inner catch handled\". Outer try block then prints \"Outer continuing\" and finishes cleanly.",
+      "hint": "Put try-catch inside outer try block.",
+      "hints": [
+        "Put try-catch inside outer try block."
+      ],
+      "starterCode": "public class NestedTryCatchPractice {\n    public static void main(String[] args) {\n        // TODO: Implement nested try-catch\n    }\n}",
+      "solutionCode": "public class NestedTryCatchPractice {\n    public static void main(String[] args) {\n        try {\n            try {\n                int x = 10 / 0;\n            } catch (ArithmeticException e) {\n                System.out.println(\"Inner catch handled\");\n            }\n            System.out.println(\"Outer continuing\");\n        } catch (Exception e) {\n            System.out.println(\"Outer catch\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Inner catch handled\nOuter continuing"
+        }
+      ],
+      "targetOutput": "Inner catch handled\nOuter continuing"
+    },
+    {
+      "id": "prob-mcf-5",
+      "title": "Test Fallback Exception Match",
+      "difficulty": "Easy",
+      "problemStatement": "Write a try block that executes `((String)null).toUpperCase();`. Provide catch blocks for `ArithmeticException` (first) and generic `Exception` (second). Print \"Fallback Exception caught\" from the second block.",
+      "description": "Write a try block that executes `((String)null).toUpperCase();`. Provide catch blocks for `ArithmeticException` (first) and generic `Exception` (second). Print \"Fallback Exception caught\" from the second block.",
+      "hint": "NullPointerException does not match ArithmeticException so it falls through to Exception.",
+      "hints": [
+        "NullPointerException does not match ArithmeticException so it falls through to Exception."
+      ],
+      "starterCode": "public class FallbackMatchPractice {\n    public static void main(String[] args) {\n        // TODO: Test fallback catch matching\n    }\n}",
+      "solutionCode": "public class FallbackMatchPractice {\n    public static void main(String[] args) {\n        try {\n            String s = null;\n            s.toUpperCase();\n        } catch (ArithmeticException e) {\n            System.out.println(\"Arithmetic caught\");\n        } catch (Exception e) {\n            System.out.println(\"Fallback Exception caught\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Fallback Exception caught"
+        }
+      ],
+      "targetOutput": "Fallback Exception caught"
+    },
+    {
+      "id": "prob-mcf-6",
+      "title": "Handle Array Access and Number Parsing",
+      "difficulty": "Easy",
+      "problemStatement": "Given `String[] tokens = {\"100\", \"NaN\"};`. In try: access index 0 and parse integer. Access index 1 and parse integer. Access index 2 (out of bounds). Catch `NumberFormatException` printing \"Caught parse error\" and catch `ArrayIndexOutOfBoundsException` printing \"Caught bounds error\". Verify parse error prints first.",
+      "description": "Given `String[] tokens = {\"100\", \"NaN\"};`. In try: access index 0 and parse integer. Access index 1 and parse integer. Access index 2 (out of bounds). Catch `NumberFormatException` printing \"Caught parse error\" and catch `ArrayIndexOutOfBoundsException` printing \"Caught bounds error\". Verify parse error prints first.",
+      "hint": "Tokens[1] throws NumberFormatException before index 2 is reached.",
+      "hints": [
+        "Tokens[1] throws NumberFormatException before index 2 is reached."
+      ],
+      "starterCode": "public class TokenParserPractice {\n    public static void main(String[] args) {\n        String[] tokens = {\"100\", \"NaN\"};\n        // TODO: Parse tokens and catch specific errors\n    }\n}",
+      "solutionCode": "public class TokenParserPractice {\n    public static void main(String[] args) {\n        String[] tokens = {\"100\", \"NaN\"};\n        try {\n            int a = Integer.parseInt(tokens[0]);\n            int b = Integer.parseInt(tokens[1]); // Throws NumberFormatException here!\n            int c = Integer.parseInt(tokens[2]);\n        } catch (NumberFormatException e) {\n            System.out.println(\"Caught parse error\");\n        } catch (ArrayIndexOutOfBoundsException e) {\n            System.out.println(\"Caught bounds error\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught parse error"
+        }
+      ],
+      "targetOutput": "Caught parse error"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-mcf-1",
+      "question": "What is the order of execution in a try block with multiple catch blocks?",
+      "answer": "When an exception is thrown in the try block, the JVM examines the catch blocks sequentially from top to bottom. The first catch block whose declared parameter type matches the thrown exception (is assignable from it) executes. Once that catch block finishes, all remaining catch blocks are bypassed.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-mcf-2",
+      "question": "What is Stack Unwinding and how does Java perform it?",
+      "answer": "Stack unwinding is the runtime process of searching for an exception handler across the Call Stack. If the method where the exception occurred lacks a matching catch block, that method's stack frame is popped, and the exception is propagated to the calling method. This repeats up the stack until a matching catch block is found or the main thread terminates.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-mcf-3",
+      "question": "Why would an engineer rethrow an exception using 'throw e' in a catch block?",
+      "answer": "Rethrowing is used when the current method can only partially handle the error (e.g. logging an audit record, rolling back a local transaction, or freeing local resources), but the higher-level caller must still be notified that the business operation failed so it can alert the user or redirect the request.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-mcf-4",
+      "question": "What is Exception Chaining (wrapping) and why is it preferred over throwing a new exception directly?",
+      "answer": "Exception chaining is wrapping a lower-level exception inside a higher-level domain exception (e.g. `throw new OrderProcessingException(\"Order failed\", sqlException)`). Passing the lower-level exception as the `cause` preserves the original root-cause stack trace, allowing engineers to diagnose the underlying technical failure in logs.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-mcf-5",
+      "question": "Can an exception thrown in an inner try block be caught by the outer catch block?",
+      "answer": "Yes. If an exception occurs in an inner `try` block and the inner `catch` blocks do not match its type, the exception immediately bubbles out to the enclosing outer `try-catch` structure.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-mcf-6",
+      "question": "What happens if both the try block and the finally block throw an exception?",
+      "answer": "If an exception is in-flight from the `try` block and another exception is thrown inside `finally`, the exception from `finally` takes precedence and propagates upward. In pre-Java 7, the original exception was lost. In Java 7+ try-with-resources, secondary exceptions are recorded as **Suppressed Exceptions** on the primary exception (`e.getSuppressed()`).",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-mcf-7",
+      "question": "Why does Java enforce that child exceptions must precede parent exceptions in multiple catch blocks?",
+      "answer": "Because polymorphism dictates that an instance of a child class `is-a` parent class. If `catch (Exception e)` were placed above `catch (IOException e)`, the first block would match all `IOExceptions`, leaving the second block completely dead (unreachable). The compiler rejects unreachable code at compile-time.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-mcf-1",
+      "text": "I can explain how the JVM evaluates multiple catch blocks sequentially."
+    },
+    {
+      "id": "chk-mcf-2",
+      "text": "I know how stack unwinding propagates exceptions across calling methods."
+    },
+    {
+      "id": "chk-mcf-3",
+      "text": "I understand how and when to rethrow exceptions using throw e;."
+    },
+    {
+      "id": "chk-mcf-4",
+      "text": "I can implement nested try-catch blocks cleanly."
+    },
+    {
+      "id": "chk-mcf-5",
+      "text": "I know why child catch blocks must appear before parent catch blocks."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-mcf-1",
+      "text": "I can explain how the JVM evaluates multiple catch blocks sequentially."
+    },
+    {
+      "id": "chk-mcf-2",
+      "text": "I know how stack unwinding propagates exceptions across calling methods."
+    },
+    {
+      "id": "chk-mcf-3",
+      "text": "I understand how and when to rethrow exceptions using throw e;."
+    },
+    {
+      "id": "chk-mcf-4",
+      "text": "I can implement nested try-catch blocks cleanly."
+    },
+    {
+      "id": "chk-mcf-5",
+      "text": "I know why child catch blocks must appear before parent catch blocks."
+    }
+  ]
+}

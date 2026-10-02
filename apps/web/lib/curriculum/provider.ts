@@ -250,7 +250,38 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'string-output-prediction-and-debugging': 'string-performance-and-common-bugs',
       'string-bugs': 'string-performance-and-common-bugs',
       'string-problem-solving': 'string-practice',
-      'strings-practice-and-interview-challenge': 'strings-final-challenge'
+      'strings-practice-and-interview-challenge': 'strings-final-challenge',
+
+      // Module 10 (Exception Basics) aliases:
+      'exceptions': 'what-are-exceptions',
+      'intro-to-exceptions': 'what-are-exceptions',
+      'error-vs-exception': 'errors-vs-exceptions',
+      'hierarchy': 'exception-hierarchy',
+      'try-catch': 'try-catch-finally',
+      'multiple-catch': 'multiple-catch-and-exception-flow',
+      'throw-throws': 'throw-and-throws',
+      'checked-unchecked': 'checked-vs-unchecked-exceptions',
+      'common-exceptions': 'common-java-exceptions',
+      'custom-exceptions': 'custom-exceptions-and-debugging',
+      'exception-debugging': 'custom-exceptions-and-debugging',
+      'exception-practice': 'exceptions-practice-and-interview-challenge',
+      'exceptions-final-challenge': 'exceptions-practice-and-interview-challenge',
+
+      // Module 11 (Packages & Access Control) aliases:
+      'packages-intro': 'why-packages',
+      'packages': 'why-packages',
+      'creating-packages': 'creating-and-using-packages',
+      'compiling-packages': 'creating-and-using-packages',
+      'imports': 'import-and-fully-qualified-names',
+      'static-imports': 'import-and-fully-qualified-names',
+      'access-control': 'access-modifiers',
+      'public-private': 'public-private-and-package-private',
+      'encapsulation': 'public-private-and-package-private',
+      'protected': 'protected-and-cross-package-access',
+      'package-naming': 'naming-and-project-organization',
+      'project-structure': 'naming-and-project-organization',
+      'packages-practice': 'packages-practice-and-interview-challenge',
+      'packages-final-challenge': 'packages-practice-and-interview-challenge'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

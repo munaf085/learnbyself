@@ -1,0 +1,598 @@
+{
+  "id": "les-exception-basics-checked-vs-unchecked-exceptions",
+  "slug": "checked-vs-unchecked-exceptions",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "Checked vs Unchecked Exceptions",
+  "summary": "Master the difference between compiler-enforced checked exceptions and runtime unchecked exceptions: Catch or Specify rule, API design, and exception wrapping.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 7,
+  "prerequisites": [
+    "les-exception-basics-throw-and-throws"
+  ],
+  "subtopics": [
+    "Checked Exception Branch",
+    "Unchecked RuntimeException Branch",
+    "Catch or Specify Rule",
+    "Exception Wrapping & Chaining"
+  ],
+  "learningOutcomes": [
+    "Differentiate between checked and unchecked exceptions in code and architecture",
+    "Satisfy the Catch or Specify requirement for checked exceptions",
+    "Wrap low-level checked exceptions into clean unchecked domain exceptions"
+  ],
+  "activities": [
+    {
+      "id": "act-checked-vs-unchecked-exceptions-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Checked vs Unchecked Exceptions",
+      "content": "### 1. Concept: Checked vs Unchecked Exceptions\nJava is one of the few mainstream programming languages that divides exceptions into two distinct categories enforced by the compiler:\n\n1. **Checked Exceptions (Compile-Time Checked)**:\n   - Any subclass of `java.lang.Exception` **EXCEPT** `RuntimeException`.\n   - Represent external environmental conditions that a well-written application should foresee and recover from (e.g. `IOException`, `FileNotFoundException`, `SQLException`, `ClassNotFoundException`).\n   - The Java compiler **strictly mandates** the **\"Catch or Specify\"** rule: every checked exception must be wrapped in a `try-catch` block or declared in the enclosing method's `throws` clause.\n2. **Unchecked Exceptions (Runtime / Unenforced)**:\n   - `java.lang.RuntimeException` and all its subclasses (plus `java.lang.Error`).\n   - Represent **programming bugs, logic defects, or contract violations** that could occur anywhere in the code (e.g. `NullPointerException`, `ArithmeticException`, `ArrayIndexOutOfBoundsException`, `IllegalArgumentException`).\n   - The compiler does **NOT** require `try-catch` or `throws` declarations for unchecked exceptions.\n\n### 2. Why Did Java Introduce Checked Exceptions?\nJava's architects wanted enterprise applications to be exceptionally robust. For operations involving external resources (networks, disks, databases), failures are not a question of *if*, but *when*.\nBy making `IOException` checked, the compiler guarantees that developers cannot forget to handle disk failures or network timeouts before shipping code to production.\n\n### 3. Modern Engineering Perspective: When to Use Which?\nIn modern Java (Spring Boot, microservices, cloud-native frameworks):\n- **Checked Exceptions** are often considered overly verbose when recovery is impossible (e.g. if the database is dead, wrapping every method in `throws SQLException` clutters APIs). Modern frameworks often translate checked exceptions into unchecked runtime exceptions.\n- **Rule of Thumb**:\n  - Use **Checked Exceptions** when the caller can **realistically recover** (e.g. `InvalidCouponCodeException` -> prompt user for a new coupon).\n  - Use **Unchecked Exceptions** for **programming bugs or unrecoverable conditions** (e.g. `NullPointerException`, database connection failure).\n\n### 4. Practical Java Example\n```java\nimport java.io.FileReader;\nimport java.io.IOException;\n\npublic class CheckedVsUncheckedDemo {\n    // 1. Checked Exception: Compiler FORCES try-catch or throws\n    public static void readConfig(String path) throws IOException {\n        FileReader reader = new FileReader(path); // Checked: IOException\n        reader.close();\n    }\n\n    // 2. Unchecked Exception: Compiler does NOT force throws or try-catch\n    public static void calculateRatio(int a, int b) {\n        int ratio = a / b; // Unchecked: ArithmeticException\n    }\n}\n```\n\n### 5. Common Beginner Mistakes\n- **Assuming all Exception subclasses are checked**: `NullPointerException` extends `RuntimeException`, which extends `Exception`, but it is **unchecked**.\n- **Catching checked exceptions that are never thrown**: Writing `try { int x = 10; } catch (IOException e) { ... }` causes a **compile error** because `IOException` can never be thrown in that block. (Note: `catch (Exception e)` is allowed).\n\n### 6. Key Takeaways\n- Checked exceptions extend `Exception` (excluding `RuntimeException`) and are enforced by the compiler.\n- Unchecked exceptions extend `RuntimeException` and represent logic defects not enforced at compile time.\n- Checked exceptions mandate the \"Catch or Specify\" rule (`try-catch` or `throws`).\n- The compiler rejects catch blocks for specific checked exceptions that cannot possibly be thrown.",
+      "breakdown": [
+        {
+          "topic": "Checked Exceptions",
+          "details": "Enforced by javac at compile time. Subclasses of Exception excluding RuntimeException. Requires Catch or Specify."
+        },
+        {
+          "topic": "Unchecked Exceptions",
+          "details": "Subclasses of RuntimeException. Represents programmer errors; exempt from compiler enforcement."
+        },
+        {
+          "topic": "Catch or Specify Requirement",
+          "details": "Methods must either intercept checked exceptions with try-catch or declare them with throws in their signature."
+        },
+        {
+          "topic": "Unchecked Conversion Pattern",
+          "details": "Modern frameworks wrap unrecoverable checked exceptions into RuntimeException to reduce boilerplate."
+        }
+      ]
+    },
+    {
+      "id": "act-checked-vs-unchecked-exceptions-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Checked vs Unchecked Suite",
+      "codeSnippet": "import java.io.File;\nimport java.io.FileReader;\nimport java.io.IOException;\n\npublic class CheckedUncheckedComparisonDemo {\n    // 1. Checked Exception Demonstration\n    // Compiler strictly requires 'throws IOException' or a try-catch block!\n    public static void openFileChecked(String filename) throws IOException {\n        File file = new File(filename);\n        FileReader reader = new FileReader(file); // Might throw FileNotFoundException\n        reader.close();\n    }\n\n    // 2. Unchecked Exception Demonstration\n    // No 'throws' clause required by compiler!\n    public static void parseAgeUnchecked(String text) {\n        int age = Integer.parseInt(text); // Might throw NumberFormatException\n        if (age < 0) {\n            throw new IllegalArgumentException(\"Age cannot be negative\"); // Unchecked\n        }\n        System.out.println(\"Valid age: \" + age);\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"--- 1. Handling Checked Exception ---\");\n        try {\n            openFileChecked(\"non_existent_config.json\");\n        } catch (IOException e) {\n            System.out.println(\"Caught checked IOException: \" + e.getMessage());\n        }\n\n        System.out.println(\"\\n--- 2. Handling Unchecked Exception ---\");\n        try {\n            parseAgeUnchecked(\"-10\");\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Caught unchecked IllegalArgumentException: \" + e.getMessage());\n        }\n    }\n}",
+      "description": "Demonstrates compiler enforcement on checked IOException vs unenforced unchecked exceptions.",
+      "steps": [
+        {
+          "line": 7,
+          "description": "openFileChecked must declare throws IOException because FileReader throws checked FileNotFoundException."
+        },
+        {
+          "line": 15,
+          "description": "parseAgeUnchecked throws IllegalArgumentException without needing a throws clause in its signature."
+        },
+        {
+          "line": 23,
+          "description": "main must wrap openFileChecked in try-catch to satisfy the compiler."
+        },
+        {
+          "line": 30,
+          "description": "main handles unchecked IllegalArgumentException safely at runtime."
+        }
+      ]
+    },
+    {
+      "id": "act-checked-vs-unchecked-exceptions-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Checked vs Unchecked Exceptions",
+      "questions": [
+        {
+          "id": "mcq-cvu-1",
+          "question": "Which of the following is a CHECKED exception in Java?",
+          "options": [
+            "NullPointerException",
+            "ArithmeticException",
+            "FileNotFoundException",
+            "ArrayIndexOutOfBoundsException"
+          ],
+          "correctOption": 2,
+          "explanation": "FileNotFoundException extends IOException, which extends Exception directly (not RuntimeException), making it a checked exception.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-cvu-2",
+          "question": "Which of the following is an UNCHECKED exception in Java?",
+          "options": [
+            "SQLException",
+            "ClassNotFoundException",
+            "NumberFormatException",
+            "IOException"
+          ],
+          "correctOption": 2,
+          "explanation": "NumberFormatException extends IllegalArgumentException, which extends RuntimeException, making it unchecked.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-cvu-3",
+          "question": "What does the Java compiler do if your code calls a method declaring `throws IOException` without using try-catch or re-declaring throws?",
+          "options": [
+            "It issues a runtime warning",
+            "It refuses to compile with an 'unreported exception IOException' error",
+            "It automatically inserts a try-catch block into bytecode",
+            "It replaces the call with null"
+          ],
+          "correctOption": 1,
+          "explanation": "The Java compiler strictly enforces the 'Catch or Specify' rule for checked exceptions. Failure to catch or declare causes a compilation error.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-cvu-4",
+          "question": "Why are `RuntimeException` and its subclasses called 'unchecked' exceptions?",
+          "options": [
+            "Because they are not checked by the Garbage Collector",
+            "Because the Java compiler does NOT check at compile-time whether they are caught or declared",
+            "Because they do not have stack traces",
+            "Because they can only run on 32-bit systems"
+          ],
+          "correctOption": 1,
+          "explanation": "They are called unchecked because the compiler does not verify whether methods catch or declare them.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-cvu-5",
+          "question": "What happens if you write a catch block for `IOException` around a try block that contains NO statements capable of throwing `IOException`?",
+          "options": [
+            "It compiles without error",
+            "The compiler issues an error: 'exception IOException is never thrown in body of corresponding try statement'",
+            "It runs fine and prints null",
+            "It converts IOException to RuntimeException"
+          ],
+          "correctOption": 1,
+          "explanation": "The Java compiler validates checked exception catch blocks. If the try block cannot possibly throw that specific checked exception, compilation fails.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-cvu-6",
+          "question": "Can you catch an unchecked exception (like `NullPointerException`) in a try block even if the compiler cannot prove it will be thrown?",
+          "options": [
+            "Yes, unchecked exceptions are exempt from the 'never thrown' compile check",
+            "No, it causes a compile error",
+            "Only if marked with @SuppressWarnings",
+            "Only in Java 8"
+          ],
+          "correctOption": 0,
+          "explanation": "Unchecked exceptions (RuntimeException and subclasses) can be caught around any block of code without triggering 'never thrown' compile errors.",
+          "correctIndex": 0
+        },
+        {
+          "id": "mcq-cvu-7",
+          "question": "What is the recommended modern practice when dealing with low-level checked exceptions in enterprise REST APIs?",
+          "options": [
+            "Let them bubble out of main()",
+            "Catch them and rethrow them wrapped in a custom unchecked RuntimeException",
+            "Ignore them with an empty catch block",
+            "Print the stack trace and return null"
+          ],
+          "correctOption": 1,
+          "explanation": "Modern enterprise frameworks wrap low-level checked exceptions into unchecked domain exceptions, reducing signature clutter while preserving the root cause.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-cvu-8",
+          "question": "Which of the following exception types represents a programming logic bug rather than an unavoidable external condition?",
+          "options": [
+            "SQLException",
+            "FileNotFoundException",
+            "NullPointerException",
+            "IOException"
+          ],
+          "correctOption": 2,
+          "explanation": "NullPointerException represents a defect in programming logic (dereferencing a null reference), which should be fixed via proper code checks.",
+          "correctIndex": 2
+        }
+      ]
+    },
+    {
+      "id": "act-checked-vs-unchecked-exceptions-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Wrap Checked Exception",
+      "practice": {
+        "id": "prac-act-cvu",
+        "title": "Hands-On: Wrap Checked Exception",
+        "description": "Catch a simulated checked Exception and rethrow it wrapped as an unchecked RuntimeException.",
+        "starterCode": "public class PracticeWrap {\n    static void run() {\n        // TODO: Try, throw checked Exception, catch and wrap in RuntimeException\n    }\n    public static void main(String[] args) {\n        try {\n            run();\n        } catch (RuntimeException e) {\n            System.out.println(\"Caught wrapped: \" + e.getMessage());\n        }\n    }\n}",
+        "solutionCode": "public class PracticeWrap {\n    static void run() {\n        try {\n            throw new Exception(\"File Missing\");\n        } catch (Exception e) {\n            throw new RuntimeException(\"Service Error\", e);\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            run();\n        } catch (RuntimeException e) {\n            System.out.println(\"Caught wrapped: \" + e.getMessage());\n        }\n    }\n}",
+        "expectedOutput": "Caught wrapped: Service Error"
+      }
+    },
+    {
+      "id": "act-checked-vs-unchecked-exceptions-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Checked vs Unchecked Exceptions",
+      "interviewQA": [
+        {
+          "id": "iq-cvu-1",
+          "question": "What is the technical and conceptual difference between checked and unchecked exceptions in Java?",
+          "answer": "Technically, checked exceptions inherit directly from `java.lang.Exception` (excluding `RuntimeException`), and the Java compiler enforces the Catch or Specify requirement. Unchecked exceptions inherit from `java.lang.RuntimeException` (or `Error`) and are not checked at compile time. Conceptually, checked exceptions represent unavoidable external conditions from which the application can recover (e.g. missing file, network drop), while unchecked exceptions represent preventable bugs or invalid arguments.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cvu-2",
+          "question": "Why did modern languages (like C#, Kotlin, Swift, Go, Rust) decide against checked exceptions?",
+          "answer": "Checked exceptions often cause severe API pollution: adding a checked exception to a low-level method forces every calling method throughout the entire call stack to either catch it or declare `throws`. In large systems, developers often resort to empty catch blocks or wrapping in generic `throws Exception`, negating the intended benefits. Modern frameworks prefer unchecked exceptions combined with centralized global exception handlers.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cvu-3",
+          "question": "What is the 'Catch or Specify' rule in Java?",
+          "answer": "The Catch or Specify rule mandates that code invoking a method that throws a checked exception must satisfy one of two requirements: 1) Catch: Enclose the invocation within a `try` block that has a corresponding `catch` block for that exception type, or 2) Specify: Declare that the enclosing method also throws that exception via the `throws` clause in its signature.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cvu-4",
+          "question": "Can you declare a checked exception in a method signature that is never actually thrown by the method?",
+          "answer": "Yes. A method can declare `public void process() throws IOException` even if its body does not currently throw `IOException`. This is permitted to allow subclasses to throw `IOException` when overriding the method or to reserve the right to throw it in future revisions.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cvu-5",
+          "question": "What is Exception Translation / Exception Wrapping?",
+          "answer": "Exception translation is catching a lower-level, checked exception (such as `SQLException`) and throwing a higher-level, unchecked domain exception (such as `DataAccessException`). The original exception is passed into the constructor as the `cause`, decoupling the service layer from database implementation details while preserving the debugging stack trace.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cvu-6",
+          "question": "Why does the compiler prevent catching a specific checked exception if it cannot be thrown?",
+          "answer": "The Java compiler performs flow analysis. If a `try` block contains no statements capable of throwing `IOException`, writing `catch (IOException e)` results in a compile-time error. Java refuses to allow code designed to catch a checked exception that is mathematically impossible to occur in that block.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-cvu-7",
+          "question": "Is RuntimeException a checked or unchecked exception, and why?",
+          "answer": "`RuntimeException` is an **unchecked exception**. The Java Language Specification explicitly exempts `RuntimeException`, `Error`, and all their subclasses from compile-time checking because logic defects (like `NullPointerException` or `IndexOutOfBoundsException`) can theoretically occur on almost any instruction.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-checked-vs-unchecked-exceptions-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Checked vs Unchecked Exceptions",
+      "checklist": [
+        {
+          "id": "chk-cvu-1",
+          "text": "I can clearly distinguish between checked and unchecked exceptions."
+        },
+        {
+          "id": "chk-cvu-2",
+          "text": "I understand the 'Catch or Specify' compiler requirement."
+        },
+        {
+          "id": "chk-cvu-3",
+          "text": "I know how to wrap checked exceptions into unchecked domain exceptions."
+        },
+        {
+          "id": "chk-cvu-4",
+          "text": "I understand why modern frameworks favor unchecked exceptions."
+        },
+        {
+          "id": "chk-cvu-5",
+          "text": "I know how to retrieve wrapped causes using getCause()."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-cvu-1",
+      "question": "Which of the following is a CHECKED exception in Java?",
+      "options": [
+        "NullPointerException",
+        "ArithmeticException",
+        "FileNotFoundException",
+        "ArrayIndexOutOfBoundsException"
+      ],
+      "correctOption": 2,
+      "explanation": "FileNotFoundException extends IOException, which extends Exception directly (not RuntimeException), making it a checked exception.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-cvu-2",
+      "question": "Which of the following is an UNCHECKED exception in Java?",
+      "options": [
+        "SQLException",
+        "ClassNotFoundException",
+        "NumberFormatException",
+        "IOException"
+      ],
+      "correctOption": 2,
+      "explanation": "NumberFormatException extends IllegalArgumentException, which extends RuntimeException, making it unchecked.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-cvu-3",
+      "question": "What does the Java compiler do if your code calls a method declaring `throws IOException` without using try-catch or re-declaring throws?",
+      "options": [
+        "It issues a runtime warning",
+        "It refuses to compile with an 'unreported exception IOException' error",
+        "It automatically inserts a try-catch block into bytecode",
+        "It replaces the call with null"
+      ],
+      "correctOption": 1,
+      "explanation": "The Java compiler strictly enforces the 'Catch or Specify' rule for checked exceptions. Failure to catch or declare causes a compilation error.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-cvu-4",
+      "question": "Why are `RuntimeException` and its subclasses called 'unchecked' exceptions?",
+      "options": [
+        "Because they are not checked by the Garbage Collector",
+        "Because the Java compiler does NOT check at compile-time whether they are caught or declared",
+        "Because they do not have stack traces",
+        "Because they can only run on 32-bit systems"
+      ],
+      "correctOption": 1,
+      "explanation": "They are called unchecked because the compiler does not verify whether methods catch or declare them.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-cvu-5",
+      "question": "What happens if you write a catch block for `IOException` around a try block that contains NO statements capable of throwing `IOException`?",
+      "options": [
+        "It compiles without error",
+        "The compiler issues an error: 'exception IOException is never thrown in body of corresponding try statement'",
+        "It runs fine and prints null",
+        "It converts IOException to RuntimeException"
+      ],
+      "correctOption": 1,
+      "explanation": "The Java compiler validates checked exception catch blocks. If the try block cannot possibly throw that specific checked exception, compilation fails.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-cvu-6",
+      "question": "Can you catch an unchecked exception (like `NullPointerException`) in a try block even if the compiler cannot prove it will be thrown?",
+      "options": [
+        "Yes, unchecked exceptions are exempt from the 'never thrown' compile check",
+        "No, it causes a compile error",
+        "Only if marked with @SuppressWarnings",
+        "Only in Java 8"
+      ],
+      "correctOption": 0,
+      "explanation": "Unchecked exceptions (RuntimeException and subclasses) can be caught around any block of code without triggering 'never thrown' compile errors.",
+      "correctIndex": 0
+    },
+    {
+      "id": "mcq-cvu-7",
+      "question": "What is the recommended modern practice when dealing with low-level checked exceptions in enterprise REST APIs?",
+      "options": [
+        "Let them bubble out of main()",
+        "Catch them and rethrow them wrapped in a custom unchecked RuntimeException",
+        "Ignore them with an empty catch block",
+        "Print the stack trace and return null"
+      ],
+      "correctOption": 1,
+      "explanation": "Modern enterprise frameworks wrap low-level checked exceptions into unchecked domain exceptions, reducing signature clutter while preserving the root cause.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-cvu-8",
+      "question": "Which of the following exception types represents a programming logic bug rather than an unavoidable external condition?",
+      "options": [
+        "SQLException",
+        "FileNotFoundException",
+        "NullPointerException",
+        "IOException"
+      ],
+      "correctOption": 2,
+      "explanation": "NullPointerException represents a defect in programming logic (dereferencing a null reference), which should be fixed via proper code checks.",
+      "correctIndex": 2
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-cvu-1",
+      "title": "Wrap Checked Exception in RuntimeException",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `loadData(String path)`. Inside try: simulate a checked exception by throwing `new Exception(\"Disk Read Failed\")`. Catch `Exception` and rethrow it wrapped inside a `RuntimeException`: `throw new RuntimeException(\"Failed to load\", e)`. In `main`, call `loadData(\"config.txt\")` and catch `RuntimeException`, printing \"Wrapped error: Failed to load\".",
+      "description": "Write a method `loadData(String path)`. Inside try: simulate a checked exception by throwing `new Exception(\"Disk Read Failed\")`. Catch `Exception` and rethrow it wrapped inside a `RuntimeException`: `throw new RuntimeException(\"Failed to load\", e)`. In `main`, call `loadData(\"config.txt\")` and catch `RuntimeException`, printing \"Wrapped error: Failed to load\".",
+      "hint": "throw new RuntimeException(\"Failed to load\", e);",
+      "hints": [
+        "throw new RuntimeException(\"Failed to load\", e);"
+      ],
+      "starterCode": "public class CheckedToUncheckedWrap {\n    static void loadData(String path) {\n        // TODO: Try, throw checked Exception, catch and wrap in RuntimeException\n    }\n    public static void main(String[] args) {\n        // TODO: Call loadData and catch RuntimeException\n    }\n}",
+      "solutionCode": "public class CheckedToUncheckedWrap {\n    static void loadData(String path) {\n        try {\n            throw new Exception(\"Disk Read Failed\");\n        } catch (Exception e) {\n            throw new RuntimeException(\"Failed to load\", e);\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            loadData(\"config.txt\");\n        } catch (RuntimeException e) {\n            System.out.println(\"Wrapped error: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Wrapped error: Failed to load"
+        }
+      ],
+      "targetOutput": "Wrapped error: Failed to load"
+    },
+    {
+      "id": "prob-cvu-2",
+      "title": "Test Compiler Enforcement for Checked Exception",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `connectDatabase(boolean valid) throws Exception`: If `!valid`, throw `new Exception(\"DB Connection Refused\")`. In `main`, invoke `connectDatabase(false)` inside try-catch. Print \"Checked Exception handled: DB Connection Refused\".",
+      "description": "Write a method `connectDatabase(boolean valid) throws Exception`: If `!valid`, throw `new Exception(\"DB Connection Refused\")`. In `main`, invoke `connectDatabase(false)` inside try-catch. Print \"Checked Exception handled: DB Connection Refused\".",
+      "hint": "Declare throws Exception in connectDatabase.",
+      "hints": [
+        "Declare throws Exception in connectDatabase."
+      ],
+      "starterCode": "public class CheckedEnforcementPractice {\n    static void connectDatabase(boolean valid) throws Exception {\n        // TODO: Validate connection\n    }\n    public static void main(String[] args) {\n        // TODO: Call in try-catch\n    }\n}",
+      "solutionCode": "public class CheckedEnforcementPractice {\n    static void connectDatabase(boolean valid) throws Exception {\n        if (!valid) {\n            throw new Exception(\"DB Connection Refused\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            connectDatabase(false);\n        } catch (Exception e) {\n            System.out.println(\"Checked Exception handled: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Checked Exception handled: DB Connection Refused"
+        }
+      ],
+      "targetOutput": "Checked Exception handled: DB Connection Refused"
+    },
+    {
+      "id": "prob-cvu-3",
+      "title": "Verify Unchecked Exception Does Not Require Throws",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `divideUnchecked(int a, int b)` without any `throws` clause. If `b == 0`, throw `new ArithmeticException(\"Cannot divide by zero\")`. Call it in `main` with (10, 0) and catch `ArithmeticException`. Print \"Unchecked caught: Cannot divide by zero\".",
+      "description": "Write a method `divideUnchecked(int a, int b)` without any `throws` clause. If `b == 0`, throw `new ArithmeticException(\"Cannot divide by zero\")`. Call it in `main` with (10, 0) and catch `ArithmeticException`. Print \"Unchecked caught: Cannot divide by zero\".",
+      "hint": "No throws clause needed on divideUnchecked.",
+      "hints": [
+        "No throws clause needed on divideUnchecked."
+      ],
+      "starterCode": "public class UncheckedNoThrowsPractice {\n    static int divideUnchecked(int a, int b) {\n        // TODO: Throw ArithmeticException without throws clause\n        return 0;\n    }\n    public static void main(String[] args) {\n        // TODO: Call and catch\n    }\n}",
+      "solutionCode": "public class UncheckedNoThrowsPractice {\n    static int divideUnchecked(int a, int b) {\n        if (b == 0) {\n            throw new ArithmeticException(\"Cannot divide by zero\");\n        }\n        return a / b;\n    }\n    public static void main(String[] args) {\n        try {\n            divideUnchecked(10, 0);\n        } catch (ArithmeticException e) {\n            System.out.println(\"Unchecked caught: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Unchecked caught: Cannot divide by zero"
+        }
+      ],
+      "targetOutput": "Unchecked caught: Cannot divide by zero"
+    },
+    {
+      "id": "prob-cvu-4",
+      "title": "Inspect Cause of Wrapped Exception",
+      "difficulty": "Medium",
+      "problemStatement": "Create a `RuntimeException` that wraps an `IllegalArgumentException(\"Invalid Port\")`: `new RuntimeException(\"Config Error\", new IllegalArgumentException(\"Invalid Port\"))`. In a catch block, print `e.getMessage()` and `e.getCause().getMessage()`. Format: \"Outer: Config Error | Cause: Invalid Port\".",
+      "description": "Create a `RuntimeException` that wraps an `IllegalArgumentException(\"Invalid Port\")`: `new RuntimeException(\"Config Error\", new IllegalArgumentException(\"Invalid Port\"))`. In a catch block, print `e.getMessage()` and `e.getCause().getMessage()`. Format: \"Outer: Config Error | Cause: Invalid Port\".",
+      "hint": "e.getCause().getMessage()",
+      "hints": [
+        "e.getCause().getMessage()"
+      ],
+      "starterCode": "public class ExceptionChainingPractice {\n    public static void main(String[] args) {\n        // TODO: Demonstrate getCause()\n    }\n}",
+      "solutionCode": "public class ExceptionChainingPractice {\n    public static void main(String[] args) {\n        try {\n            throw new RuntimeException(\"Config Error\", new IllegalArgumentException(\"Invalid Port\"));\n        } catch (RuntimeException e) {\n            System.out.println(\"Outer: \" + e.getMessage() + \" | Cause: \" + e.getCause().getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Outer: Config Error | Cause: Invalid Port"
+        }
+      ],
+      "targetOutput": "Outer: Config Error | Cause: Invalid Port"
+    },
+    {
+      "id": "prob-cvu-5",
+      "title": "Classify Exception Type Automatically",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method `String classify(Throwable t)`: Return \"UNCHECKED\" if `t instanceof RuntimeException || t instanceof Error`, otherwise return \"CHECKED\". Test with `new NullPointerException()` and `new Exception()`. Print: \"NPE is UNCHECKED\" and \"Exception is CHECKED\".",
+      "description": "Write a method `String classify(Throwable t)`: Return \"UNCHECKED\" if `t instanceof RuntimeException || t instanceof Error`, otherwise return \"CHECKED\". Test with `new NullPointerException()` and `new Exception()`. Print: \"NPE is UNCHECKED\" and \"Exception is CHECKED\".",
+      "hint": "Check instanceof RuntimeException || instanceof Error.",
+      "hints": [
+        "Check instanceof RuntimeException || instanceof Error."
+      ],
+      "starterCode": "public class ClassifierPractice {\n    static String classify(Throwable t) {\n        // TODO: Classify as CHECKED or UNCHECKED\n        return \"\";\n    }\n    public static void main(String[] args) {\n        System.out.println(\"NPE is \" + classify(new NullPointerException()));\n        System.out.println(\"Exception is \" + classify(new Exception()));\n    }\n}",
+      "solutionCode": "public class ClassifierPractice {\n    static String classify(Throwable t) {\n        if (t instanceof RuntimeException || t instanceof Error) {\n            return \"UNCHECKED\";\n        }\n        return \"CHECKED\";\n    }\n    public static void main(String[] args) {\n        System.out.println(\"NPE is \" + classify(new NullPointerException()));\n        System.out.println(\"Exception is \" + classify(new Exception()));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "NPE is UNCHECKED\nException is CHECKED"
+        }
+      ],
+      "targetOutput": "NPE is UNCHECKED\nException is CHECKED"
+    },
+    {
+      "id": "prob-cvu-6",
+      "title": "Demonstrate Multiple Unchecked Exceptions in Pipeline",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method that takes `String s`. If `s == null` throw `NullPointerException`. If `s.isEmpty()` throw `IllegalArgumentException(\"Empty String\")`. Test with `\"\"` in try-catch and print \"Caught: Empty String\".",
+      "description": "Write a method that takes `String s`. If `s == null` throw `NullPointerException`. If `s.isEmpty()` throw `IllegalArgumentException(\"Empty String\")`. Test with `\"\"` in try-catch and print \"Caught: Empty String\".",
+      "hint": "Both NPE and IllegalArgumentException are unchecked.",
+      "hints": [
+        "Both NPE and IllegalArgumentException are unchecked."
+      ],
+      "starterCode": "public class PipelineValidation {\n    static void process(String s) {\n        // TODO: Validate null and empty\n    }\n    public static void main(String[] args) {\n        // TODO: Test with \"\"\n    }\n}",
+      "solutionCode": "public class PipelineValidation {\n    static void process(String s) {\n        if (s == null) {\n            throw new NullPointerException(\"Null String\");\n        }\n        if (s.isEmpty()) {\n            throw new IllegalArgumentException(\"Empty String\");\n        }\n    }\n    public static void main(String[] args) {\n        try {\n            process(\"\");\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught: Empty String"
+        }
+      ],
+      "targetOutput": "Caught: Empty String"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-cvu-1",
+      "question": "What is the technical and conceptual difference between checked and unchecked exceptions in Java?",
+      "answer": "Technically, checked exceptions inherit directly from `java.lang.Exception` (excluding `RuntimeException`), and the Java compiler enforces the Catch or Specify requirement. Unchecked exceptions inherit from `java.lang.RuntimeException` (or `Error`) and are not checked at compile time. Conceptually, checked exceptions represent unavoidable external conditions from which the application can recover (e.g. missing file, network drop), while unchecked exceptions represent preventable bugs or invalid arguments.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cvu-2",
+      "question": "Why did modern languages (like C#, Kotlin, Swift, Go, Rust) decide against checked exceptions?",
+      "answer": "Checked exceptions often cause severe API pollution: adding a checked exception to a low-level method forces every calling method throughout the entire call stack to either catch it or declare `throws`. In large systems, developers often resort to empty catch blocks or wrapping in generic `throws Exception`, negating the intended benefits. Modern frameworks prefer unchecked exceptions combined with centralized global exception handlers.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cvu-3",
+      "question": "What is the 'Catch or Specify' rule in Java?",
+      "answer": "The Catch or Specify rule mandates that code invoking a method that throws a checked exception must satisfy one of two requirements: 1) Catch: Enclose the invocation within a `try` block that has a corresponding `catch` block for that exception type, or 2) Specify: Declare that the enclosing method also throws that exception via the `throws` clause in its signature.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cvu-4",
+      "question": "Can you declare a checked exception in a method signature that is never actually thrown by the method?",
+      "answer": "Yes. A method can declare `public void process() throws IOException` even if its body does not currently throw `IOException`. This is permitted to allow subclasses to throw `IOException` when overriding the method or to reserve the right to throw it in future revisions.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cvu-5",
+      "question": "What is Exception Translation / Exception Wrapping?",
+      "answer": "Exception translation is catching a lower-level, checked exception (such as `SQLException`) and throwing a higher-level, unchecked domain exception (such as `DataAccessException`). The original exception is passed into the constructor as the `cause`, decoupling the service layer from database implementation details while preserving the debugging stack trace.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cvu-6",
+      "question": "Why does the compiler prevent catching a specific checked exception if it cannot be thrown?",
+      "answer": "The Java compiler performs flow analysis. If a `try` block contains no statements capable of throwing `IOException`, writing `catch (IOException e)` results in a compile-time error. Java refuses to allow code designed to catch a checked exception that is mathematically impossible to occur in that block.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-cvu-7",
+      "question": "Is RuntimeException a checked or unchecked exception, and why?",
+      "answer": "`RuntimeException` is an **unchecked exception**. The Java Language Specification explicitly exempts `RuntimeException`, `Error`, and all their subclasses from compile-time checking because logic defects (like `NullPointerException` or `IndexOutOfBoundsException`) can theoretically occur on almost any instruction.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-cvu-1",
+      "text": "I can clearly distinguish between checked and unchecked exceptions."
+    },
+    {
+      "id": "chk-cvu-2",
+      "text": "I understand the 'Catch or Specify' compiler requirement."
+    },
+    {
+      "id": "chk-cvu-3",
+      "text": "I know how to wrap checked exceptions into unchecked domain exceptions."
+    },
+    {
+      "id": "chk-cvu-4",
+      "text": "I understand why modern frameworks favor unchecked exceptions."
+    },
+    {
+      "id": "chk-cvu-5",
+      "text": "I know how to retrieve wrapped causes using getCause()."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-cvu-1",
+      "text": "I can clearly distinguish between checked and unchecked exceptions."
+    },
+    {
+      "id": "chk-cvu-2",
+      "text": "I understand the 'Catch or Specify' compiler requirement."
+    },
+    {
+      "id": "chk-cvu-3",
+      "text": "I know how to wrap checked exceptions into unchecked domain exceptions."
+    },
+    {
+      "id": "chk-cvu-4",
+      "text": "I understand why modern frameworks favor unchecked exceptions."
+    },
+    {
+      "id": "chk-cvu-5",
+      "text": "I know how to retrieve wrapped causes using getCause()."
+    }
+  ]
+}

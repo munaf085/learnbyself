@@ -1,0 +1,604 @@
+{
+  "id": "les-exception-basics-what-are-exceptions",
+  "slug": "what-are-exceptions",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "What Are Exceptions?",
+  "summary": "Understand what exceptions are in Java: runtime failure model, Exception objects, normal vs exceptional flow, stack trace basics, and why exceptions replace error return codes.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [],
+  "subtopics": [
+    "Exception Concept",
+    "Normal vs Exceptional Flow",
+    "Stack Trace Anatomy",
+    "Exceptions vs Error Codes"
+  ],
+  "learningOutcomes": [
+    "Explain why exceptions exist and how the JVM throws them",
+    "Read a stack trace to locate the origin of an error",
+    "Differentiate between compile-time errors and runtime exceptions"
+  ],
+  "activities": [
+    {
+      "id": "act-what-are-exceptions-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: What Are Exceptions?",
+      "content": "### 1. Concept: What is an Exception?\nIn Java, an **exception** is an abnormal event or condition that occurs during the execution of a program and disrupts the normal flow of instructions.\n\nWhen an error happens at runtime—such as dividing an integer by zero (`10 / 0`), attempting to read an index outside an array (`arr[10]`), opening a non-existent file on disk, or dereferencing a `null` reference—the Java Virtual Machine does not simply freeze or terminate silently. Instead, the JVM creates a **first-class Exception Object** on the Heap encapsulating diagnostic details about the failure (the error message, line number, and call stack trajectory) and **throws** it into the runtime execution pipeline.\n\n### 2. Why Exceptions Exist: Separating Error Handling from Business Logic\nIn legacy procedural programming languages (like C), error handling had to be mixed directly with normal logic using error return codes:\n```c\n// Legacy C style: Error codes cluttering business logic\nint status = openFile(\"data.txt\");\nif (status == ERROR_NOT_FOUND) { ... }\nelse if (status == ERROR_PERMISSION) { ... }\n```\nThis approach had two fatal flaws:\n1. Developers frequently ignored return values, leading to silent, catastrophic data corruption.\n2. 80% of the code consisted of nested `if-else` error checks, obscuring the actual business operation.\n\nJava's exception model cleanly separates the **normal execution path** from the **exceptional error-handling path**, ensuring errors cannot be silently bypassed.\n\n### 3. Mental Model: The Train Dispatcher and Emergency Signal\nThink of your running program as a train traveling smoothly along a scheduled railway track (the normal execution flow).\n- **Normal Flow**: The train proceeds smoothly from station to station (method to method).\n- **The Exception**: Suddenly, a boulder is blocking the track ahead (e.g. division by zero).\n- **Throwing the Exception**: The train engineer does not crash the train. Instead, they immediately pull the emergency alarm, firing a flare into the air (the JVM instantiates an Exception object and halts the current method).\n- **Handling**: If the dispatch office has an emergency crew on standby (a `try-catch` block), the train is safely rerouted onto a siding without derailing the entire transit network. If no crew is standing by, the train halts and prints an emergency dispatch log (the stack trace).\n\n### 4. Java Mechanics: What Happens When an Exception is Thrown?\n1. **Creation**: The JVM (or your code) instantiates an instance of an `Exception` subclass (e.g., `new ArithmeticException(\"/ by zero\")`).\n2. **Current Method Halts**: Execution of the current method stops immediately at the offending line; subsequent lines in that block are skipped.\n3. **Call Stack Search**: The JVM searches the current method's call stack frame for an enclosing `try-catch` block capable of handling that specific exception type.\n4. **Stack Unwinding**: If the current method does not handle it, the method is popped from the Call Stack and the exception is handed to the caller method. This repeats up the stack.\n5. **Default Uncaught Exception Handler**: If no method catches the exception all the way up to `main()`, the JVM's default handler prints the **Stack Trace** to `System.err` and terminates the executing thread.\n\n### 5. Practical Java Example: Normal Flow vs Exceptional Flow\n```java\npublic class ExceptionDemo {\n    public static void main(String[] args) {\n        System.out.println(\"Step 1: Program starts\");\n        \n        int numerator = 50;\n        int denominator = 0; // Dangerous input!\n        \n        // When this executes, JVM creates ArithmeticException and halts!\n        int result = numerator / denominator; \n        \n        // This line is NEVER reached if an exception occurs above!\n        System.out.println(\"Step 2: Result = \" + result);\n    }\n}\n```\n\n### 6. Common Beginner Mistakes\n- **Assuming exceptions are syntax errors**: Syntax errors occur at *compile time* (e.g. missing semicolon). Exceptions occur at *runtime* while the program is running with valid bytecode.\n- **Believing exceptions can be ignored**: An unhandled exception will immediately crash the executing thread and terminate the program.\n- **Returning `-1` or `null` instead of throwing**: Hiding fatal errors with dummy return values makes bugs hard to detect downstream.\n\n### 7. Key Takeaways\n- An exception is a runtime event that disrupts the normal execution flow.\n- The JVM packages the error into an Exception object containing details and stack history.\n- If unhandled, the exception bubbles up the Call Stack until the thread terminates.\n- Exceptions separate clean business logic from robust error recovery.",
+      "breakdown": [
+        {
+          "topic": "Definition of Exception",
+          "details": "An event occurring during runtime that disrupts the normal flow of instruction execution."
+        },
+        {
+          "topic": "Exception Objects",
+          "details": "The JVM instantiates a Throwable/Exception object on the Heap holding error messages and line-number stack traces."
+        },
+        {
+          "topic": "Normal vs Exceptional Flow",
+          "details": "Normal flow executes sequentially; an exception halts the current line and transfers control to a catch block or unhandled handler."
+        },
+        {
+          "topic": "Stack Trace Anatomy",
+          "details": "A chronological listing of method calls showing the exact class, method, and line number where the failure occurred."
+        }
+      ]
+    },
+    {
+      "id": "act-what-are-exceptions-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Normal vs Exceptional Flow",
+      "codeSnippet": "public class ExceptionIntroductionDemo {\n    public static void divide(int a, int b) {\n        System.out.println(\"Attempting division: \" + a + \" / \" + b);\n        int quotient = a / b; // Throws ArithmeticException if b == 0\n        System.out.println(\"Division successful! Result: \" + quotient);\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"--- Scenario 1: Normal Flow ---\");\n        divide(100, 5); // Executes cleanly\n        \n        System.out.println(\"\\n--- Scenario 2: Exceptional Flow ---\");\n        // Dividing by zero causes runtime ArithmeticException\n        try {\n            divide(100, 0);\n        } catch (ArithmeticException e) {\n            System.out.println(\"Emergency Handler: Cannot divide by zero!\");\n            System.out.println(\"Exception message: \" + e.getMessage());\n        }\n        \n        System.out.println(\"\\nProgram resumed safely after handling exception!\");\n    }\n}",
+      "description": "Demonstrates normal division vs division by zero throwing an ArithmeticException and safe catch recovery.",
+      "steps": [
+        {
+          "line": 3,
+          "description": "Method divide prints initial diagnostic message."
+        },
+        {
+          "line": 4,
+          "description": "a / b is evaluated. If b == 0, the CPU/JVM arithmetic unit halts and raises ArithmeticException."
+        },
+        {
+          "line": 10,
+          "description": "Scenario 1 passes b = 5; normal flow completes and prints Result: 20."
+        },
+        {
+          "line": 15,
+          "description": "Scenario 2 passes b = 0 inside a try block."
+        },
+        {
+          "line": 17,
+          "description": "catch (ArithmeticException e) catches the thrown object, preventing program termination."
+        },
+        {
+          "line": 22,
+          "description": "Execution continues safely past the catch block."
+        }
+      ]
+    },
+    {
+      "id": "act-what-are-exceptions-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: What Are Exceptions?",
+      "questions": [
+        {
+          "id": "mcq-wae-1",
+          "question": "What is an exception in Java?",
+          "options": [
+            "A syntax error that prevents code from compiling",
+            "An abnormal event occurring during program execution that disrupts the normal instruction flow",
+            "A special hardware interrupt from the motherboard",
+            "A variable type used to store negative numbers"
+          ],
+          "correctOption": 1,
+          "explanation": "An exception is an event that occurs at runtime (during program execution) disrupting normal control flow.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-wae-2",
+          "question": "What does the JVM do at the exact moment a runtime failure occurs (such as dividing by zero)?",
+          "options": [
+            "It restarts the operating system",
+            "It creates an Exception object on the Heap and throws it",
+            "It deletes the compiled .class file",
+            "It ignores the error and assigns 0 to the result"
+          ],
+          "correctOption": 1,
+          "explanation": "The JVM instantiates an Exception object containing diagnostic information (message, call stack) and throws it into the runtime system.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-wae-3",
+          "question": "What happens if an exception is thrown in a method and is NOT caught by any try-catch block anywhere in the application?",
+          "options": [
+            "The program runs in an infinite loop",
+            "The JVM default uncaught exception handler prints the stack trace and terminates the thread",
+            "The exception is automatically converted into a warning",
+            "The compiler re-compiles the code at runtime"
+          ],
+          "correctOption": 1,
+          "explanation": "If no handler catches the exception as it bubbles up to the main() thread entry point, the JVM prints the stack trace to System.err and terminates the thread.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-wae-4",
+          "question": "What is the primary advantage of Java's exception handling model over traditional error return codes (like in C)?",
+          "options": [
+            "It speeds up mathematical floating point addition",
+            "It cleanly separates normal business logic from error-handling routines, preventing errors from being silently ignored",
+            "It allows programs to run without RAM",
+            "It eliminates the need for testing"
+          ],
+          "correctOption": 1,
+          "explanation": "Exceptions decouple normal business flow from error recovery and guarantee that unexpected conditions cannot be silently bypassed.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-wae-5",
+          "question": "What will be printed by the following code snippet?\n```java\nint x = 10 / 0;\nSystem.out.println(\"Finished\");\n```",
+          "options": [
+            "Finished",
+            "0",
+            "ArithmeticException is thrown; \"Finished\" is NEVER printed",
+            "NullPointerException"
+          ],
+          "correctOption": 2,
+          "explanation": "10 / 0 throws an unhandled ArithmeticException at runtime. Execution halts immediately; subsequent statements in that block are never executed.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-wae-6",
+          "question": "What is a Stack Trace in Java?",
+          "options": [
+            "A list of primitive variables declared in main",
+            "A snapshot of the Call Stack showing the sequence of method invocations and exact line numbers leading to the exception",
+            "A memory graph showing Heap object fragmentation",
+            "The assembly code generated by the JIT compiler"
+          ],
+          "correctOption": 1,
+          "explanation": "A stack trace lists active method frames in reverse chronological order, showing exactly where the exception originated and how it propagated.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-wae-7",
+          "question": "Can an exception in Java be caught and recovered from, allowing the program to continue running?",
+          "options": [
+            "No, once an exception occurs, the program must always terminate",
+            "Yes, enclosing dangerous statements in a try-catch block allows safe recovery",
+            "Only in multithreaded code",
+            "Only if running Java in debug mode"
+          ],
+          "correctOption": 1,
+          "explanation": "Enclosing operations in a try-catch block intercepts the thrown Exception object and routes control to custom recovery logic.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-wae-8",
+          "question": "What does `e.getMessage()` return when called on an Exception object `e`?",
+          "options": [
+            "The memory address of the JVM",
+            "A human-readable description of the error condition (e.g. \"/ by zero\")",
+            "The complete Java bytecode",
+            "The operating system username"
+          ],
+          "correctOption": 1,
+          "explanation": "`e.getMessage()` returns the descriptive error message string initialized when the exception was constructed.",
+          "correctIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-what-are-exceptions-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Catch an ArithmeticException",
+      "practice": {
+        "id": "prac-act-wae",
+        "title": "Hands-On: Catch an ArithmeticException",
+        "description": "Trigger an ArithmeticException by dividing by zero and catch it safely with a try-catch block.",
+        "starterCode": "public class PracticeExceptionIntro {\n    public static void main(String[] args) {\n        // TODO: Try dividing 50 by 0 and catch ArithmeticException\n    }\n}",
+        "solutionCode": "public class PracticeExceptionIntro {\n    public static void main(String[] args) {\n        try {\n            int res = 50 / 0;\n            System.out.println(\"Result: \" + res);\n        } catch (ArithmeticException e) {\n            System.out.println(\"Caught division by zero safely!\");\n        }\n    }\n}",
+        "expectedOutput": "Caught division by zero safely!"
+      }
+    },
+    {
+      "id": "act-what-are-exceptions-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: What Are Exceptions?",
+      "interviewQA": [
+        {
+          "id": "iq-wae-1",
+          "question": "What is an Exception in Java and why is it preferred over error return codes?",
+          "answer": "An exception is an object representing an abnormal runtime condition that disrupts normal program execution. In contrast to error return codes (like returning -1 or null), exceptions: 1) Cannot be silently ignored (unhandled exceptions force thread termination), 2) Separate error recovery code from normal business logic, and 3) Propagate automatically across method call stacks until a suitable handler is located.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-wae-2",
+          "question": "What happens under the hood when the JVM encounters an instruction like 10 / 0?",
+          "answer": "The CPU/JVM execution engine detects the invalid division by zero, creates an instance of `java.lang.ArithmeticException` with message `\"/ by zero\"`, populates its stack trace array with the current call stack snapshot, and interrupts sequential execution. It then begins unwinding the Call Stack to find a matching catch block.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-wae-3",
+          "question": "What is a Stack Trace, and what information does it provide?",
+          "answer": "A stack trace is a reverse-chronological printout of the Call Stack frames at the moment the exception was thrown. It reveals: 1) The exact exception class name and message, 2) The method where the exception originated, 3) The chain of callers that invoked that method, and 4) The precise source file and line number of every step in the chain.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-wae-4",
+          "question": "Can an application recover from an exception and continue running normally?",
+          "answer": "Yes. When an exception is intercepted by a matching `catch` block, the exception object is captured, the recovery logic in the catch block executes, and the application resumes normal execution immediately following the `try-catch` structure.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-wae-5",
+          "question": "What is the difference between a compile-time error and an exception?",
+          "answer": "A compile-time error is a syntax, type, or structural violation detected by the compiler (`javac`), preventing the generation of bytecode (`.class` files). An exception is a runtime event that occurs while executing valid bytecode when an unexpected condition or illegal operation arises.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-wae-6",
+          "question": "What is the default uncaught exception handler in Java?",
+          "answer": "If an exception bubbles all the way out of `main()` without being caught, it reaches the thread's default `UncaughtExceptionHandler`. By default, it prints the thread name, exception type, message, and full stack trace to standard error (`System.err`) and terminates the thread.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-wae-7",
+          "question": "Are exceptions expensive in terms of Java performance?",
+          "answer": "Yes. Creating an exception object involves populating the stack trace (`Throwable.fillInStackTrace()`), which walks the JVM native stack frames. While catching and handling occasional exceptions is completely normal, using exceptions for standard control flow (e.g. using a try-catch loop instead of a condition) severely degrades performance.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-what-are-exceptions-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: What Are Exceptions?",
+      "checklist": [
+        {
+          "id": "chk-wae-1",
+          "text": "I can explain what an exception is and why it exists in Java."
+        },
+        {
+          "id": "chk-wae-2",
+          "text": "I understand the difference between normal flow and exceptional flow."
+        },
+        {
+          "id": "chk-wae-3",
+          "text": "I know how to read a Java stack trace to find the failing line number."
+        },
+        {
+          "id": "chk-wae-4",
+          "text": "I know why exceptions are superior to error return codes."
+        },
+        {
+          "id": "chk-wae-5",
+          "text": "I understand that unhandled exceptions terminate the executing thread."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-wae-1",
+      "question": "What is an exception in Java?",
+      "options": [
+        "A syntax error that prevents code from compiling",
+        "An abnormal event occurring during program execution that disrupts the normal instruction flow",
+        "A special hardware interrupt from the motherboard",
+        "A variable type used to store negative numbers"
+      ],
+      "correctOption": 1,
+      "explanation": "An exception is an event that occurs at runtime (during program execution) disrupting normal control flow.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-wae-2",
+      "question": "What does the JVM do at the exact moment a runtime failure occurs (such as dividing by zero)?",
+      "options": [
+        "It restarts the operating system",
+        "It creates an Exception object on the Heap and throws it",
+        "It deletes the compiled .class file",
+        "It ignores the error and assigns 0 to the result"
+      ],
+      "correctOption": 1,
+      "explanation": "The JVM instantiates an Exception object containing diagnostic information (message, call stack) and throws it into the runtime system.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-wae-3",
+      "question": "What happens if an exception is thrown in a method and is NOT caught by any try-catch block anywhere in the application?",
+      "options": [
+        "The program runs in an infinite loop",
+        "The JVM default uncaught exception handler prints the stack trace and terminates the thread",
+        "The exception is automatically converted into a warning",
+        "The compiler re-compiles the code at runtime"
+      ],
+      "correctOption": 1,
+      "explanation": "If no handler catches the exception as it bubbles up to the main() thread entry point, the JVM prints the stack trace to System.err and terminates the thread.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-wae-4",
+      "question": "What is the primary advantage of Java's exception handling model over traditional error return codes (like in C)?",
+      "options": [
+        "It speeds up mathematical floating point addition",
+        "It cleanly separates normal business logic from error-handling routines, preventing errors from being silently ignored",
+        "It allows programs to run without RAM",
+        "It eliminates the need for testing"
+      ],
+      "correctOption": 1,
+      "explanation": "Exceptions decouple normal business flow from error recovery and guarantee that unexpected conditions cannot be silently bypassed.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-wae-5",
+      "question": "What will be printed by the following code snippet?\n```java\nint x = 10 / 0;\nSystem.out.println(\"Finished\");\n```",
+      "options": [
+        "Finished",
+        "0",
+        "ArithmeticException is thrown; \"Finished\" is NEVER printed",
+        "NullPointerException"
+      ],
+      "correctOption": 2,
+      "explanation": "10 / 0 throws an unhandled ArithmeticException at runtime. Execution halts immediately; subsequent statements in that block are never executed.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-wae-6",
+      "question": "What is a Stack Trace in Java?",
+      "options": [
+        "A list of primitive variables declared in main",
+        "A snapshot of the Call Stack showing the sequence of method invocations and exact line numbers leading to the exception",
+        "A memory graph showing Heap object fragmentation",
+        "The assembly code generated by the JIT compiler"
+      ],
+      "correctOption": 1,
+      "explanation": "A stack trace lists active method frames in reverse chronological order, showing exactly where the exception originated and how it propagated.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-wae-7",
+      "question": "Can an exception in Java be caught and recovered from, allowing the program to continue running?",
+      "options": [
+        "No, once an exception occurs, the program must always terminate",
+        "Yes, enclosing dangerous statements in a try-catch block allows safe recovery",
+        "Only in multithreaded code",
+        "Only if running Java in debug mode"
+      ],
+      "correctOption": 1,
+      "explanation": "Enclosing operations in a try-catch block intercepts the thrown Exception object and routes control to custom recovery logic.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-wae-8",
+      "question": "What does `e.getMessage()` return when called on an Exception object `e`?",
+      "options": [
+        "The memory address of the JVM",
+        "A human-readable description of the error condition (e.g. \"/ by zero\")",
+        "The complete Java bytecode",
+        "The operating system username"
+      ],
+      "correctOption": 1,
+      "explanation": "`e.getMessage()` returns the descriptive error message string initialized when the exception was constructed.",
+      "correctIndex": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-wae-1",
+      "title": "Intercept Division by Zero",
+      "difficulty": "Easy",
+      "problemStatement": "Write a program with a method `safeDivide(int a, int b)`. In `main`, invoke `safeDivide(20, 0)` inside a try-catch block that catches `ArithmeticException`. When caught, print \"Error: Division by zero caught\".",
+      "description": "Write a program with a method `safeDivide(int a, int b)`. In `main`, invoke `safeDivide(20, 0)` inside a try-catch block that catches `ArithmeticException`. When caught, print \"Error: Division by zero caught\".",
+      "hint": "try { safeDivide(20, 0); } catch (ArithmeticException e) { ... }",
+      "hints": [
+        "try { safeDivide(20, 0); } catch (ArithmeticException e) { ... }"
+      ],
+      "starterCode": "public class SafeDividePractice {\n    static int safeDivide(int a, int b) {\n        return a / b;\n    }\n    public static void main(String[] args) {\n        // TODO: Call safeDivide(20, 0) and catch ArithmeticException\n    }\n}",
+      "solutionCode": "public class SafeDividePractice {\n    static int safeDivide(int a, int b) {\n        return a / b;\n    }\n    public static void main(String[] args) {\n        try {\n            safeDivide(20, 0);\n        } catch (ArithmeticException e) {\n            System.out.println(\"Error: Division by zero caught\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Error: Division by zero caught"
+        }
+      ],
+      "targetOutput": "Error: Division by zero caught"
+    },
+    {
+      "id": "prob-wae-2",
+      "title": "Demonstrate Normal vs Interrupted Flow",
+      "difficulty": "Easy",
+      "problemStatement": "Print \"Step 1\", then in a try block print \"Step 2\", trigger an `ArithmeticException` with `int x = 10 / 0;`, and print \"Step 3\". In the catch block, print \"Caught Exception\". Outside the try-catch, print \"Step 4\". Observe that Step 3 is skipped.",
+      "description": "Print \"Step 1\", then in a try block print \"Step 2\", trigger an `ArithmeticException` with `int x = 10 / 0;`, and print \"Step 3\". In the catch block, print \"Caught Exception\". Outside the try-catch, print \"Step 4\". Observe that Step 3 is skipped.",
+      "hint": "Statements directly following the exception in the try block are skipped.",
+      "hints": [
+        "Statements directly following the exception in the try block are skipped."
+      ],
+      "starterCode": "public class ExecutionFlowDemo {\n    public static void main(String[] args) {\n        // TODO: Implement Step 1, try Step 2 & 10/0 & Step 3, catch, and Step 4\n    }\n}",
+      "solutionCode": "public class ExecutionFlowDemo {\n    public static void main(String[] args) {\n        System.out.println(\"Step 1\");\n        try {\n            System.out.println(\"Step 2\");\n            int x = 10 / 0;\n            System.out.println(\"Step 3\");\n        } catch (ArithmeticException e) {\n            System.out.println(\"Caught Exception\");\n        }\n        System.out.println(\"Step 4\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Step 1\nStep 2\nCaught Exception\nStep 4"
+        }
+      ],
+      "targetOutput": "Step 1\nStep 2\nCaught Exception\nStep 4"
+    },
+    {
+      "id": "prob-wae-3",
+      "title": "Inspect Exception Message",
+      "difficulty": "Easy",
+      "problemStatement": "Trigger an `ArithmeticException` with `int val = 100 / 0;`. In the catch block, retrieve and print the exception's message using `e.getMessage()`. Output: \"Message: / by zero\".",
+      "description": "Trigger an `ArithmeticException` with `int val = 100 / 0;`. In the catch block, retrieve and print the exception's message using `e.getMessage()`. Output: \"Message: / by zero\".",
+      "hint": "System.out.println(\"Message: \" + e.getMessage());",
+      "hints": [
+        "System.out.println(\"Message: \" + e.getMessage());"
+      ],
+      "starterCode": "public class ExceptionMessagePractice {\n    public static void main(String[] args) {\n        // TODO: Print e.getMessage()\n    }\n}",
+      "solutionCode": "public class ExceptionMessagePractice {\n    public static void main(String[] args) {\n        try {\n            int val = 100 / 0;\n        } catch (ArithmeticException e) {\n            System.out.println(\"Message: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Message: / by zero"
+        }
+      ],
+      "targetOutput": "Message: / by zero"
+    },
+    {
+      "id": "prob-wae-4",
+      "title": "Safely Parse User Input Integer",
+      "difficulty": "Medium",
+      "problemStatement": "Given `String input = \"abc\";`. Attempt to parse it with `Integer.parseInt(input)`. Catch the `NumberFormatException` and print \"Invalid Number Format: abc\". Print \"Default Value: 0\".",
+      "description": "Given `String input = \"abc\";`. Attempt to parse it with `Integer.parseInt(input)`. Catch the `NumberFormatException` and print \"Invalid Number Format: abc\". Print \"Default Value: 0\".",
+      "hint": "catch (NumberFormatException e) { ... }",
+      "hints": [
+        "catch (NumberFormatException e) { ... }"
+      ],
+      "starterCode": "public class SafeNumberParse {\n    public static void main(String[] args) {\n        String input = \"abc\";\n        // TODO: Parse with try-catch and handle NumberFormatException\n    }\n}",
+      "solutionCode": "public class SafeNumberParse {\n    public static void main(String[] args) {\n        String input = \"abc\";\n        int value = 0;\n        try {\n            value = Integer.parseInt(input);\n        } catch (NumberFormatException e) {\n            System.out.println(\"Invalid Number Format: \" + input);\n        }\n        System.out.println(\"Default Value: \" + value);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Invalid Number Format: abc\nDefault Value: 0"
+        }
+      ],
+      "targetOutput": "Invalid Number Format: abc\nDefault Value: 0"
+    },
+    {
+      "id": "prob-wae-5",
+      "title": "Catch Array Index Out Of Bounds",
+      "difficulty": "Medium",
+      "problemStatement": "Create an array `int[] scores = {90, 85, 95};`. In a try block, attempt to read index 5 (`scores[5]`). Catch `ArrayIndexOutOfBoundsException` and print \"Handled Array Index Error: Index 5 out of bounds\".",
+      "description": "Create an array `int[] scores = {90, 85, 95};`. In a try block, attempt to read index 5 (`scores[5]`). Catch `ArrayIndexOutOfBoundsException` and print \"Handled Array Index Error: Index 5 out of bounds\".",
+      "hint": "catch (ArrayIndexOutOfBoundsException e)",
+      "hints": [
+        "catch (ArrayIndexOutOfBoundsException e)"
+      ],
+      "starterCode": "public class ArrayBoundsCatch {\n    public static void main(String[] args) {\n        int[] scores = {90, 85, 95};\n        // TODO: Try accessing index 5 and catch exception\n    }\n}",
+      "solutionCode": "public class ArrayBoundsCatch {\n    public static void main(String[] args) {\n        int[] scores = {90, 85, 95};\n        try {\n            int score = scores[5];\n            System.out.println(\"Score: \" + score);\n        } catch (ArrayIndexOutOfBoundsException e) {\n            System.out.println(\"Handled Array Index Error: Index 5 out of bounds\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Handled Array Index Error: Index 5 out of bounds"
+        }
+      ],
+      "targetOutput": "Handled Array Index Error: Index 5 out of bounds"
+    },
+    {
+      "id": "prob-wae-6",
+      "title": "Differentiate Error Codes vs Exceptions",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `divideWithErrorCode(int a, int b)` that returns -1 if `b == 0`. Print the result when dividing 10 by 0. Then explain in a print statement why returning -1 is problematic (e.g. \"Flaw: -1 could be a valid result\").",
+      "description": "Write a method `divideWithErrorCode(int a, int b)` that returns -1 if `b == 0`. Print the result when dividing 10 by 0. Then explain in a print statement why returning -1 is problematic (e.g. \"Flaw: -1 could be a valid result\").",
+      "hint": "Print the returned error code and the flaw explanation.",
+      "hints": [
+        "Print the returned error code and the flaw explanation."
+      ],
+      "starterCode": "public class ErrorCodeComparison {\n    static int divideWithErrorCode(int a, int b) {\n        if (b == 0) return -1;\n        return a / b;\n    }\n    public static void main(String[] args) {\n        // TODO: Demonstrate return code flaw\n    }\n}",
+      "solutionCode": "public class ErrorCodeComparison {\n    static int divideWithErrorCode(int a, int b) {\n        if (b == 0) return -1;\n        return a / b;\n    }\n    public static void main(String[] args) {\n        int res = divideWithErrorCode(10, 0);\n        System.out.println(\"Returned code: \" + res);\n        System.out.println(\"Flaw: -1 could be a valid result\");\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Returned code: -1\nFlaw: -1 could be a valid result"
+        }
+      ],
+      "targetOutput": "Returned code: -1\nFlaw: -1 could be a valid result"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-wae-1",
+      "question": "What is an Exception in Java and why is it preferred over error return codes?",
+      "answer": "An exception is an object representing an abnormal runtime condition that disrupts normal program execution. In contrast to error return codes (like returning -1 or null), exceptions: 1) Cannot be silently ignored (unhandled exceptions force thread termination), 2) Separate error recovery code from normal business logic, and 3) Propagate automatically across method call stacks until a suitable handler is located.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-wae-2",
+      "question": "What happens under the hood when the JVM encounters an instruction like 10 / 0?",
+      "answer": "The CPU/JVM execution engine detects the invalid division by zero, creates an instance of `java.lang.ArithmeticException` with message `\"/ by zero\"`, populates its stack trace array with the current call stack snapshot, and interrupts sequential execution. It then begins unwinding the Call Stack to find a matching catch block.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-wae-3",
+      "question": "What is a Stack Trace, and what information does it provide?",
+      "answer": "A stack trace is a reverse-chronological printout of the Call Stack frames at the moment the exception was thrown. It reveals: 1) The exact exception class name and message, 2) The method where the exception originated, 3) The chain of callers that invoked that method, and 4) The precise source file and line number of every step in the chain.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-wae-4",
+      "question": "Can an application recover from an exception and continue running normally?",
+      "answer": "Yes. When an exception is intercepted by a matching `catch` block, the exception object is captured, the recovery logic in the catch block executes, and the application resumes normal execution immediately following the `try-catch` structure.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-wae-5",
+      "question": "What is the difference between a compile-time error and an exception?",
+      "answer": "A compile-time error is a syntax, type, or structural violation detected by the compiler (`javac`), preventing the generation of bytecode (`.class` files). An exception is a runtime event that occurs while executing valid bytecode when an unexpected condition or illegal operation arises.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-wae-6",
+      "question": "What is the default uncaught exception handler in Java?",
+      "answer": "If an exception bubbles all the way out of `main()` without being caught, it reaches the thread's default `UncaughtExceptionHandler`. By default, it prints the thread name, exception type, message, and full stack trace to standard error (`System.err`) and terminates the thread.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-wae-7",
+      "question": "Are exceptions expensive in terms of Java performance?",
+      "answer": "Yes. Creating an exception object involves populating the stack trace (`Throwable.fillInStackTrace()`), which walks the JVM native stack frames. While catching and handling occasional exceptions is completely normal, using exceptions for standard control flow (e.g. using a try-catch loop instead of a condition) severely degrades performance.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-wae-1",
+      "text": "I can explain what an exception is and why it exists in Java."
+    },
+    {
+      "id": "chk-wae-2",
+      "text": "I understand the difference between normal flow and exceptional flow."
+    },
+    {
+      "id": "chk-wae-3",
+      "text": "I know how to read a Java stack trace to find the failing line number."
+    },
+    {
+      "id": "chk-wae-4",
+      "text": "I know why exceptions are superior to error return codes."
+    },
+    {
+      "id": "chk-wae-5",
+      "text": "I understand that unhandled exceptions terminate the executing thread."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-wae-1",
+      "text": "I can explain what an exception is and why it exists in Java."
+    },
+    {
+      "id": "chk-wae-2",
+      "text": "I understand the difference between normal flow and exceptional flow."
+    },
+    {
+      "id": "chk-wae-3",
+      "text": "I know how to read a Java stack trace to find the failing line number."
+    },
+    {
+      "id": "chk-wae-4",
+      "text": "I know why exceptions are superior to error return codes."
+    },
+    {
+      "id": "chk-wae-5",
+      "text": "I understand that unhandled exceptions terminate the executing thread."
+    }
+  ]
+}

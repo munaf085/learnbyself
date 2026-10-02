@@ -1,0 +1,606 @@
+{
+  "id": "les-exception-basics-errors-vs-exceptions",
+  "slug": "errors-vs-exceptions",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "Errors vs Exceptions",
+  "summary": "Master the critical distinction between java.lang.Error (fatal JVM failures) and java.lang.Exception (recoverable application conditions) under java.lang.Throwable.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "les-exception-basics-what-are-exceptions"
+  ],
+  "subtopics": [
+    "Throwable Hierarchy Root",
+    "Error vs Exception Philosophy",
+    "OutOfMemoryError & StackOverflowError",
+    "Catching Throwable Anti-Pattern"
+  ],
+  "learningOutcomes": [
+    "Differentiate between catastrophic system errors and recoverable application exceptions",
+    "Identify key Error subclasses (OutOfMemoryError, StackOverflowError)",
+    "Avoid dangerous catch-all anti-patterns in production"
+  ],
+  "activities": [
+    {
+      "id": "act-errors-vs-exceptions-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Errors vs Exceptions",
+      "content": "### 1. Concept: Errors vs Exceptions\nIn Java, both errors and exceptions inherit from the common root class `java.lang.Throwable`. However, they represent two completely different categories of failures:\n- **`java.lang.Error`**: Represents **serious, catastrophic JVM-level conditions** that an ordinary application **should NOT try to catch or recover from**. Examples: running out of physical RAM (`OutOfMemoryError`), or filling up the Call Stack through infinite recursion (`StackOverflowError`).\n- **`java.lang.Exception`**: Represents **exceptional conditions that a reasonable application might want to catch and handle gracefully**. Examples: a user entering letters instead of a number (`NumberFormatException`), or requesting a record that does not exist.\n\n### 2. Why It Matters: Can We Recover?\nThe golden rule of Java failure architecture is **Recoverability**:\n- If an operation fails because of invalid user input, a missing file, or a network timeout, the application can show an error alert, prompt the user to retry, or switch to a backup server. This is an **`Exception`**.\n- If the JVM runs out of physical Heap memory or the CPU instruction pipeline crashes, the internal state of the JVM is corrupted. Attempting to catch and ignore an `Error` will leave the system in an unstable, unpredictable state. You should let the JVM terminate.\n\n### 3. Mental Model: A Flat Tire vs An Engine Explosion\n- **`Exception` (Flat Tire)**: While driving on the highway, your car gets a flat tire. It disrupts your normal journey, but you have a spare tire in the trunk (a `catch` block). You pull over, replace the tire, and resume driving safely.\n- **`Error` (Engine Explodes into Flames)**: The engine block cracks and catches fire. You cannot fix this with a spare tire from the trunk. You must pull over and immediately shut down the vehicle.\n\n### 4. Java Mechanics: The Throwable Branching\n```text\n                      java.lang.Throwable\n                               |\n              +----------------+----------------+\n              |                                 |\n       java.lang.Error                 java.lang.Exception\n              |                                 |\n     (Catastrophic / JVM)              (Application Recoverable)\n     - StackOverflowError              - IOException\n     - OutOfMemoryError                - SQLException\n     - VirtualMachineError             - RuntimeException\n     - NoClassDefFoundError                 - NullPointerException\n                                            - ArithmeticException\n```\n\n### 5. Practical Java Example: StackOverflowError vs Exception\n```java\npublic class ErrorVsExceptionDemo {\n    // Infinite recursion: exhausting Stack frame memory -> StackOverflowError\n    public static void recursiveBlast(int n) {\n        recursiveBlast(n + 1); // Never terminates!\n    }\n\n    public static void main(String[] args) {\n        // Recoverable: Exception\n        try {\n            int num = Integer.parseInt(\"invalid_number\");\n        } catch (NumberFormatException e) {\n            System.out.println(\"Recovered from Exception: \" + e.getMessage());\n        }\n        \n        // Catastrophic: Error (DO NOT catch in production!)\n        // recursiveBlast(1); // Would throw StackOverflowError!\n    }\n}\n```\n\n### 6. Common Beginner Mistakes\n- **Writing `catch (Throwable t)` or `catch (Error e)` routinely**: Catching `Throwable` accidentally catches `OutOfMemoryError` and `ThreadDeath`, preventing the JVM from shutting down cleanly.\n- **Assuming all crashes are Exceptions**: Believing `StackOverflowError` is an `Exception`. It is an `Error` subclass.\n\n### 7. Key Takeaways\n- Both `Error` and `Exception` inherit directly from `java.lang.Throwable`.\n- `Error` denotes fatal JVM problems (`OutOfMemoryError`, `StackOverflowError`) that applications should not catch.\n- `Exception` denotes recoverable application conditions (`NumberFormatException`, `IOException`).\n- Never write `catch (Throwable t)` in production business logic unless building a top-level framework crash reporter.",
+      "breakdown": [
+        {
+          "topic": "java.lang.Throwable",
+          "details": "The ultimate superclass of all errors and exceptions in the Java language."
+        },
+        {
+          "topic": "java.lang.Error",
+          "details": "Fatal system/JVM conditions indicating catastrophic failures. Applications should not attempt recovery."
+        },
+        {
+          "topic": "java.lang.Exception",
+          "details": "Conditions that a reasonable application should catch, handle, or recover from."
+        },
+        {
+          "topic": "Catching Throwable Anti-Pattern",
+          "details": "Catching Throwable or Error masks fatal JVM problems, leading to corrupted state."
+        }
+      ]
+    },
+    {
+      "id": "act-errors-vs-exceptions-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Error vs Exception Demonstrations",
+      "codeSnippet": "public class ErrorVsExceptionDemonstration {\n    // Simulates an application-level recoverable condition\n    public static void processUserAge(String ageStr) {\n        try {\n            int age = Integer.parseInt(ageStr);\n            System.out.println(\"Valid age processed: \" + age);\n        } catch (NumberFormatException e) {\n            System.out.println(\"Recoverable Exception caught: Invalid age format '\" + ageStr + \"'\");\n        }\n    }\n\n    // Demonstrates StackOverflowError mechanics (educational demonstration)\n    public static void causeStackOverflow(int depth) {\n        if (depth > 50000) return; // Safeguard\n        causeStackOverflow(depth + 1);\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"--- 1. Handling Recoverable Exception ---\");\n        processUserAge(\"25\");\n        processUserAge(\"twenty-five\"); // Throws and recovers from NumberFormatException\n        \n        System.out.println(\"\\n--- 2. Inspecting Hierarchy ---\");\n        System.out.println(\"Is Exception a Throwable? \" + (new Exception() instanceof Throwable));\n        System.out.println(\"Is Error a Throwable? \" + (new Error() instanceof Throwable));\n    }\n}",
+      "description": "Demonstrates recoverable NumberFormatException handling vs StackOverflowError mechanics.",
+      "steps": [
+        {
+          "line": 5,
+          "description": "Integer.parseInt() attempts to parse string into primitive int."
+        },
+        {
+          "line": 7,
+          "description": "NumberFormatException (an Exception) is caught and handled gracefully."
+        },
+        {
+          "line": 13,
+          "description": "causeStackOverflow demonstrates how recursive calls consume stack frames until StackOverflowError occurs."
+        },
+        {
+          "line": 21,
+          "description": "Demonstrates successful parsing of valid input."
+        },
+        {
+          "line": 22,
+          "description": "Demonstrates successful recovery from an invalid input string."
+        },
+        {
+          "line": 25,
+          "description": "Verifies that both Error and Exception are children of Throwable."
+        }
+      ]
+    },
+    {
+      "id": "act-errors-vs-exceptions-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Errors vs Exceptions",
+      "questions": [
+        {
+          "id": "mcq-eve-1",
+          "question": "What is the common superclass of both `Error` and `Exception` in Java?",
+          "options": [
+            "java.lang.Object",
+            "java.lang.Throwable",
+            "java.lang.RuntimeException",
+            "java.lang.SystemError"
+          ],
+          "correctOption": 1,
+          "explanation": "`java.lang.Throwable` is the root superclass of all errors and exceptions in the Java language hierarchy.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eve-2",
+          "question": "What is the fundamental difference between an `Error` and an `Exception`?",
+          "options": [
+            "Errors occur at compile-time; Exceptions occur at runtime",
+            "Errors represent fatal JVM conditions that applications should not catch; Exceptions represent conditions an application can reasonably handle",
+            "Errors are written in C; Exceptions are written in Java",
+            "There is no difference; they are synonyms"
+          ],
+          "correctOption": 1,
+          "explanation": "Errors signify catastrophic JVM failures (OutOfMemoryError, StackOverflowError) from which recovery is generally impossible. Exceptions are recoverable application conditions.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eve-3",
+          "question": "Which of the following is a subclass of `java.lang.Error`?",
+          "options": [
+            "NullPointerException",
+            "ArithmeticException",
+            "StackOverflowError",
+            "IllegalArgumentException"
+          ],
+          "correctOption": 2,
+          "explanation": "`StackOverflowError` is a subclass of `VirtualMachineError`, which extends `java.lang.Error`.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-eve-4",
+          "question": "Why is writing `catch (Error e)` or `catch (Throwable t)` considered a dangerous anti-pattern in application code?",
+          "options": [
+            "It causes the compiler to crash",
+            "It can trap fatal JVM failures like OutOfMemoryError, preventing the JVM from terminating and leaving the app in a corrupted state",
+            "It makes the code run 10x slower",
+            "It is illegal syntax in Java 17"
+          ],
+          "correctOption": 1,
+          "explanation": "Catching Error or Throwable masks fatal JVM conditions, continuing execution when memory or stack state is fatally corrupted.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eve-5",
+          "question": "What causes an `OutOfMemoryError` in Java?",
+          "options": [
+            "Opening too many browser tabs",
+            "The JVM Heap has exhausted available memory and the Garbage Collector cannot reclaim enough space to allocate an object",
+            "Dividing by zero in a loop",
+            "Using too many comments in code"
+          ],
+          "correctOption": 1,
+          "explanation": "OutOfMemoryError occurs when the JVM cannot allocate an object because Heap memory is exhausted and Garbage Collection cannot free space.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eve-6",
+          "question": "What causes a `StackOverflowError` in Java?",
+          "options": [
+            "Allocating an array of 1 million elements on the Heap",
+            "Excessive deep or infinite method recursion that exhausts the thread Call Stack memory",
+            "Writing to a read-only hard drive",
+            "Importing too many packages"
+          ],
+          "correctOption": 1,
+          "explanation": "StackOverflowError happens when method calls recurse infinitely or too deeply, pushing stack frames until the thread's Stack memory limit is exceeded.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eve-7",
+          "question": "Which of the following belongs to the `Exception` branch rather than the `Error` branch?",
+          "options": [
+            "OutOfMemoryError",
+            "NoClassDefFoundError",
+            "InternalError",
+            "FileNotFoundException"
+          ],
+          "correctOption": 3,
+          "explanation": "`FileNotFoundException` is a subclass of `IOException`, which extends `java.lang.Exception`.",
+          "correctIndex": 3
+        },
+        {
+          "id": "mcq-eve-8",
+          "question": "Can you instantiate an `Error` object manually in Java code (`new Error(\"test\")`)?",
+          "options": [
+            "No, Error constructors are private",
+            "Yes, but it is rarely appropriate in standard application software",
+            "Only within JVM native C code",
+            "Only when running as root/administrator"
+          ],
+          "correctOption": 1,
+          "explanation": "Error has public constructors and can be instantiated, but doing so in standard business applications is almost always incorrect.",
+          "correctIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-errors-vs-exceptions-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Instanceof Throwable Hierarchy",
+      "practice": {
+        "id": "prac-act-eve",
+        "title": "Hands-On: Test Instanceof Throwable Hierarchy",
+        "description": "Verify that Exception and Error are both instances of Throwable.",
+        "starterCode": "public class PracticeHierarchy {\n    public static void main(String[] args) {\n        // TODO: Print whether new Exception() and new Error() are instanceof Throwable\n    }\n}",
+        "solutionCode": "public class PracticeHierarchy {\n    public static void main(String[] args) {\n        System.out.println(\"Exception is Throwable: \" + (new Exception() instanceof Throwable));\n        System.out.println(\"Error is Throwable: \" + (new Error() instanceof Throwable));\n    }\n}",
+        "expectedOutput": "Exception is Throwable: true\nError is Throwable: true"
+      }
+    },
+    {
+      "id": "act-errors-vs-exceptions-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Errors vs Exceptions",
+      "interviewQA": [
+        {
+          "id": "iq-eve-1",
+          "question": "What is the key difference between Error and Exception in Java?",
+          "answer": "Both inherit from `Throwable`. `Error` represents serious, unrecoverable system conditions caused by the JVM or underlying environment (e.g. `OutOfMemoryError`, `StackOverflowError`). Applications should not attempt to catch `Error`. `Exception` represents conditions caused by application logic (e.g. `IOException`, `NullPointerException`) from which an application can reasonably recover.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eve-2",
+          "question": "Can you catch an Error with a try-catch block? Is it recommended?",
+          "answer": "Syntactically, yes: `catch (Error e)` or `catch (Throwable t)` will compile and execute. However, it is strongly discouraged in application code. When an Error occurs (such as memory exhaustion), the internal integrity of the JVM is compromised. Catching it and continuing execution usually leads to silent data corruption or cascading deadlocks.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eve-3",
+          "question": "What is the difference between OutOfMemoryError and StackOverflowError?",
+          "answer": "`OutOfMemoryError` occurs when the JVM **Heap** is full and the Garbage Collector cannot free enough memory to satisfy an allocation request. `StackOverflowError` occurs when a thread's **Call Stack** memory is exhausted, almost always due to infinite or excessively deep recursive method calls.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eve-4",
+          "question": "What is NoClassDefFoundError and how does it differ from ClassNotFoundException?",
+          "answer": "`ClassNotFoundException` is an `Exception` thrown when an application attempts to load a class dynamically at runtime (e.g. `Class.forName(\"...\")`) and the `.class` file cannot be found. `NoClassDefFoundError` is an `Error` thrown when a class was available at compile-time, but during runtime execution, the class definition is missing from the classpath.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eve-5",
+          "question": "What are some scenarios where catching Throwable is acceptable?",
+          "answer": "Catching `Throwable` is acceptable only in top-level framework infrastructure: 1) Thread pool executors (to prevent worker threads from silently terminating), 2) Web server entry points (to log an uncaught disaster and return a 500 HTTP response), and 3) Global logging crash-reporters.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eve-6",
+          "question": "Why does ThreadDeath extend Error rather than Exception?",
+          "answer": "`ThreadDeath` is thrown when a thread is stopped via the legacy `Thread.stop()` method. It extends `Error` so that normal user `catch (Exception e)` blocks will not inadvertently intercept it, allowing the thread to terminate cleanly.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eve-7",
+          "question": "What is VirtualMachineError?",
+          "answer": "`VirtualMachineError` is an abstract subclass of `Error`. It is thrown by the JVM to indicate that the virtual machine is broken or has run out of resources necessary for it to continue operating. Its prominent subclasses are `OutOfMemoryError`, `StackOverflowError`, `InternalError`, and `UnknownError`.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-errors-vs-exceptions-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Errors vs Exceptions",
+      "checklist": [
+        {
+          "id": "chk-eve-1",
+          "text": "I can explain the difference between java.lang.Error and java.lang.Exception."
+        },
+        {
+          "id": "chk-eve-2",
+          "text": "I know why applications should never catch Error in business logic."
+        },
+        {
+          "id": "chk-eve-3",
+          "text": "I understand the causes of OutOfMemoryError and StackOverflowError."
+        },
+        {
+          "id": "chk-eve-4",
+          "text": "I know that Throwable is the root superclass of both branches."
+        },
+        {
+          "id": "chk-eve-5",
+          "text": "I can identify which conditions are recoverable vs catastrophic."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-eve-1",
+      "question": "What is the common superclass of both `Error` and `Exception` in Java?",
+      "options": [
+        "java.lang.Object",
+        "java.lang.Throwable",
+        "java.lang.RuntimeException",
+        "java.lang.SystemError"
+      ],
+      "correctOption": 1,
+      "explanation": "`java.lang.Throwable` is the root superclass of all errors and exceptions in the Java language hierarchy.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eve-2",
+      "question": "What is the fundamental difference between an `Error` and an `Exception`?",
+      "options": [
+        "Errors occur at compile-time; Exceptions occur at runtime",
+        "Errors represent fatal JVM conditions that applications should not catch; Exceptions represent conditions an application can reasonably handle",
+        "Errors are written in C; Exceptions are written in Java",
+        "There is no difference; they are synonyms"
+      ],
+      "correctOption": 1,
+      "explanation": "Errors signify catastrophic JVM failures (OutOfMemoryError, StackOverflowError) from which recovery is generally impossible. Exceptions are recoverable application conditions.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eve-3",
+      "question": "Which of the following is a subclass of `java.lang.Error`?",
+      "options": [
+        "NullPointerException",
+        "ArithmeticException",
+        "StackOverflowError",
+        "IllegalArgumentException"
+      ],
+      "correctOption": 2,
+      "explanation": "`StackOverflowError` is a subclass of `VirtualMachineError`, which extends `java.lang.Error`.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-eve-4",
+      "question": "Why is writing `catch (Error e)` or `catch (Throwable t)` considered a dangerous anti-pattern in application code?",
+      "options": [
+        "It causes the compiler to crash",
+        "It can trap fatal JVM failures like OutOfMemoryError, preventing the JVM from terminating and leaving the app in a corrupted state",
+        "It makes the code run 10x slower",
+        "It is illegal syntax in Java 17"
+      ],
+      "correctOption": 1,
+      "explanation": "Catching Error or Throwable masks fatal JVM conditions, continuing execution when memory or stack state is fatally corrupted.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eve-5",
+      "question": "What causes an `OutOfMemoryError` in Java?",
+      "options": [
+        "Opening too many browser tabs",
+        "The JVM Heap has exhausted available memory and the Garbage Collector cannot reclaim enough space to allocate an object",
+        "Dividing by zero in a loop",
+        "Using too many comments in code"
+      ],
+      "correctOption": 1,
+      "explanation": "OutOfMemoryError occurs when the JVM cannot allocate an object because Heap memory is exhausted and Garbage Collection cannot free space.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eve-6",
+      "question": "What causes a `StackOverflowError` in Java?",
+      "options": [
+        "Allocating an array of 1 million elements on the Heap",
+        "Excessive deep or infinite method recursion that exhausts the thread Call Stack memory",
+        "Writing to a read-only hard drive",
+        "Importing too many packages"
+      ],
+      "correctOption": 1,
+      "explanation": "StackOverflowError happens when method calls recurse infinitely or too deeply, pushing stack frames until the thread's Stack memory limit is exceeded.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eve-7",
+      "question": "Which of the following belongs to the `Exception` branch rather than the `Error` branch?",
+      "options": [
+        "OutOfMemoryError",
+        "NoClassDefFoundError",
+        "InternalError",
+        "FileNotFoundException"
+      ],
+      "correctOption": 3,
+      "explanation": "`FileNotFoundException` is a subclass of `IOException`, which extends `java.lang.Exception`.",
+      "correctIndex": 3
+    },
+    {
+      "id": "mcq-eve-8",
+      "question": "Can you instantiate an `Error` object manually in Java code (`new Error(\"test\")`)?",
+      "options": [
+        "No, Error constructors are private",
+        "Yes, but it is rarely appropriate in standard application software",
+        "Only within JVM native C code",
+        "Only when running as root/administrator"
+      ],
+      "correctOption": 1,
+      "explanation": "Error has public constructors and can be instantiated, but doing so in standard business applications is almost always incorrect.",
+      "correctIndex": 1
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-eve-1",
+      "title": "Categorize Failure Types",
+      "difficulty": "Easy",
+      "problemStatement": "Write a program that inspects objects: Create an `Exception ex = new NumberFormatException();` and an `Error err = new StackOverflowError();`. Print whether each is an `instanceof Throwable`. Format: \"Exception is Throwable: true\" and \"Error is Throwable: true\".",
+      "description": "Write a program that inspects objects: Create an `Exception ex = new NumberFormatException();` and an `Error err = new StackOverflowError();`. Print whether each is an `instanceof Throwable`. Format: \"Exception is Throwable: true\" and \"Error is Throwable: true\".",
+      "hint": "Use ex instanceof Throwable and err instanceof Throwable.",
+      "hints": [
+        "Use ex instanceof Throwable and err instanceof Throwable."
+      ],
+      "starterCode": "public class ThrowableInspection {\n    public static void main(String[] args) {\n        // TODO: Inspect instances with instanceof Throwable\n    }\n}",
+      "solutionCode": "public class ThrowableInspection {\n    public static void main(String[] args) {\n        Exception ex = new NumberFormatException();\n        Error err = new StackOverflowError();\n        System.out.println(\"Exception is Throwable: \" + (ex instanceof Throwable));\n        System.out.println(\"Error is Throwable: \" + (err instanceof Throwable));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Exception is Throwable: true\nError is Throwable: true"
+        }
+      ],
+      "targetOutput": "Exception is Throwable: true\nError is Throwable: true"
+    },
+    {
+      "id": "prob-eve-2",
+      "title": "Handle Recoverable NumberFormatException",
+      "difficulty": "Easy",
+      "problemStatement": "Given an array of strings: `String[] values = {\"10\", \"twenty\", \"30\"};`. Loop through the array, parse each as integer. If a `NumberFormatException` occurs, catch it and substitute `0`. Sum the parsed integers and print \"Total: 40\".",
+      "description": "Given an array of strings: `String[] values = {\"10\", \"twenty\", \"30\"};`. Loop through the array, parse each as integer. If a `NumberFormatException` occurs, catch it and substitute `0`. Sum the parsed integers and print \"Total: 40\".",
+      "hint": "Put try-catch inside the loop.",
+      "hints": [
+        "Put try-catch inside the loop."
+      ],
+      "starterCode": "public class RecoverableLoop {\n    public static void main(String[] args) {\n        String[] values = {\"10\", \"twenty\", \"30\"};\n        // TODO: Parse, handle exception, and sum\n    }\n}",
+      "solutionCode": "public class RecoverableLoop {\n    public static void main(String[] args) {\n        String[] values = {\"10\", \"twenty\", \"30\"};\n        int sum = 0;\n        for (String v : values) {\n            try {\n                sum += Integer.parseInt(v);\n            } catch (NumberFormatException e) {\n                // Recover by treating invalid input as 0\n            }\n        }\n        System.out.println(\"Total: \" + sum);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Total: 40"
+        }
+      ],
+      "targetOutput": "Total: 40"
+    },
+    {
+      "id": "prob-eve-3",
+      "title": "Simulate Stack Depth Counter",
+      "difficulty": "Medium",
+      "problemStatement": "Write a recursive method `countFrames(int depth)` that returns depth when depth reaches 100. Print \"Max Depth reached: 100\". (Demonstrating bounded stack frames without causing a StackOverflowError).",
+      "description": "Write a recursive method `countFrames(int depth)` that returns depth when depth reaches 100. Print \"Max Depth reached: 100\". (Demonstrating bounded stack frames without causing a StackOverflowError).",
+      "hint": "if (depth == 100) return 100; else return countFrames(depth + 1);",
+      "hints": [
+        "if (depth == 100) return 100; else return countFrames(depth + 1);"
+      ],
+      "starterCode": "public class BoundedRecursion {\n    static int countFrames(int depth) {\n        // TODO: Safe recursive base case\n        return 0;\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Max Depth reached: \" + countFrames(1));\n    }\n}",
+      "solutionCode": "public class BoundedRecursion {\n    static int countFrames(int depth) {\n        if (depth == 100) {\n            return depth;\n        }\n        return countFrames(depth + 1);\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Max Depth reached: \" + countFrames(1));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Max Depth reached: 100"
+        }
+      ],
+      "targetOutput": "Max Depth reached: 100"
+    },
+    {
+      "id": "prob-eve-4",
+      "title": "Demonstrate Catching Specific Exception Over Throwable",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method that takes a divisor. In a try block divide 100 by the divisor. Catch the specific `ArithmeticException` and print \"Caught specific ArithmeticException\". Show that specific exception catching is preferred over catching generic Throwable.",
+      "description": "Write a method that takes a divisor. In a try block divide 100 by the divisor. Catch the specific `ArithmeticException` and print \"Caught specific ArithmeticException\". Show that specific exception catching is preferred over catching generic Throwable.",
+      "hint": "catch (ArithmeticException e)",
+      "hints": [
+        "catch (ArithmeticException e)"
+      ],
+      "starterCode": "public class SpecificCatchPractice {\n    public static void main(String[] args) {\n        int divisor = 0;\n        // TODO: Catch specifically ArithmeticException\n    }\n}",
+      "solutionCode": "public class SpecificCatchPractice {\n    public static void main(String[] args) {\n        int divisor = 0;\n        try {\n            int res = 100 / divisor;\n        } catch (ArithmeticException e) {\n            System.out.println(\"Caught specific ArithmeticException\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught specific ArithmeticException"
+        }
+      ],
+      "targetOutput": "Caught specific ArithmeticException"
+    },
+    {
+      "id": "prob-eve-5",
+      "title": "Validate Recoverability Decision",
+      "difficulty": "Easy",
+      "problemStatement": "Write a method `isRecoverable(String failureType)` that returns true if failureType is \"EXCEPTION\", and false if failureType is \"ERROR\". Test with both and print: \"Exception recoverable: true\" and \"Error recoverable: false\".",
+      "description": "Write a method `isRecoverable(String failureType)` that returns true if failureType is \"EXCEPTION\", and false if failureType is \"ERROR\". Test with both and print: \"Exception recoverable: true\" and \"Error recoverable: false\".",
+      "hint": "return \"EXCEPTION\".equalsIgnoreCase(failureType);",
+      "hints": [
+        "return \"EXCEPTION\".equalsIgnoreCase(failureType);"
+      ],
+      "starterCode": "public class RecoverabilityDecision {\n    static boolean isRecoverable(String failureType) {\n        // TODO: Return true for Exception, false for Error\n        return false;\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Exception recoverable: \" + isRecoverable(\"EXCEPTION\"));\n        System.out.println(\"Error recoverable: \" + isRecoverable(\"ERROR\"));\n    }\n}",
+      "solutionCode": "public class RecoverabilityDecision {\n    static boolean isRecoverable(String failureType) {\n        return \"EXCEPTION\".equalsIgnoreCase(failureType);\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Exception recoverable: \" + isRecoverable(\"EXCEPTION\"));\n        System.out.println(\"Error recoverable: \" + isRecoverable(\"ERROR\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Exception recoverable: true\nError recoverable: false"
+        }
+      ],
+      "targetOutput": "Exception recoverable: true\nError recoverable: false"
+    },
+    {
+      "id": "prob-eve-6",
+      "title": "Handle Null Pointer Gracefully",
+      "difficulty": "Easy",
+      "problemStatement": "Given `String data = null;`. Attempt to read `data.length()`. Catch the `NullPointerException` and print \"Recovered: Using fallback length 0\".",
+      "description": "Given `String data = null;`. Attempt to read `data.length()`. Catch the `NullPointerException` and print \"Recovered: Using fallback length 0\".",
+      "hint": "catch (NullPointerException e)",
+      "hints": [
+        "catch (NullPointerException e)"
+      ],
+      "starterCode": "public class RecoverNullPointer {\n    public static void main(String[] args) {\n        String data = null;\n        // TODO: Try reading length and catch NullPointerException\n    }\n}",
+      "solutionCode": "public class RecoverNullPointer {\n    public static void main(String[] args) {\n        String data = null;\n        try {\n            int len = data.length();\n        } catch (NullPointerException e) {\n            System.out.println(\"Recovered: Using fallback length 0\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Recovered: Using fallback length 0"
+        }
+      ],
+      "targetOutput": "Recovered: Using fallback length 0"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-eve-1",
+      "question": "What is the key difference between Error and Exception in Java?",
+      "answer": "Both inherit from `Throwable`. `Error` represents serious, unrecoverable system conditions caused by the JVM or underlying environment (e.g. `OutOfMemoryError`, `StackOverflowError`). Applications should not attempt to catch `Error`. `Exception` represents conditions caused by application logic (e.g. `IOException`, `NullPointerException`) from which an application can reasonably recover.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eve-2",
+      "question": "Can you catch an Error with a try-catch block? Is it recommended?",
+      "answer": "Syntactically, yes: `catch (Error e)` or `catch (Throwable t)` will compile and execute. However, it is strongly discouraged in application code. When an Error occurs (such as memory exhaustion), the internal integrity of the JVM is compromised. Catching it and continuing execution usually leads to silent data corruption or cascading deadlocks.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eve-3",
+      "question": "What is the difference between OutOfMemoryError and StackOverflowError?",
+      "answer": "`OutOfMemoryError` occurs when the JVM **Heap** is full and the Garbage Collector cannot free enough memory to satisfy an allocation request. `StackOverflowError` occurs when a thread's **Call Stack** memory is exhausted, almost always due to infinite or excessively deep recursive method calls.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eve-4",
+      "question": "What is NoClassDefFoundError and how does it differ from ClassNotFoundException?",
+      "answer": "`ClassNotFoundException` is an `Exception` thrown when an application attempts to load a class dynamically at runtime (e.g. `Class.forName(\"...\")`) and the `.class` file cannot be found. `NoClassDefFoundError` is an `Error` thrown when a class was available at compile-time, but during runtime execution, the class definition is missing from the classpath.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eve-5",
+      "question": "What are some scenarios where catching Throwable is acceptable?",
+      "answer": "Catching `Throwable` is acceptable only in top-level framework infrastructure: 1) Thread pool executors (to prevent worker threads from silently terminating), 2) Web server entry points (to log an uncaught disaster and return a 500 HTTP response), and 3) Global logging crash-reporters.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eve-6",
+      "question": "Why does ThreadDeath extend Error rather than Exception?",
+      "answer": "`ThreadDeath` is thrown when a thread is stopped via the legacy `Thread.stop()` method. It extends `Error` so that normal user `catch (Exception e)` blocks will not inadvertently intercept it, allowing the thread to terminate cleanly.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eve-7",
+      "question": "What is VirtualMachineError?",
+      "answer": "`VirtualMachineError` is an abstract subclass of `Error`. It is thrown by the JVM to indicate that the virtual machine is broken or has run out of resources necessary for it to continue operating. Its prominent subclasses are `OutOfMemoryError`, `StackOverflowError`, `InternalError`, and `UnknownError`.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-eve-1",
+      "text": "I can explain the difference between java.lang.Error and java.lang.Exception."
+    },
+    {
+      "id": "chk-eve-2",
+      "text": "I know why applications should never catch Error in business logic."
+    },
+    {
+      "id": "chk-eve-3",
+      "text": "I understand the causes of OutOfMemoryError and StackOverflowError."
+    },
+    {
+      "id": "chk-eve-4",
+      "text": "I know that Throwable is the root superclass of both branches."
+    },
+    {
+      "id": "chk-eve-5",
+      "text": "I can identify which conditions are recoverable vs catastrophic."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-eve-1",
+      "text": "I can explain the difference between java.lang.Error and java.lang.Exception."
+    },
+    {
+      "id": "chk-eve-2",
+      "text": "I know why applications should never catch Error in business logic."
+    },
+    {
+      "id": "chk-eve-3",
+      "text": "I understand the causes of OutOfMemoryError and StackOverflowError."
+    },
+    {
+      "id": "chk-eve-4",
+      "text": "I know that Throwable is the root superclass of both branches."
+    },
+    {
+      "id": "chk-eve-5",
+      "text": "I can identify which conditions are recoverable vs catastrophic."
+    }
+  ]
+}

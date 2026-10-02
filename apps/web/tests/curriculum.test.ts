@@ -695,4 +695,144 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
       expect(lesson?.slug).toBe(expectedCanonical);
     }
   });
+  it('resolves the 10 canonical Exception Basics lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'exception-basics');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(10);
+
+    const expectedSlugs = [
+      'what-are-exceptions',
+      'errors-vs-exceptions',
+      'exception-hierarchy',
+      'try-catch-finally',
+      'multiple-catch-and-exception-flow',
+      'throw-and-throws',
+      'checked-vs-unchecked-exceptions',
+      'common-java-exceptions',
+      'custom-exceptions-and-debugging',
+      'exceptions-practice-and-interview-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'exception-basics', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 8 MCQs`).toBeGreaterThanOrEqual(8);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 15 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(15);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 6 self-paced practice problems`).toBeGreaterThanOrEqual(6);
+      
+      for (const prob of lesson?.practiceProblems || []) {
+        expect(prob.problemStatement || prob.description, `${slug} problem ${prob.id} must have description/problemStatement`).toBeDefined();
+      }
+
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 10 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'exceptions': 'what-are-exceptions',
+      'intro-to-exceptions': 'what-are-exceptions',
+      'error-vs-exception': 'errors-vs-exceptions',
+      'hierarchy': 'exception-hierarchy',
+      'try-catch': 'try-catch-finally',
+      'multiple-catch': 'multiple-catch-and-exception-flow',
+      'throw-throws': 'throw-and-throws',
+      'checked-unchecked': 'checked-vs-unchecked-exceptions',
+      'common-exceptions': 'common-java-exceptions',
+      'custom-exceptions': 'custom-exceptions-and-debugging',
+      'exception-debugging': 'custom-exceptions-and-debugging',
+      'exception-practice': 'exceptions-practice-and-interview-challenge',
+      'exceptions-final-challenge': 'exceptions-practice-and-interview-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'exception-basics', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
+
+  it('resolves the 8 canonical Packages & Access Control lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'packages-and-access-control');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(8);
+
+    const expectedSlugs = [
+      'why-packages',
+      'creating-and-using-packages',
+      'import-and-fully-qualified-names',
+      'access-modifiers',
+      'public-private-and-package-private',
+      'protected-and-cross-package-access',
+      'naming-and-project-organization',
+      'packages-practice-and-interview-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'packages-and-access-control', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 8 MCQs`).toBeGreaterThanOrEqual(8);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 15 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(15);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 6 self-paced practice problems`).toBeGreaterThanOrEqual(6);
+      
+      for (const prob of lesson?.practiceProblems || []) {
+        expect(prob.problemStatement || prob.description, `${slug} problem ${prob.id} must have description/problemStatement`).toBeDefined();
+      }
+
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 11 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'packages-intro': 'why-packages',
+      'packages': 'why-packages',
+      'creating-packages': 'creating-and-using-packages',
+      'compiling-packages': 'creating-and-using-packages',
+      'imports': 'import-and-fully-qualified-names',
+      'static-imports': 'import-and-fully-qualified-names',
+      'access-control': 'access-modifiers',
+      'public-private': 'public-private-and-package-private',
+      'encapsulation': 'public-private-and-package-private',
+      'protected': 'protected-and-cross-package-access',
+      'package-naming': 'naming-and-project-organization',
+      'project-structure': 'naming-and-project-organization',
+      'packages-practice': 'packages-practice-and-interview-challenge',
+      'packages-final-challenge': 'packages-practice-and-interview-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'packages-and-access-control', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
 });

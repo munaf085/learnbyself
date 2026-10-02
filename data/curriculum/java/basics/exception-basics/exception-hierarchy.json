@@ -1,0 +1,658 @@
+{
+  "id": "les-exception-basics-exception-hierarchy",
+  "slug": "exception-hierarchy",
+  "sectionSlug": "basics",
+  "moduleSlug": "exception-basics",
+  "title": "Exception Hierarchy",
+  "summary": "Master the Throwable inheritance tree: Error, Exception, RuntimeException, checked vs unchecked branches, polymorphic matching, and why catch ordering matters.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 3,
+  "prerequisites": [
+    "les-exception-basics-errors-vs-exceptions"
+  ],
+  "subtopics": [
+    "The Throwable Inheritance Tree",
+    "Checked vs Unchecked Branches",
+    "Catch Ordering & Unreachable Code",
+    "Java 7 Multi-Catch Syntax"
+  ],
+  "learningOutcomes": [
+    "Map the Java Exception inheritance hierarchy accurately",
+    "Structure multiple catch blocks with correct specific-to-general ordering",
+    "Apply Java 7 multi-catch syntax for sibling exceptions"
+  ],
+  "activities": [
+    {
+      "id": "act-exception-hierarchy-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Mechanics: Exception Hierarchy",
+      "content": "### 1. Concept: The Java Exception Hierarchy\nJava structures all failures into a strict object-oriented inheritance tree. At the root sits `java.lang.Throwable`. Underneath `Throwable`, the tree divides into two branches: `Error` and `Exception`.\n\nUnder `Exception`, the tree splits into two fundamentally distinct categories:\n1. **Unchecked Exceptions (`RuntimeException` and its subclasses)**:\n   - Also known as runtime exceptions.\n   - Represent programmer bugs or logic defects (e.g. dividing by zero, passing null, out-of-bounds array access).\n   - The Java compiler does **NOT** require you to catch them or declare them with `throws`.\n2. **Checked Exceptions (All other subclasses of `Exception`)**:\n   - Represent external conditions outside the program's immediate control (e.g. file missing, network failure, database offline).\n   - The Java compiler **strictly forces** you to either handle them with a `try-catch` block or declare them in the method signature using `throws`.\n\n### 2. Why Catch Ordering Matters\nBecause Java exceptions use standard object-oriented polymorphism:\n- A `catch (ParentException e)` block will match any exception object that is an instance of `ParentException` **OR any of its subclasses**!\n- If you place a parent catch block before a child catch block, the child block becomes **unreachable code**, causing a **compile-time error**!\n\n```java\n// COMPILE ERROR: Unreachable catch block!\ntry {\n    // code\n} catch (Exception e) {          // Matches EVERYTHING!\n    System.out.println(\"General\");\n} catch (ArithmeticException e) { // Error: Already caught above!\n    System.out.println(\"Specific\");\n}\n```\n**Golden Rule**: Always catch **most specific (subclass)** exceptions first, and **general (parent)** exceptions last!\n\n### 3. Visualizing the Complete Hierarchy Tree\n```text\n                         Throwable\n                             |\n              +--------------+--------------+\n              |                             |\n            Error                       Exception\n                                            |\n                         +------------------+------------------+\n                         |                                     |\n                 RuntimeException                     Checked Exceptions\n                 (Unchecked)                           - IOException\n                 - NullPointerException                - SQLException\n                 - ArithmeticException                 - ClassNotFoundException\n                 - ArrayIndexOutOfBoundsException      - ParseException\n                 - IllegalArgumentException\n```\n\n### 4. Practical Java Example\n```java\ntry {\n    int[] numbers = {10, 20};\n    int result = numbers[5] / 0; // Throws ArrayIndexOutOfBoundsException first!\n} catch (ArithmeticException e) {\n    System.out.println(\"Caught Arithmetic\");\n} catch (ArrayIndexOutOfBoundsException e) {\n    System.out.println(\"Caught Index Error: \" + e.getMessage());\n} catch (Exception e) {\n    System.out.println(\"Caught General Fallback\");\n}\n```\n\n### 5. Common Beginner Mistakes\n- **Putting `catch (Exception e)` First**: Placing the broadest catch block at the top, resulting in compile-time unreachable code errors.\n- **Thinking RuntimeException extends Throwable directly**: `RuntimeException` extends `Exception`, which extends `Throwable`.\n- **Assuming all Exceptions are checked**: `RuntimeException` and its descendants are specifically unchecked.\n\n### 6. Key Takeaways\n- `Throwable` is the parent of `Error` and `Exception`.\n- `RuntimeException` and its children are **Unchecked**; all other `Exception` children are **Checked**.\n- Catch blocks must be ordered from **most specific (child)** to **most generic (parent)**.\n- Reversing catch order causes a compile-time \"unreachable catch block\" error.",
+      "breakdown": [
+        {
+          "topic": "Inheritance Architecture",
+          "details": "Object -> Throwable -> Exception -> RuntimeException -> Specific Exceptions."
+        },
+        {
+          "topic": "Checked vs Unchecked Branch",
+          "details": "Subclasses of RuntimeException are unchecked. Direct subclasses of Exception are checked by the compiler."
+        },
+        {
+          "topic": "Polymorphic Matching",
+          "details": "A catch block matches any object satisfying: thrownException instanceof CatchType."
+        },
+        {
+          "topic": "Catch Order Rule",
+          "details": "Specific child exceptions must appear before general parent exceptions to avoid unreachable code compile errors."
+        }
+      ]
+    },
+    {
+      "id": "act-exception-hierarchy-walkthrough",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Exception Hierarchy & Catch Order",
+      "codeSnippet": "public class ExceptionHierarchyDemo {\n    public static void testHierarchy(int code) {\n        try {\n            if (code == 1) {\n                int div = 10 / 0; // ArithmeticException (subclass of RuntimeException)\n            } else if (code == 2) {\n                int[] arr = new int[2];\n                int val = arr[10]; // ArrayIndexOutOfBoundsException\n            } else {\n                String str = null;\n                str.length(); // NullPointerException\n            }\n        } catch (ArithmeticException e) {\n            // Specific child 1\n            System.out.println(\"Specific Catch 1: ArithmeticException -> \" + e.getMessage());\n        } catch (IndexOutOfBoundsException e) {\n            // Specific child 2 (Parent of ArrayIndexOutOfBoundsException)\n            System.out.println(\"Specific Catch 2: IndexOutOfBoundsException -> \" + e.getMessage());\n        } catch (RuntimeException e) {\n            // Generic runtime parent\n            System.out.println(\"Generic Catch 3: RuntimeException -> \" + e.getClass().getSimpleName());\n        } catch (Exception e) {\n            // Ultimate exception fallback\n            System.out.println(\"Fallback Catch 4: General Exception\");\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"--- Test 1 ---\");\n        testHierarchy(1);\n        System.out.println(\"--- Test 2 ---\");\n        testHierarchy(2);\n        System.out.println(\"--- Test 3 ---\");\n        testHierarchy(3);\n    }\n}",
+      "description": "Demonstrates specific child catches, parent class catches, and the ultimate Exception fallback.",
+      "steps": [
+        {
+          "line": 5,
+          "description": "10 / 0 throws ArithmeticException."
+        },
+        {
+          "line": 14,
+          "description": "catch (ArithmeticException) catches code == 1 directly."
+        },
+        {
+          "line": 8,
+          "description": "arr[10] throws ArrayIndexOutOfBoundsException."
+        },
+        {
+          "line": 17,
+          "description": "catch (IndexOutOfBoundsException) matches because ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException."
+        },
+        {
+          "line": 11,
+          "description": "str.length() throws NullPointerException."
+        },
+        {
+          "line": 20,
+          "description": "catch (RuntimeException) catches NullPointerException since NPE extends RuntimeException."
+        }
+      ]
+    },
+    {
+      "id": "act-exception-hierarchy-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Concept Check & MCQ: Exception Hierarchy",
+      "questions": [
+        {
+          "id": "mcq-eh-1",
+          "question": "What happens if a developer writes `catch (Exception e)` before `catch (ArithmeticException e)` in a try-catch construct?",
+          "options": [
+            "ArithmeticException executes first",
+            "The code fails to compile with an 'unreachable catch block' error",
+            "The JVM prints a runtime warning",
+            "Both catch blocks execute sequentially"
+          ],
+          "correctOption": 1,
+          "explanation": "Because ArithmeticException is a subclass of Exception, the first catch block would intercept all ArithmeticExceptions, leaving the second catch block unreachable (a compile error).",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-2",
+          "question": "Which of the following classes is the direct superclass of `RuntimeException`?",
+          "options": [
+            "java.lang.Throwable",
+            "java.lang.Exception",
+            "java.lang.Error",
+            "java.lang.Object"
+          ],
+          "correctOption": 1,
+          "explanation": "The inheritance chain is `Object` -> `Throwable` -> `Exception` -> `RuntimeException`.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-3",
+          "question": "Which category of exceptions is NOT checked by the Java compiler at compile-time?",
+          "options": [
+            "Subclasses of IOException",
+            "Subclasses of SQLException",
+            "Subclasses of RuntimeException (and Error)",
+            "All subclasses of Exception"
+          ],
+          "correctOption": 2,
+          "explanation": "Unchecked exceptions are those that inherit from `RuntimeException` (or `Error`). The compiler does not mandate try-catch or throws for them.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-eh-4",
+          "question": "If `Class B` extends `Class A`, which catch block must be placed first?",
+          "options": [
+            "catch (A e) must be placed before catch (B e)",
+            "catch (B e) must be placed before catch (A e)",
+            "The order does not matter",
+            "They must be combined with the & operator"
+          ],
+          "correctOption": 1,
+          "explanation": "The more specific child class (B) must precede the more general parent class (A) so that B can catch its specific instances before A intercepts them.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-5",
+          "question": "What will be printed by the following code?\n```java\ntry {\n    throw new ArrayIndexOutOfBoundsException(\"Out\");\n} catch (IndexOutOfBoundsException e) {\n    System.out.println(\"Caught Index\");\n} catch (Exception e) {\n    System.out.println(\"Caught Exception\");\n}\n```",
+          "options": [
+            "Caught Exception",
+            "Caught Index",
+            "Both are printed",
+            "Compile error"
+          ],
+          "correctOption": 1,
+          "explanation": "ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException. The first matching catch block (`IndexOutOfBoundsException`) captures it and prints \"Caught Index\".",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-6",
+          "question": "Which of the following is a checked exception in Java?",
+          "options": [
+            "NullPointerException",
+            "IllegalArgumentException",
+            "IOException",
+            "ArithmeticException"
+          ],
+          "correctOption": 2,
+          "explanation": "`IOException` extends `Exception` directly (not `RuntimeException`), making it a checked exception enforced by the compiler.",
+          "correctIndex": 2
+        },
+        {
+          "id": "mcq-eh-7",
+          "question": "Can a single catch block catch multiple sibling exceptions in Java 7+?",
+          "options": [
+            "No, each catch block can only declare one type",
+            "Yes, using the multi-catch syntax: catch (ArithmeticException | NullPointerException e)",
+            "Only using commas: catch (TypeA, TypeB e)",
+            "Only by casting"
+          ],
+          "correctOption": 1,
+          "explanation": "Java 7 introduced multi-catch syntax using the pipe `|` symbol: `catch (ArithmeticException | NullPointerException e)`.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-8",
+          "question": "In multi-catch syntax `catch (A | B e)`, can A be a subclass of B?",
+          "options": [
+            "Yes, it is encouraged",
+            "No, alternative exceptions in multi-catch cannot be related by subclassing (compile error)",
+            "Only if A is abstract",
+            "Only if B is RuntimeException"
+          ],
+          "correctOption": 1,
+          "explanation": "If A is a subclass of B in `catch (A | B e)`, the compiler flags an error because A is redundant.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-9",
+          "question": "Predict the output of the following:\n```java\ntry {\n    int[] arr = new int[2];\n    arr[5] = 10;\n} catch (RuntimeException e) {\n    System.out.println(e instanceof Exception);\n}\n```",
+          "options": [
+            "false",
+            "true",
+            "Compile error",
+            "ArrayIndexOutOfBoundsException"
+          ],
+          "correctOption": 1,
+          "explanation": "ArrayIndexOutOfBoundsException is caught by RuntimeException. Because RuntimeException extends Exception, `e instanceof Exception` evaluates to `true`.",
+          "correctIndex": 1
+        },
+        {
+          "id": "mcq-eh-10",
+          "question": "Which class is at the absolute top of the entire Java class hierarchy?",
+          "options": [
+            "java.lang.Throwable",
+            "java.lang.Exception",
+            "java.lang.Object",
+            "java.lang.Class"
+          ],
+          "correctOption": 2,
+          "explanation": "In Java, `java.lang.Object` is the root class of all classes, including `Throwable`.",
+          "correctIndex": 2
+        }
+      ]
+    },
+    {
+      "id": "act-exception-hierarchy-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Hands-On: Test Multi-Catch Sibling Syntax",
+      "practice": {
+        "id": "prac-act-eh",
+        "title": "Hands-On: Test Multi-Catch Sibling Syntax",
+        "description": "Catch both ArithmeticException and NullPointerException using a single multi-catch block.",
+        "starterCode": "public class PracticeHierarchyCatch {\n    public static void main(String[] args) {\n        // TODO: Write multi-catch for ArithmeticException | NullPointerException\n    }\n}",
+        "solutionCode": "public class PracticeHierarchyCatch {\n    public static void main(String[] args) {\n        try {\n            int val = 10 / 0;\n        } catch (ArithmeticException | NullPointerException e) {\n            System.out.println(\"Caught sibling in multi-catch: \" + e.getClass().getSimpleName());\n        }\n    }\n}",
+        "expectedOutput": "Caught sibling in multi-catch: ArithmeticException"
+      }
+    },
+    {
+      "id": "act-exception-hierarchy-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Q&A: Exception Hierarchy",
+      "interviewQA": [
+        {
+          "id": "iq-eh-1",
+          "question": "Explain the complete hierarchy of exception classes in Java.",
+          "answer": "At the top is `java.lang.Object`, which is extended by `java.lang.Throwable`. `Throwable` has two direct subclasses: `Error` and `Exception`. `Error` represents critical JVM conditions. `Exception` represents recoverable conditions. Under `Exception`, the class `RuntimeException` marks the boundary: `RuntimeException` and all its subclasses are **unchecked exceptions**, while all other direct subclasses of `Exception` (like `IOException`, `SQLException`) are **checked exceptions**.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eh-2",
+          "question": "Why does the compiler prevent placing catch (Exception) before catch (ArithmeticException)?",
+          "answer": "Java's catch block evaluation is sequential from top to bottom. Because `ArithmeticException` is a subclass of `Exception`, any `ArithmeticException` object would match the first `catch (Exception e)` block. The second block could never be reached under any possible runtime circumstance. Java's compiler strictly rejects unreachable code, flagging a compile-time error.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eh-3",
+          "question": "What is the multi-catch feature introduced in Java 7?",
+          "answer": "Multi-catch allows a single `catch` block to handle multiple unrelated exception types using the pipe operator: `catch (IOException | SQLException e)`. It prevents duplicate catch handler code. Crucially, the alternative exception types in a multi-catch expression must be disjoint (siblings); one cannot be a subclass of another.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eh-4",
+          "question": "What is the difference between checked and unchecked exceptions regarding the compiler?",
+          "answer": "For **checked exceptions**, the compiler enforces the *Catch or Specify* requirement: the code must either enclose the call in a `try-catch` block or declare the exception in the method signature using `throws`. For **unchecked exceptions** (`RuntimeException`), the compiler imposes no enforcement; they may be thrown without explicit declaration.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eh-5",
+          "question": "In multi-catch `catch (final IOException | SQLException e)`, is the parameter `e` mutable?",
+          "answer": "No. In Java multi-catch statements, the exception parameter `e` is implicitly `final`. You cannot reassign `e = new SQLException()` inside a multi-catch block; doing so triggers a compile error.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eh-6",
+          "question": "Why did Java designers create the RuntimeException branch?",
+          "answer": "Unchecked exceptions represent bugs in programming logic (like passing null, illegal arguments, or array index calculation errors) that can occur anywhere in a program. If every possible `NullPointerException` or `ArrayIndexOutOfBoundsException` were checked, every single line of Java code would require verbose try-catch or throws declarations, severely reducing code readability.",
+          "category": "core-java"
+        },
+        {
+          "id": "iq-eh-7",
+          "question": "Can you define your own exception that is unchecked?",
+          "answer": "Yes. To create a custom unchecked exception, simply extend `java.lang.RuntimeException`. The compiler will treat your custom exception as unchecked, freeing callers from mandatory try-catch blocks.",
+          "category": "core-java"
+        }
+      ]
+    },
+    {
+      "id": "act-exception-hierarchy-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Mastery Checklist: Exception Hierarchy",
+      "checklist": [
+        {
+          "id": "chk-eh-1",
+          "text": "I can draw the full Throwable inheritance tree from memory."
+        },
+        {
+          "id": "chk-eh-2",
+          "text": "I understand why specific catch blocks must appear before generic catch blocks."
+        },
+        {
+          "id": "chk-eh-3",
+          "text": "I know which branch represents checked vs unchecked exceptions."
+        },
+        {
+          "id": "chk-eh-4",
+          "text": "I can use Java 7 multi-catch syntax (catch (A | B e)) correctly."
+        },
+        {
+          "id": "chk-eh-5",
+          "text": "I know why alternative exceptions in multi-catch cannot have parent-child relationships."
+        }
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-eh-1",
+      "question": "What happens if a developer writes `catch (Exception e)` before `catch (ArithmeticException e)` in a try-catch construct?",
+      "options": [
+        "ArithmeticException executes first",
+        "The code fails to compile with an 'unreachable catch block' error",
+        "The JVM prints a runtime warning",
+        "Both catch blocks execute sequentially"
+      ],
+      "correctOption": 1,
+      "explanation": "Because ArithmeticException is a subclass of Exception, the first catch block would intercept all ArithmeticExceptions, leaving the second catch block unreachable (a compile error).",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-2",
+      "question": "Which of the following classes is the direct superclass of `RuntimeException`?",
+      "options": [
+        "java.lang.Throwable",
+        "java.lang.Exception",
+        "java.lang.Error",
+        "java.lang.Object"
+      ],
+      "correctOption": 1,
+      "explanation": "The inheritance chain is `Object` -> `Throwable` -> `Exception` -> `RuntimeException`.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-3",
+      "question": "Which category of exceptions is NOT checked by the Java compiler at compile-time?",
+      "options": [
+        "Subclasses of IOException",
+        "Subclasses of SQLException",
+        "Subclasses of RuntimeException (and Error)",
+        "All subclasses of Exception"
+      ],
+      "correctOption": 2,
+      "explanation": "Unchecked exceptions are those that inherit from `RuntimeException` (or `Error`). The compiler does not mandate try-catch or throws for them.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-eh-4",
+      "question": "If `Class B` extends `Class A`, which catch block must be placed first?",
+      "options": [
+        "catch (A e) must be placed before catch (B e)",
+        "catch (B e) must be placed before catch (A e)",
+        "The order does not matter",
+        "They must be combined with the & operator"
+      ],
+      "correctOption": 1,
+      "explanation": "The more specific child class (B) must precede the more general parent class (A) so that B can catch its specific instances before A intercepts them.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-5",
+      "question": "What will be printed by the following code?\n```java\ntry {\n    throw new ArrayIndexOutOfBoundsException(\"Out\");\n} catch (IndexOutOfBoundsException e) {\n    System.out.println(\"Caught Index\");\n} catch (Exception e) {\n    System.out.println(\"Caught Exception\");\n}\n```",
+      "options": [
+        "Caught Exception",
+        "Caught Index",
+        "Both are printed",
+        "Compile error"
+      ],
+      "correctOption": 1,
+      "explanation": "ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException. The first matching catch block (`IndexOutOfBoundsException`) captures it and prints \"Caught Index\".",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-6",
+      "question": "Which of the following is a checked exception in Java?",
+      "options": [
+        "NullPointerException",
+        "IllegalArgumentException",
+        "IOException",
+        "ArithmeticException"
+      ],
+      "correctOption": 2,
+      "explanation": "`IOException` extends `Exception` directly (not `RuntimeException`), making it a checked exception enforced by the compiler.",
+      "correctIndex": 2
+    },
+    {
+      "id": "mcq-eh-7",
+      "question": "Can a single catch block catch multiple sibling exceptions in Java 7+?",
+      "options": [
+        "No, each catch block can only declare one type",
+        "Yes, using the multi-catch syntax: catch (ArithmeticException | NullPointerException e)",
+        "Only using commas: catch (TypeA, TypeB e)",
+        "Only by casting"
+      ],
+      "correctOption": 1,
+      "explanation": "Java 7 introduced multi-catch syntax using the pipe `|` symbol: `catch (ArithmeticException | NullPointerException e)`.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-8",
+      "question": "In multi-catch syntax `catch (A | B e)`, can A be a subclass of B?",
+      "options": [
+        "Yes, it is encouraged",
+        "No, alternative exceptions in multi-catch cannot be related by subclassing (compile error)",
+        "Only if A is abstract",
+        "Only if B is RuntimeException"
+      ],
+      "correctOption": 1,
+      "explanation": "If A is a subclass of B in `catch (A | B e)`, the compiler flags an error because A is redundant.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-9",
+      "question": "Predict the output of the following:\n```java\ntry {\n    int[] arr = new int[2];\n    arr[5] = 10;\n} catch (RuntimeException e) {\n    System.out.println(e instanceof Exception);\n}\n```",
+      "options": [
+        "false",
+        "true",
+        "Compile error",
+        "ArrayIndexOutOfBoundsException"
+      ],
+      "correctOption": 1,
+      "explanation": "ArrayIndexOutOfBoundsException is caught by RuntimeException. Because RuntimeException extends Exception, `e instanceof Exception` evaluates to `true`.",
+      "correctIndex": 1
+    },
+    {
+      "id": "mcq-eh-10",
+      "question": "Which class is at the absolute top of the entire Java class hierarchy?",
+      "options": [
+        "java.lang.Throwable",
+        "java.lang.Exception",
+        "java.lang.Object",
+        "java.lang.Class"
+      ],
+      "correctOption": 2,
+      "explanation": "In Java, `java.lang.Object` is the root class of all classes, including `Throwable`.",
+      "correctIndex": 2
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-eh-1",
+      "title": "Demonstrate Specific Before Generic Catch Ordering",
+      "difficulty": "Easy",
+      "problemStatement": "Write a try-catch block where 10 is divided by 0. Catch `ArithmeticException` first and print \"Specific caught\". Add a second catch block for generic `Exception` printing \"Generic caught\". Verify that only the specific catch executes.",
+      "description": "Write a try-catch block where 10 is divided by 0. Catch `ArithmeticException` first and print \"Specific caught\". Add a second catch block for generic `Exception` printing \"Generic caught\". Verify that only the specific catch executes.",
+      "hint": "Put catch (ArithmeticException e) before catch (Exception e).",
+      "hints": [
+        "Put catch (ArithmeticException e) before catch (Exception e)."
+      ],
+      "starterCode": "public class CatchOrderPractice {\n    public static void main(String[] args) {\n        // TODO: Try 10 / 0 with specific and generic catch blocks\n    }\n}",
+      "solutionCode": "public class CatchOrderPractice {\n    public static void main(String[] args) {\n        try {\n            int x = 10 / 0;\n        } catch (ArithmeticException e) {\n            System.out.println(\"Specific caught\");\n        } catch (Exception e) {\n            System.out.println(\"Generic caught\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Specific caught"
+        }
+      ],
+      "targetOutput": "Specific caught"
+    },
+    {
+      "id": "prob-eh-2",
+      "title": "Catch Sibling Exceptions via Multi-Catch",
+      "difficulty": "Medium",
+      "problemStatement": "Write a method `handleFailures(int test)`. In a try block: if `test == 1` divide by zero; if `test == 2` read `((String)null).length()`. Use a single multi-catch block `catch (ArithmeticException | NullPointerException e)` to print \"Caught multi-catch: \" + e.getClass().getSimpleName(). Test with test=1 and test=2.",
+      "description": "Write a method `handleFailures(int test)`. In a try block: if `test == 1` divide by zero; if `test == 2` read `((String)null).length()`. Use a single multi-catch block `catch (ArithmeticException | NullPointerException e)` to print \"Caught multi-catch: \" + e.getClass().getSimpleName(). Test with test=1 and test=2.",
+      "hint": "catch (ArithmeticException | NullPointerException e)",
+      "hints": [
+        "catch (ArithmeticException | NullPointerException e)"
+      ],
+      "starterCode": "public class MultiCatchPractice {\n    static void handleFailures(int test) {\n        // TODO: Multi-catch implementation\n    }\n    public static void main(String[] args) {\n        handleFailures(1);\n        handleFailures(2);\n    }\n}",
+      "solutionCode": "public class MultiCatchPractice {\n    static void handleFailures(int test) {\n        try {\n            if (test == 1) {\n                int x = 10 / 0;\n            } else {\n                String s = null;\n                s.length();\n            }\n        } catch (ArithmeticException | NullPointerException e) {\n            System.out.println(\"Caught multi-catch: \" + e.getClass().getSimpleName());\n        }\n    }\n    public static void main(String[] args) {\n        handleFailures(1);\n        handleFailures(2);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Caught multi-catch: ArithmeticException\nCaught multi-catch: NullPointerException"
+        }
+      ],
+      "targetOutput": "Caught multi-catch: ArithmeticException\nCaught multi-catch: NullPointerException"
+    },
+    {
+      "id": "prob-eh-3",
+      "title": "Demonstrate Polymorphic Catching with Parent Type",
+      "difficulty": "Medium",
+      "problemStatement": "In a method, throw `new ArrayIndexOutOfBoundsException(\"Array error\")`. Catch it using its parent class `IndexOutOfBoundsException`. Print \"Parent caught: IndexOutOfBoundsException\".",
+      "description": "In a method, throw `new ArrayIndexOutOfBoundsException(\"Array error\")`. Catch it using its parent class `IndexOutOfBoundsException`. Print \"Parent caught: IndexOutOfBoundsException\".",
+      "hint": "catch (IndexOutOfBoundsException e)",
+      "hints": [
+        "catch (IndexOutOfBoundsException e)"
+      ],
+      "starterCode": "public class PolymorphicCatch {\n    public static void main(String[] args) {\n        // TODO: Catch child exception using parent type\n    }\n}",
+      "solutionCode": "public class PolymorphicCatch {\n    public static void main(String[] args) {\n        try {\n            throw new ArrayIndexOutOfBoundsException(\"Array error\");\n        } catch (IndexOutOfBoundsException e) {\n            System.out.println(\"Parent caught: IndexOutOfBoundsException\");\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Parent caught: IndexOutOfBoundsException"
+        }
+      ],
+      "targetOutput": "Parent caught: IndexOutOfBoundsException"
+    },
+    {
+      "id": "prob-eh-4",
+      "title": "Verify Inheritance Relations Using Instanceof",
+      "difficulty": "Easy",
+      "problemStatement": "Instantiate `NullPointerException npe = new NullPointerException();`. Print whether `npe instanceof RuntimeException`, `npe instanceof Exception`, and `npe instanceof Throwable`. Format on 3 lines.",
+      "description": "Instantiate `NullPointerException npe = new NullPointerException();`. Print whether `npe instanceof RuntimeException`, `npe instanceof Exception`, and `npe instanceof Throwable`. Format on 3 lines.",
+      "hint": "npe instanceof ClassName",
+      "hints": [
+        "npe instanceof ClassName"
+      ],
+      "starterCode": "public class InheritanceVerification {\n    public static void main(String[] args) {\n        // TODO: Verify inheritance relationships\n    }\n}",
+      "solutionCode": "public class InheritanceVerification {\n    public static void main(String[] args) {\n        NullPointerException npe = new NullPointerException();\n        System.out.println(\"is RuntimeException: \" + (npe instanceof RuntimeException));\n        System.out.println(\"is Exception: \" + (npe instanceof Exception));\n        System.out.println(\"is Throwable: \" + (npe instanceof Throwable));\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "is RuntimeException: true\nis Exception: true\nis Throwable: true"
+        }
+      ],
+      "targetOutput": "is RuntimeException: true\nis Exception: true\nis Throwable: true"
+    },
+    {
+      "id": "prob-eh-5",
+      "title": "Fallback Handler for Unknown Subclass",
+      "difficulty": "Medium",
+      "problemStatement": "Write a try block that throws `new IllegalArgumentException(\"Bad param\")`. Provide catch blocks for `ArithmeticException` (first) and `RuntimeException` (second). Print \"Fallback handled: Bad param\" from the RuntimeException catch block.",
+      "description": "Write a try block that throws `new IllegalArgumentException(\"Bad param\")`. Provide catch blocks for `ArithmeticException` (first) and `RuntimeException` (second). Print \"Fallback handled: Bad param\" from the RuntimeException catch block.",
+      "hint": "IllegalArgumentException skips ArithmeticException and matches RuntimeException.",
+      "hints": [
+        "IllegalArgumentException skips ArithmeticException and matches RuntimeException."
+      ],
+      "starterCode": "public class FallbackHandlerDemo {\n    public static void main(String[] args) {\n        // TODO: Throw IllegalArgumentException and catch with RuntimeException\n    }\n}",
+      "solutionCode": "public class FallbackHandlerDemo {\n    public static void main(String[] args) {\n        try {\n            throw new IllegalArgumentException(\"Bad param\");\n        } catch (ArithmeticException e) {\n            System.out.println(\"Caught arithmetic\");\n        } catch (RuntimeException e) {\n            System.out.println(\"Fallback handled: \" + e.getMessage());\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "Fallback handled: Bad param"
+        }
+      ],
+      "targetOutput": "Fallback handled: Bad param"
+    },
+    {
+      "id": "prob-eh-6",
+      "title": "Check Multiple Hierarchy Branches",
+      "difficulty": "Easy",
+      "problemStatement": "Write a program that tests if `RuntimeException` extends `Exception`, and if `Exception` extends `Throwable`. Print \"RuntimeException -> Exception -> Throwable: true\".",
+      "description": "Write a program that tests if `RuntimeException` extends `Exception`, and if `Exception` extends `Throwable`. Print \"RuntimeException -> Exception -> Throwable: true\".",
+      "hint": "Print the confirmed hierarchy string.",
+      "hints": [
+        "Print the confirmed hierarchy string."
+      ],
+      "starterCode": "public class HierarchyBranches {\n    public static void main(String[] args) {\n        // TODO: Confirm hierarchy chain\n    }\n}",
+      "solutionCode": "public class HierarchyBranches {\n    public static void main(String[] args) {\n        boolean valid = (new RuntimeException() instanceof Exception) && (new Exception() instanceof Throwable);\n        System.out.println(\"RuntimeException -> Exception -> Throwable: \" + valid);\n    }\n}",
+      "testCases": [
+        {
+          "input": "",
+          "expectedOutput": "RuntimeException -> Exception -> Throwable: true"
+        }
+      ],
+      "targetOutput": "RuntimeException -> Exception -> Throwable: true"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-eh-1",
+      "question": "Explain the complete hierarchy of exception classes in Java.",
+      "answer": "At the top is `java.lang.Object`, which is extended by `java.lang.Throwable`. `Throwable` has two direct subclasses: `Error` and `Exception`. `Error` represents critical JVM conditions. `Exception` represents recoverable conditions. Under `Exception`, the class `RuntimeException` marks the boundary: `RuntimeException` and all its subclasses are **unchecked exceptions**, while all other direct subclasses of `Exception` (like `IOException`, `SQLException`) are **checked exceptions**.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eh-2",
+      "question": "Why does the compiler prevent placing catch (Exception) before catch (ArithmeticException)?",
+      "answer": "Java's catch block evaluation is sequential from top to bottom. Because `ArithmeticException` is a subclass of `Exception`, any `ArithmeticException` object would match the first `catch (Exception e)` block. The second block could never be reached under any possible runtime circumstance. Java's compiler strictly rejects unreachable code, flagging a compile-time error.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eh-3",
+      "question": "What is the multi-catch feature introduced in Java 7?",
+      "answer": "Multi-catch allows a single `catch` block to handle multiple unrelated exception types using the pipe operator: `catch (IOException | SQLException e)`. It prevents duplicate catch handler code. Crucially, the alternative exception types in a multi-catch expression must be disjoint (siblings); one cannot be a subclass of another.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eh-4",
+      "question": "What is the difference between checked and unchecked exceptions regarding the compiler?",
+      "answer": "For **checked exceptions**, the compiler enforces the *Catch or Specify* requirement: the code must either enclose the call in a `try-catch` block or declare the exception in the method signature using `throws`. For **unchecked exceptions** (`RuntimeException`), the compiler imposes no enforcement; they may be thrown without explicit declaration.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eh-5",
+      "question": "In multi-catch `catch (final IOException | SQLException e)`, is the parameter `e` mutable?",
+      "answer": "No. In Java multi-catch statements, the exception parameter `e` is implicitly `final`. You cannot reassign `e = new SQLException()` inside a multi-catch block; doing so triggers a compile error.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eh-6",
+      "question": "Why did Java designers create the RuntimeException branch?",
+      "answer": "Unchecked exceptions represent bugs in programming logic (like passing null, illegal arguments, or array index calculation errors) that can occur anywhere in a program. If every possible `NullPointerException` or `ArrayIndexOutOfBoundsException` were checked, every single line of Java code would require verbose try-catch or throws declarations, severely reducing code readability.",
+      "category": "core-java"
+    },
+    {
+      "id": "iq-eh-7",
+      "question": "Can you define your own exception that is unchecked?",
+      "answer": "Yes. To create a custom unchecked exception, simply extend `java.lang.RuntimeException`. The compiler will treat your custom exception as unchecked, freeing callers from mandatory try-catch blocks.",
+      "category": "core-java"
+    }
+  ],
+  "summaryChecklist": [
+    {
+      "id": "chk-eh-1",
+      "text": "I can draw the full Throwable inheritance tree from memory."
+    },
+    {
+      "id": "chk-eh-2",
+      "text": "I understand why specific catch blocks must appear before generic catch blocks."
+    },
+    {
+      "id": "chk-eh-3",
+      "text": "I know which branch represents checked vs unchecked exceptions."
+    },
+    {
+      "id": "chk-eh-4",
+      "text": "I can use Java 7 multi-catch syntax (catch (A | B e)) correctly."
+    },
+    {
+      "id": "chk-eh-5",
+      "text": "I know why alternative exceptions in multi-catch cannot have parent-child relationships."
+    }
+  ],
+  "checklist": [
+    {
+      "id": "chk-eh-1",
+      "text": "I can draw the full Throwable inheritance tree from memory."
+    },
+    {
+      "id": "chk-eh-2",
+      "text": "I understand why specific catch blocks must appear before generic catch blocks."
+    },
+    {
+      "id": "chk-eh-3",
+      "text": "I know which branch represents checked vs unchecked exceptions."
+    },
+    {
+      "id": "chk-eh-4",
+      "text": "I can use Java 7 multi-catch syntax (catch (A | B e)) correctly."
+    },
+    {
+      "id": "chk-eh-5",
+      "text": "I know why alternative exceptions in multi-catch cannot have parent-child relationships."
+    }
+  ]
+}

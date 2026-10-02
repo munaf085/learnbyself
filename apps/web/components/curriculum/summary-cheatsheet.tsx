@@ -2258,6 +2258,298 @@ Row 2</td>
         </Card>
       )}
 
+
+      {/* ---------------------------------------------------- */}
+      {/* MODULE 10: EXCEPTION BASICS CHEAT SHEETS             */}
+      {/* ---------------------------------------------------- */}
+
+      {/* Module 10: Exception Hierarchy & Classification Matrix */}
+      {(slug === 'what-are-exceptions' || slug === 'errors-vs-exceptions' || slug === 'exception-hierarchy' || slug === 'checked-vs-unchecked-exceptions' || slug === 'exceptions-practice-and-interview-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-rose-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Throwable Hierarchy &amp; Classification Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Branch / Class</th>
+                  <th className="p-2.5">Category</th>
+                  <th className="p-2.5">Compiler Checked?</th>
+                  <th className="p-2.5">Typical Root Cause</th>
+                  <th className="p-2.5 rounded-r-lg">Standard Action / Policy</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-rose-700">java.lang.Error</td>
+                  <td className="p-2.5 font-medium text-slate-800">JVM System Fault</td>
+                  <td className="p-2.5 font-semibold text-slate-500">No (Unchecked)</td>
+                  <td className="p-2.5 text-slate-600">OutOfMemoryError, StackOverflowError</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Do NOT catch! Allow JVM to terminate gracefully.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-brand-50/30">
+                  <td className="p-2.5 font-bold font-mono text-brand-700">java.lang.Exception</td>
+                  <td className="p-2.5 font-medium text-slate-800">Checked Exception</td>
+                  <td className="p-2.5 font-semibold text-emerald-700">Yes (Mandatory)</td>
+                  <td className="p-2.5 text-slate-600">IOException, SQLException, FileNotFoundException</td>
+                  <td className="p-2.5 text-brand-700 font-medium">Must handle with try-catch or declare with throws.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-amber-700">RuntimeException</td>
+                  <td className="p-2.5 font-medium text-slate-800">Unchecked Exception</td>
+                  <td className="p-2.5 font-semibold text-slate-500">No (Optional)</td>
+                  <td className="p-2.5 text-slate-600">NullPointerException, ArithmeticException, IndexOutOfBounds</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Fix with defensive programming (null checks, range validation).</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-purple-700">Custom Exception</td>
+                  <td className="p-2.5 font-medium text-slate-800">Domain Business Failure</td>
+                  <td className="p-2.5 font-semibold text-slate-700">Depends on parent</td>
+                  <td className="p-2.5 text-slate-600">InsufficientFundsException, UserNotFoundException</td>
+                  <td className="p-2.5 text-purple-700 font-medium">Extend Exception for checked; extend RuntimeException for unchecked.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 10: Exception Flow & Handling Mechanics */}
+      {(slug === 'try-catch-finally' || slug === 'multiple-catch-and-exception-flow' || slug === 'throw-and-throws' || slug === 'custom-exceptions-and-debugging' || slug === 'exceptions-practice-and-interview-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Exception Control Flow &amp; Handling Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept / Mechanism</th>
+                  <th className="p-2.5">Syntax / Signature</th>
+                  <th className="p-2.5">Execution Rule</th>
+                  <th className="p-2.5 rounded-r-lg">Key Interview Pitfall</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">try-catch-finally</td>
+                  <td className="p-2.5 font-mono text-slate-800">try &#123; ... &#125; catch (E e) &#123; ... &#125; finally &#123; ... &#125;</td>
+                  <td className="p-2.5 text-slate-600">finally ALWAYS executes (unless System.exit(0) is called).</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Returning in finally overrides any return value or thrown exception from try/catch!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Multiple Catch Blocks</td>
+                  <td className="p-2.5 font-mono text-slate-800">catch (FileNotFound e) / catch (IOException e)</td>
+                  <td className="p-2.5 text-slate-600">Must order from most specific subclass to broadest superclass.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Putting catch (Exception e) before subclass produces a compile error: unreachable code.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Multi-Catch (Java 7+)</td>
+                  <td className="p-2.5 font-mono text-slate-800">catch (IOException | SQLException e)</td>
+                  <td className="p-2.5 text-slate-600">Combines unrelated exceptions; variable e is implicitly final.</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Cannot combine parent and child in same pipe: catch (IOException | FileNotFoundException e) fails!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">throw vs throws</td>
+                  <td className="p-2.5 font-mono text-slate-800">throw new Ex(); / void f() throws Ex</td>
+                  <td className="p-2.5 text-slate-600">throw instantiates and fires an exception; throws declares it on signature.</td>
+                  <td className="p-2.5 text-slate-700">Checked exceptions require throws declaration; unchecked exceptions do not.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Exception Chaining</td>
+                  <td className="p-2.5 font-mono text-slate-800">throw new DomainEx(&quot;failed&quot;, cause);</td>
+                  <td className="p-2.5 text-slate-600">Preserves original low-level exception stack trace inside higher-level domain exception.</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Omitting cause loses the original SQL or IO stack trace forever.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 10: Common Exceptions & Defensive Patterns */}
+      {(slug === 'common-java-exceptions' || slug === 'exceptions-practice-and-interview-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Standard Java Exceptions Diagnostic &amp; Defensive Coding Guide
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Exception Class</th>
+                  <th className="p-2.5">Typical Trigger</th>
+                  <th className="p-2.5">Defensive Prevention Pattern</th>
+                  <th className="p-2.5 rounded-r-lg">Interview Insight</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-xs">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">NullPointerException</td>
+                  <td className="p-2.5 font-sans text-slate-700">Calling method on null; unboxing null wrapper (Integer val = null; int x = val;)</td>
+                  <td className="p-2.5 font-mono text-emerald-700">&quot;VAL&quot;.equals(str); Objects.requireNonNull(x); Optional</td>
+                  <td className="p-2.5 font-sans text-slate-700">Unboxing null wrapper throws NPE at runtime, not compile error!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">ArrayIndexOutOfBounds</td>
+                  <td className="p-2.5 font-sans text-slate-700">Index &lt; 0 or Index &gt;= arr.length (often in loop boundary i &lt;= len)</td>
+                  <td className="p-2.5 font-mono text-emerald-700">for (int i = 0; i &lt; arr.length; i++) or enhanced for</td>
+                  <td className="p-2.5 font-sans text-slate-700">Arrays are 0-indexed; highest valid index is always length - 1.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">NumberFormatException</td>
+                  <td className="p-2.5 font-sans text-slate-700">Integer.parseInt(&quot; 42 &quot;), currency symbols, empty strings</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Integer.parseInt(input.trim()) wrapped in safe try-catch helper</td>
+                  <td className="p-2.5 font-sans text-slate-700">Subclass of IllegalArgumentException. Whitespace must be trimmed!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">ClassCastException</td>
+                  <td className="p-2.5 font-sans text-slate-700">Downcasting reference to incompatible type</td>
+                  <td className="p-2.5 font-mono text-emerald-700">if (obj instanceof String s) &#123; ... &#125; (Java 16 pattern matching)</td>
+                  <td className="p-2.5 font-sans text-slate-700">Pattern matching for instanceof combines type check and cast safely.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODULE 11: PACKAGES & ACCESS CONTROL CHEAT SHEETS    */}
+      {/* ---------------------------------------------------- */}
+
+      {/* Module 11: The Definitive Access Control Matrix */}
+      {(slug === 'access-modifiers' || slug === 'public-private-and-package-private' || slug === 'protected-and-cross-package-access' || slug === 'packages-practice-and-interview-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Definitive Java 4x5 Access Control Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Access Context</th>
+                  <th className="p-2.5 text-center">public</th>
+                  <th className="p-2.5 text-center">protected</th>
+                  <th className="p-2.5 text-center">default (package-private)</th>
+                  <th className="p-2.5 text-center rounded-r-lg">private</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-center font-bold">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-left font-sans text-slate-800">Same Class</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-left font-sans text-slate-800">Same Package (Non-subclass)</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-left font-sans text-slate-800">Same Package (Subclass)</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-brand-50/20">
+                  <td className="p-2.5 text-left font-sans text-brand-900">Different Package (Subclass)</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-emerald-600">YES (via inheritance only)</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-left font-sans text-slate-800">Different Package (World)</td>
+                  <td className="p-2.5 text-emerald-600">YES</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                  <td className="p-2.5 text-rose-600">NO</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
+            <p><strong>Note 1:</strong> Top-level classes can ONLY be <code>public</code> or package-private (no modifier). Marking a top-level class <code>private</code> or <code>protected</code> triggers a compilation error.</p>
+            <p><strong>Note 2:</strong> An overriding method CANNOT reduce visibility (e.g. public method cannot be overridden as protected or private).</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 11: Package Commands & Architecture Cheat Sheet */}
+      {(slug === 'why-packages' || slug === 'creating-and-using-packages' || slug === 'import-and-fully-qualified-names' || slug === 'naming-and-project-organization' || slug === 'packages-practice-and-interview-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Package Architecture, CLI Compilation &amp; Import Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Topic / Command</th>
+                  <th className="p-2.5">CLI / Syntax Example</th>
+                  <th className="p-2.5">Operating Mechanics</th>
+                  <th className="p-2.5 rounded-r-lg">Crucial Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Compile with -d</td>
+                  <td className="p-2.5 font-mono text-indigo-700">javac -d bin src/com/app/Main.java</td>
+                  <td className="p-2.5 text-slate-600">Creates directory folders matching package declaration automatically.</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Without -d, .class is placed in current directory without package folders.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Run with Classpath</td>
+                  <td className="p-2.5 font-mono text-indigo-700">java -cp bin com.app.Main</td>
+                  <td className="p-2.5 text-slate-600">Launches class using its Fully Qualified Name (FQN) from classpath root.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Do NOT append .class (java com.app.Main.class fails!).</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Wildcard Imports</td>
+                  <td className="p-2.5 font-mono text-slate-800">import java.util.*;</td>
+                  <td className="p-2.5 text-slate-600">Imports classes in java.util on demand. ZERO runtime performance overhead.</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Wildcards are NOT recursive! Does NOT import java.util.concurrent.*.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Disambiguating Collisions</td>
+                  <td className="p-2.5 font-mono text-slate-800">java.util.Date / java.sql.Date</td>
+                  <td className="p-2.5 text-slate-600">Use fully qualified class name at declaration site to resolve ambiguity.</td>
+                  <td className="p-2.5 text-slate-700">Single-type import takes precedence over wildcard imports.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Package-by-Feature</td>
+                  <td className="p-2.5 font-mono text-slate-800">com.store.order / com.store.billing</td>
+                  <td className="p-2.5 text-slate-600">Groups classes by domain capability rather than technical layer.</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Allows DAOs and internal helpers to remain package-private (hidden).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
     </div>
   );
 };
