@@ -103,9 +103,11 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
               </div>
 
               {/* Problem Description */}
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
-                {prob.description}
-              </p>
+              {(prob.description || prob.problemStatement) && (
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
+                  {prob.description || prob.problemStatement}
+                </p>
+              )}
 
               {/* Expected Output Preview */}
               {prob.expectedOutput && (
@@ -121,7 +123,7 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
               )}
 
               {/* Hint Box (Collapsible) */}
-              {prob.hint && (
+              {(prob.hint || (Array.isArray(prob.hints) && prob.hints.length > 0)) && (
                 <div className="pt-1">
                   <button
                     onClick={() => toggleHint(prob.id)}
@@ -131,8 +133,8 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
                     <span>{isHintOpen ? 'Hide Hint' : 'Need a Hint?'}</span>
                   </button>
                   {isHintOpen && (
-                    <div className="mt-2 p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 leading-relaxed animate-fadeIn">
-                      {prob.hint}
+                    <div className="mt-2 p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 leading-relaxed animate-fadeIn whitespace-pre-line">
+                      {prob.hint || (Array.isArray(prob.hints) ? prob.hints.join('\n') : prob.hints)}
                     </div>
                   )}
                 </div>

@@ -188,10 +188,13 @@ export interface LearningActivity {
 export interface PracticeProblem {
   id: string;
   title: string;
-  difficulty?: 'beginner' | 'easy' | 'medium';
+  difficulty?: 'beginner' | 'easy' | 'medium' | 'hard';
   description: string;
+  problemStatement?: string;
   expectedOutput?: string;
   hint?: string;
+  hints?: string[];
+  initialCode?: string;
   solutionCode?: string;
 }
 
