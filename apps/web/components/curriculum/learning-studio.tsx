@@ -18,6 +18,7 @@ import { EditorialArticle } from './editorial-article';
 import { SummaryCheatSheet } from './summary-cheatsheet';
 import { PracticeProblemsList } from '../practice/practice-problems-list';
 import { MiniProjectStudio } from './mini-project-studio';
+import { MobileCurriculumBottomBar } from './mobile-curriculum-bottom-bar';
 import { storage } from '@/lib/storage';
 
 interface LearningStudioProps {
@@ -130,6 +131,22 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
     }
   };
 
+  // Close mobile syllabus drawer on Escape key and lock body scroll
+  useEffect(() => {
+    if (!mobileDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileDrawerOpen(false);
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileDrawerOpen]);
+
   // Smooth scroll to top of studio content on tab change if scrolled down
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
@@ -168,7 +185,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
   }, [prevItem, nextItem, handleSelectLesson]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 items-start pb-20">
+    <div className="flex flex-col lg:flex-row gap-6 items-start pb-28 lg:pb-16">
       {/* 1. Left Side: Modules Accordion Sidebar (Desktop) - collapsed in Focus Mode */}
       {!isFocusMode && (
         <aside className="hidden lg:block w-80 flex-shrink-0 sticky top-20 self-start animate-fadeIn">
@@ -186,12 +203,18 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
 
       {/* Mobile Slide-Over Drawer for Modules */}
       {mobileDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Curriculum Syllabus Drawer"
+          className="fixed inset-0 z-50 flex lg:hidden"
+        >
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
             onClick={() => setMobileDrawerOpen(false)}
+            aria-hidden="true"
           />
-          <div className="relative w-4/5 max-w-sm bg-white h-full shadow-floating p-4 flex flex-col z-10">
+          <div className="relative w-[88vw] max-w-sm sm:max-w-md bg-white h-full shadow-2xl p-3 sm:p-4 flex flex-col z-10 animate-slideInLeft">
             <CurriculumAccordionSidebar
               languageSlug={languageSlug}
               sectionSlug={section.slug}
@@ -202,7 +225,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
               onSelectLesson={handleSelectLesson}
               isMobileDrawer
               onCloseMobileDrawer={() => setMobileDrawerOpen(false)}
-              className="border-0 shadow-none h-full"
+              className="border-0 shadow-none h-full flex-1"
             />
           </div>
         </div>
@@ -449,6 +472,20 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
           </div>
         </div>
       </main>
+
+      {/* Mobile Sticky Bottom Navigation (< lg screens) */}
+      <MobileCurriculumBottomBar
+        hasPrev={!!prevItem}
+        hasNext={!!nextItem}
+        onPrev={() => prevItem && handleSelectLesson(prevItem.moduleSlug, prevItem.lesson.slug)}
+        onNext={handleNextLessonWithCelebration}
+        prevLessonTitle={prevItem?.lesson.title}
+        nextLessonTitle={nextItem?.lesson.title}
+        onOpenSyllabus={() => setMobileDrawerOpen(true)}
+        currentLessonIndex={currentMod?.lessons.findIndex(l => l.slug === activeLessonSlug || l.slug === currentLesson.slug)}
+        totalLessons={currentMod?.lessons.length || 10}
+        showCelebration={showCelebration}
+      />
     </div>
   );
 };

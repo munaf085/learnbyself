@@ -207,7 +207,7 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
               <button
                 key={tab.id}
                 onClick={() => setActiveStage(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer shrink-0 min-h-[44px] ${
                   isActive
                     ? 'bg-brand-600 text-white shadow-subtle'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'

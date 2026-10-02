@@ -76,19 +76,19 @@ export const LearningStudioHeader: React.FC<LearningStudioHeaderProps> = ({
       <div className="p-4 sm:p-5 space-y-3.5">
         {/* Breadcrumb row & Navigation Badges */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <nav aria-label="Breadcrumb" className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 font-medium">
-            <Link href={`/${languageSlug}`} className="hover:text-brand-600 uppercase font-bold tracking-wider">
+          <nav aria-label="Breadcrumb" className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5 font-medium min-w-0 max-w-full">
+            <Link href={`/${languageSlug}`} className="hover:text-brand-600 uppercase font-bold tracking-wider shrink-0">
               {languageSlug}
             </Link>
             <span className="text-slate-300">/</span>
-            <Link href={`/${languageSlug}/${sectionSlug}`} className="text-slate-600 hover:text-brand-600">
+            <Link href={`/${languageSlug}/${sectionSlug}`} className="text-slate-600 hover:text-brand-600 shrink-0">
               {sectionTitle}
             </Link>
             <span className="text-slate-300">/</span>
             <Link
               href={`/${languageSlug}/${sectionSlug}/${moduleSlug}`}
-              className="text-slate-800 font-semibold hover:text-brand-600 hover:underline transition-colors"
-              title="View module syllabus"
+              className="text-slate-800 font-semibold hover:text-brand-600 hover:underline transition-colors truncate max-w-[160px] sm:max-w-[280px]"
+              title={moduleTitle}
             >
               {moduleTitle}
             </Link>
@@ -98,7 +98,7 @@ export const LearningStudioHeader: React.FC<LearningStudioHeaderProps> = ({
           <div className="flex items-center space-x-2">
             {/* Lesson position in module */}
             <div
-              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold"
+              className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold shrink-0"
               title={`Lesson ${lessonIndex + 1} of ${totalLessons} in ${moduleTitle}`}
             >
               <BookOpen className="w-3.5 h-3.5 text-slate-500" />
@@ -148,7 +148,7 @@ export const LearningStudioHeader: React.FC<LearningStudioHeaderProps> = ({
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight break-words">
               {lessonTitle}
             </h1>
           </div>

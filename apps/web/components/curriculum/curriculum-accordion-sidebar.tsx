@@ -134,10 +134,10 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
             {isMobileDrawer && (
               <button
                 onClick={onCloseMobileDrawer}
-                className="ml-2 text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
-                aria-label="Close drawer"
+                className="ml-2 p-2 -mr-1 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer transition-colors"
+                aria-label="Close syllabus drawer"
               >
-                ✕
+                <X className="w-5 h-5 text-slate-700" />
               </button>
             )}
           </div>
@@ -189,7 +189,9 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
       {/* 2. Scrollable Modules Accordion List */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto divide-y divide-slate-100 max-h-[calc(100vh-14rem)] scrollbar-thin"
+        className={`flex-1 overflow-y-auto divide-y divide-slate-100 scrollbar-thin ${
+          isMobileDrawer ? 'max-h-[calc(100vh-10rem)]' : 'max-h-[calc(100vh-14rem)]'
+        }`}
       >
         {modules.map((mod, modIdx) => {
           const isExpanded = !!expandedModules[mod.slug] || !!filterQuery.trim();
@@ -290,7 +292,7 @@ export const CurriculumAccordionSidebar: React.FC<CurriculumAccordionSidebarProp
                         </>
                       );
 
-                      const itemClasses = `w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-start space-x-2.5 min-h-[40px] cursor-pointer ${
+                      const itemClasses = `w-full text-left p-2.5 sm:p-3 rounded-xl text-xs transition-all flex items-start space-x-2.5 min-h-[44px] cursor-pointer ${
                         isCurrentLesson
                           ? 'bg-brand-50 text-brand-950 font-semibold border-l-3 border-brand-600 shadow-xs'
                           : 'text-slate-700 hover:bg-white hover:text-slate-900'
