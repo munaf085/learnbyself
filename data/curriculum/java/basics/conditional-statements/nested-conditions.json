@@ -1,0 +1,606 @@
+{
+  "id": "les-conditional-statements-nested-conditions",
+  "slug": "nested-conditions",
+  "sectionSlug": "basics",
+  "moduleSlug": "conditional-statements",
+  "languageSlug": "java",
+  "title": "Nested Conditions",
+  "summary": "Master nested decision-making (if inside if), hierarchical security validation, and avoiding the Arrow Anti-Pattern using early returns.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 18,
+  "sequence": 4,
+  "prerequisites": [
+    "les-conditional-statements-else-if-and-multiple-conditions"
+  ],
+  "learningObjectives": [
+    "Structure hierarchical decision making where secondary checks depend on primary checks",
+    "Trace execution flow through multi-level nested conditionals",
+    "Recognize and diagnose the Dangling Else ambiguity in nested code",
+    "Refactor deep nesting into clean guard clauses to avoid the Arrow Anti-Pattern"
+  ],
+  "expectedOutcomes": [
+    "Implement multi-step authentication and tiered business verification",
+    "Refactor convoluted pyramid code into clean, flat, maintainable structures"
+  ],
+  "activities": [
+    {
+      "id": "act-cond-nested-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Hierarchical Decisions: Nested if Statements",
+      "content": "### What are Nested Conditions?\n\nIn programming, a **nested condition** is an `if` (or `if-else`) statement placed inside the body of another `if` or `else` block:\n\n```java\nif (outerCondition) {\n    // Evaluates outer check\n    if (innerCondition) {\n        // Runs ONLY if BOTH outerCondition AND innerCondition are true!\n    }\n}\n```\n\n---\n\n### When Does Nesting Make Sense?\n\nNesting is natural when **the second question only makes sense if the first answer was yes**:\n- *First Check:* Does the user exist in the database?\n  - *If Yes:* Does the password match?\n    - *If Yes:* Is the account active or suspended?\n- *First Check:* Does the patient have insurance?\n  - *If Yes:* Is the requested procedure covered under their policy?\n\n```java\npublic class Main {\n    public static void main(String[] args) {\n        int age = 22;\n        boolean hasLicense = true;\n        \n        if (age >= 18) {\n            // Only adults can hold licenses:\n            if (hasLicense) {\n                System.out.println(\"Authorized to rent and drive car.\");\n            } else {\n                System.out.println(\"Adult, but driving license required.\");\n            }\n        } else {\n            System.out.println(\"Underage: Not eligible to drive.\");\n        }\n    }\n}\n```\n\n---\n\n### The Dangling Else Problem\n\nConsider this unbraced nested code:\n```java\nif (a > 0)\n    if (b > 0)\n        System.out.println(\"Both positive\");\nelse\n    System.out.println(\"Which if does this else belong to?\");\n```\n\n**The Java Rule:** An `else` ALWAYS pairs with the **closest preceding unclosed `if`** in the same scope.\nTherefore, the `else` belongs to `if (b > 0)`, NOT `if (a > 0)`!\n\n> [!IMPORTANT]\n> **Always use curly braces `{ }` in nested conditionals** to eliminate all ambiguity.\n\n---\n\n### The Arrow Anti-Pattern & Early Exit Refactoring\n\nWhen developers nest 4 or 5 levels deep, code begins to look like a sideways arrow `>>>>`, making it very difficult to read.\n\n#### Anti-Pattern (Pyramid of Doom):\n```java\nif (user != null) {\n    if (user.isActive()) {\n        if (user.hasBalance(amount)) {\n            dispenseCash(amount);\n        }\n    }\n}\n```\n\n#### Modern Engineering Solution: Guard Clauses (Early Return):\n```java\nif (user == null) return;\nif (!user.isActive()) return;\nif (!user.hasBalance(amount)) return;\n\n// Happy path stays flat and unindented!\ndispenseCash(amount);\n```\n",
+      "breakdown": {
+        "whatIsIt": "Placing conditional checks inside other conditional blocks to represent hierarchical dependencies.",
+        "whyItMatters": "Real-world authorization and validation workflows depend on step-by-step sequential clearance.",
+        "howItWorks": [
+          "Inner if executes only if the outer if condition is true.",
+          "An else always pairs with the closest preceding unclosed if in the same scope.",
+          "Deep nesting increases cyclomatic complexity and hurts readability.",
+          "Guard clauses (inverting conditions to return early) flatten nested pyramids."
+        ],
+        "keyTakeaways": [
+          "Use nested conditions when a secondary check is meaningless without a primary check.",
+          "Always use curly braces to avoid dangling else ambiguity.",
+          "Avoid nesting deeper than 2 or 3 levels; refactor with guard clauses or &&.",
+          "Indent code properly to visually communicate hierarchy."
+        ]
+      }
+    },
+    {
+      "id": "act-cond-nested-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Two-Factor Authentication Security Gateway",
+      "codeSnippet": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        \n        int correctPin = 4821;\n        int correctOtp = 9024;\n        \n        System.out.print(\"Enter 4-digit Account PIN: \");\n        int enteredPin = scanner.nextInt();\n        \n        // Tier 1 Check: PIN\n        if (enteredPin == correctPin) {\n            System.out.println(\"PIN Verified. Sending 2FA SMS Code...\");\n            \n            System.out.print(\"Enter 4-digit OTP: \");\n            int enteredOtp = scanner.nextInt();\n            \n            // Tier 2 Check: OTP (Nested)\n            if (enteredOtp == correctOtp) {\n                System.out.println(\"SUCCESS: Authentication Complete! Access Granted.\");\n            } else {\n                System.out.println(\"SECURITY ALERT: Invalid OTP. Access Denied.\");\n            }\n        } else {\n            System.out.println(\"ERROR: Incorrect Account PIN. Access Denied.\");\n        }\n        \n        scanner.close();\n    }\n}",
+      "description": "Inspect how Tier 2 (OTP) is only requested and evaluated if Tier 1 (PIN) passes. If the PIN is wrong, the program never wastes time asking for an OTP."
+    },
+    {
+      "id": "act-cond-nested-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Nested Condition Mechanics Check",
+      "questions": [
+        {
+          "id": "q-cond-4-1",
+          "type": "mcq",
+          "prompt": "In nested conditions, under what condition does the inner if block execute?",
+          "options": [
+            "Whenever the inner condition is true, regardless of the outer condition",
+            "Only when BOTH the outer condition and the inner condition are true",
+            "Whenever the outer condition is false",
+            "In alternating executions"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because the inner if is inside the body of the outer if, the outer condition must be true to even reach the inner check.",
+          "hints": [
+            "Control must enter the outer door before reaching the inner door."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-cond-4-2",
+          "type": "mcq",
+          "prompt": "In Java, what rule resolves the 'Dangling Else' problem?",
+          "options": [
+            "The else matches the first if in the file",
+            "The else always pairs with the closest preceding unclosed if in the same scope",
+            "The else pairs with whichever if matches its indentation level",
+            "Java throws a compile-time ambiguity error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Java strictly binds an else to the nearest preceding if that does not already have an else in that block.",
+          "hints": [
+            "Proximity rule: closest preceding unclosed if."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-cond-4-3",
+          "type": "mcq",
+          "prompt": "What does this code print?\\nint a = 5, b = 10;\\nif (a > 0)\\n    if (b < 5)\\n        System.out.print(\"X\");\\nelse\\n    System.out.print(\"Y\");",
+          "options": [
+            "X",
+            "Y",
+            "XY",
+            "Nothing is printed"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Due to the dangling else rule, the 'else' pairs with 'if (b < 5)'. Since a > 0 is true, it enters. Then b < 5 (10 < 5) is false, so it triggers its else, printing 'Y'.",
+          "hints": [
+            "The else belongs to the inner if."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 60
+        },
+        {
+          "id": "q-cond-4-4",
+          "type": "mcq",
+          "prompt": "What is the 'Arrow Anti-Pattern' in software engineering?",
+          "options": [
+            "Using the Java 14 switch arrow -> syntax",
+            "Deeply nested if statements that cause code to drift across the screen like a sideways arrow",
+            "Using too many return statements",
+            "An error with pointer arithmetic"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The Arrow Anti-Pattern refers to pyramid-shaped code where 4 or 5 levels of nested if statements push logic far to the right, hurting readability.",
+          "hints": [
+            "Think about visual shape of deeply indented code."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-cond-4-5",
+          "type": "mcq",
+          "prompt": "How can: 'if (isAdult) { if (hasTicket) { enter(); } }' be simplified into a single condition?",
+          "options": [
+            "if (isAdult || hasTicket) enter();",
+            "if (isAdult && hasTicket) enter();",
+            "if (isAdult == hasTicket) enter();",
+            "if (!isAdult && !hasTicket) enter();"
+          ],
+          "correctAnswer": 1,
+          "explanation": "When an inner block runs only if both conditions are true without intermediate statements, it can be combined using logical AND (&&).",
+          "hints": [
+            "Both must be true simultaneously."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-cond-4-6",
+          "type": "mcq",
+          "prompt": "When is nested if PREFERABLE over combining with &&?",
+          "options": [
+            "Never",
+            "When you need to perform an action or print a specific error message if only the first condition was met",
+            "When there are numbers involved",
+            "To make the code run faster"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If you need an 'else' specific to the inner check (e.g. 'Wrong Password' vs 'User Not Found'), nesting allows distinct failure paths.",
+          "hints": [
+            "Think about detailed error messages for each step."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-cond-4-7",
+          "type": "mcq",
+          "prompt": "What does this print?\\nint x = 10;\\nif (x > 5) {\\n    if (x > 15) {\\n        System.out.print(\"A\");\\n    } else {\\n        System.out.print(\"B\");\\n    }\\n} else {\\n    System.out.print(\"C\");\\n}",
+          "options": [
+            "A",
+            "B",
+            "C",
+            "BC"
+          ],
+          "correctAnswer": 1,
+          "explanation": "x > 5 is true (10 > 5), so control enters the outer if. Inner check x > 15 (10 > 15) is false, executing its else, printing 'B'.",
+          "hints": [
+            "Follow the true path into the outer block, then check inner."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-cond-4-8",
+          "type": "mcq",
+          "prompt": "What is a 'Guard Clause' in refactoring?",
+          "options": [
+            "A security lock on the hard drive",
+            "An early return statement checking for failure conditions, keeping the happy path unnested",
+            "A special keyword introduced in Java 21",
+            "A try-catch block"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Guard clauses check for invalid inputs or preconditions early and return immediately, preventing deeply nested structures.",
+          "hints": [
+            "Check errors first and return early."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-cond-4-9",
+          "type": "mcq",
+          "prompt": "Can you nest a switch statement inside an if block?",
+          "options": [
+            "No, Java forbids mixing if and switch",
+            "Yes, control-flow statements can be arbitrarily nested inside each other",
+            "Only inside classes with main()",
+            "Only up to 2 levels"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Java allows full composability: if, else-if, switch, and loops can be nested inside each other as needed.",
+          "hints": [
+            "Java control structures are fully composable."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        }
+      ]
+    },
+    {
+      "id": "act-cond-nested-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Bank Loan Eligibility Screener",
+      "practice": {
+        "title": "Bank Loan Eligibility Screener",
+        "problemStatement": "Write a complete Java program in the Main class that reads two integers: age and annual salary in thousands (e.g. 600 for 600k).\\n• If age >= 21:\\n    • If salary >= 300, print: Loan Approved: Standard Tier\\n    • Else print: Loan Declined: Insufficient Income\\n• Else print: Loan Declined: Minimum Age is 21",
+        "initialCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Read age and salary, apply nested checks\n        \n    }\n}",
+        "expectedOutput": "Loan Approved: Standard Tier",
+        "hints": [
+          "Scanner scanner = new Scanner(System.in);",
+          "int age = scanner.nextInt(); int salary = scanner.nextInt();",
+          "Use nested if (salary >= 300) inside if (age >= 21)."
+        ]
+      }
+    },
+    {
+      "id": "act-cond-nested-interview-qa",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Top Placement Interview Questions: Nested Conditionals",
+      "interviewQA": [
+        {
+          "id": "qa-cond-4-1",
+          "question": "What is the Dangling Else problem, and how does Java solve it?",
+          "expectedAnswer": "The Dangling Else problem occurs when an `else` block follows nested `if` statements without explicit curly braces, creating ambiguity about which `if` it attaches to. Java eliminates ambiguity using a lexical scoping rule: an `else` always associates with the closest preceding `if` in the same block. Developers should always use `{ }` to make the association explicit.",
+          "companyTags": [
+            "Amazon",
+            "Google",
+            "Oracle"
+          ],
+          "keyPoints": [
+            "Dangling else is resolved by binding to the closest preceding unclosed if."
+          ]
+        },
+        {
+          "id": "qa-cond-4-2",
+          "question": "What is the Arrow Anti-Pattern (Pyramid of Doom), and how do you refactor it?",
+          "expectedAnswer": "The Arrow Anti-Pattern occurs when multiple nested `if` statements cause code to indent deeper and deeper to the right. It can be refactored by using **Guard Clauses** (inverting conditions to exit/return early), combining independent conditions with `&&`, or extracting nested logic into separate helper methods.",
+          "companyTags": [
+            "Microsoft",
+            "Adobe",
+            "Uber"
+          ],
+          "keyPoints": [
+            "Refactor nested pyramids using guard clauses, early returns, and helper methods."
+          ]
+        },
+        {
+          "id": "qa-cond-4-3",
+          "question": "When should you use nested ifs instead of combining conditions with &&?",
+          "expectedAnswer": "Use nested `if` statements when you need distinct, specific `else` recovery logic or error messages for each stage of validation (e.g. 'Account Not Found' vs 'Password Incorrect' vs 'Account Locked'). Combining them with `&&` gives only a binary pass/fail without telling the user which check failed.",
+          "companyTags": [
+            "TCS",
+            "Infosys",
+            "Wipro"
+          ],
+          "keyPoints": [
+            "Nesting allows unique error handling for each validation failure stage."
+          ]
+        },
+        {
+          "id": "qa-cond-4-4",
+          "question": "How does compiler short-circuiting relate to nested ifs?",
+          "expectedAnswer": "Writing `if (A && B)` is logically identical to writing `if (A) { if (B) { ... } }`. In both cases, if `A` is false, `B` is never evaluated. The `&&` operator provides the exact same short-circuit guarantee in a much cleaner single-line syntax.",
+          "companyTags": [
+            "Cognizant",
+            "Accenture"
+          ],
+          "keyPoints": [
+            "if (A && B) is the syntactically flat equivalent of nested if (A) { if (B) }."
+          ]
+        },
+        {
+          "id": "qa-cond-4-5",
+          "question": "What is the maximum depth of nesting allowed in Java?",
+          "expectedAnswer": "There is no explicit language restriction on nesting depth, though method code size is capped at 64KB by the JVM specification. However, clean code standards (Clean Code by Robert Martin) recommend a maximum nesting depth of 1 to 2 levels.",
+          "companyTags": [
+            "Capgemini",
+            "HCL"
+          ],
+          "keyPoints": [
+            "No formal syntactic limit, but keep nesting depth to 1-2 levels for maintainability."
+          ]
+        },
+        {
+          "id": "qa-cond-4-6",
+          "question": "Can you have an else-if ladder nested inside an if block?",
+          "expectedAnswer": "Yes. Any valid Java statement—including single `if`, `if-else`, `else-if` ladders, loops, and `switch` statements—can be nested inside an `if` block.",
+          "companyTags": [
+            "Persistent",
+            "Tech Mahindra"
+          ],
+          "keyPoints": [
+            "Java statements are completely composable and can be nested arbitrarily."
+          ]
+        },
+        {
+          "id": "qa-cond-4-7",
+          "question": "How do nested conditions affect unit testing complexity?",
+          "expectedAnswer": "Every nested condition multiplies the number of test cases required to achieve 100% branch coverage. Two nested binary conditions require 4 test cases; three require 8 test cases ($2^N$). Flattening code with guard clauses keeps test cases linear and manageable.",
+          "companyTags": [
+            "Amazon",
+            "Goldman Sachs"
+          ],
+          "keyPoints": [
+            "Nesting exponentially increases the number of test paths required for branch coverage."
+          ]
+        },
+        {
+          "id": "qa-cond-4-8",
+          "question": "What is the difference between checking a condition inside if vs using an assertion?",
+          "expectedAnswer": "`if` conditions represent runtime business logic that must always execute in production. Java `assert` statements are development-time checks that can be enabled or disabled via JVM flags (`-ea`). Critical validations (like user inputs or security) must always use `if`.",
+          "companyTags": [
+            "Oracle",
+            "Google"
+          ],
+          "keyPoints": [
+            "Use if for production business checks; assert is only for internal development sanity testing."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-cond-nested-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Topic Confidence Checklist",
+      "checklist": [
+        "I understand how inner if conditions execute only if outer conditions pass.",
+        "I know how the dangling else rule resolves unbraced ambiguity.",
+        "I always use curly braces in nested conditions.",
+        "I know how to refactor deep pyramids using guard clauses and early returns.",
+        "I know when to combine conditions with && vs when to nest for distinct error messages."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-cond-4-1",
+      "title": "Two-Factor Auth Gateway",
+      "difficulty": "beginner",
+      "description": "Read pin (int) and otp (int). If pin == 1234: check if otp == 5678. If yes: 'Access Granted'. If otp wrong: 'Wrong OTP'. If pin wrong: 'Wrong PIN'.",
+      "expectedOutput": "Access Granted",
+      "hint": "Nest if (otp == 5678) inside if (pin == 1234).",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int pin = scanner.nextInt();\n        int otp = scanner.nextInt();\n        if (pin == 1234) {\n            if (otp == 5678) {\n                System.out.println(\"Access Granted\");\n            } else {\n                System.out.println(\"Wrong OTP\");\n            }\n        } else {\n            System.out.println(\"Wrong PIN\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-cond-4-2",
+      "title": "Blood Donation Eligibility",
+      "difficulty": "easy",
+      "description": "Read age (int) and weight in kg (double). If age >= 18: check if weight >= 50.0. If yes: 'Eligible to donate blood'. If weight < 50: 'Underweight for donation'. If age < 18: 'Must be at least 18'.",
+      "expectedOutput": "Eligible to donate blood",
+      "hint": "Check age first, then weight.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int age = scanner.nextInt();\n        double weight = scanner.nextDouble();\n        if (age >= 18) {\n            if (weight >= 50.0) {\n                System.out.println(\"Eligible to donate blood\");\n            } else {\n                System.out.println(\"Underweight for donation\");\n            }\n        } else {\n            System.out.println(\"Must be at least 18\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-cond-4-3",
+      "title": "Driving License Eligibility",
+      "difficulty": "easy",
+      "description": "Read age (int) and writtenTestPassed (boolean). If age >= 18: check if writtenTestPassed is true -> 'Issue Driving License', else 'Must pass written test first'. If age < 18 -> 'Underage for license'.",
+      "expectedOutput": "Issue Driving License",
+      "hint": "if (age >= 18) { if (test) ... else ... } else ...",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int age = scanner.nextInt();\n        boolean test = scanner.nextBoolean();\n        if (age >= 18) {\n            if (test) {\n                System.out.println(\"Issue Driving License\");\n            } else {\n                System.out.println(\"Must pass written test first\");\n            }\n        } else {\n            System.out.println(\"Underage for license\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-cond-4-4",
+      "title": "VIP Club Admission with Dress Code",
+      "difficulty": "medium",
+      "description": "Read isMember (boolean) and isFormalDress (boolean). If isMember: check dress -> 'Welcome to the VIP Lounge' or 'Entry Denied: Formal attire required'. If not member -> 'Entry Denied: Membership required'.",
+      "expectedOutput": "Welcome to the VIP Lounge",
+      "hint": "Nested if inside membership check.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        boolean isMember = scanner.nextBoolean();\n        boolean isFormal = scanner.nextBoolean();\n        if (isMember) {\n            if (isFormal) {\n                System.out.println(\"Welcome to the VIP Lounge\");\n            } else {\n                System.out.println(\"Entry Denied: Formal attire required\");\n            }\n        } else {\n            System.out.println(\"Entry Denied: Membership required\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-cond-4-5",
+      "title": "Atm Cash Dispenser with Daily Limit",
+      "difficulty": "medium",
+      "description": "Read accountBalance (double) and withdrawAmount (double). If withdrawAmount <= 10000.0 (daily limit): check if withdrawAmount <= accountBalance -> 'Dispensing Cash', else 'Insufficient Balance'. Else: 'Exceeds Daily Limit of 10000'.",
+      "expectedOutput": "Dispensing Cash",
+      "hint": "Check daily limit first, then balance.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        double bal = scanner.nextDouble();\n        double amt = scanner.nextDouble();\n        if (amt <= 10000.0) {\n            if (amt <= bal) {\n                System.out.println(\"Dispensing Cash\");\n            } else {\n                System.out.println(\"Insufficient Balance\");\n            }\n        } else {\n            System.out.println(\"Exceeds Daily Limit of 10000\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-cond-4-6",
+      "title": "University Honors and Graduation",
+      "difficulty": "hard",
+      "description": "Read creditsCompleted (int) and gpa (double). If credits >= 120: check gpa >= 3.8 -> 'Graduating with High Honors', gpa >= 3.5 -> 'Graduating with Honors', else 'Graduating'. If credits < 120: 'Incomplete Credits: [120 - credits] needed'.",
+      "expectedOutput": "Graduating with High Honors",
+      "hint": "Combine outer credits check with inner gpa else-if ladder.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int credits = scanner.nextInt();\n        double gpa = scanner.nextDouble();\n        if (credits >= 120) {\n            if (gpa >= 3.8) {\n                System.out.println(\"Graduating with High Honors\");\n            } else if (gpa >= 3.5) {\n                System.out.println(\"Graduating with Honors\");\n            } else {\n                System.out.println(\"Graduating\");\n            }\n        } else {\n            System.out.println(\"Incomplete Credits: \" + (120 - credits) + \" needed\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-cond-4-7",
+      "title": "E-Commerce Delivery Area and Free Shipping",
+      "difficulty": "hard",
+      "description": "Read isDeliverableZip (boolean), cartTotal (double). If isDeliverable: check if cartTotal >= 500.0 -> 'Order Placed with Free Delivery', else 'Order Placed (Delivery Fee: Rs 40)'. Else: 'Delivery not available to this area'.",
+      "expectedOutput": "Order Placed with Free Delivery",
+      "hint": "Check deliverable zip first, then free shipping threshold.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        boolean deliverable = scanner.nextBoolean();\n        double total = scanner.nextDouble();\n        if (deliverable) {\n            if (total >= 500.0) {\n                System.out.println(\"Order Placed with Free Delivery\");\n            } else {\n                System.out.println(\"Order Placed (Delivery Fee: Rs 40)\");\n            }\n        } else {\n            System.out.println(\"Delivery not available to this area\");\n        }\n        scanner.close();\n    }\n}"
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "q-cond-4-1",
+      "question": "In nested conditions, under what condition does the inner if block execute?",
+      "options": [
+        "Whenever the inner condition is true, regardless of the outer condition",
+        "Only when BOTH the outer condition and the inner condition are true",
+        "Whenever the outer condition is false",
+        "In alternating executions"
+      ],
+      "correctIndex": 1,
+      "explanation": "Because the inner if is inside the body of the outer if, the outer condition must be true to even reach the inner check.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-2",
+      "question": "In Java, what rule resolves the 'Dangling Else' problem?",
+      "options": [
+        "The else matches the first if in the file",
+        "The else always pairs with the closest preceding unclosed if in the same scope",
+        "The else pairs with whichever if matches its indentation level",
+        "Java throws a compile-time ambiguity error"
+      ],
+      "correctIndex": 1,
+      "explanation": "Java strictly binds an else to the nearest preceding if that does not already have an else in that block.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-3",
+      "question": "What does this code print?\\nint a = 5, b = 10;\\nif (a > 0)\\n    if (b < 5)\\n        System.out.print(\"X\");\\nelse\\n    System.out.print(\"Y\");",
+      "options": [
+        "X",
+        "Y",
+        "XY",
+        "Nothing is printed"
+      ],
+      "correctIndex": 1,
+      "explanation": "Due to the dangling else rule, the 'else' pairs with 'if (b < 5)'. Since a > 0 is true, it enters. Then b < 5 (10 < 5) is false, so it triggers its else, printing 'Y'.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-4",
+      "question": "What is the 'Arrow Anti-Pattern' in software engineering?",
+      "options": [
+        "Using the Java 14 switch arrow -> syntax",
+        "Deeply nested if statements that cause code to drift across the screen like a sideways arrow",
+        "Using too many return statements",
+        "An error with pointer arithmetic"
+      ],
+      "correctIndex": 1,
+      "explanation": "The Arrow Anti-Pattern refers to pyramid-shaped code where 4 or 5 levels of nested if statements push logic far to the right, hurting readability.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-5",
+      "question": "How can: 'if (isAdult) { if (hasTicket) { enter(); } }' be simplified into a single condition?",
+      "options": [
+        "if (isAdult || hasTicket) enter();",
+        "if (isAdult && hasTicket) enter();",
+        "if (isAdult == hasTicket) enter();",
+        "if (!isAdult && !hasTicket) enter();"
+      ],
+      "correctIndex": 1,
+      "explanation": "When an inner block runs only if both conditions are true without intermediate statements, it can be combined using logical AND (&&).",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-6",
+      "question": "When is nested if PREFERABLE over combining with &&?",
+      "options": [
+        "Never",
+        "When you need to perform an action or print a specific error message if only the first condition was met",
+        "When there are numbers involved",
+        "To make the code run faster"
+      ],
+      "correctIndex": 1,
+      "explanation": "If you need an 'else' specific to the inner check (e.g. 'Wrong Password' vs 'User Not Found'), nesting allows distinct failure paths.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-7",
+      "question": "What does this print?\\nint x = 10;\\nif (x > 5) {\\n    if (x > 15) {\\n        System.out.print(\"A\");\\n    } else {\\n        System.out.print(\"B\");\\n    }\\n} else {\\n    System.out.print(\"C\");\\n}",
+      "options": [
+        "A",
+        "B",
+        "C",
+        "BC"
+      ],
+      "correctIndex": 1,
+      "explanation": "x > 5 is true (10 > 5), so control enters the outer if. Inner check x > 15 (10 > 15) is false, executing its else, printing 'B'.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-8",
+      "question": "What is a 'Guard Clause' in refactoring?",
+      "options": [
+        "A security lock on the hard drive",
+        "An early return statement checking for failure conditions, keeping the happy path unnested",
+        "A special keyword introduced in Java 21",
+        "A try-catch block"
+      ],
+      "correctIndex": 1,
+      "explanation": "Guard clauses check for invalid inputs or preconditions early and return immediately, preventing deeply nested structures.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "q-cond-4-9",
+      "question": "Can you nest a switch statement inside an if block?",
+      "options": [
+        "No, Java forbids mixing if and switch",
+        "Yes, control-flow statements can be arbitrarily nested inside each other",
+        "Only inside classes with main()",
+        "Only up to 2 levels"
+      ],
+      "correctIndex": 1,
+      "explanation": "Java allows full composability: if, else-if, switch, and loops can be nested inside each other as needed.",
+      "cognitiveLevel": "understanding"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "qa-cond-4-1",
+      "question": "What is the Dangling Else problem, and how does Java solve it?",
+      "answer": "The Dangling Else problem occurs when an `else` block follows nested `if` statements without explicit curly braces, creating ambiguity about which `if` it attaches to. Java eliminates ambiguity using a lexical scoping rule: an `else` always associates with the closest preceding `if` in the same block. Developers should always use `{ }` to make the association explicit.",
+      "interviewTip": "Dangling else is resolved by binding to the closest preceding unclosed if."
+    },
+    {
+      "id": "qa-cond-4-2",
+      "question": "What is the Arrow Anti-Pattern (Pyramid of Doom), and how do you refactor it?",
+      "answer": "The Arrow Anti-Pattern occurs when multiple nested `if` statements cause code to indent deeper and deeper to the right. It can be refactored by using **Guard Clauses** (inverting conditions to exit/return early), combining independent conditions with `&&`, or extracting nested logic into separate helper methods.",
+      "interviewTip": "Refactor nested pyramids using guard clauses, early returns, and helper methods."
+    },
+    {
+      "id": "qa-cond-4-3",
+      "question": "When should you use nested ifs instead of combining conditions with &&?",
+      "answer": "Use nested `if` statements when you need distinct, specific `else` recovery logic or error messages for each stage of validation (e.g. 'Account Not Found' vs 'Password Incorrect' vs 'Account Locked'). Combining them with `&&` gives only a binary pass/fail without telling the user which check failed.",
+      "interviewTip": "Nesting allows unique error handling for each validation failure stage."
+    },
+    {
+      "id": "qa-cond-4-4",
+      "question": "How does compiler short-circuiting relate to nested ifs?",
+      "answer": "Writing `if (A && B)` is logically identical to writing `if (A) { if (B) { ... } }`. In both cases, if `A` is false, `B` is never evaluated. The `&&` operator provides the exact same short-circuit guarantee in a much cleaner single-line syntax.",
+      "interviewTip": "if (A && B) is the syntactically flat equivalent of nested if (A) { if (B) }."
+    },
+    {
+      "id": "qa-cond-4-5",
+      "question": "What is the maximum depth of nesting allowed in Java?",
+      "answer": "There is no explicit language restriction on nesting depth, though method code size is capped at 64KB by the JVM specification. However, clean code standards (Clean Code by Robert Martin) recommend a maximum nesting depth of 1 to 2 levels.",
+      "interviewTip": "No formal syntactic limit, but keep nesting depth to 1-2 levels for maintainability."
+    },
+    {
+      "id": "qa-cond-4-6",
+      "question": "Can you have an else-if ladder nested inside an if block?",
+      "answer": "Yes. Any valid Java statement—including single `if`, `if-else`, `else-if` ladders, loops, and `switch` statements—can be nested inside an `if` block.",
+      "interviewTip": "Java statements are completely composable and can be nested arbitrarily."
+    },
+    {
+      "id": "qa-cond-4-7",
+      "question": "How do nested conditions affect unit testing complexity?",
+      "answer": "Every nested condition multiplies the number of test cases required to achieve 100% branch coverage. Two nested binary conditions require 4 test cases; three require 8 test cases ($2^N$). Flattening code with guard clauses keeps test cases linear and manageable.",
+      "interviewTip": "Nesting exponentially increases the number of test paths required for branch coverage."
+    },
+    {
+      "id": "qa-cond-4-8",
+      "question": "What is the difference between checking a condition inside if vs using an assertion?",
+      "answer": "`if` conditions represent runtime business logic that must always execute in production. Java `assert` statements are development-time checks that can be enabled or disabled via JVM flags (`-ea`). Critical validations (like user inputs or security) must always use `if`.",
+      "interviewTip": "Use if for production business checks; assert is only for internal development sanity testing."
+    }
+  ],
+  "summaryChecklist": [
+    "I understand how inner if conditions execute only if outer conditions pass.",
+    "I know how the dangling else rule resolves unbraced ambiguity.",
+    "I always use curly braces in nested conditions.",
+    "I know how to refactor deep pyramids using guard clauses and early returns.",
+    "I know when to combine conditions with && vs when to nest for distinct error messages."
+  ]
+}

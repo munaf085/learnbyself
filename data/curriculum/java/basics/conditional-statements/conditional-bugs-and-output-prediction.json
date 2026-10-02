@@ -1,0 +1,741 @@
+{
+  "id": "les-conditional-statements-conditional-bugs-and-output-prediction",
+  "slug": "conditional-bugs-and-output-prediction",
+  "sectionSlug": "basics",
+  "moduleSlug": "conditional-statements",
+  "title": "Conditional Bugs & Output Prediction",
+  "summary": "Analyze classic placement traps: accidental assignment (= vs ==), dangling else ambiguity, and missing break bugs.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 22,
+  "orderIndex": 8,
+  "prerequisites": [
+    "les-conditional-statements-switch-statements"
+  ],
+  "learningObjectives": [
+    "Detect and eliminate accidental assignment bugs in boolean if statements",
+    "Resolve dangling else ambiguities using explicit curly brace blocks",
+    "Identify and fix subtle switch fallthrough bugs",
+    "Avoid floating-point equality comparisons (`==`) and use epsilon tolerances",
+    "Predict tricky output edge cases asked in technical interviews"
+  ],
+  "subtopics": [
+    "Dangling else Resolution",
+    "Accidental Assignment in if (boolean flag = true)",
+    "Fallthrough Traps",
+    "Floating-Point == Comparison Bugs"
+  ],
+  "learningOutcomes": [
+    "Diagnose subtle branching logic errors",
+    "Predict exact conditional output under edge cases"
+  ],
+  "activities": [
+    {
+      "id": "act-conditional-bugs-and-output-prediction-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "Core Concept: Conditional Bugs & Output Prediction",
+      "content": "### Conditional Bugs & Output Prediction\n\nAnalyze classic placement traps: accidental assignment (= vs ==), dangling else ambiguity, and missing break bugs.\n\nConditional code looks deceptively simple, but subtle syntax traps can cause catastrophic bugs that evade automated tests. Interviewers at leading tech firms frequently ask candidates to trace tricky conditional edge cases. Mastering these patterns turns potential pitfalls into easy interview wins.\n\n---\n\n### 1. Accidental Assignment (= vs ==) with Booleans\n\nFor numeric types, writing `if (x = 5)` results in a compile error because `int` cannot be converted to `boolean`. However, for boolean variables, writing `if (isAdmin = true)` is **syntactically valid Java**!\n\n```java\nboolean isBlocked = false;\nif (isBlocked = true) { // BUG: Assigns true to isBlocked and evaluates to true!\n    System.out.println(\"Account blocked!\");\n}\n```\n\nThe `=` operator assigns `true` to `isBlocked`, and the assignment expression evaluates to `true`. Always use `==`, or better yet, write `if (isBlocked)` directly without comparisons.\n\n---\n\n### 2. The Stray Semicolon Trap\n\nPlacing a semicolon immediately after the `if (...)` statement terminates the conditional branch with an empty statement:\n\n```java\nint balance = -50;\nif (balance > 0); // BUG: Semicolon ends the if statement right here!\n{\n    System.out.println(\"Transfer Approved!\"); // ALWAYS EXECUTES!\n}\n```\n\nThe code block in braces becomes an independent unconditioned initializer block and executes regardless of `balance`!\n\n---\n\n### 3. The Dangling Else Problem\n\nWhen nested `if` statements are written without curly braces, Java compiler binds an `else` to the **closest preceding unmatched if**, regardless of how you indented the code:\n\n```java\nint x = 5, y = 15;\nif (x > 10)\n    if (y > 10)\n        System.out.println(\"Both > 10\");\nelse\n    System.out.println(\"x <= 10\"); // DECEPTIVE INDENTATION!\n```\n\nBecause indentation is ignored by the compiler, the `else` actually pairs with `if (y > 10)`. Since `x > 10` is false, **nothing at all is printed**! Always use curly braces `{}` to enforce clear ownership.\n\n---\n\n### 4. Floating-Point Equality Trap\n\nDue to binary IEEE 754 precision limits, floating point calculations rarely produce exact decimal representations:\n\n```java\ndouble sum = 0.1 + 0.2;\nif (sum == 0.3) { // FALSE! sum is 0.30000000000000004\n    System.out.println(\"Equal\");\n}\n```\n\nAlways compare floating-point numbers with an epsilon threshold:\n`if (Math.abs(sum - 0.3) < 1e-9)`.\n\n---\n\n### 5. String Comparison: `==` vs `.equals()`\n\nUsing `==` on Strings checks if both references point to the exact same memory address in the String Pool, NOT whether the text characters match:\n\n```java\nString input = new String(\"PRO\");\nif (input == \"PRO\") { // FALSE! Different heap objects\n    System.out.println(\"VIP Access\");\n}\nif (input.equals(\"PRO\")) { // TRUE! Characters match\n    System.out.println(\"VIP Access Approved\");\n}\n```\n\n---\n\n> [!NOTE]\n> **Key Takeaway**:\n> Always wrap conditional bodies in curly braces, never place a semicolon after an if header, compare Strings using `.equals()`, and compare floating point values with an epsilon tolerance.\n\n",
+      "breakdown": {
+        "whatIsIt": "Conditional Bugs & Output Prediction in Java control flow.",
+        "whyItMatters": "Core foundational building block for decision making in software.",
+        "howItWorks": [
+          "Evaluate boolean expression",
+          "Direct execution to the matching path",
+          "Skip non-matching branches",
+          "Maintain predictable state"
+        ],
+        "keyTakeaways": [
+          "Always use curly braces {} to guard conditional blocks",
+          "Check boundary conditions carefully",
+          "Leverage modern switch expressions for clean readability",
+          "Avoid accidental assignment (= vs ==) in boolean tests"
+        ]
+      }
+    },
+    {
+      "id": "act-conditional-bugs-and-output-prediction-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Conditional Bugs & Output Prediction",
+      "codeSnippet": "public class Main {\n    public static void main(String[] args) {\n        int userLevel = 1;\n        boolean hasKey = false;\n\n        // Tricky Snippet 1: Dangling else\n        if (userLevel >= 2)\n            if (hasKey)\n                System.out.println(\"Door unlocked\");\n            else\n                System.out.println(\"Key missing\");\n\n        // Tricky Snippet 2: String equality\n        String inputCode = new String(\"SECRET\");\n        if (inputCode.equals(\"SECRET\")) {\n            System.out.println(\"Safe opened!\");\n        }\n    }\n}",
+      "description": "Line 7: userLevel >= 2 evaluates to 1 >= 2 which is false.\nLines 8-11: Because userLevel >= 2 is false, the entire inner if-else block is skipped.\nNeither 'Door unlocked' nor 'Key missing' prints from Snippet 1.\nLine 14: inputCode is a new String object with text 'SECRET'.\nLine 15: inputCode.equals(\"SECRET\") compares character content, evaluating to true.\nLine 16: Outputs 'Safe opened!'."
+    },
+    {
+      "id": "act-conditional-bugs-and-output-prediction-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Essential Concept & Bug Detection Check",
+      "questions": [
+        {
+          "id": "q-conditional-bugs-and-output-prediction-1",
+          "type": "mcq",
+          "prompt": "What is printed by the following code?\n\n```java\nboolean flag = false;\nif (flag = true) {\n    System.out.print(\"YES \");\n} else {\n    System.out.print(\"NO \");\n}\nSystem.out.print(flag);\n```",
+          "options": [
+            "NO false",
+            "YES true",
+            "YES false",
+            "Compile error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "`flag = true` is an assignment expression. It sets flag to true and returns true to the if condition. The if branch runs, printing 'YES ', and flag is now true, printing 'true'. Output: 'YES true'.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-2",
+          "type": "mcq",
+          "prompt": "What happens when a semicolon is placed immediately after an if statement header: `if (score > 50);`?",
+          "options": [
+            "A compiler syntax error is generated",
+            "The semicolon is treated as an empty statement; the following code block executes unconditionally",
+            "The if statement evaluates in reverse logic",
+            "The program crashes with a NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In Java, an isolated semicolon represents an empty statement. The if condition guards that empty statement, and any subsequent block `{ ... }` executes unconditionally.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-3",
+          "type": "mcq",
+          "prompt": "In Java, to which `if` does a dangling `else` attach itself when curly braces are omitted?",
+          "options": [
+            "The outermost if statement",
+            "The closest preceding unmatched if statement",
+            "Whichever if has the matching indentation level",
+            "It causes a mandatory compile-time ambiguity error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Java resolves the dangling else ambiguity by pairing each else with the closest preceding unmatched if within the same block scope, ignoring whitespace and indentation.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-4",
+          "type": "mcq",
+          "prompt": "What is printed by this code?\n\n```java\nint a = 10, b = 20;\nif (a > 15)\n    if (b > 15)\n        System.out.print(\"X\");\nelse\n    System.out.print(\"Y\");\n```",
+          "options": [
+            "X",
+            "Y",
+            "Nothing is printed",
+            "XY"
+          ],
+          "correctAnswer": 2,
+          "explanation": "The else binds to the inner `if (b > 15)`. Because the outer condition `a > 15` (10 > 15) is false, the entire inner structure is skipped completely. Nothing is printed!",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-5",
+          "type": "mcq",
+          "prompt": "Why does `0.1 + 0.2 == 0.3` evaluate to `false` in Java?",
+          "options": [
+            "Because 0.1 and 0.2 are treated as floats while 0.3 is a double",
+            "Because binary floating-point representation cannot represent 0.1 and 0.2 with exact precision, yielding ~0.30000000000000004",
+            "Because the plus operator has lower precedence than equals",
+            "Because Java does not support decimal addition"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Under IEEE 754 double-precision binary representation, numbers like 0.1 and 0.2 have repeating fractional expansions that result in tiny rounding differences (~0.30000000000000004 != 0.3).",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-6",
+          "type": "mcq",
+          "prompt": "How should an engineer correctly compare two floating-point numbers `d1` and `d2` for equality?",
+          "options": [
+            "d1 == d2",
+            "d1.equals(d2)",
+            "Math.abs(d1 - d2) < EPSILON (where EPSILON is a small tolerance like 1e-9)",
+            "(int) d1 == (int) d2"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Comparing the absolute difference `Math.abs(d1 - d2)` against a tiny epsilon tolerance (such as 0.000000001) accounts for floating point representation artifacts safely.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-7",
+          "type": "mcq",
+          "prompt": "What is the output of the following switch code?\n\n```java\nint x = 1;\nswitch(x) {\n    case 1: x += 5;\n    case 2: x += 10;\n        break;\n    default: x += 20;\n}\nSystem.out.println(x);\n```",
+          "options": [
+            "6",
+            "16",
+            "36",
+            "1"
+          ],
+          "correctAnswer": 1,
+          "explanation": "x = 1 matches case 1: x becomes 1 + 5 = 6. Because case 1 has no break, execution falls through into case 2: x becomes 6 + 10 = 16. Case 2 hits break, exiting the switch. Output is 16.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-8",
+          "type": "mcq",
+          "prompt": "Why is `name.equals(\"admin\")` vulnerable to a NullPointerException if `name` is null, and how can it be avoided?",
+          "options": [
+            "Calling any method on a null reference throws NPE; write `\"admin\".equals(name)` (Yoda condition) instead",
+            "It is not vulnerable; Java converts null to \"null\"",
+            "Write `name == \"admin\"` instead",
+            "Use `name != null ? name.equals(\"admin\") : false`"
+          ],
+          "correctAnswer": 0,
+          "explanation": "If `name` is null, `name.equals(...)` throws NPE. Putting the literal first (`\"admin\".equals(name)`) is null-safe because String literals are never null and safely return false when passed null.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-9",
+          "type": "mcq",
+          "prompt": "What compiler error occurs when a non-boolean is used in an if condition: `int status = 1; if (status) { ... }`?",
+          "options": [
+            "NullPointerException",
+            "Type mismatch: cannot convert from int to boolean",
+            "Operator not applicable",
+            "Incompatible operand for condition"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Unlike C or JavaScript where integers (0 vs non-zero) evaluate truthy/falsy, Java is strongly typed and strictly requires an expression that evaluates to a `boolean` in if conditions.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-10",
+          "type": "mcq",
+          "prompt": "What is printed by this snippet?\n\n```java\nint n = 0;\nif (n > 0)\n    n++;\n    n += 5;\nSystem.out.println(n);\n```",
+          "options": [
+            "0",
+            "1",
+            "5",
+            "6"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Because braces `{}` were omitted, ONLY `n++;` is guarded by `if (n > 0)`. The next line `n += 5;` is NOT part of the if statement and executes unconditionally. Since n starts at 0, n += 5 sets n to 5. Output: 5.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-conditional-bugs-and-output-prediction-11",
+          "type": "mcq",
+          "prompt": "What rule should every development team follow to prevent dangling else, stray semicolon, and multi-line omission bugs?",
+          "options": [
+            "Always write conditionals on a single line",
+            "Always use explicit curly braces `{}` for every if, else-if, and else block, even for single statements",
+            "Never nest conditionals more than one level deep",
+            "Use switch statements for all conditionals"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Major style guides (Google Java Style, Oracle) mandate curly braces `{}` for all control flow blocks, even single statements, eliminating an entire class of syntax and indentation bugs.",
+          "hints": [
+            "Review the core rule carefully."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-cs-08-practice",
+      "type": "practice",
+      "title": "Hands-on Practice: Debug the Banking Auth Bug",
+      "estimatedMinutes": 8,
+      "orderIndex": 2,
+      "practice": {
+        "title": "Debug the Banking Auth Bug",
+        "problemStatement": "The following banking authorization code contains two critical bugs:\n1. An accidental assignment in the boolean security check (`isSuspicious = true`)\n2. A stray semicolon after an if statement.\n\nFix both bugs so that when `accountActive = true`, `isSuspicious = false`, and `balance = 250.0`, the program prints:\n`Audit Passed: Funds Released`",
+        "initialCode": "public class Main {\n    public static void main(String[] args) {\n        boolean accountActive = true;\n        boolean isSuspicious = false;\n        double balance = 250.0;\n\n        // BUGGY CODE TO FIX:\n        if (isSuspicious = true) {\n            System.out.println(\"Account Flagged!\");\n            return;\n        }\n\n        if (balance > 0);\n        {\n            System.out.println(\"Audit Passed: Funds Released\");\n        }\n    }\n}",
+        "expectedOutput": "Audit Passed: Funds Released\n",
+        "hints": [
+          "Change `isSuspicious = true` to `isSuspicious` or `isSuspicious == true`.",
+          "Remove the stray semicolon after `if (balance > 0)`."
+        ],
+        "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        boolean accountActive = true;\n        boolean isSuspicious = false;\n        double balance = 250.0;\n\n        if (isSuspicious) {\n            System.out.println(\"Account Flagged!\");\n            return;\n        }\n\n        if (balance > 0) {\n            System.out.println(\"Audit Passed: Funds Released\");\n        }\n    }\n}"
+      }
+    },
+    {
+      "id": "act-conditional-bugs-and-output-prediction-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Placement Interview Questions",
+      "interviewQA": [
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-1",
+          "question": "Why does `if (x = 5)` cause a compile error in Java for integers, but `if (flag = true)` compiles without error for booleans?",
+          "expectedAnswer": "Java is strongly typed. An assignment expression `x = 5` evaluates to the assigned value `5` (an `int`). In Java, `if` statements require a boolean expression, so the compiler rejects an int. However, for a boolean, `flag = true` evaluates to `true` (a `boolean`), which is syntactically valid for an `if` condition. This makes accidental boolean assignment a hazardous silent bug.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Emphasize how Java's strong typing saves us from int assignment bugs, but why booleans require extra vigilance."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-2",
+          "question": "What is 'Yoda conditions' and why do some developers use them in Java?",
+          "expectedAnswer": "'Yoda conditions' is a coding style where the constant literal is placed on the left side of the equality check (e.g. `if (\"admin\".equals(role))` or `if (5 == count)`). In languages like C, this prevented accidental assignment (`if (5 = count)` fails to compile). In Java, writing `\"admin\".equals(role)` prevents a `NullPointerException` when `role` is null.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Highlight the null-safety benefit of `\"literal\".equals(variable)` in Java production code."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-3",
+          "question": "What is the Dangling Else problem and how does Java's grammar resolve it?",
+          "expectedAnswer": "The Dangling Else ambiguity arises in nested if statements without braces when an else branch could grammatically belong to either the inner or outer if. Java resolves this by binding the else clause to the closest preceding unmatched if statement in the same block, completely disregarding source code indentation.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Quote the rule: 'Binds to the closest preceding unmatched if'."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-4",
+          "question": "Why is comparing two doubles with `==` considered a critical code review violation in financial systems?",
+          "expectedAnswer": "Binary floating-point arithmetic (IEEE 754) cannot represent most base-10 decimal fractions accurately. Calculations like interest compounding or currency splitting generate minute discrepancies (~0.000000000000004), causing direct equality checks with `==` to fail unpredictably. Financial applications must use `BigDecimal` or integer cents to guarantee precision.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Recommend `BigDecimal` for financial applications to demonstrate real-world enterprise engineering maturity."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-5",
+          "question": "How can you detect dead or unreachable conditional branches during code review?",
+          "expectedAnswer": "Dead code occurs when a branch's condition can never be met due to prior overlapping conditions (e.g. `if (x > 50) ... else if (x > 80)`). While the Java compiler flags compile errors for unconditionally unreachable code (like statements following an unconditional return or `while(false)`), subtle logic overlaps compile without warnings and must be caught via branch-coverage unit tests and careful review of boundary conditions.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Differentiate between compiler-detected unreachable code and logical branch deadlocks."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-6",
+          "question": "What is the problem with empty if statements: `if (condition);`?",
+          "expectedAnswer": "The semicolon immediately following the if condition acts as a null/empty statement. The condition controls only that empty statement, and whatever block follows is executed unconditionally. Linters like Checkstyle and SonarQube flag empty statements as code smells.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Mention static analysis tools like SonarQube and Checkstyle."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-7",
+          "question": "Why does `String s1 = \"hello\"; String s2 = new String(\"hello\"); s1 == s2` return false?",
+          "expectedAnswer": "`s1` refers to a pooled String literal stored in the String Constant Pool in the JVM heap, while `new String(\"hello\")` explicitly forces the JVM to create a separate distinct object on the regular heap. The `==` operator compares memory references (memory addresses), which differ. `.equals()` must be used to compare character contents.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Reference the String Constant Pool vs Heap object allocation."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-8",
+          "question": "How can static code analysis tools help teams prevent conditional bugs?",
+          "expectedAnswer": "Static analysis tools like SpotBugs, SonarQube, and Error Prone inspect the Abstract Syntax Tree (AST) at build time to detect known bug patterns: accidental assignment in conditions, empty if statements, missing break in switch cases, floating-point equality comparisons, and unchecked null dereferences before code ever reaches QA or production.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Mentioning tools like Error Prone and SonarQube proves experience in real CI/CD pipelines."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-conditional-bugs-and-output-prediction-9",
+          "question": "Can an `else` branch exist without an accompanying `if`?",
+          "expectedAnswer": "No. An `else` keyword without a preceding `if` statement causes a compile-time syntax error: `'else' without 'if'`. Every `else` must have a corresponding `if` to which it attaches.",
+          "companyTags": [
+            "Amazon",
+            "Oracle",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "Straightforward syntax question — answer cleanly and concisely."
+          ],
+          "followUpQuestions": []
+        }
+      ]
+    },
+    {
+      "id": "act-conditional-bugs-and-output-prediction-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Topic Confidence Checklist",
+      "checklist": [
+        "Never use `=` when testing boolean variables in `if` statements",
+        "Never place a semicolon `;` directly after an `if (...)` header",
+        "Enclose every conditional body in explicit curly braces `{}` to eliminate dangling else ambiguity",
+        "Always compare Strings using `.equals()` or `\"literal\".equals(variable)`",
+        "Compare floating-point values using `Math.abs(a - b) < EPSILON` or use `BigDecimal` for currency"
+      ]
+    }
+  ],
+  "mcqs": [
+    {
+      "id": "mcq-cs-08-1",
+      "question": "What is printed by the following code?\n\n```java\nboolean flag = false;\nif (flag = true) {\n    System.out.print(\"YES \");\n} else {\n    System.out.print(\"NO \");\n}\nSystem.out.print(flag);\n```",
+      "options": [
+        "NO false",
+        "YES true",
+        "YES false",
+        "Compile error"
+      ],
+      "correctIndex": 1,
+      "explanation": "`flag = true` is an assignment expression. It sets flag to true and returns true to the if condition. The if branch runs, printing 'YES ', and flag is now true, printing 'true'. Output: 'YES true'.",
+      "cognitiveLevel": "output_prediction"
+    },
+    {
+      "id": "mcq-cs-08-2",
+      "question": "What happens when a semicolon is placed immediately after an if statement header: `if (score > 50);`?",
+      "options": [
+        "A compiler syntax error is generated",
+        "The semicolon is treated as an empty statement; the following code block executes unconditionally",
+        "The if statement evaluates in reverse logic",
+        "The program crashes with a NullPointerException"
+      ],
+      "correctIndex": 1,
+      "explanation": "In Java, an isolated semicolon represents an empty statement. The if condition guards that empty statement, and any subsequent block `{ ... }` executes unconditionally.",
+      "cognitiveLevel": "debugging"
+    },
+    {
+      "id": "mcq-cs-08-3",
+      "question": "In Java, to which `if` does a dangling `else` attach itself when curly braces are omitted?",
+      "options": [
+        "The outermost if statement",
+        "The closest preceding unmatched if statement",
+        "Whichever if has the matching indentation level",
+        "It causes a mandatory compile-time ambiguity error"
+      ],
+      "correctIndex": 1,
+      "explanation": "Java resolves the dangling else ambiguity by pairing each else with the closest preceding unmatched if within the same block scope, ignoring whitespace and indentation.",
+      "cognitiveLevel": "understanding"
+    },
+    {
+      "id": "mcq-cs-08-4",
+      "question": "What is printed by this code?\n\n```java\nint a = 10, b = 20;\nif (a > 15)\n    if (b > 15)\n        System.out.print(\"X\");\nelse\n    System.out.print(\"Y\");\n```",
+      "options": [
+        "X",
+        "Y",
+        "Nothing is printed",
+        "XY"
+      ],
+      "correctIndex": 2,
+      "explanation": "The else binds to the inner `if (b > 15)`. Because the outer condition `a > 15` (10 > 15) is false, the entire inner structure is skipped completely. Nothing is printed!",
+      "cognitiveLevel": "output_prediction"
+    },
+    {
+      "id": "mcq-cs-08-5",
+      "question": "Why does `0.1 + 0.2 == 0.3` evaluate to `false` in Java?",
+      "options": [
+        "Because 0.1 and 0.2 are treated as floats while 0.3 is a double",
+        "Because binary floating-point representation cannot represent 0.1 and 0.2 with exact precision, yielding ~0.30000000000000004",
+        "Because the plus operator has lower precedence than equals",
+        "Because Java does not support decimal addition"
+      ],
+      "correctIndex": 1,
+      "explanation": "Under IEEE 754 double-precision binary representation, numbers like 0.1 and 0.2 have repeating fractional expansions that result in tiny rounding differences (~0.30000000000000004 != 0.3).",
+      "cognitiveLevel": "interview_thinking"
+    },
+    {
+      "id": "mcq-cs-08-6",
+      "question": "How should an engineer correctly compare two floating-point numbers `d1` and `d2` for equality?",
+      "options": [
+        "d1 == d2",
+        "d1.equals(d2)",
+        "Math.abs(d1 - d2) < EPSILON (where EPSILON is a small tolerance like 1e-9)",
+        "(int) d1 == (int) d2"
+      ],
+      "correctIndex": 2,
+      "explanation": "Comparing the absolute difference `Math.abs(d1 - d2)` against a tiny epsilon tolerance (such as 0.000000001) accounts for floating point representation artifacts safely.",
+      "cognitiveLevel": "practical_decision"
+    },
+    {
+      "id": "mcq-cs-08-7",
+      "question": "What is the output of the following switch code?\n\n```java\nint x = 1;\nswitch(x) {\n    case 1: x += 5;\n    case 2: x += 10;\n        break;\n    default: x += 20;\n}\nSystem.out.println(x);\n```",
+      "options": [
+        "6",
+        "16",
+        "36",
+        "1"
+      ],
+      "correctIndex": 1,
+      "explanation": "x = 1 matches case 1: x becomes 1 + 5 = 6. Because case 1 has no break, execution falls through into case 2: x becomes 6 + 10 = 16. Case 2 hits break, exiting the switch. Output is 16.",
+      "cognitiveLevel": "output_prediction"
+    },
+    {
+      "id": "mcq-cs-08-8",
+      "question": "Why is `name.equals(\"admin\")` vulnerable to a NullPointerException if `name` is null, and how can it be avoided?",
+      "options": [
+        "Calling any method on a null reference throws NPE; write `\"admin\".equals(name)` (Yoda condition) instead",
+        "It is not vulnerable; Java converts null to \"null\"",
+        "Write `name == \"admin\"` instead",
+        "Use `name != null ? name.equals(\"admin\") : false`"
+      ],
+      "correctIndex": 0,
+      "explanation": "If `name` is null, `name.equals(...)` throws NPE. Putting the literal first (`\"admin\".equals(name)`) is null-safe because String literals are never null and safely return false when passed null.",
+      "cognitiveLevel": "debugging"
+    },
+    {
+      "id": "mcq-cs-08-9",
+      "question": "What compiler error occurs when a non-boolean is used in an if condition: `int status = 1; if (status) { ... }`?",
+      "options": [
+        "NullPointerException",
+        "Type mismatch: cannot convert from int to boolean",
+        "Operator not applicable",
+        "Incompatible operand for condition"
+      ],
+      "correctIndex": 1,
+      "explanation": "Unlike C or JavaScript where integers (0 vs non-zero) evaluate truthy/falsy, Java is strongly typed and strictly requires an expression that evaluates to a `boolean` in if conditions.",
+      "cognitiveLevel": "recognition"
+    },
+    {
+      "id": "mcq-cs-08-10",
+      "question": "What is printed by this snippet?\n\n```java\nint n = 0;\nif (n > 0)\n    n++;\n    n += 5;\nSystem.out.println(n);\n```",
+      "options": [
+        "0",
+        "1",
+        "5",
+        "6"
+      ],
+      "correctIndex": 2,
+      "explanation": "Because braces `{}` were omitted, ONLY `n++;` is guarded by `if (n > 0)`. The next line `n += 5;` is NOT part of the if statement and executes unconditionally. Since n starts at 0, n += 5 sets n to 5. Output: 5.",
+      "cognitiveLevel": "output_prediction"
+    },
+    {
+      "id": "mcq-cs-08-11",
+      "question": "What rule should every development team follow to prevent dangling else, stray semicolon, and multi-line omission bugs?",
+      "options": [
+        "Always write conditionals on a single line",
+        "Always use explicit curly braces `{}` for every if, else-if, and else block, even for single statements",
+        "Never nest conditionals more than one level deep",
+        "Use switch statements for all conditionals"
+      ],
+      "correctIndex": 1,
+      "explanation": "Major style guides (Google Java Style, Oracle) mandate curly braces `{}` for all control flow blocks, even single statements, eliminating an entire class of syntax and indentation bugs.",
+      "cognitiveLevel": "practical_decision"
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-cs-08-1",
+      "title": "Problem 1: Fix Dangling Else Logic",
+      "difficulty": "easy",
+      "problemStatement": "Fix the indentation and bracket structure of the following code so that if `tier = 1` and `points = 50`, it correctly outputs `Tier 1: Base Member`. Currently, due to missing braces, it outputs nothing.\n\nCode to repair:\n```java\nint tier = 1, points = 50;\nif (tier == 1)\n    if (points >= 100)\n        System.out.println(\"Tier 1: VIP Member\");\nelse\n    System.out.println(\"Tier 1: Base Member\");\n```",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        int tier = 1, points = 50;\n        // TODO: Enclose the inner if with braces so else pairs with tier == 1\n        \n    }\n}",
+      "expectedOutput": "Tier 1: Base Member\n",
+      "hints": [
+        "Wrap `if (points >= 100) { ... } else { System.out.println(\"Tier 1: Base Member\"); }`"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int tier = 1, points = 50;\n        if (tier == 1) {\n            if (points >= 100) {\n                System.out.println(\"Tier 1: VIP Member\");\n            } else {\n                System.out.println(\"Tier 1: Base Member\");\n            }\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-2",
+      "title": "Problem 2: Null-Safe String Equality",
+      "difficulty": "medium",
+      "problemStatement": "Declare `String authHeader = null;`. Check if `authHeader` is equal to `\"BEARER_TOKEN\"`. Do it in a null-safe manner without throwing a NullPointerException.\nIf match, print `Authorized`; otherwise print `Unauthorized: Missing or Invalid Token`.",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        String authHeader = null;\n        // TODO: Null-safe equality check\n        \n    }\n}",
+      "expectedOutput": "Unauthorized: Missing or Invalid Token\n",
+      "hints": [
+        "Use \"BEARER_TOKEN\".equals(authHeader) or authHeader != null && authHeader.equals(...)"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        String authHeader = null;\n        if (\"BEARER_TOKEN\".equals(authHeader)) {\n            System.out.println(\"Authorized\");\n        } else {\n            System.out.println(\"Unauthorized: Missing or Invalid Token\");\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-3",
+      "title": "Problem 3: Floating-Point Tolerance Check",
+      "difficulty": "medium",
+      "problemStatement": "Declare `double val1 = 0.1 + 0.1 + 0.1;` and `double val2 = 0.3;`.\nCompare them using an epsilon tolerance of `1e-9`. If they are approximately equal, print `Equal within tolerance: 0.3`.",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        double val1 = 0.1 + 0.1 + 0.1;\n        double val2 = 0.3;\n        double epsilon = 1e-9;\n        // TODO: Compare with epsilon\n        \n    }\n}",
+      "expectedOutput": "Equal within tolerance: 0.3\n",
+      "hints": [
+        "if (Math.abs(val1 - val2) < epsilon)"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        double val1 = 0.1 + 0.1 + 0.1;\n        double val2 = 0.3;\n        double epsilon = 1e-9;\n        if (Math.abs(val1 - val2) < epsilon) {\n            System.out.println(\"Equal within tolerance: \" + val2);\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-4",
+      "title": "Problem 4: Fix Semicolon Bug in Inventory Check",
+      "difficulty": "easy",
+      "problemStatement": "Given `int stock = 0;`, fix the bug where `Stock Alert: Out of Stock!` prints even when stock is greater than 0, caused by an accidental stray semicolon.",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        int stock = 0;\n        // Fix the stray semicolon below:\n        if (stock == 0);\n        {\n            System.out.println(\"Stock Alert: Out of Stock!\");\n        }\n    }\n}",
+      "expectedOutput": "Stock Alert: Out of Stock!\n",
+      "hints": [
+        "Remove the semicolon right after `if (stock == 0)`."
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int stock = 0;\n        if (stock == 0) {\n            System.out.println(\"Stock Alert: Out of Stock!\");\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-5",
+      "title": "Problem 5: Predict Fallthrough Cumulative Score",
+      "difficulty": "medium",
+      "problemStatement": "A student receives points based on their badge level. Write code where `int badgeLevel = 2; int points = 0;`. Using classic switch intentional fallthrough:\n- Level 1 adds 10\n- Level 2 adds 20 and falls through into Level 1\n- Level 3 adds 50 and falls through into Level 2\nPrint `Total Points: 30` for badge level 2.",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        int badgeLevel = 2;\n        int points = 0;\n        // TODO: Switch with cascading intentional fallthrough\n        \n    }\n}",
+      "expectedOutput": "Total Points: 30\n",
+      "hints": [
+        "case 3: points += 50; case 2: points += 20; case 1: points += 10; break;"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int badgeLevel = 2;\n        int points = 0;\n        switch (badgeLevel) {\n            case 3:\n                points += 50;\n            case 2:\n                points += 20;\n            case 1:\n                points += 10;\n                break;\n            default:\n                break;\n        }\n        System.out.println(\"Total Points: \" + points);\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-6",
+      "title": "Problem 6: Fix Scope Variable Collision in Switch",
+      "difficulty": "medium",
+      "problemStatement": "In classic switch, declaring a variable in one case can cause a compilation collision. Fix the scope error by wrapping each case body in braces `{}`:\n```java\nint option = 1;\nswitch (option) {\n    case 1: int result = 10; System.out.println(\"Res: \" + result); break;\n    case 2: int result = 20; System.out.println(\"Res: \" + result); break;\n}\n```",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        int option = 1;\n        // TODO: Wrap case blocks in curly braces\n        switch (option) {\n            case 1: {\n                int result = 10;\n                System.out.println(\"Res: \" + result);\n                break;\n            }\n            case 2: {\n                int result = 20;\n                System.out.println(\"Res: \" + result);\n                break;\n            }\n        }\n    }\n}",
+      "expectedOutput": "Res: 10\n",
+      "hints": [
+        "Curly braces create distinct lexical scopes inside each case."
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int option = 1;\n        switch (option) {\n            case 1: {\n                int result = 10;\n                System.out.println(\"Res: \" + result);\n                break;\n            }\n            case 2: {\n                int result = 20;\n                System.out.println(\"Res: \" + result);\n                break;\n            }\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-7",
+      "title": "Problem 7: Accidental Assignment Guard",
+      "difficulty": "easy",
+      "problemStatement": "Declare `boolean isVerified = false;`. Write an if statement that checks if `isVerified` is true. If not verified, print `Access Denied: Unverified User` without accidentally reassigning `isVerified`.",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        boolean isVerified = false;\n        // TODO: Safe check\n        \n    }\n}",
+      "expectedOutput": "Access Denied: Unverified User\n",
+      "hints": [
+        "Use if (!isVerified)"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        boolean isVerified = false;\n        if (!isVerified) {\n            System.out.println(\"Access Denied: Unverified User\");\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-cs-08-8",
+      "title": "Problem 8: Compound Semicolon and Null Guard",
+      "difficulty": "medium",
+      "problemStatement": "Declare `String input = null;`. Ensure that the program does NOT throw NullPointerException and correctly prints `Input is empty or null` by using safe short-circuit evaluation.",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        String input = null;\n        // TODO: Short circuit guard\n        \n    }\n}",
+      "expectedOutput": "Input is empty or null\n",
+      "hints": [
+        "if (input == null || input.isEmpty())"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        String input = null;\n        if (input == null || input.isEmpty()) {\n            System.out.println(\"Input is empty or null\");\n        }\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "iq-cs-08-1",
+      "question": "Why does `if (x = 5)` cause a compile error in Java for integers, but `if (flag = true)` compiles without error for booleans?",
+      "answer": "Java is strongly typed. An assignment expression `x = 5` evaluates to the assigned value `5` (an `int`). In Java, `if` statements require a boolean expression, so the compiler rejects an int. However, for a boolean, `flag = true` evaluates to `true` (a `boolean`), which is syntactically valid for an `if` condition. This makes accidental boolean assignment a hazardous silent bug.",
+      "interviewTip": "Emphasize how Java's strong typing saves us from int assignment bugs, but why booleans require extra vigilance."
+    },
+    {
+      "id": "iq-cs-08-2",
+      "question": "What is 'Yoda conditions' and why do some developers use them in Java?",
+      "answer": "'Yoda conditions' is a coding style where the constant literal is placed on the left side of the equality check (e.g. `if (\"admin\".equals(role))` or `if (5 == count)`). In languages like C, this prevented accidental assignment (`if (5 = count)` fails to compile). In Java, writing `\"admin\".equals(role)` prevents a `NullPointerException` when `role` is null.",
+      "interviewTip": "Highlight the null-safety benefit of `\"literal\".equals(variable)` in Java production code."
+    },
+    {
+      "id": "iq-cs-08-3",
+      "question": "What is the Dangling Else problem and how does Java's grammar resolve it?",
+      "answer": "The Dangling Else ambiguity arises in nested if statements without braces when an else branch could grammatically belong to either the inner or outer if. Java resolves this by binding the else clause to the closest preceding unmatched if statement in the same block, completely disregarding source code indentation.",
+      "interviewTip": "Quote the rule: 'Binds to the closest preceding unmatched if'."
+    },
+    {
+      "id": "iq-cs-08-4",
+      "question": "Why is comparing two doubles with `==` considered a critical code review violation in financial systems?",
+      "answer": "Binary floating-point arithmetic (IEEE 754) cannot represent most base-10 decimal fractions accurately. Calculations like interest compounding or currency splitting generate minute discrepancies (~0.000000000000004), causing direct equality checks with `==` to fail unpredictably. Financial applications must use `BigDecimal` or integer cents to guarantee precision.",
+      "interviewTip": "Recommend `BigDecimal` for financial applications to demonstrate real-world enterprise engineering maturity."
+    },
+    {
+      "id": "iq-cs-08-5",
+      "question": "How can you detect dead or unreachable conditional branches during code review?",
+      "answer": "Dead code occurs when a branch's condition can never be met due to prior overlapping conditions (e.g. `if (x > 50) ... else if (x > 80)`). While the Java compiler flags compile errors for unconditionally unreachable code (like statements following an unconditional return or `while(false)`), subtle logic overlaps compile without warnings and must be caught via branch-coverage unit tests and careful review of boundary conditions.",
+      "interviewTip": "Differentiate between compiler-detected unreachable code and logical branch deadlocks."
+    },
+    {
+      "id": "iq-cs-08-6",
+      "question": "What is the problem with empty if statements: `if (condition);`?",
+      "answer": "The semicolon immediately following the if condition acts as a null/empty statement. The condition controls only that empty statement, and whatever block follows is executed unconditionally. Linters like Checkstyle and SonarQube flag empty statements as code smells.",
+      "interviewTip": "Mention static analysis tools like SonarQube and Checkstyle."
+    },
+    {
+      "id": "iq-cs-08-7",
+      "question": "Why does `String s1 = \"hello\"; String s2 = new String(\"hello\"); s1 == s2` return false?",
+      "answer": "`s1` refers to a pooled String literal stored in the String Constant Pool in the JVM heap, while `new String(\"hello\")` explicitly forces the JVM to create a separate distinct object on the regular heap. The `==` operator compares memory references (memory addresses), which differ. `.equals()` must be used to compare character contents.",
+      "interviewTip": "Reference the String Constant Pool vs Heap object allocation."
+    },
+    {
+      "id": "iq-cs-08-8",
+      "question": "How can static code analysis tools help teams prevent conditional bugs?",
+      "answer": "Static analysis tools like SpotBugs, SonarQube, and Error Prone inspect the Abstract Syntax Tree (AST) at build time to detect known bug patterns: accidental assignment in conditions, empty if statements, missing break in switch cases, floating-point equality comparisons, and unchecked null dereferences before code ever reaches QA or production.",
+      "interviewTip": "Mentioning tools like Error Prone and SonarQube proves experience in real CI/CD pipelines."
+    },
+    {
+      "id": "iq-cs-08-9",
+      "question": "Can an `else` branch exist without an accompanying `if`?",
+      "answer": "No. An `else` keyword without a preceding `if` statement causes a compile-time syntax error: `'else' without 'if'`. Every `else` must have a corresponding `if` to which it attaches.",
+      "interviewTip": "Straightforward syntax question — answer cleanly and concisely."
+    }
+  ],
+  "summaryChecklist": [
+    "Never use `=` when testing boolean variables in `if` statements",
+    "Never place a semicolon `;` directly after an `if (...)` header",
+    "Enclose every conditional body in explicit curly braces `{}` to eliminate dangling else ambiguity",
+    "Always compare Strings using `.equals()` or `\"literal\".equals(variable)`",
+    "Compare floating-point values using `Math.abs(a - b) < EPSILON` or use `BigDecimal` for currency"
+  ]
+}

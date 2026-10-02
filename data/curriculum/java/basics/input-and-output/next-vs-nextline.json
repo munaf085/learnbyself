@@ -1,0 +1,516 @@
+{
+  "id": "les-input-and-output-next-vs-nextline",
+  "slug": "next-vs-nextline",
+  "sectionSlug": "basics",
+  "moduleSlug": "input-and-output",
+  "languageSlug": "java",
+  "title": "next() vs nextLine()",
+  "summary": "Deep dive into token-based reading with next() vs line-based reading with nextLine(), the input buffer, and solving the skipped newline bug.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "sequence": 5,
+  "prerequisites": [
+    "les-input-and-output-reading-different-types-of-input"
+  ],
+  "learningObjectives": [
+    "Contrast token-based whitespace reading in next() with line-based reading in nextLine()",
+    "Understand keyboard buffer mechanics when user inputs numbers and presses Enter",
+    "Diagnose why nextLine() appears to be skipped when called immediately after nextInt()",
+    "Apply the standard dummy scanner.nextLine() solution to consume leftover buffer newlines"
+  ],
+  "expectedOutcomes": [
+    "Confidently read multi-word names and addresses without skipped prompts",
+    "Explain buffer state diagrams during technical placement interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-io-nvn-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "next() vs nextLine() & The Skipped Buffer Trap",
+      "content": "### The Fundamental Difference\n\nWhen reading strings in Java, beginners are often confused by `next()` versus `nextLine()`:\n\n1. **`scanner.next()`**:\n   - Reads **one token** (word).\n   - Delimited by **any whitespace** (space, tab, or newline).\n   - Skips leading whitespace, reads until the next whitespace, and **leaves the following whitespace in the buffer**.\n   - If user types `\"Rahul Sharma\"`, `next()` returns `\"Rahul\"`.\n\n2. **`scanner.nextLine()`**:\n   - Reads **the entire line** from current cursor to the next line separator (`\\n`).\n   - Delimited **only by newline** (`\\n`).\n   - Consumes and discards the `\\n` delimiter from the buffer.\n   - If user types `\"Rahul Sharma\"`, `nextLine()` returns `\"Rahul Sharma\"`.\n\n---\n\n### The Infamous \"Skipped nextLine()\" Bug\n\nThis is the **#1 most frequently encountered bug** for Java beginners and a classic interview puzzle:\n\n```java\nScanner scanner = new Scanner(System.in);\n\nSystem.out.print(\"Enter your age: \");\nint age = scanner.nextInt(); // User types '20' and hits Enter\n\nSystem.out.print(\"Enter your full name: \");\nString fullName = scanner.nextLine(); // BUG! Skipped! Never prompts!\n\nSystem.out.println(\"Age: \" + age + \", Name: [\" + fullName + \"]\");\n```\n\n**What the user experiences:**\n```\nEnter your age: 20\nEnter your full name: Age: 20, Name: []\n```\nThe program immediately skips the name prompt and prints an empty string! Why?\n\n---\n\n### Understanding the Input Buffer\n\nWhen you type `20` and hit the **Enter** key, the keyboard sends two things into Java's input buffer:\n`['2', '0', '\\n']`\n\n1. `scanner.nextInt()` looks at the buffer:\n   - It reads `'2'` and `'0'` and parses them as integer `20`.\n   - **Crucially: it stops before the newline `\\n`!**\n   - The unconsumed `\\n` stays sitting in the buffer: `['\\n']`.\n\n2. Next, `scanner.nextLine()` executes:\n   - `nextLine()` reads characters until it hits `\\n`.\n   - It immediately sees the leftover `\\n` sitting in the buffer!\n   - It consumes that `\\n`, finds zero characters before it, and returns an **empty string `\"\"`**!\n   - It never pauses to wait for user input because the buffer already contained a newline.\n\n---\n\n### The Clean Fix: Consume the Buffer\n\nTo fix this, simply call an extra `scanner.nextLine();` to consume the leftover newline before reading the actual line:\n\n```java\nSystem.out.print(\"Enter your age: \");\nint age = scanner.nextInt();\n\nscanner.nextLine(); // Clear the leftover newline from buffer!\n\nSystem.out.print(\"Enter your full name: \");\nString fullName = scanner.nextLine(); // Works perfectly!\n```\n",
+      "breakdown": {
+        "whatIsIt": "next() reads a single whitespace-delimited word; nextLine() reads an entire line up to the newline character.",
+        "whyItMatters": "Mixing nextInt() or nextDouble() with nextLine() is the most common input bug in Java.",
+        "howItWorks": [
+          "nextInt() reads digits but leaves the trailing \\n keypress in the buffer.",
+          "A subsequent nextLine() immediately consumes that \\n and returns an empty string.",
+          "Calling scanner.nextLine() once flushes/consumes the leftover newline.",
+          "Subsequent nextLine() calls then correctly wait for user input."
+        ],
+        "keyTakeaways": [
+          "Use next() for single words; use nextLine() for full sentences and addresses.",
+          "Always insert a dummy scanner.nextLine() after nextInt() before nextLine().",
+          "Alternatively, read everything with nextLine() and parse: Integer.parseInt(scanner.nextLine()).",
+          "next() leaves trailing spaces and newlines in the buffer."
+        ]
+      }
+    },
+    {
+      "id": "act-io-nvn-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Robust Multi-Line User Profile",
+      "codeSnippet": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        \n        // 1. Reading an integer\n        System.out.print(\"Enter student ID: \");\n        int id = scanner.nextInt();\n        \n        // 2. Clear buffer newline\n        scanner.nextLine();\n        \n        // 3. Reading full line with spaces\n        System.out.print(\"Enter full name: \");\n        String fullName = scanner.nextLine();\n        \n        // 4. Reading a decimal\n        System.out.print(\"Enter GPA: \");\n        double gpa = scanner.nextDouble();\n        \n        // 5. Clear buffer newline again\n        scanner.nextLine();\n        \n        // 6. Reading complete address\n        System.out.print(\"Enter street address: \");\n        String address = scanner.nextLine();\n        \n        System.out.println(\"\\n=== CONFIRMED PROFILE ===\");\n        System.out.println(\"ID:      \" + id);\n        System.out.println(\"Name:    \" + fullName);\n        System.out.println(\"GPA:     \" + gpa);\n        System.out.println(\"Address: \" + address);\n        \n        scanner.close();\n    }\n}",
+      "description": "Inspect lines 12 and 22. Notice how scanner.nextLine() is called after reading numeric values before reading full-line strings. This guarantees no skipped prompts."
+    },
+    {
+      "id": "act-io-nvn-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Buffer & Line Reading Mastery Check",
+      "questions": [
+        {
+          "id": "q-io-5-1",
+          "type": "mcq",
+          "prompt": "If a user enters 'New Delhi' and you call scanner.next(), what does it return?",
+          "options": [
+            "\"New Delhi\"",
+            "\"New\"",
+            "\"Delhi\"",
+            "Throws an exception"
+          ],
+          "correctAnswer": 1,
+          "explanation": "next() only reads up to the first whitespace character. 'New' is read, and 'Delhi' remains in the buffer.",
+          "hints": [
+            "next() stops at the first space."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-io-5-2",
+          "type": "mcq",
+          "prompt": "Which method reads an entire line including spaces up to the Enter key?",
+          "options": [
+            "scanner.next()",
+            "scanner.nextLine()",
+            "scanner.readString()",
+            "scanner.nextSentence()"
+          ],
+          "correctAnswer": 1,
+          "explanation": "nextLine() reads everything from the current cursor position up to the next line separator (\\n).",
+          "hints": [
+            "It has 'Line' in its name."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-io-5-3",
+          "type": "mcq",
+          "prompt": "Why does calling nextLine() immediately after nextInt() often appear to be skipped?",
+          "options": [
+            "nextInt() closes the scanner object",
+            "nextInt() leaves the newline character (\\n) in the buffer, which nextLine() immediately consumes",
+            "Java allows only one Scanner call per line",
+            "nextInt() clears all subsequent string variables"
+          ],
+          "correctAnswer": 1,
+          "explanation": "When the user presses Enter after typing a number, nextInt() consumes only the digits. The \\n remains in the stream. The next nextLine() immediately sees the \\n, consumes it, and returns an empty string.",
+          "hints": [
+            "Consider what is left behind in the buffer."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-5-4",
+          "type": "mcq",
+          "prompt": "How do you fix the skipped nextLine() bug after nextInt()?",
+          "options": [
+            "Create a brand new Scanner(System.in)",
+            "Insert an extra scanner.nextLine(); to consume the leftover newline",
+            "Call Thread.sleep(1000) to wait for input",
+            "Cast the integer: (String) scanner.nextInt()"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Inserting an extra 'scanner.nextLine();' flushes and consumes the dangling newline character, allowing the next nextLine() to wait for user input.",
+          "hints": [
+            "Consume the leftover newline before reading the real string."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-io-5-5",
+          "type": "mcq",
+          "prompt": "Does calling scanner.next() leave the trailing newline character in the buffer?",
+          "options": [
+            "No, next() consumes all newlines",
+            "Yes, next() leaves trailing whitespace including \\n in the buffer",
+            "Only if the word is less than 3 characters",
+            "Only on Windows systems"
+          ],
+          "correctAnswer": 1,
+          "explanation": "All token-based methods (next, nextInt, nextDouble, nextBoolean) stop before trailing whitespace and leave it in the buffer.",
+          "hints": [
+            "All token methods behave similarly regarding trailing whitespace."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-5-6",
+          "type": "mcq",
+          "prompt": "If user types '10 20 30' on one line, what does scanner.nextInt() followed by scanner.nextLine() return?",
+          "options": [
+            "nextInt() returns 10; nextLine() returns \" 20 30\"",
+            "nextInt() returns 10; nextLine() throws an exception",
+            "nextInt() returns 10; nextLine() returns \"\"",
+            "nextInt() returns 102030"
+          ],
+          "correctAnswer": 0,
+          "explanation": "nextInt() consumes '10'. The buffer still has ' 20 30\\n'. nextLine() then reads everything remaining on that line: ' 20 30'.",
+          "hints": [
+            "nextLine() reads from the current cursor to the newline."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 60
+        },
+        {
+          "id": "q-io-5-7",
+          "type": "mcq",
+          "prompt": "What is an alternative modern pattern to avoid buffer bugs entirely?",
+          "options": [
+            "Never use Scanner",
+            "Always read with nextLine() and parse manually: Integer.parseInt(scanner.nextLine().trim())",
+            "Use System.out.print for reading",
+            "Use char arrays exclusively"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Reading every single input with nextLine() and manually parsing using Integer.parseInt() or Double.parseDouble() ensures every line is completely consumed, eliminating buffer gotchas.",
+          "hints": [
+            "Read entire lines consistently."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-5-8",
+          "type": "mcq",
+          "prompt": "What does scanner.nextLine() return if the user simply presses Enter without typing anything?",
+          "options": [
+            "null",
+            "An empty string \"\"",
+            "A space \" \"",
+            "Throws an InputMismatchException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If the user presses Enter immediately, nextLine() consumes the \\n and returns an empty string \"\" of length 0.",
+          "hints": [
+            "It returns a valid String with zero characters."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-io-5-9",
+          "type": "mcq",
+          "prompt": "If a user enters '   Java   ' with leading and trailing spaces, what does next() return?",
+          "options": [
+            "\"   Java   \"",
+            "\"Java\"",
+            "\"   Java\"",
+            "Throws an exception"
+          ],
+          "correctAnswer": 1,
+          "explanation": "next() automatically skips leading whitespace, reads non-whitespace characters, and stops at the trailing space. It returns \"Java\".",
+          "hints": [
+            "next() skips leading whitespace."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-5-10",
+          "type": "mcq",
+          "prompt": "What does nextLine() do with leading spaces?",
+          "options": [
+            "Discards them automatically like next()",
+            "Preserves all leading spaces as part of the returned string",
+            "Throws an exception",
+            "Replaces them with underscores"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Unlike next(), nextLine() does NOT skip leading spaces. It preserves everything up to the newline. To remove them, call .trim().",
+          "hints": [
+            "nextLine() captures the exact line typed."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-5-11",
+          "type": "mcq",
+          "prompt": "What does the following snippet print if user enters 5 then presses Enter?\\nint x = scanner.nextInt();\\nString s = scanner.nextLine();\\nSystem.out.println(s.length());",
+          "options": [
+            "0",
+            "1",
+            "5",
+            "Throws NullPointerException"
+          ],
+          "correctAnswer": 0,
+          "explanation": "s receives the empty string \"\" because it consumes only the leftover \\n from the previous line. The length of \"\" is 0.",
+          "hints": [
+            "The empty string has length 0."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-5-12",
+          "type": "mcq",
+          "prompt": "In an interview, why should you be cautious about calling scanner.nextLine() when input might be EOF (End-Of-File)?",
+          "options": [
+            "It will return null instead of a string",
+            "It throws java.util.NoSuchElementException if no more lines exist",
+            "It deletes the input stream",
+            "It loops forever"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If no line exists (e.g. redirected file input reaches EOF), calling nextLine() throws NoSuchElementException. Use scanner.hasNextLine() defensively.",
+          "hints": [
+            "Always check hasNextLine() before nextLine() in automated testing."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-io-nvn-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Read Multi-Word Address Without Skipping",
+      "practice": {
+        "title": "Read Multi-Word Address Without Skipping",
+        "problemStatement": "Write a complete Java program in the Main class that reads an integer age, followed by a multi-word address (using nextLine), and prints:\\nAge: [age]\\nAddress: [address]\\n\\nEnsure you consume the leftover newline so the address prompt is not skipped.",
+        "initialCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Read age (int) then address (nextLine) without skipping\n        \n    }\n}",
+        "expectedOutput": "Age: 22\nAddress: 42 MG Road, Bengaluru",
+        "hints": [
+          "int age = scanner.nextInt();",
+          "scanner.nextLine(); // clear buffer",
+          "String address = scanner.nextLine();",
+          "Print with exact labels."
+        ]
+      }
+    },
+    {
+      "id": "act-io-nvn-interview-qa",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Top Placement Interview Questions: next() vs nextLine()",
+      "interviewQA": [
+        {
+          "id": "qa-io-5-1",
+          "question": "Explain the skipped nextLine() issue in Java Scanner and how to prevent it.",
+          "expectedAnswer": "When a token-based method like `nextInt()` or `nextDouble()` is called, it parses and consumes only the numeric characters from the input stream, leaving the user's trailing newline character (`\\n`) in the buffer. When `nextLine()` is called immediately afterwards, it reads from the current position to the next newline. It immediately encounters that leftover `\\n`, consumes it, and returns an empty String `\"\"` without pausing for input. To prevent it, insert an extra `scanner.nextLine();` to clear the buffer, or parse all inputs via `Integer.parseInt(scanner.nextLine())`.",
+          "companyTags": [
+            "Amazon",
+            "Google",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "nextInt() leaves \\n in the buffer; nextLine() consumes it immediately and returns an empty string."
+          ]
+        },
+        {
+          "id": "qa-io-5-2",
+          "question": "What is the difference in delimiter behavior between next() and nextLine()?",
+          "expectedAnswer": "`next()` uses the Scanner's delimiter pattern (by default, any whitespace character: spaces, tabs, newlines). It skips leading whitespace and stops at the first trailing whitespace. In contrast, `nextLine()` is strictly delimited by the line separator (`\\n` or `\\r\\n`), meaning it ignores spaces and tabs and reads the entire line.",
+          "companyTags": [
+            "TCS",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "next() is delimited by any whitespace; nextLine() is delimited solely by newline."
+          ]
+        },
+        {
+          "id": "qa-io-5-3",
+          "question": "How does scanner.delimiter() work, and can you change it?",
+          "expectedAnswer": "Yes. By default, `scanner.delimiter()` returns a regex matching `\\p{javaWhitespace}+`. You can change the delimiter using `scanner.useDelimiter(\",\")` to parse CSV files where values are separated by commas rather than spaces.",
+          "companyTags": [
+            "Oracle",
+            "Adobe"
+          ],
+          "keyPoints": [
+            "useDelimiter() customizes the token boundary, e.g. for parsing CSV or pipe-delimited data."
+          ]
+        },
+        {
+          "id": "qa-io-5-4",
+          "question": "What does scanner.nextLine() return if the user types leading whitespace before words?",
+          "expectedAnswer": "`nextLine()` does not strip leading or trailing whitespace; it preserves every character up to the newline. For example, typing `   Hello   ` returns `\"   Hello   \"`. To clean it, developers typically chain `.trim()`: `scanner.nextLine().trim()`.",
+          "companyTags": [
+            "Wipro",
+            "Cognizant"
+          ],
+          "keyPoints": [
+            "nextLine() preserves all whitespace exactly as typed; use .trim() to clean it."
+          ]
+        },
+        {
+          "id": "qa-io-5-5",
+          "question": "What happens if nextLine() is called after next()?",
+          "expectedAnswer": "Similar to `nextInt()`, `next()` reads only the first word and leaves any remaining characters on that line (including spaces and the final `\\n`) in the buffer. Calling `nextLine()` immediately afterwards reads the rest of that same line rather than a new line.",
+          "companyTags": [
+            "Capgemini",
+            "Accenture"
+          ],
+          "keyPoints": [
+            "Calling nextLine() after next() reads whatever remained on that same line."
+          ]
+        },
+        {
+          "id": "qa-io-5-6",
+          "question": "Why is Integer.parseInt(scanner.nextLine()) considered more robust in production CLI tools?",
+          "expectedAnswer": "By reading every single input with `nextLine()`, you ensure that the input buffer is always completely consumed on every prompt. There is never any dangling `\\n` left behind. This eliminates state-dependent buffer bugs completely.",
+          "companyTags": [
+            "Amazon",
+            "Uber"
+          ],
+          "keyPoints": [
+            "Consistently reading full lines with nextLine() prevents buffer state corruption."
+          ]
+        },
+        {
+          "id": "qa-io-5-7",
+          "question": "What exception does nextLine() throw if called when no input is available?",
+          "expectedAnswer": "It throws `java.util.NoSuchElementException` if the stream has reached End-Of-File (EOF), or `IllegalStateException` if the `Scanner` has been closed.",
+          "companyTags": [
+            "HCL",
+            "Tech Mahindra"
+          ],
+          "keyPoints": [
+            "NoSuchElementException occurs when trying to read beyond the end of the input stream."
+          ]
+        },
+        {
+          "id": "qa-io-5-8",
+          "question": "Can you use Scanner to read multiple words on the same line using next() in a loop?",
+          "expectedAnswer": "Yes. If a user types `one two three` on a single line, calling `next()` three times will return `\"one\"`, `\"two\"`, and `\"three\"` sequentially because `next()` treats spaces as token boundaries.",
+          "companyTags": [
+            "Persistent",
+            "LTI"
+          ],
+          "keyPoints": [
+            "next() can extract multiple tokens typed on the same physical terminal line."
+          ]
+        },
+        {
+          "id": "qa-io-5-9",
+          "question": "How does nextLine() behave across different operating systems with different line endings?",
+          "expectedAnswer": "`nextLine()` handles both Windows CRLF (`\\r\\n`) and UNIX LF (`\\n`) transparently. It recognizes either line termination pattern, discards it from the buffer, and returns the line content without the separator.",
+          "companyTags": [
+            "Oracle",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "nextLine() automatically adapts to Windows (CRLF) and Linux/macOS (LF) line separators."
+          ]
+        },
+        {
+          "id": "qa-io-5-10",
+          "question": "What is the return value of nextLine() when reading a blank line?",
+          "expectedAnswer": "It returns an empty String `\"\"` with a length of `0`. It does NOT return `null`.",
+          "companyTags": [
+            "Infosys",
+            "TCS"
+          ],
+          "keyPoints": [
+            "Blank lines yield an empty String \"\" (length 0), never null."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-io-nvn-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Topic Confidence Checklist",
+      "checklist": [
+        "I understand why next() only reads single words while nextLine() reads entire lines.",
+        "I can explain why nextInt() leaves \\n in the keyboard buffer.",
+        "I know how to clear the buffer with an extra scanner.nextLine().",
+        "I can use Integer.parseInt(scanner.nextLine()) as an alternative pattern.",
+        "I know that nextLine() returns \"\" rather than null on empty lines."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-io-5-1",
+      "title": "Read Multi-Word City and Country",
+      "difficulty": "beginner",
+      "description": "Read a multi-word city name (e.g. \"New York\") and country name (e.g. \"United States\") using nextLine. Print: City: [city], Country: [country]",
+      "expectedOutput": "City: New York, Country: United States",
+      "hint": "Use scanner.nextLine() twice.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String city = scanner.nextLine();\n        String country = scanner.nextLine();\n        System.out.println(\"City: \" + city + \", Country: \" + country);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-2",
+      "title": "Clear Buffer After Number",
+      "difficulty": "easy",
+      "description": "Read an integer pin code, then read a full user name using nextLine. Print: PIN: [pin] | Name: [name]",
+      "expectedOutput": "PIN: 560001 | Name: Rohit Sharma",
+      "hint": "Insert scanner.nextLine(); right after scanner.nextInt().",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int pin = scanner.nextInt();\n        scanner.nextLine(); // Clear buffer\n        String name = scanner.nextLine();\n        System.out.println(\"PIN: \" + pin + \" | Name: \" + name);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-3",
+      "title": "Read First Name then Full Bio",
+      "difficulty": "easy",
+      "description": "Read a single word username with next(), then clear the line and read a multi-word biography with nextLine(). Print: User: [username]\\nBio: [bio]",
+      "expectedOutput": "User: rahul2026\nBio: Full stack developer and competitive programmer",
+      "hint": "Remember that next() also leaves the trailing newline in the buffer.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String user = scanner.next();\n        scanner.nextLine(); // clear buffer\n        String bio = scanner.nextLine();\n        System.out.println(\"User: \" + user);\n        System.out.println(\"Bio: \" + bio);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-4",
+      "title": "Trim Whitespace on Full Line Input",
+      "difficulty": "medium",
+      "description": "Read a line that may have leading or trailing spaces. Trim it and print the cleaned line and its length: Clean: [text] (Length: [len])",
+      "expectedOutput": "Clean: Java Programming (Length: 16)",
+      "hint": "String clean = scanner.nextLine().trim();",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String clean = scanner.nextLine().trim();\n        System.out.println(\"Clean: \" + clean + \" (Length: \" + clean.length() + \")\");\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-5",
+      "title": "Parse Everything via nextLine()",
+      "difficulty": "medium",
+      "description": "Read an integer age using Integer.parseInt(scanner.nextLine()) and a double salary using Double.parseDouble(scanner.nextLine()). Print: Age: [age], Salary: [sal to 2 dec]",
+      "expectedOutput": "Age: 25, Salary: 65000.00",
+      "hint": "Use Integer.parseInt and Double.parseDouble on scanner.nextLine().",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int age = Integer.parseInt(scanner.nextLine().trim());\n        double salary = Double.parseDouble(scanner.nextLine().trim());\n        System.out.printf(\"Age: %d, Salary: %.2f%n\", age, salary);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-6",
+      "title": "Split Words on the Same Line",
+      "difficulty": "medium",
+      "description": "Given three words entered on the same line (e.g. 'Apple Banana Cherry'), read them using three scanner.next() calls and print them in reverse order.",
+      "expectedOutput": "Reversed: Cherry Banana Apple",
+      "hint": "String w1 = scanner.next(); String w2 = scanner.next(); String w3 = scanner.next();",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String w1 = scanner.next();\n        String w2 = scanner.next();\n        String w3 = scanner.next();\n        System.out.println(\"Reversed: \" + w3 + \" \" + w2 + \" \" + w1);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-7",
+      "title": "Employee Address Card with Double Buffer Flush",
+      "difficulty": "hard",
+      "description": "Read: 1. ID (int), 2. Full Name (nextLine), 3. Hourly Rate (double), 4. Department Description (nextLine). Print all 4 cleanly.",
+      "expectedOutput": "ID: 402 | Name: Priya Nair | Rate: $45.50 | Dept: Cloud Infrastructure Team",
+      "hint": "You need buffer flushes after ID and after Hourly Rate!",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int id = scanner.nextInt();\n        scanner.nextLine(); // flush 1\n        String name = scanner.nextLine();\n        double rate = scanner.nextDouble();\n        scanner.nextLine(); // flush 2\n        String dept = scanner.nextLine();\n        System.out.printf(\"ID: %d | Name: %s | Rate: $%.2f | Dept: %s%n\", id, name, rate, dept);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-5-8",
+      "title": "Check for Empty Line Input",
+      "difficulty": "hard",
+      "description": "Read a line of text. If the line is empty (length == 0 or isEmpty()), print 'No input provided'. Otherwise, print 'Received: [text]'.",
+      "expectedOutput": "Received: Hello World",
+      "hint": "if (line.isEmpty()) { ... } else { ... }",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String line = scanner.nextLine();\n        if (line.isEmpty()) {\n            System.out.println(\"No input provided\");\n        } else {\n            System.out.println(\"Received: \" + line);\n        }\n        scanner.close();\n    }\n}"
+    }
+  ]
+}

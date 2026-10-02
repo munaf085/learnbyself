@@ -1,0 +1,486 @@
+{
+  "id": "les-input-and-output-common-scanner-mistakes",
+  "slug": "common-scanner-mistakes",
+  "sectionSlug": "basics",
+  "moduleSlug": "input-and-output",
+  "languageSlug": "java",
+  "title": "Common Scanner Mistakes",
+  "summary": "Identify, debug, and prevent the top 6 Scanner bugs: skipped newlines, InputMismatchException, premature close, and loop re-instantiation.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "sequence": 6,
+  "prerequisites": [
+    "les-input-and-output-next-vs-nextline"
+  ],
+  "learningObjectives": [
+    "Diagnose and fix InputMismatchException when reading mismatched data types",
+    "Prevent premature stream closure bugs where scanner.close() permanently disables System.in",
+    "Avoid memory leaks and buffer desynchronization caused by re-instantiating Scanner in loops",
+    "Use hasNextX() methods defensively to validate input before consumption"
+  ],
+  "expectedOutcomes": [
+    "Debug crashing console programs without panic by reading stack traces",
+    "Write robust, fault-tolerant CLI applications that handle bad user keystrokes gracefully"
+  ],
+  "activities": [
+    {
+      "id": "act-io-mistakes-concept",
+      "orderIndex": 1,
+      "type": "concept",
+      "title": "The Top 6 Scanner Bugs & How to Fix Them",
+      "content": "### Debugging Real-World Scanner Pitfalls\n\nEven experienced developers encounter tricky bugs with `java.util.Scanner`. Let's analyze the 6 most common mistakes and their clean engineering solutions.\n\n---\n\n### Bug 1: Forgetting the Import Statement\n\n```java\n// BUG: Cannot find symbol: class Scanner\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n    }\n}\n```\n**Why it happens:** Unlike classes in `java.lang` (like `System`, `String`, `Math`), `Scanner` lives in `java.util`.\n**Fix:** Add `import java.util.Scanner;` as the very first line of your source file.\n\n---\n\n### Bug 2: Unhandled InputMismatchException\n\n```java\nSystem.out.print(\"Enter your age: \");\nint age = scanner.nextInt(); // User types \"twenty\" or \"25.5\" -> CRASH!\n```\n**Why it happens:** When input cannot be parsed into an integer, Scanner throws `InputMismatchException` and halts the JVM.\n**Fix (Defensive Check):**\n```java\nSystem.out.print(\"Enter your age: \");\nif (scanner.hasNextInt()) {\n    int age = scanner.nextInt();\n    System.out.println(\"Age is: \" + age);\n} else {\n    System.out.println(\"Error: That is not a valid whole number!\");\n    scanner.next(); // Discard the invalid token\n}\n```\n\n---\n\n### Bug 3: Re-Creating Scanner Inside a Loop\n\n```java\n// ANTI-PATTERN:\nwhile (running) {\n    Scanner sc = new Scanner(System.in); // BAD! New object every iteration!\n    int choice = sc.nextInt();\n}\n```\n**Why it happens:** Creating a new `Scanner` every iteration wastes heap memory and causes buffer desynchronization (one scanner may buffer bytes that the next scanner fails to see).\n**Fix:** Create **one** `Scanner` instance outside the loop and reuse it throughout the program.\n\n---\n\n### Bug 4: Premature `scanner.close()`\n\n```java\npublic static void getAge() {\n    Scanner sc = new Scanner(System.in);\n    int age = sc.nextInt();\n    sc.close(); // DANGER! Closes System.in forever!\n}\n\npublic static void getName() {\n    Scanner sc = new Scanner(System.in);\n    String name = sc.next(); // CRASH! java.util.NoSuchElementException!\n}\n```\n**Why it happens:** `sc.close()` closes the underlying stream `System.in`. Once closed, the standard input stream **cannot be reopened** in that JVM process!\n**Fix:** Only close the Scanner when your entire program is terminating (or in `main`), or never close `System.in` in multi-method applications.\n\n---\n\n### Bug 5: Suffixes Typed by User (`100L`, `45.5f`)\n\nBeginners often type `100L` or `45.5f` in the console because they saw it in source code.\n- Source code needs `'L'` or `'f'` for the Java compiler.\n- Console input represents raw real-world numeric digits. Typing `'f'` causes `InputMismatchException`.\n- **Instruction:** Tell users to enter pure digits (`100`, `45.5`).\n\n---\n\n### Bug 6: The Skipped nextLine() After Numbers\n\nAs learned in Lesson 5, calling `nextLine()` after `nextInt()` or `nextDouble()` consumes the dangling `\\n` unless cleared with an extra `scanner.nextLine();`.\n",
+      "breakdown": {
+        "whatIsIt": "A diagnostic survey of the six most frequent runtime errors and logic bugs when reading console input.",
+        "whyItMatters": "Understanding error causes transforms hours of frustrating trial-and-error into immediate 5-second fixes.",
+        "howItWorks": [
+          "Compiler checks package imports (java.util.Scanner).",
+          "hasNextInt() previews the input token before parsing to prevent exceptions.",
+          "Single Scanner instance maintains a coherent buffer state across loops.",
+          "System.in is a JVM singleton; closing any scanner attached to it terminates terminal reading."
+        ],
+        "keyTakeaways": [
+          "Always import java.util.Scanner.",
+          "Use hasNextInt() or try-catch to prevent InputMismatchException crashes.",
+          "Never instantiate Scanner(System.in) inside a loop.",
+          "Closing a scanner closes System.in permanently for the entire application.",
+          "Clear leftover newlines with scanner.nextLine() after reading numbers."
+        ]
+      }
+    },
+    {
+      "id": "act-io-mistakes-code",
+      "orderIndex": 2,
+      "type": "code_walkthrough",
+      "title": "Verified Java Implementation: Crash-Proof Menu Loop",
+      "codeSnippet": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Rule: Create ONE scanner instance outside loops\n        Scanner scanner = new Scanner(System.in);\n        \n        System.out.println(\"=== DEFENSIVE NUMBER PARSER ===\");\n        \n        System.out.print(\"Please enter a positive integer: \");\n        \n        // Defensive check to avoid InputMismatchException\n        if (scanner.hasNextInt()) {\n            int number = scanner.nextInt();\n            if (number > 0) {\n                System.out.println(\"Success! You entered: \" + number);\n            } else {\n                System.out.println(\"Notice: The number is not positive.\");\n            }\n        } else {\n            String badInput = scanner.next(); // Consume and discard bad token\n            System.out.println(\"Error: '\" + badInput + \"' is not a valid integer.\");\n        }\n        \n        scanner.close(); // Close only at the very end of main\n    }\n}",
+      "description": "Notice how this program prevents crashes: it checks hasNextInt() before calling nextInt(), discards bad input with scanner.next(), and closes the scanner only once at program termination."
+    },
+    {
+      "id": "act-io-mistakes-mcq",
+      "orderIndex": 3,
+      "type": "mcq",
+      "title": "Scanner Debugging Check",
+      "questions": [
+        {
+          "id": "q-io-6-1",
+          "type": "mcq",
+          "prompt": "What compiler error occurs if you use Scanner without importing java.util.Scanner?",
+          "options": [
+            "cannot find symbol: class Scanner",
+            "NoSuchMethodError: Scanner",
+            "InputMismatchException",
+            "NullPointerException"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Because Scanner is in java.util, omitting the import makes the symbol 'Scanner' unknown to the compiler, producing 'cannot find symbol: class Scanner'.",
+          "hints": [
+            "The compiler cannot locate the class definition."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-io-6-2",
+          "type": "mcq",
+          "prompt": "What happens if a user inputs 'abc' when your code executes scanner.nextInt() without hasNextInt()?",
+          "options": [
+            "It assigns 0 to the variable",
+            "It crashes with java.util.InputMismatchException",
+            "It converts 'abc' to ASCII codes",
+            "It ignores 'abc' and waits for a number"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Scanner throws InputMismatchException when the available token does not match the expected integer pattern.",
+          "hints": [
+            "It causes a runtime crash."
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-io-6-3",
+          "type": "mcq",
+          "prompt": "Why is creating 'Scanner sc = new Scanner(System.in);' inside a while loop considered an anti-pattern?",
+          "options": [
+            "It is illegal Java syntax and will not compile",
+            "It repeatedly allocates heap objects and can lead to buffering desynchronization bugs",
+            "Scanner can only be used once per JVM lifetime",
+            "It causes an ArithmeticException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Repeatedly instantiating Scanner creates unnecessary garbage collector overhead and risks buffered characters being lost between instances.",
+          "hints": [
+            "Think about memory efficiency and buffer consistency."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-4",
+          "type": "mcq",
+          "prompt": "What happens if you close a Scanner that wraps System.in, and then later try to create a new Scanner(System.in) and read from it?",
+          "options": [
+            "System.in reopens automatically",
+            "It throws NoSuchElementException or IllegalStateException because System.in remains closed",
+            "It reads from the computer's microphone instead",
+            "It works without issues"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Closing a Scanner closes its underlying stream (System.in). The JVM does not allow standard I/O streams to be reopened once closed.",
+          "hints": [
+            "Closing a wrapper closes the underlying source stream forever."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-5",
+          "type": "mcq",
+          "prompt": "How does calling scanner.next() inside an else block help after a failed hasNextInt() check?",
+          "options": [
+            "It converts the bad token to an integer",
+            "It consumes and removes the invalid token from the buffer so the program can move on",
+            "It restarts the JVM",
+            "It clears the screen"
+          ],
+          "correctAnswer": 1,
+          "explanation": "hasNextInt() only checks the token without removing it. If you don't call scanner.next() to consume the bad token, it stays stuck in the buffer and loops indefinitely.",
+          "hints": [
+            "You need to discard the bad token to unblock the buffer."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-6",
+          "type": "mcq",
+          "prompt": "Why does typing '25.0' into scanner.nextInt() throw an InputMismatchException?",
+          "options": [
+            "Java integers cannot be positive",
+            "25.0 contains a decimal point, making it a floating-point literal which cannot be parsed as an int",
+            "nextInt() only accepts negative numbers",
+            "It is a bug in the Java language"
+          ],
+          "correctAnswer": 1,
+          "explanation": "nextInt() strictly requires characters matching integer digits. Even if the fractional part is .0, the decimal point causes the integer regex to fail.",
+          "hints": [
+            "A decimal point is not an integer character."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-7",
+          "type": "mcq",
+          "prompt": "What happens if you type '100L' when scanner.nextLong() is called in the console?",
+          "options": [
+            "It parses 100 correctly",
+            "It throws InputMismatchException because 'L' is not a digit",
+            "It stores 100 and ignores 'L'",
+            "It converts 'L' to 50"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The 'L' suffix is for Java source code literals. User console input must contain only numeric digits; typing 'L' triggers an InputMismatchException.",
+          "hints": [
+            "User input should not include Java source code suffixes."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-8",
+          "type": "mcq",
+          "prompt": "If a method throws NoSuchElementException on scanner.next(), what is the most likely cause?",
+          "options": [
+            "The input stream reached End-Of-File (no more tokens are available)",
+            "The user typed a number too fast",
+            "The CPU overheated",
+            "Scanner was imported twice"
+          ],
+          "correctAnswer": 0,
+          "explanation": "NoSuchElementException is thrown when scanner attempts to read a token but the stream has no more tokens (e.g. redirected input file reached EOF).",
+          "hints": [
+            "It means 'no element exists to read'."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-9",
+          "type": "mcq",
+          "prompt": "How can you read numbers in European format (e.g. '3,14' instead of '3.14')?",
+          "options": [
+            "scanner.useComma()",
+            "scanner.useLocale(Locale.GERMANY)",
+            "scanner.setEuropean(true)",
+            "It is not possible in Java"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Scanner is locale-sensitive. Changing the locale via scanner.useLocale(Locale.GERMANY) configures it to parse decimals with comma separators.",
+          "hints": [
+            "Locale controls cultural formatting conventions."
+          ],
+          "difficulty": "hard",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-10",
+          "type": "mcq",
+          "prompt": "What is the best way to handle user input when you cannot predict whether the user will type an integer or text?",
+          "options": [
+            "Always call nextInt() and hope for the best",
+            "Read the input as a String using nextLine() and validate/parse it programmatically",
+            "Use System.exit(0)",
+            "Call nextBoolean()"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Reading everything as a String via nextLine() never throws InputMismatchException. You can then inspect the string or parse it with try-catch.",
+          "hints": [
+            "Strings can accept any characters."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-io-6-11",
+          "type": "mcq",
+          "prompt": "What happens if you execute scanner.close() twice?",
+          "options": [
+            "It throws a double-close exception",
+            "Nothing, closing an already closed Scanner has no further effect",
+            "It reopens the scanner",
+            "It corrupts RAM"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The close() method on Scanner is idempotent; calling it on an already closed scanner has no effect.",
+          "hints": [
+            "Idempotent operations can be repeated safely."
+          ],
+          "difficulty": "medium",
+          "estimatedSeconds": 45
+        }
+      ]
+    },
+    {
+      "id": "act-io-mistakes-practice",
+      "orderIndex": 4,
+      "type": "practice",
+      "title": "Defensive Integer Input Validator",
+      "practice": {
+        "title": "Defensive Integer Input Validator",
+        "problemStatement": "Write a complete Java program in the Main class that prompts the user for an integer.\\n• If the user enters a valid integer, print: Valid number: [n]\\n• If the user enters invalid text, print: Error: Invalid integer format\\n\\nUse hasNextInt() defensively to prevent InputMismatchException.",
+        "initialCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Validate input with hasNextInt() before reading\n        \n    }\n}",
+        "expectedOutput": "Valid number: 100",
+        "hints": [
+          "Scanner scanner = new Scanner(System.in);",
+          "if (scanner.hasNextInt()) { int n = scanner.nextInt(); ... } else { ... }",
+          "Always close the scanner at the end."
+        ]
+      }
+    },
+    {
+      "id": "act-io-mistakes-interview-qa",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Top Placement Interview Questions: Scanner Debugging",
+      "interviewQA": [
+        {
+          "id": "qa-io-6-1",
+          "question": "What is the danger of closing a Scanner wrapping System.in inside a helper method?",
+          "expectedAnswer": "`scanner.close()` invokes `close()` on the underlying `InputStream` (`System.in`). Standard input is a process-level resource. Once closed, any subsequent attempt to read from `System.in` anywhere else in the application will fail with a `NoSuchElementException` or `IllegalStateException`. In utility helper methods, never close a Scanner wrapping `System.in`; manage its lifecycle in `main()`.",
+          "companyTags": [
+            "Amazon",
+            "Google",
+            "Microsoft"
+          ],
+          "keyPoints": [
+            "Closing System.in prevents any further terminal input across the entire JVM lifecycle."
+          ]
+        },
+        {
+          "id": "qa-io-6-2",
+          "question": "How do hasNextInt() and nextInt() interact during user input?",
+          "expectedAnswer": "`hasNextInt()` evaluates the next token against the integer regex without advancing the Scanner's position or consuming the token. If valid, calling `nextInt()` immediately afterwards consumes that exact token. If `hasNextInt()` returns false, the invalid token remains at the head of the buffer and must be consumed with `scanner.next()` to unblock subsequent reads.",
+          "companyTags": [
+            "TCS",
+            "Infosys"
+          ],
+          "keyPoints": [
+            "hasNextInt() inspects without consuming; nextInt() consumes the token."
+          ]
+        },
+        {
+          "id": "qa-io-6-3",
+          "question": "Why does typing '12.5f' in terminal input cause an InputMismatchException for nextFloat()?",
+          "expectedAnswer": "In Java source code, `12.5f` tells the compiler to treat the decimal as a 32-bit float literal rather than a 64-bit double. However, user input at runtime represents data, not source code. Scanner's regex parser expects digits and an optional decimal point; the letter `'f'` is considered an invalid character, throwing `InputMismatchException`.",
+          "companyTags": [
+            "Oracle",
+            "Adobe"
+          ],
+          "keyPoints": [
+            "Literal suffixes ('f', 'L') are compiler tokens, not valid runtime numeric characters."
+          ]
+        },
+        {
+          "id": "qa-io-6-4",
+          "question": "Why is Scanner considered not thread-safe?",
+          "expectedAnswer": "`Scanner` is not synchronized. If multiple threads access the same `Scanner` instance concurrently without external synchronization, their buffer positions and token extraction will race, leading to corrupted input reads and unpredictable `NoSuchElementException` errors.",
+          "companyTags": [
+            "Amazon",
+            "Morgan Stanley"
+          ],
+          "keyPoints": [
+            "Scanner methods are not synchronized; do not share a Scanner across multiple threads."
+          ]
+        },
+        {
+          "id": "qa-io-6-5",
+          "question": "What is the difference between NoSuchElementException and InputMismatchException?",
+          "expectedAnswer": "`InputMismatchException` is a subclass of `NoSuchElementException`. It is thrown specifically when a token is available in the stream, but cannot be parsed into the requested type. `NoSuchElementException` is thrown when no tokens are available at all (e.g. End-Of-File reached).",
+          "companyTags": [
+            "Cognizant",
+            "Accenture"
+          ],
+          "keyPoints": [
+            "InputMismatchException = token exists but wrong type; NoSuchElementException = no token exists."
+          ]
+        },
+        {
+          "id": "qa-io-6-6",
+          "question": "How can you discard an entire bad line of input after a failed validation?",
+          "expectedAnswer": "Call `scanner.nextLine()`. This reads and discards all remaining characters on the current line including the trailing newline, effectively resetting the buffer to the beginning of the next line.",
+          "companyTags": [
+            "Wipro",
+            "HCL"
+          ],
+          "keyPoints": [
+            "Call scanner.nextLine() to purge an entire malformed line from the buffer."
+          ]
+        },
+        {
+          "id": "qa-io-6-7",
+          "question": "Is try-with-resources recommended for Scanner wrapping System.in?",
+          "expectedAnswer": "Generally NO for `System.in`, because try-with-resources will automatically call `scanner.close()` upon exiting the block, permanently closing `System.in`. However, for file-based scanners (`new Scanner(new File(...))`), try-with-resources is strongly recommended to guarantee that file handles are released.",
+          "companyTags": [
+            "Oracle",
+            "Persistent"
+          ],
+          "keyPoints": [
+            "Try-with-resources is ideal for file scanners, but risky for System.in if subsequent input is needed."
+          ]
+        },
+        {
+          "id": "qa-io-6-8",
+          "question": "Why does a while(scanner.hasNext()) loop fail to terminate in the console?",
+          "expectedAnswer": "Because `System.in` remains open indefinitely waiting for more keyboard input. The console never sends an EOF (End-Of-File) signal during normal typing unless the user explicitly presses `Ctrl+D` (on Linux/Mac) or `Ctrl+Z` (on Windows).",
+          "companyTags": [
+            "Tech Mahindra",
+            "Capgemini"
+          ],
+          "keyPoints": [
+            "Console streams do not send EOF automatically; while(hasNext()) waits indefinitely."
+          ]
+        },
+        {
+          "id": "qa-io-6-9",
+          "question": "How does scanner.useDelimiter() help when reading comma-separated user data?",
+          "expectedAnswer": "By calling `scanner.useDelimiter(\",\")` or `scanner.useDelimiter(\"[,\\\\s]+\")`, you can tell Scanner to split tokens by commas and whitespace rather than whitespace alone, enabling instant CSV record parsing.",
+          "companyTags": [
+            "Infosys",
+            "LTI"
+          ],
+          "keyPoints": [
+            "useDelimiter() customizes token separation for formats like CSV."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-io-mistakes-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Topic Confidence Checklist",
+      "checklist": [
+        "I know to import java.util.Scanner at the top of my file.",
+        "I know how to prevent InputMismatchException using hasNextInt().",
+        "I avoid creating multiple Scanner instances inside loops.",
+        "I understand why closing System.in prematurely breaks future inputs.",
+        "I never type 'L' or 'f' suffixes when entering console values."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-io-6-1",
+      "title": "Guard Against Negative Numbers",
+      "difficulty": "beginner",
+      "description": "Read an integer. If it is negative, print 'Error: Negative numbers not allowed'. Otherwise print 'Accepted: [num]'.",
+      "expectedOutput": "Accepted: 45",
+      "hint": "Read int, check if num < 0.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int num = scanner.nextInt();\n        if (num < 0) {\n            System.out.println(\"Error: Negative numbers not allowed\");\n        } else {\n            System.out.println(\"Accepted: \" + num);\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-2",
+      "title": "Defensive Decimal Reader",
+      "difficulty": "easy",
+      "description": "Check if user input is a valid double using hasNextDouble(). If yes, print 'Valid double: [val]'. If no, print 'Error: Not a decimal number'.",
+      "expectedOutput": "Valid double: 3.14",
+      "hint": "if (scanner.hasNextDouble()) { ... } else { ... }",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        if (scanner.hasNextDouble()) {\n            double d = scanner.nextDouble();\n            System.out.println(\"Valid double: \" + d);\n        } else {\n            System.out.println(\"Error: Not a decimal number\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-3",
+      "title": "Discard Bad Token and Retry",
+      "difficulty": "medium",
+      "description": "Write a snippet that checks if input has an integer. If not, consume and print the discarded text: Discarded: [token]",
+      "expectedOutput": "Discarded: invalid_text",
+      "hint": "String bad = scanner.next();",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        if (!scanner.hasNextInt()) {\n            String bad = scanner.next();\n            System.out.println(\"Discarded: \" + bad);\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-4",
+      "title": "Safe Number Parsing via nextLine()",
+      "difficulty": "medium",
+      "description": "Read a line of text. Parse it as an integer using Integer.parseInt(). If it succeeds, print 'Parsed: [num]'. Use a clean nextLine approach.",
+      "expectedOutput": "Parsed: 2026",
+      "hint": "int n = Integer.parseInt(scanner.nextLine().trim());",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        String line = scanner.nextLine().trim();\n        int n = Integer.parseInt(line);\n        System.out.println(\"Parsed: \" + n);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-5",
+      "title": "Prevent Division by Zero from User Input",
+      "difficulty": "medium",
+      "description": "Read two integers a and b. If b is 0, print 'Error: Division by zero is undefined'. Otherwise print 'Result: [a / b]'.",
+      "expectedOutput": "Result: 5",
+      "hint": "Check if b == 0 before dividing.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int a = scanner.nextInt();\n        int b = scanner.nextInt();\n        if (b == 0) {\n            System.out.println(\"Error: Division by zero is undefined\");\n        } else {\n            System.out.println(\"Result: \" + (a / b));\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-6",
+      "title": "Validate Positive Non-Zero Price",
+      "difficulty": "medium",
+      "description": "Read item price as double. Validate that price > 0.0. If valid, print 'Price confirmed: Rs [price to 2 dec]'. Else print 'Error: Invalid price'.",
+      "expectedOutput": "Price confirmed: Rs 149.99",
+      "hint": "Use printf with %.2f if price > 0.",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        double price = scanner.nextDouble();\n        if (price > 0.0) {\n            System.out.printf(\"Price confirmed: Rs %.2f%n\", price);\n        } else {\n            System.out.println(\"Error: Invalid price\");\n        }\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-7",
+      "title": "Clean Input Buffer After Multiple Numbers",
+      "difficulty": "hard",
+      "description": "Read 3 integers (day, month, year) on one line, clear buffer, then read a full string holiday name. Print: Holiday: [name] on [day]/[month]/[year]",
+      "expectedOutput": "Holiday: Republic Day on 26/1/2026",
+      "hint": "day = sc.nextInt(); month = sc.nextInt(); year = sc.nextInt(); sc.nextLine(); name = sc.nextLine();",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int day = scanner.nextInt();\n        int month = scanner.nextInt();\n        int year = scanner.nextInt();\n        scanner.nextLine(); // clear buffer\n        String holiday = scanner.nextLine();\n        System.out.println(\"Holiday: \" + holiday + \" on \" + day + \"/\" + month + \"/\" + year);\n        scanner.close();\n    }\n}"
+    },
+    {
+      "id": "p-io-6-8",
+      "title": "Validate Percentage Range (0 to 100)",
+      "difficulty": "hard",
+      "description": "Read a double score. Verify it is within the valid range [0.0, 100.0]. Print 'Valid score: [score]%' or 'Error: Score out of range (0-100)'.",
+      "expectedOutput": "Valid score: 92.5%",
+      "hint": "if (score >= 0.0 && score <= 100.0)",
+      "solutionCode": "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        double score = scanner.nextDouble();\n        if (score >= 0.0 && score <= 100.0) {\n            System.out.println(\"Valid score: \" + score + \"%\");\n        } else {\n            System.out.println(\"Error: Score out of range (0-100)\");\n        }\n        scanner.close();\n    }\n}"
+    }
+  ]
+}

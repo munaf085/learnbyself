@@ -157,7 +157,32 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
       'shift-operators': 'bitwise-and-shift-operators',
       'output-prediction': 'operators-final-challenge',
       'debugging-challenges': 'operators-final-challenge',
-      'interview-questions': 'operators-final-challenge'
+      'interview-questions': 'operators-final-challenge',
+
+      // Module 04 aliases:
+      'reading-different-types-of-input': 'reading-numbers-text-and-characters',
+      'print-vs-println': 'printing-output-in-java',
+      'printf-and-format-specifiers': 'formatting-output',
+      'scanner-basics': 'reading-input-with-scanner',
+      'scanner-newline-issue': 'next-vs-nextline',
+      'scanner-pitfalls': 'common-scanner-mistakes',
+      'input-output-practice': 'input-and-output-practice',
+      'io-practice': 'input-and-output-practice',
+      'io-final-challenge': 'input-and-output-final-challenge',
+
+      // Module 05 aliases:
+      'if-statements': 'if-and-if-else',
+      'if-else': 'if-and-if-else',
+      'else-if-ladder': 'else-if-and-multiple-conditions',
+      'nested-if': 'nested-conditions',
+      'logical-operators-in-conditions': 'logical-conditions',
+      'switch': 'switch-statements',
+      'switch-case': 'switch-statements',
+      'switch-expressions': 'modern-switch-expressions',
+      'switch-arrow-syntax': 'modern-switch-expressions',
+      'conditional-bugs': 'conditional-bugs-and-output-prediction',
+      'conditions-practice': 'conditional-practice',
+      'conditional-final-challenge': 'conditional-statements-final-challenge'
     };
 
     const targetSlug = slugAliases[lessonSlug] || lessonSlug;

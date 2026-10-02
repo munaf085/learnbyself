@@ -1414,6 +1414,355 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
         </Card>
       )}
 
+      {/* ========================================================= */}
+      {/* MODULE 04: INPUT & OUTPUT CHEATSHEETS                     */}
+      {/* ========================================================= */}
+
+      {/* Module 04: Print vs Println vs Printf */}
+      {(slug === 'printing-output-in-java' || slug === 'formatting-output' || slug === 'print-vs-println' || slug === 'printf-and-format-specifiers') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Output Methods &amp; printf Format Specifiers Reference
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Method / Specifier</th>
+                  <th className="p-2.5">Behavior &amp; Syntax</th>
+                  <th className="p-2.5">Example Snippet</th>
+                  <th className="p-2.5 rounded-r-lg">Rendered Output</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">System.out.print()</td>
+                  <td className="p-2.5 text-slate-600">Prints characters without appending a newline; cursor stays on same line</td>
+                  <td className="p-2.5 font-mono text-indigo-700">print(&quot;Hello &quot;); print(&quot;World&quot;);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Hello World</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">System.out.println()</td>
+                  <td className="p-2.5 text-slate-600">Prints characters and appends a platform newline (
+ or 
+)</td>
+                  <td className="p-2.5 font-mono text-indigo-700">println(&quot;Line 1&quot;); println(&quot;Line 2&quot;);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Line 1
+Line 2</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">%d / %,d</td>
+                  <td className="p-2.5 text-slate-600">Decimal integer with optional locale thousands comma grouping</td>
+                  <td className="p-2.5 font-mono text-indigo-700">printf(&quot;Balance: %,d&quot;, 1000000);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Balance: 1,000,000</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">%f / %.2f</td>
+                  <td className="p-2.5 text-slate-600">Floating-point decimal rounded to specified decimal places</td>
+                  <td className="p-2.5 font-mono text-indigo-700">printf(&quot;Price: $%.2f&quot;, 19.998);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Price: $20.00</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">%s / %c / %b</td>
+                  <td className="p-2.5 text-slate-600">String text (%s), single char (%c), boolean flag (%b)</td>
+                  <td className="p-2.5 font-mono text-indigo-700">printf(&quot;%s %c %b&quot;, &quot;OK&quot;, &apos;A&apos;, true);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">OK A true</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">%n</td>
+                  <td className="p-2.5 text-slate-600">Platform-independent newline (preferred over 
+ in printf)</td>
+                  <td className="p-2.5 font-mono text-indigo-700">printf(&quot;Row 1%nRow 2%n&quot;);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Row 1
+Row 2</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-mono text-slate-900">%-15s %8.2f</td>
+                  <td className="p-2.5 text-slate-600">Left-aligned 15-width column (%-15s) and right-aligned 8-width float</td>
+                  <td className="p-2.5 font-mono text-indigo-700">printf(&quot;%-15s %8.2f%n&quot;, &quot;Laptop&quot;, 899.5);</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Laptop            899.50</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 04: Scanner Methods & The Buffer Trap */}
+      {(slug === 'reading-input-with-scanner' || slug === 'reading-different-types-of-input' || slug === 'next-vs-nextline' || slug === 'common-scanner-mistakes' || slug === 'scanner-basics' || slug === 'scanner-newline-issue' || slug === 'scanner-pitfalls') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Scanner Token vs Line Parsing &amp; The Legendary Buffer Bug
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
+              <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider">
+                Token Reading Methods (Whitespace Delimited)
+              </span>
+              <ul className="space-y-1.5 text-slate-600">
+                <li><code className="font-mono text-indigo-700 font-bold">next()</code>: Reads up to the next whitespace delimiter.</li>
+                <li><code className="font-mono text-indigo-700 font-bold">nextInt()</code>: Parses next token as 32-bit int. Leaves trailing <code className="font-mono text-rose-700">
+</code> in buffer!</li>
+                <li><code className="font-mono text-indigo-700 font-bold">nextDouble()</code>: Parses next token as 64-bit double using locale decimal separator.</li>
+                <li><code className="font-mono text-indigo-700 font-bold">next().charAt(0)</code>: Standard idiomatic idiom to read a single <code className="font-mono">char</code>.</li>
+              </ul>
+            </div>
+            <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200/80 space-y-2">
+              <span className="font-bold text-amber-900 block text-xs uppercase tracking-wider">
+                The Scanner Buffer Trap &amp; Clean Fix
+              </span>
+              <p className="text-amber-800 leading-relaxed">
+                When a user types <code className="font-mono text-rose-800">42 [Enter]</code>, <code className="font-mono text-indigo-800">nextInt()</code> extracts <code className="font-mono">42</code> but leaves the invisible <code className="font-mono text-rose-800">
+</code> in the stream. A subsequent <code className="font-mono text-indigo-800">nextLine()</code> instantly consumes that newline and returns an empty string!
+              </p>
+              <div className="bg-white/80 p-2.5 rounded border border-amber-300 font-mono text-[11px] text-slate-800">
+                int age = sc.nextInt();<br />
+                <span className="text-emerald-700 font-bold">sc.nextLine(); &#47;&#47; Mandatory buffer clear!</span><br />
+                String address = sc.nextLine();
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 04: Capstone Summary */}
+      {(slug === 'input-and-output-practice' || slug === 'input-and-output-final-challenge' || slug === 'input-output-practice' || slug === 'io-final-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Module 04 Capstone: Input &amp; Output Architecture Blueprint
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">I/O Operation</th>
+                  <th className="p-2.5">Standard Java Tool</th>
+                  <th className="p-2.5">Failure / Edge Trap</th>
+                  <th className="p-2.5 rounded-r-lg">Defensive Coding Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Keyboard Input</td>
+                  <td className="p-2.5 font-mono text-slate-700">Scanner(System.in)</td>
+                  <td className="p-2.5 text-rose-700 font-mono">InputMismatchException</td>
+                  <td className="p-2.5 text-slate-600">Validate with <code className="font-mono text-indigo-700">hasNextInt()</code> before reading</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Line Reading after Numbers</td>
+                  <td className="p-2.5 font-mono text-slate-700">scanner.nextLine()</td>
+                  <td className="p-2.5 text-rose-700 font-mono">Consumes leftover 
+ silently</td>
+                  <td className="p-2.5 text-slate-600">Insert an extra <code className="font-mono text-emerald-700">scanner.nextLine()</code> to flush buffer</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Structured Tabular Output</td>
+                  <td className="p-2.5 font-mono text-slate-700">System.out.printf()</td>
+                  <td className="p-2.5 text-rose-700 font-mono">Misaligned manual string concatenation</td>
+                  <td className="p-2.5 text-slate-600">Use fixed column specifiers: <code className="font-mono text-indigo-700">%-20s %10.2f%n</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Resource Teardown</td>
+                  <td className="p-2.5 font-mono text-slate-700">scanner.close()</td>
+                  <td className="p-2.5 text-rose-700 font-mono">Closing System.in prevents future console reads</td>
+                  <td className="p-2.5 text-slate-600">Keep single Scanner across application or close at program exit</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODULE 05: CONDITIONAL STATEMENTS CHEATSHEETS             */}
+      {/* ========================================================= */}
+
+      {/* Module 05: if vs else-if vs Guard Clauses */}
+      {(slug === 'thinking-in-conditions' || slug === 'if-and-if-else' || slug === 'else-if-and-multiple-conditions' || slug === 'nested-conditions' || slug === 'logical-conditions' || slug === 'if-statements' || slug === 'if-else' || slug === 'else-if-ladder' || slug === 'nested-if') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Conditional Architecture: If-Else vs Guard Clauses &amp; Ladder Hierarchy
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-2">
+              <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider">
+                1. Binary if-else
+              </span>
+              <p className="text-slate-600 leading-relaxed">
+                Mutually exclusive split. Exactly one branch executes. Never omit curly braces <code className="font-mono text-indigo-700">&#123;&#125;</code> to avoid single-statement omission bugs.
+              </p>
+              <div className="bg-white p-2 rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                if (isValid) &#123;<br />
+                &nbsp;&nbsp;proceed();<br />
+                &#125; else &#123;<br />
+                &nbsp;&nbsp;reject();<br />
+                &#125;
+              </div>
+            </div>
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-2">
+              <span className="font-bold text-slate-900 block text-xs uppercase tracking-wider">
+                2. else-if Ladder Hierarchy
+              </span>
+              <p className="text-slate-600 leading-relaxed">
+                Evaluates top-to-bottom sequentially. Stop at first true condition. Order from most specific to general to avoid dead branches.
+              </p>
+              <div className="bg-white p-2 rounded border border-slate-200 font-mono text-[11px] text-slate-700">
+                if (score &gt;= 90) A();<br />
+                else if (score &gt;= 80) B();<br />
+                else if (score &gt;= 70) C();<br />
+                else F();
+              </div>
+            </div>
+            <div className="bg-emerald-50/60 p-3.5 rounded-xl border border-emerald-200/80 space-y-2">
+              <span className="font-bold text-emerald-900 block text-xs uppercase tracking-wider">
+                3. Guard Clauses (Bouncers)
+              </span>
+              <p className="text-emerald-800 leading-relaxed">
+                Replaces deeply nested &quot;arrow anti-pattern&quot; pyramids. Test failure preconditions early at the method top and return immediately.
+              </p>
+              <div className="bg-white p-2 rounded border border-emerald-300 font-mono text-[11px] text-slate-700">
+                if (user == null) return;<br />
+                if (!user.isActive()) return;<br />
+                &#47;&#47; Clean happy path!
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 05: Classic switch vs Modern switch expressions */}
+      {(slug === 'switch-statements' || slug === 'modern-switch-expressions' || slug === 'switch' || slug === 'switch-case' || slug === 'switch-expressions' || slug === 'switch-arrow-syntax') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Classic switch vs Java 14+ Modern switch Expressions
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature Dimension</th>
+                  <th className="p-2.5">Classic switch Statement (Java 1.0 - 13)</th>
+                  <th className="p-2.5 rounded-r-lg">Modern switch Expression (Java 14+)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Label Syntax</td>
+                  <td className="p-2.5 font-mono text-slate-700">case 1:</td>
+                  <td className="p-2.5 font-mono text-emerald-700 font-bold">case 1 -&gt;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Fallthrough Behavior</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">Automatic fallthrough unless explicit <code className="font-mono">break;</code> is written</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Zero fallthrough risk. Only target branch executes.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Return Value</td>
+                  <td className="p-2.5 text-slate-600">Statement only; cannot evaluate or return a value directly</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Can return value directly: <code className="font-mono">String s = switch(x) &#123; ... &#125;;</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Multi-Value Labels</td>
+                  <td className="p-2.5 font-mono text-slate-600">case 1: case 2: case 3:</td>
+                  <td className="p-2.5 font-mono text-emerald-700 font-bold">case 1, 2, 3 -&gt;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Multi-Line Block Return</td>
+                  <td className="p-2.5 text-slate-600">Assigns to outer variable, then break</td>
+                  <td className="p-2.5 text-indigo-700 font-mono font-bold">&#123; int temp = 10; yield temp * 2; &#125;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Exhaustiveness Check</td>
+                  <td className="p-2.5 text-slate-600">Optional default branch</td>
+                  <td className="p-2.5 text-slate-800 font-bold">Compiler-enforced exhaustiveness (default mandatory unless exhaustive enum)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Supported Data Types</td>
+                  <td className="p-2.5 text-slate-700 font-mono" colSpan={2}>byte, short, char, int (and wrappers), String, enum</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 05: Capstone Summary & Bug Traps */}
+      {(slug === 'conditional-bugs-and-output-prediction' || slug === 'conditional-practice' || slug === 'conditional-statements-final-challenge' || slug === 'conditional-bugs' || slug === 'conditions-practice' || slug === 'conditional-final-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Module 05 Capstone: Conditional Bug Elimination &amp; Diagnostic Traps
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Bug Pattern</th>
+                  <th className="p-2.5">Symptom / Flaw</th>
+                  <th className="p-2.5">Buggy Code Sample</th>
+                  <th className="p-2.5 rounded-r-lg">Bulletproof Solution</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Accidental Assignment</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Assigns true and always enters branch</td>
+                  <td className="p-2.5 font-mono text-rose-700">if (isBlocked = true)</td>
+                  <td className="p-2.5 text-slate-600">Write boolean directly: <code className="font-mono text-emerald-700">if (isBlocked)</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Stray Semicolon</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Condition guards empty statement; block runs unconditionally</td>
+                  <td className="p-2.5 font-mono text-rose-700">if (score &gt; 50); &#123; grant(); &#125;</td>
+                  <td className="p-2.5 text-slate-600">Remove semicolon: <code className="font-mono text-emerald-700">if (score &gt; 50) &#123; grant(); &#125;</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Dangling Else</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Else binds to closest unmatched if, not outermost</td>
+                  <td className="p-2.5 font-mono text-rose-700">if (a) if (b) X; else Y;</td>
+                  <td className="p-2.5 text-slate-600">Always use explicit curly braces <code className="font-mono text-emerald-700">&#123;&#125;</code> around every block</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Floating-Point ==</td>
+                  <td className="p-2.5 text-rose-700 font-medium">IEEE 754 precision rounding fails exact equality</td>
+                  <td className="p-2.5 font-mono text-rose-700">0.1 + 0.2 == 0.3 (false!)</td>
+                  <td className="p-2.5 text-slate-600">Compare with epsilon tolerance: <code className="font-mono text-indigo-700">Math.abs(a - b) &lt; 1e-9</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">String Reference ==</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Compares heap memory address, not character text</td>
+                  <td className="p-2.5 font-mono text-rose-700">new String(&quot;VIP&quot;) == &quot;VIP&quot; (false!)</td>
+                  <td className="p-2.5 text-slate-600">Always compare text using <code className="font-mono text-emerald-700">&quot;VIP&quot;.equals(str)</code></td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Leap Year Logic</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Years like 1900 incorrectly treated as leap years</td>
+                  <td className="p-2.5 font-mono text-rose-700">year % 4 == 0</td>
+                  <td className="p-2.5 text-slate-600"><code className="font-mono text-emerald-700">(y % 4 == 0 &amp;&amp; y % 100 != 0) || (y % 400 == 0)</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
     </div>
   );
 };

@@ -280,6 +280,127 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
       expect(lesson?.slug).toBe(expectedCanonical);
     }
   });
+
+  it('resolves the 8 canonical Input & Output lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'input-and-output');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(8);
+
+    const expectedSlugs = [
+      'printing-output-in-java',
+      'formatting-output',
+      'reading-input-with-scanner',
+      'reading-numbers-text-and-characters',
+      'next-vs-nextline',
+      'common-scanner-mistakes',
+      'input-and-output-practice',
+      'input-and-output-final-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'input-and-output', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 7 MCQs`).toBeGreaterThanOrEqual(7);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 12 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(12);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 5 self-paced practice problems`).toBeGreaterThanOrEqual(5);
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 04 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'reading-different-types-of-input': 'reading-numbers-text-and-characters',
+      'print-vs-println': 'printing-output-in-java',
+      'printf-and-format-specifiers': 'formatting-output',
+      'scanner-basics': 'reading-input-with-scanner',
+      'scanner-newline-issue': 'next-vs-nextline',
+      'scanner-pitfalls': 'common-scanner-mistakes',
+      'input-output-practice': 'input-and-output-practice',
+      'io-final-challenge': 'input-and-output-final-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'input-and-output', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
+
+  it('resolves the 10 canonical Conditional Statements lessons with full activities', async () => {
+    const mod = await provider.getModule('java', 'basics', 'conditional-statements');
+    expect(mod).not.toBeNull();
+    expect(mod?.lessons.length).toBe(10);
+
+    const expectedSlugs = [
+      'thinking-in-conditions',
+      'if-and-if-else',
+      'else-if-and-multiple-conditions',
+      'nested-conditions',
+      'logical-conditions',
+      'switch-statements',
+      'modern-switch-expressions',
+      'conditional-bugs-and-output-prediction',
+      'conditional-practice',
+      'conditional-statements-final-challenge'
+    ];
+
+    expect(mod?.lessons.map(l => l.slug)).toEqual(expectedSlugs);
+
+    for (const slug of expectedSlugs) {
+      const lesson = await provider.getLesson('java', 'basics', 'conditional-statements', slug);
+      expect(lesson, `Lesson ${slug} should exist`).not.toBeNull();
+      expect(lesson?.slug).toBe(slug);
+
+      const concept = lesson?.activities.find(a => a.type === 'concept');
+      const mcq = lesson?.activities.find(a => a.type === 'mcq');
+      const practice = lesson?.activities.find(a => a.practice);
+      const interview = lesson?.activities.find(a => a.type === 'interview_qa');
+      const checklist = lesson?.activities.find(a => a.type === 'self_evaluation');
+
+      expect(concept?.content?.length, `${slug} must have substantial concept content`).toBeGreaterThan(150);
+      expect(mcq?.questions?.length, `${slug} must have at least 7 MCQs`).toBeGreaterThanOrEqual(7);
+      expect(practice?.practice, `${slug} must have hands-on practice`).toBeDefined();
+      expect(practice?.practice?.expectedOutput, `${slug} must have expectedOutput`).toBeDefined();
+      expect(interview?.interviewQA?.length, `${slug} must have between 5 and 12 interview questions`).toBeGreaterThanOrEqual(5);
+      expect(interview?.interviewQA?.length).toBeLessThanOrEqual(12);
+      expect(lesson?.practiceProblems?.length, `${slug} must have at least 5 self-paced practice problems`).toBeGreaterThanOrEqual(5);
+      expect(checklist?.checklist?.length, `${slug} must have checklist`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('resolves legacy Module 05 slugs via aliases', async () => {
+    const legacyMap: Record<string, string> = {
+      'if-statements': 'if-and-if-else',
+      'if-else': 'if-and-if-else',
+      'else-if-ladder': 'else-if-and-multiple-conditions',
+      'nested-if': 'nested-conditions',
+      'logical-operators-in-conditions': 'logical-conditions',
+      'switch': 'switch-statements',
+      'switch-case': 'switch-statements',
+      'switch-expressions': 'modern-switch-expressions',
+      'conditional-bugs': 'conditional-bugs-and-output-prediction',
+      'conditions-practice': 'conditional-practice',
+      'conditional-final-challenge': 'conditional-statements-final-challenge'
+    };
+
+    for (const [legacySlug, expectedCanonical] of Object.entries(legacyMap)) {
+      const lesson = await provider.getLesson('java', 'basics', 'conditional-statements', legacySlug);
+      expect(lesson, `Legacy slug ${legacySlug} should resolve`).not.toBeNull();
+      expect(lesson?.slug).toBe(expectedCanonical);
+    }
+  });
 });
-
-
