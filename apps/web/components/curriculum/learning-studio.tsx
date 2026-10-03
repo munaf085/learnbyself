@@ -107,17 +107,13 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
   const interviewActivity = currentLesson.activities.find(a => a.type === 'interview_qa');
   const interviewCount = interviewActivity?.interviewQA?.length || 0;
   const checklistActivity = currentLesson.activities.find(a => a.type === 'self_evaluation');
+  const hasMiniProjectPayload = !!currentLesson.miniProject || !!(currentLesson as any).project;
   const isMiniProject =
-    currentLesson.moduleSlug === 'mini-projects' ||
-    currentLesson.moduleSlug === 'oop-mini-projects' ||
-    currentLesson.isMiniProject ||
-    !!currentLesson.miniProject ||
-    !!currentLesson.project ||
-    currentLesson.title.toLowerCase().includes('mini project') ||
-    currentLesson.title.toLowerCase().includes('capstone') ||
-    currentLesson.title.toLowerCase().includes('final project') ||
-    currentLesson.title.toLowerCase().includes('guided build') ||
-    currentLesson.title.toLowerCase().includes('requirement build');
+    hasMiniProjectPayload &&
+    (currentLesson.moduleSlug === 'mini-projects' ||
+     currentLesson.moduleSlug === 'oop-mini-projects' ||
+     currentLesson.isMiniProject ||
+     currentLesson.title.toLowerCase().includes('portfolio'));
 
   const studioTabs: TabItem[] = [
     { id: 'concept', label: '1. Learn' },
