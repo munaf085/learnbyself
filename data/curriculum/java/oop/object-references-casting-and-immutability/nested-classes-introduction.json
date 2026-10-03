@@ -1,0 +1,523 @@
+{
+  "id": "les-cast-9",
+  "slug": "nested-classes-introduction",
+  "title": "Nested Classes — Introduction",
+  "summary": "Grouping helper classes cleanly inside their enclosing class without cluttering package scope.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 9,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les9-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Internal Gearbox vs The Dashboard Tool",
+      "concept": "Static Nested Classes vs Inner Member Classes",
+      "realWorldMetaphor": {
+        "scenario": "Inside an automobile engine block, the oil pump and timing gears are built directly into the housing. They cannot exist or spin on their own without the physical engine block surrounding them (Inner Member Class with an implicit outer reference). In contrast, the car's tire-pressure gauge rests inside the glove compartment. It belongs logically to the car's emergency kit, but it operates completely on its own without needing the engine to be running (Static Nested Class).",
+        "mapping": "In Java, a static nested class is associated with the outer class name, not with any specific instance. It cannot access non-static fields of the outer class directly. A non-static inner class holds an invisible, implicit pointer (`Outer.this`) to the outer class instance, allowing it full access to all private outer fields.",
+        "takeaway": "Use static nested classes when the helper does not need an outer instance; use inner member classes when tight coupling to outer instance state is required."
+      }
+    },
+    {
+      "id": "act-les9-concept",
+      "type": "concept",
+      "title": "The 4 Flavors of Nested Classes in Java",
+      "content": "### What is a Nested Class?\n\nA **nested class** is any class defined within the body of another enclosing class. Java divides them into two major categories:\n\n1. **Static Nested Classes** (`static class Helper`):\n   - Behavior: Behaves exactly like a top-level class, but scoped inside the outer class for logical packaging.\n   - Memory: Does **not** hold an implicit reference to an outer instance. Zero memory leak overhead.\n   - Access: Can only access `static` members of the outer class.\n   - Best Use: Builders (`User.Builder`), Compartmentalized Data (`Map.Entry`).\n\n2. **Inner Classes (Non-Static)**:\n   - **Member Inner Class**: Declared inside a class without `static`. Holds an implicit reference `Outer.this`. Can access outer `private` instance fields.\n   - **Local Inner Class**: Declared inside a method body. Can access `effectively final` local variables.\n   - **Anonymous Inner Class**: An inline, unnamed subclass or interface implementation (often superseded by lambdas).\n\n### The Memory Leak Danger of Non-Static Inner Classes\nBecause non-static inner classes hold an implicit pointer to `Outer.this`, keeping an inner class instance in a cache or listener prevents the entire large outer object from being garbage collected. **Senior Java engineers prefer static nested classes by default unless outer instance access is strictly necessary.**"
+    },
+    {
+      "id": "act-les9-cw1",
+      "type": "code_walkthrough",
+      "title": "Static Nested Class vs Non-Static Inner Class",
+      "codeSnippet": "class OuterComputer {\n    private String model = \"SuperCompute 9000\";\n    private static String osVersion = \"Enterprise Linux 10\";\n\n    // 1. Static Nested Class: Independent of OuterComputer instance\n    public static class HardwareSpecs {\n        private int ramGb;\n        public HardwareSpecs(int ram) { this.ramGb = ram; }\n        public void printSpecs() {\n            // Can access static members of outer class:\n            System.out.println(\"OS: \" + osVersion + \" | RAM: \" + ramGb + \" GB\");\n            // System.out.println(model); // COMPILE ERROR: Cannot access non-static model!\n        }\n    }\n\n    // 2. Non-Static Inner Class: Bound to specific OuterComputer instance\n    public class DiagnosticTool {\n        public void inspect() {\n            // Seamless access to outer private instance fields via OuterComputer.this\n            System.out.println(\"Diagnostics running on \" + model);\n        }\n    }\n}\n\npublic class NestedClassesDemo {\n    public static void main(String[] args) {\n        // Instantiating static nested class: NO outer instance needed!\n        OuterComputer.HardwareSpecs specs = new OuterComputer.HardwareSpecs(64);\n        specs.printSpecs();\n\n        // Instantiating non-static inner class: REQUIRES outer instance!\n        OuterComputer pc = new OuterComputer();\n        OuterComputer.DiagnosticTool diag = pc.new DiagnosticTool();\n        diag.inspect();\n    }\n}",
+      "code": "class OuterComputer {\n    private String model = \"SuperCompute 9000\";\n    private static String osVersion = \"Enterprise Linux 10\";\n\n    // 1. Static Nested Class: Independent of OuterComputer instance\n    public static class HardwareSpecs {\n        private int ramGb;\n        public HardwareSpecs(int ram) { this.ramGb = ram; }\n        public void printSpecs() {\n            // Can access static members of outer class:\n            System.out.println(\"OS: \" + osVersion + \" | RAM: \" + ramGb + \" GB\");\n            // System.out.println(model); // COMPILE ERROR: Cannot access non-static model!\n        }\n    }\n\n    // 2. Non-Static Inner Class: Bound to specific OuterComputer instance\n    public class DiagnosticTool {\n        public void inspect() {\n            // Seamless access to outer private instance fields via OuterComputer.this\n            System.out.println(\"Diagnostics running on \" + model);\n        }\n    }\n}\n\npublic class NestedClassesDemo {\n    public static void main(String[] args) {\n        // Instantiating static nested class: NO outer instance needed!\n        OuterComputer.HardwareSpecs specs = new OuterComputer.HardwareSpecs(64);\n        specs.printSpecs();\n\n        // Instantiating non-static inner class: REQUIRES outer instance!\n        OuterComputer pc = new OuterComputer();\n        OuterComputer.DiagnosticTool diag = pc.new DiagnosticTool();\n        diag.inspect();\n    }\n}",
+      "language": "java",
+      "explanation": "Contrasts the instantiation syntax: Outer.StaticNested is created directly with new Outer.StaticNested(), whereas non-static inner class requires outerInstance.new Inner().",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`HardwareSpecs` is static; it cannot touch `model` but reads `osVersion`."
+        },
+        {
+          "step": 2,
+          "description": "`DiagnosticTool` is an inner member class; it holds an implicit link to `pc`."
+        },
+        {
+          "step": 3,
+          "description": "`pc.new DiagnosticTool()` binds the inner instance to `pc`."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-cw2",
+      "type": "code_walkthrough",
+      "title": "The Static Nested Builder Pattern",
+      "codeSnippet": "public final class UserAccount {\n    private final String username;\n    private final String email;\n    private final boolean premium;\n\n    // Private constructor: only Builder can instantiate\n    private UserAccount(Builder builder) {\n        this.username = builder.username;\n        this.email = builder.email;\n        this.premium = builder.premium;\n    }\n\n    public String getUsername() { return username; }\n    public String getEmail() { return email; }\n    public boolean isPremium() { return premium; }\n\n    // Static nested Builder\n    public static class Builder {\n        private String username;\n        private String email;\n        private boolean premium = false;\n\n        public Builder setUsername(String username) {\n            this.username = username;\n            return this;\n        }\n        public Builder setEmail(String email) {\n            this.email = email;\n            return this;\n        }\n        public Builder setPremium(boolean premium) {\n            this.premium = premium;\n            return this;\n        }\n        public UserAccount build() {\n            if (username == null || email == null) {\n                throw new IllegalStateException(\"Username and email required\");\n            }\n            return new UserAccount(this);\n        }\n    }\n}\n\npublic class BuilderDemo {\n    public static void main(String[] args) {\n        UserAccount user = new UserAccount.Builder()\n            .setUsername(\"munaf085\")\n            .setEmail(\"munaf@example.com\")\n            .setPremium(true)\n            .build();\n\n        System.out.println(\"Created: \" + user.getUsername() + \" (\" + user.getEmail() + \") Premium: \" + user.isPremium());\n    }\n}",
+      "code": "public final class UserAccount {\n    private final String username;\n    private final String email;\n    private final boolean premium;\n\n    // Private constructor: only Builder can instantiate\n    private UserAccount(Builder builder) {\n        this.username = builder.username;\n        this.email = builder.email;\n        this.premium = builder.premium;\n    }\n\n    public String getUsername() { return username; }\n    public String getEmail() { return email; }\n    public boolean isPremium() { return premium; }\n\n    // Static nested Builder\n    public static class Builder {\n        private String username;\n        private String email;\n        private boolean premium = false;\n\n        public Builder setUsername(String username) {\n            this.username = username;\n            return this;\n        }\n        public Builder setEmail(String email) {\n            this.email = email;\n            return this;\n        }\n        public Builder setPremium(boolean premium) {\n            this.premium = premium;\n            return this;\n        }\n        public UserAccount build() {\n            if (username == null || email == null) {\n                throw new IllegalStateException(\"Username and email required\");\n            }\n            return new UserAccount(this);\n        }\n    }\n}\n\npublic class BuilderDemo {\n    public static void main(String[] args) {\n        UserAccount user = new UserAccount.Builder()\n            .setUsername(\"munaf085\")\n            .setEmail(\"munaf@example.com\")\n            .setPremium(true)\n            .build();\n\n        System.out.println(\"Created: \" + user.getUsername() + \" (\" + user.getEmail() + \") Premium: \" + user.isPremium());\n    }\n}",
+      "language": "java",
+      "explanation": "The Builder pattern uses a static nested class to construct complex immutable objects with clean, fluent API syntax and validation.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`UserAccount` has a private constructor taking a `Builder`."
+        },
+        {
+          "step": 2,
+          "description": "`Builder` is a `public static class` nested inside `UserAccount`."
+        },
+        {
+          "step": 3,
+          "description": "Fluent setters return `this`, enabling chained configuration."
+        },
+        {
+          "step": 4,
+          "description": "`build()` validates invariant rules and calls the private `UserAccount` constructor."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-mcq",
+      "type": "mcq",
+      "title": "Nested Classes Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the key difference between a static nested class and an inner member class?",
+          "options": [
+            "Static nested classes can only have static methods",
+            "Inner member classes hold an implicit reference to an instance of the outer class, whereas static nested classes do not",
+            "Static nested classes cannot be public",
+            "Inner member classes can be instantiated without an outer object"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Non-static inner classes are intrinsically bound to an outer instance via an invisible outer reference."
+        },
+        {
+          "id": "q2",
+          "question": "How do you instantiate a non-static member inner class `Inner` from outside the outer class `Outer`?",
+          "options": [
+            "`new Outer.Inner()`",
+            "`Outer.Inner in = outerInstance.new Inner();`",
+            "`Inner in = new Inner(outerInstance);`",
+            "`Outer.new Inner()`"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Because an inner instance requires an outer instance, the special syntax `outerInstance.new Inner()` is used."
+        },
+        {
+          "id": "q3",
+          "question": "Can a static nested class access private non-static fields of its enclosing outer class directly?",
+          "options": [
+            "Yes, unconditionally",
+            "No, because it does not have an outer class instance reference",
+            "Only if the field is marked volatile",
+            "Only inside constructors"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Static contexts cannot access instance variables without an explicit instance reference."
+        },
+        {
+          "id": "q4",
+          "question": "Why is the Builder pattern conventionally implemented as a static nested class?",
+          "options": [
+            "So that the Builder can be instantiated before the enclosing object exists",
+            "Because static classes compile 2x faster",
+            "Because builders must be abstract",
+            "To prevent the builder from using constructors"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "You cannot require an outer instance to create the builder that creates the outer instance!"
+        },
+        {
+          "id": "q5",
+          "question": "What memory risk is associated with keeping long-lived references to non-static inner class instances?",
+          "options": [
+            "StackOverflowError",
+            "Memory leak: the implicit reference to Outer prevents the outer instance from being garbage collected",
+            "CPU cache invalidation",
+            "Deadlock"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Even if the outer instance is no longer needed, the inner instance pins it in heap memory."
+        },
+        {
+          "id": "q6",
+          "question": "Can a top-level class (outer class) be declared `static` in Java?",
+          "options": [
+            "Yes, any class can be static",
+            "No, only nested classes can be declared static in Java",
+            "Only in package java.lang",
+            "Only if it contains a main method"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Top-level classes cannot be declared `static`; the modifier is only valid on member classes inside an enclosing class."
+        },
+        {
+          "id": "q7",
+          "question": "How does code inside an inner class refer to the enclosing outer instance explicitly?",
+          "options": [
+            "`super.this`",
+            "`OuterClass.this`",
+            "`this.outer`",
+            "`parent.this`"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`OuterClass.this` disambiguates and provides the reference to the enclosing outer object."
+        },
+        {
+          "id": "q8",
+          "question": "What is an anonymous inner class?",
+          "options": [
+            "A class defined in an unnamed package",
+            "An inline, unnamed class that simultaneously declares a subclass/implementation and instantiates it",
+            "A class without any methods",
+            "A private final class"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Anonymous classes are created on-the-fly at the point of allocation with `new SuperType() { ... }`."
+        },
+        {
+          "id": "q9",
+          "question": "What kind of local variables can local inner classes access?",
+          "options": [
+            "Any local variable, regardless of modifications",
+            "Only variables that are final or effectively final",
+            "Only static variables",
+            "Only volatile variables"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java captures local variables by value; they must be final or effectively final to avoid synchronization anomalies."
+        },
+        {
+          "id": "q10",
+          "question": "Which design pattern is `Map.Entry` in `java.util.Map` an example of?",
+          "options": [
+            "Non-static inner member class",
+            "Static nested interface/class",
+            "Local class",
+            "Anonymous class"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`Map.Entry` is a static nested interface inside `Map`."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-interview",
+      "type": "interview_qa",
+      "title": "Nested Classes Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i9-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the architectural guideline in Effective Java regarding static vs non-static nested classes?",
+          "answer": "Item 24 in Effective Java states: 'Favor static member classes over non-static'. If a nested class does not require access to its enclosing instance, always declare it `static`. Non-static member classes carry an implicit reference to their enclosing instance, which increases memory consumption, adds reference overhead, and frequently causes memory leaks in caches and event listeners.",
+          "expectedAnswer": "Favor static member classes unless access to the enclosing instance is strictly required, avoiding hidden memory leak references.",
+          "keyTakeaway": "Always make nested classes static by default unless outer instance access is required.",
+          "keyPoints": [
+            "Always make nested classes static by default unless outer instance access is required."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i9-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How does the Java compiler implement access to private outer fields from an inner class?",
+          "answer": "At the bytecode level, the JVM specification did not originally permit classes to access private members of other classes, even if nested. To enable this, the Java compiler historically generated synthetic package-private accessor methods (e.g. `access$000`). Since Java 11 (JEP 181 Nestmates), the JVM natively supports nest-based access control without synthetic bridge methods.",
+          "expectedAnswer": "Historically via synthetic package-private bridge methods; since Java 11, natively via Nest-Based Access Control.",
+          "keyTakeaway": "Nestmates in Java 11 eliminated synthetic accessor bridges for nested classes.",
+          "keyPoints": [
+            "Nestmates in Java 11 eliminated synthetic accessor bridges for nested classes."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i9-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Explain how the Static Nested Builder Pattern solves the 'telescoping constructor' problem.",
+          "answer": "When a class has many optional fields (5+), creating overloaded constructors with different combinations (telescoping constructors) leads to unreadable code where developers confuse parameters of the same type. The Builder pattern replaces this with a static nested builder class providing fluent, named setter methods and a final `build()` validation method, guaranteeing immutable construction.",
+          "expectedAnswer": "The Builder pattern replaces confusing telescoping constructors with readable, fluent named method calls.",
+          "keyTakeaway": "Static nested builders provide clean, readable construction for complex objects.",
+          "keyPoints": [
+            "Static nested builders provide clean, readable construction for complex objects."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i9-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why must local variables accessed inside an anonymous inner class be 'effectively final'?",
+          "answer": "Because the local variable lives on the thread's call stack, while the inner class instance lives in the heap. The call stack frame is destroyed as soon as the enclosing method returns, but the inner class instance may outlive the method. To allow access, the compiler makes a copy of the variable inside the inner class. If the variable were mutable, the two copies could diverge, creating inconsistency.",
+          "expectedAnswer": "Because the stack variable is copied to the heap object; keeping it effectively final prevents value divergence.",
+          "keyTakeaway": "Effectively final ensures captured stack values remain consistent in heap instances.",
+          "keyPoints": [
+            "Effectively final ensures captured stack values remain consistent in heap instances."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i9-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can a static nested class declare non-static instance fields and methods?",
+          "answer": "Yes! A static nested class is simply a normal class with nested packaging. It can have instance fields, constructors, and instance methods. Marking the nested class `static` only means it does not hold a pointer to an *outer class instance*.",
+          "expectedAnswer": "Yes. A static nested class is a normal class that simply does not hold an outer instance reference.",
+          "keyTakeaway": "Static on a class means no outer instance pointer, not that all its members must be static.",
+          "keyPoints": [
+            "Static on a class means no outer instance pointer, not that all its members must be static."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i9-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Can interfaces be declared inside classes? Are they static or non-static?",
+          "answer": "Yes, an interface can be declared inside a class or another interface (e.g. `Map.Entry`). All nested interfaces are **implicitly static**, whether you write the `static` keyword or not. An interface can never be non-static because interfaces cannot hold outer instance state.",
+          "expectedAnswer": "Yes, nested interfaces are allowed and are always implicitly static.",
+          "keyTakeaway": "Nested interfaces are always implicitly static.",
+          "keyPoints": [
+            "Nested interfaces are always implicitly static."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i9-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the architectural guideline in Effective Java regarding static vs non-static nested classes?",
+          "answer": "Item 24 in Effective Java states: 'Favor static member classes over non-static'. If a nested class does not require access to its enclosing instance, always declare it `static`. Non-static member classes carry an implicit reference to their enclosing instance, which increases memory consumption, adds reference overhead, and frequently causes memory leaks in caches and event listeners.",
+          "expectedAnswer": "Favor static member classes unless access to the enclosing instance is strictly required, avoiding hidden memory leak references.",
+          "keyTakeaway": "Always make nested classes static by default unless outer instance access is required.",
+          "keyPoints": [
+            "Always make nested classes static by default unless outer instance access is required."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i9-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How does the Java compiler implement access to private outer fields from an inner class?",
+          "answer": "At the bytecode level, the JVM specification did not originally permit classes to access private members of other classes, even if nested. To enable this, the Java compiler historically generated synthetic package-private accessor methods (e.g. `access$000`). Since Java 11 (JEP 181 Nestmates), the JVM natively supports nest-based access control without synthetic bridge methods.",
+          "expectedAnswer": "Historically via synthetic package-private bridge methods; since Java 11, natively via Nest-Based Access Control.",
+          "keyTakeaway": "Nestmates in Java 11 eliminated synthetic accessor bridges for nested classes.",
+          "keyPoints": [
+            "Nestmates in Java 11 eliminated synthetic accessor bridges for nested classes."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i9-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Explain how the Static Nested Builder Pattern solves the 'telescoping constructor' problem.",
+          "answer": "When a class has many optional fields (5+), creating overloaded constructors with different combinations (telescoping constructors) leads to unreadable code where developers confuse parameters of the same type. The Builder pattern replaces this with a static nested builder class providing fluent, named setter methods and a final `build()` validation method, guaranteeing immutable construction.",
+          "expectedAnswer": "The Builder pattern replaces confusing telescoping constructors with readable, fluent named method calls.",
+          "keyTakeaway": "Static nested builders provide clean, readable construction for complex objects.",
+          "keyPoints": [
+            "Static nested builders provide clean, readable construction for complex objects."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i9-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why must local variables accessed inside an anonymous inner class be 'effectively final'?",
+          "answer": "Because the local variable lives on the thread's call stack, while the inner class instance lives in the heap. The call stack frame is destroyed as soon as the enclosing method returns, but the inner class instance may outlive the method. To allow access, the compiler makes a copy of the variable inside the inner class. If the variable were mutable, the two copies could diverge, creating inconsistency.",
+          "expectedAnswer": "Because the stack variable is copied to the heap object; keeping it effectively final prevents value divergence.",
+          "keyTakeaway": "Effectively final ensures captured stack values remain consistent in heap instances.",
+          "keyPoints": [
+            "Effectively final ensures captured stack values remain consistent in heap instances."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i9-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can a static nested class declare non-static instance fields and methods?",
+          "answer": "Yes! A static nested class is simply a normal class with nested packaging. It can have instance fields, constructors, and instance methods. Marking the nested class `static` only means it does not hold a pointer to an *outer class instance*.",
+          "expectedAnswer": "Yes. A static nested class is a normal class that simply does not hold an outer instance reference.",
+          "keyTakeaway": "Static on a class means no outer instance pointer, not that all its members must be static.",
+          "keyPoints": [
+            "Static on a class means no outer instance pointer, not that all its members must be static."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i9-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Can interfaces be declared inside classes? Are they static or non-static?",
+          "answer": "Yes, an interface can be declared inside a class or another interface (e.g. `Map.Entry`). All nested interfaces are **implicitly static**, whether you write the `static` keyword or not. An interface can never be non-static because interfaces cannot hold outer instance state.",
+          "expectedAnswer": "Yes, nested interfaces are allowed and are always implicitly static.",
+          "keyTakeaway": "Nested interfaces are always implicitly static.",
+          "keyPoints": [
+            "Nested interfaces are always implicitly static."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les9-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the 4 types of nested classes: static nested, member inner, local, and anonymous.",
+        "I understand why static nested classes do not hold an implicit outer instance reference.",
+        "I know the syntax to instantiate an inner class: `outer.new Inner()`.",
+        "I can explain the memory leak danger of non-static inner classes.",
+        "I know why Effective Java recommends 'Favor static member classes over non-static'.",
+        "I can implement the static nested Builder pattern for complex classes.",
+        "I understand how `OuterClass.this` disambiguates outer instance access.",
+        "I know why local variables captured by inner classes must be effectively final.",
+        "I understand that nested interfaces are always implicitly static.",
+        "I know how Java 11 nestmates optimized nested class member access."
+      ],
+      "items": [
+        "I know the 4 types of nested classes: static nested, member inner, local, and anonymous.",
+        "I understand why static nested classes do not hold an implicit outer instance reference.",
+        "I know the syntax to instantiate an inner class: `outer.new Inner()`.",
+        "I can explain the memory leak danger of non-static inner classes.",
+        "I know why Effective Java recommends 'Favor static member classes over non-static'.",
+        "I can implement the static nested Builder pattern for complex classes.",
+        "I understand how `OuterClass.this` disambiguates outer instance access.",
+        "I know why local variables captured by inner classes must be effectively final.",
+        "I understand that nested interfaces are always implicitly static.",
+        "I know how Java 11 nestmates optimized nested class member access."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les9-p1",
+      "lessonId": "java-oop-mod10-les9",
+      "orderIndex": 1,
+      "title": "Warmup: Static Nested Math Point",
+      "difficulty": "easy",
+      "problemStatement": "Complete the static nested point class inside `Geometry`:\n1. Class `Geometry` with public static class `Point2D`.\n2. Fields in `Point2D`: `public int x, y;`.\n3. Constructor `Point2D(int x, int y)`.\n4. Method `public double distanceFromOrigin()` returning `Math.sqrt(x*x + y*y)`.\nIn `main`, instantiate `Geometry.Point2D p = new Geometry.Point2D(3, 4);` and print `'Distance: ' + p.distanceFromOrigin()` (should output `5.0`).",
+      "starterCode": "public class Geometry {\n    // TODO: Declare public static class Point2D with x, y, constructor, and distanceFromOrigin()\n\n    public static void main(String[] args) {\n        // TODO: Instantiate Point2D(3, 4) and print distance\n    }\n}",
+      "initialCode": "public class Geometry {\n    // TODO: Declare public static class Point2D with x, y, constructor, and distanceFromOrigin()\n\n    public static void main(String[] args) {\n        // TODO: Instantiate Point2D(3, 4) and print distance\n    }\n}",
+      "solutionCode": "public class Geometry {\n    public static class Point2D {\n        public int x, y;\n        public Point2D(int x, int y) {\n            this.x = x;\n            this.y = y;\n        }\n        public double distanceFromOrigin() {\n            return Math.sqrt(x * x + y * y);\n        }\n    }\n\n    public static void main(String[] args) {\n        Geometry.Point2D p = new Geometry.Point2D(3, 4);\n        System.out.println(\"Distance: \" + p.distanceFromOrigin());\n    }\n}",
+      "expectedOutput": "Distance: 5.0",
+      "hints": [
+        "Declare public static class Point2D inside Geometry.",
+        "Instantiate using `new Geometry.Point2D(3, 4)` directly."
+      ]
+    },
+    {
+      "id": "prob-les9-p2",
+      "lessonId": "java-oop-mod10-les9",
+      "orderIndex": 2,
+      "title": "Non-Static Inner Class Bank Iterator",
+      "difficulty": "medium",
+      "problemStatement": "Build an inner class iterator from scratch without starter code:\n1. Class `BankAccount` with `private String owner` and `private double[] transactions`.\n2. Constructor `BankAccount(String owner, double[] transactions)`.\n3. Non-static inner class `TransactionPrinter`:\n   - Method `public void printAll()`: loops over outer `transactions` and prints:\n     `owner + ' Transaction: $' + tx`\n4. Method in `BankAccount`: `public TransactionPrinter getPrinter() { return new TransactionPrinter(); }`.\n5. In `Main`, create a `BankAccount` for `\"Alice\"` with transactions `[100.0, -25.0, 50.0]`.\n6. Obtain the printer and call `printAll()`.",
+      "solutionCode": "class BankAccount {\n    private String owner;\n    private double[] transactions;\n\n    public BankAccount(String owner, double[] transactions) {\n        this.owner = owner;\n        this.transactions = (transactions != null) ? transactions.clone() : new double[0];\n    }\n\n    public class TransactionPrinter {\n        public void printAll() {\n            for (double tx : transactions) {\n                System.out.println(owner + \" Transaction: $\" + tx);\n            }\n        }\n    }\n\n    public TransactionPrinter getPrinter() {\n        return new TransactionPrinter();\n    }\n}\n\npublic class InnerBankApp {\n    public static void main(String[] args) {\n        BankAccount acc = new BankAccount(\"Alice\", new double[]{100.0, -25.0, 50.0});\n        BankAccount.TransactionPrinter printer = acc.getPrinter();\n        printer.printAll();\n    }\n}",
+      "expectedOutput": "Alice Transaction: $100.0\nAlice Transaction: $-25.0\nAlice Transaction: $50.0",
+      "hints": [
+        "TransactionPrinter has direct access to private owner and transactions fields of BankAccount.",
+        "acc.getPrinter() returns an inner instance bound to acc."
+      ]
+    },
+    {
+      "id": "prob-les9-p3",
+      "lessonId": "java-oop-mod10-les9",
+      "orderIndex": 3,
+      "title": "Immutable Pizza Order Builder",
+      "difficulty": "medium",
+      "problemStatement": "Build a static nested Builder for a Pizza order from scratch without starter code:\n1. Final class `Pizza` with fields: `private final String size`, `private final boolean cheese`, `private final boolean pepperoni`, `private final boolean mushrooms`.\n2. Private constructor `Pizza(Builder b)` assigning all 4 fields.\n3. Getters for each field.\n4. Static nested class `Builder`:\n   - Field `size` (String) required in constructor: `public Builder(String size)`\n   - Methods returning `this`: `addCheese()`, `addPepperoni()`, `addMushrooms()`\n   - Method `public Pizza build() { return new Pizza(this); }`\n5. Method `describe()` on `Pizza` printing:\n   `size + ' pizza: cheese=' + cheese + ', pepperoni=' + pepperoni + ', mushrooms=' + mushrooms`.\n6. In `Main`, build a `\"Large\"` pizza with cheese and pepperoni (no mushrooms). Call `describe()`.",
+      "solutionCode": "final class Pizza {\n    private final String size;\n    private final boolean cheese;\n    private final boolean pepperoni;\n    private final boolean mushrooms;\n\n    private Pizza(Builder b) {\n        this.size = b.size;\n        this.cheese = b.cheese;\n        this.pepperoni = b.pepperoni;\n        this.mushrooms = b.mushrooms;\n    }\n\n    public String getSize() { return size; }\n    public boolean hasCheese() { return cheese; }\n    public boolean hasPepperoni() { return pepperoni; }\n    public boolean hasMushrooms() { return mushrooms; }\n\n    public void describe() {\n        System.out.println(size + \" pizza: cheese=\" + cheese + \", pepperoni=\" + pepperoni + \", mushrooms=\" + mushrooms);\n    }\n\n    public static class Builder {\n        private String size;\n        private boolean cheese = false;\n        private boolean pepperoni = false;\n        private boolean mushrooms = false;\n\n        public Builder(String size) { this.size = size; }\n        public Builder addCheese() { this.cheese = true; return this; }\n        public Builder addPepperoni() { this.pepperoni = true; return this; }\n        public Builder addMushrooms() { this.mushrooms = true; return this; }\n        public Pizza build() { return new Pizza(this); }\n    }\n}\n\npublic class PizzaApp {\n    public static void main(String[] args) {\n        Pizza p = new Pizza.Builder(\"Large\")\n            .addCheese()\n            .addPepperoni()\n            .build();\n        p.describe();\n    }\n}",
+      "expectedOutput": "Large pizza: cheese=true, pepperoni=true, mushrooms=false",
+      "hints": [
+        "Pizza.Builder is a static nested class.",
+        "Chain .addCheese().addPepperoni().build()."
+      ]
+    },
+    {
+      "id": "prob-les9-p4",
+      "lessonId": "java-oop-mod10-les9",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accessing Non-Static Field from Static Nested Class",
+      "difficulty": "hard",
+      "problemStatement": "The code below attempts to access a non-static instance variable `companyName` directly from inside a static nested class `EmployeeRecord`, resulting in a compilation error. Fix the code by either passing the outer instance or making `companyName` static, so the program compiles and prints `'ACME Corp Employee: Jane Doe'`.",
+      "starterCode": "class Company {\n    // Non-static instance variable\n    public String companyName = \"ACME Corp\";\n\n    public static class EmployeeRecord {\n        private String employeeName;\n        public EmployeeRecord(String name) { this.employeeName = name; }\n        public void printBadge() {\n            // BUG: Non-static variable companyName cannot be referenced from static context!\n            System.out.println(companyName + \" Employee: \" + employeeName);\n        }\n    }\n}\n\npublic class CompanyBug {\n    public static void main(String[] args) {\n        Company.EmployeeRecord rec = new Company.EmployeeRecord(\"Jane Doe\");\n        rec.printBadge();\n    }\n}",
+      "initialCode": "class Company {\n    // Non-static instance variable\n    public String companyName = \"ACME Corp\";\n\n    public static class EmployeeRecord {\n        private String employeeName;\n        public EmployeeRecord(String name) { this.employeeName = name; }\n        public void printBadge() {\n            // BUG: Non-static variable companyName cannot be referenced from static context!\n            System.out.println(companyName + \" Employee: \" + employeeName);\n        }\n    }\n}\n\npublic class CompanyBug {\n    public static void main(String[] args) {\n        Company.EmployeeRecord rec = new Company.EmployeeRecord(\"Jane Doe\");\n        rec.printBadge();\n    }\n}",
+      "solutionCode": "class Company {\n    public static String companyName = \"ACME Corp\"; // Fix: Make companyName static\n\n    public static class EmployeeRecord {\n        private String employeeName;\n        public EmployeeRecord(String name) { this.employeeName = name; }\n        public void printBadge() {\n            System.out.println(companyName + \" Employee: \" + employeeName);\n        }\n    }\n}\n\npublic class CompanyBug {\n    public static void main(String[] args) {\n        Company.EmployeeRecord rec = new Company.EmployeeRecord(\"Jane Doe\");\n        rec.printBadge();\n    }\n}",
+      "expectedOutput": "ACME Corp Employee: Jane Doe",
+      "hints": [
+        "Static nested classes can only access static members of the enclosing class directly.",
+        "Mark `public static String companyName = \"ACME Corp\";`."
+      ]
+    },
+    {
+      "id": "prob-les9-p5",
+      "lessonId": "java-oop-mod10-les9",
+      "orderIndex": 5,
+      "title": "Advanced: Disambiguating OuterClass.this Shadowing",
+      "difficulty": "advanced",
+      "problemStatement": "Build a nested coordinate transformation pipeline from scratch without starter code:\n1. Class `CoordinateSpace` with fields `int x = 10, y = 20`.\n2. Non-static inner class `Transform` with fields `int x = 5, y = 5`.\n3. Inside `Transform`, method `public void printCombinedCoordinates()`:\n   - Prints `'Local: (' + this.x + ', ' + this.y + ')'`\n   - Prints `'Outer: (' + CoordinateSpace.this.x + ', ' + CoordinateSpace.this.y + ')'`\n   - Prints `'Sum: (' + (this.x + CoordinateSpace.this.x) + ', ' + (this.y + CoordinateSpace.this.y) + ')'`\n4. In `Main`, instantiate an outer `CoordinateSpace space = new CoordinateSpace();`.\n5. Instantiate an inner transform: `CoordinateSpace.Transform t = space.new Transform();`.\n6. Invoke `t.printCombinedCoordinates()`.",
+      "solutionCode": "class CoordinateSpace {\n    int x = 10;\n    int y = 20;\n\n    class Transform {\n        int x = 5;\n        int y = 5;\n\n        public void printCombinedCoordinates() {\n            System.out.println(\"Local: (\" + this.x + \", \" + this.y + \")\");\n            System.out.println(\"Outer: (\" + CoordinateSpace.this.x + \", \" + CoordinateSpace.this.y + \")\");\n            System.out.println(\"Sum: (\" + (this.x + CoordinateSpace.this.x) + \", \" + (this.y + CoordinateSpace.this.y) + \")\");\n        }\n    }\n}\n\npublic class DisambiguateApp {\n    public static void main(String[] args) {\n        CoordinateSpace space = new CoordinateSpace();\n        CoordinateSpace.Transform t = space.new Transform();\n        t.printCombinedCoordinates();\n    }\n}",
+      "expectedOutput": "Local: (5, 5)\nOuter: (10, 20)\nSum: (15, 25)",
+      "hints": [
+        "Use `this.x` for the inner variable.",
+        "Use `CoordinateSpace.this.x` to reach the outer shadowed field."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Nested Classes — Introduction",
+    "Analyze, predict, and trace code execution involving nested-classes-introduction",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Nested Classes — Introduction principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

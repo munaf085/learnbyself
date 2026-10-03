@@ -1,0 +1,521 @@
+{
+  "id": "les-cast-2",
+  "slug": "instanceof-operator",
+  "title": "instanceof",
+  "summary": "Safely inspecting an object's actual runtime type before casting.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les2-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The TSA Luggage Scanner",
+      "concept": "Runtime Type Inspection via instanceof",
+      "realWorldMetaphor": {
+        "scenario": "Before airport security agents open a passenger's bag to inspect a fragile optical camera lens, the bag passes through an X-ray scanner. The scanner determines whether the contents inside the mystery duffel bag are indeed camera equipment, clothing, or electronics. Only after verifying the contents does the agent apply specialized handling procedures.",
+        "mapping": "In Java, when you receive a broad reference (like `Object obj` or `Shape s`), you cannot blindly treat it as a `Circle` without checking. The `instanceof` operator is Java's runtime X-ray scanner. It inspects the actual object header on the heap, verifying whether it is an instance of a specific class or implements a specific interface.",
+        "takeaway": "Always verify runtime type with instanceof before performing operations unique to a subclass."
+      }
+    },
+    {
+      "id": "act-les2-concept",
+      "type": "concept",
+      "title": "The instanceof Operator Mechanics",
+      "content": "### What is instanceof?\n\n`instanceof` is a binary comparison operator in Java that evaluates whether the object referenced by a variable is an instance of a specified class, subclass, or interface:\n\n```java\nboolean result = referenceVariable instanceof TargetType;\n```\n\n### The 4 Cardinal Rules of instanceof\n1. **Subclass Compatibility**: If `Dog extends Animal`, then `new Dog() instanceof Animal` evaluates to `true` (an object is an instance of its own class AND all its ancestor classes).\n2. **Interface Implementation**: If `ArrayList implements List`, then `new ArrayList<>() instanceof List` evaluates to `true`.\n3. **The Null Invariant**: If the reference variable holds `null`, `instanceof` **always evaluates to false** without throwing a `NullPointerException`:\n   ```java\n   String s = null;\n   boolean test = s instanceof String; // false! Never throws NPE!\n   ```\n4. **Compile-Time Hierarchy Check**: The compiler forbids `instanceof` comparisons between types that share no inheritance relationship whatsoever:\n   ```java\n   String s = \"hello\";\n   // boolean err = s instanceof Integer; // Compile Error: Inconvertible types!\n   ```\n\n### Why instanceof is Essential\nIn polymorphic architectures, you often process collections of base types (`List<PaymentMethod>`). When a specialized step is required (e.g. collecting CVV only for `CreditCard`), `instanceof` provides the safe gatekeeper."
+    },
+    {
+      "id": "act-les2-cw1",
+      "type": "code_walkthrough",
+      "title": "Inspecting Types Across an Inheritance Hierarchy",
+      "codeSnippet": "class Animal {}\nclass Dog extends Animal {}\nclass Puppy extends Dog {}\nclass Cat extends Animal {}\n\npublic class InstanceofDemo {\n    public static void main(String[] args) {\n        Animal a1 = new Dog();\n        Animal a2 = new Puppy();\n        Animal a3 = null;\n\n        // 1. Direct class check\n        System.out.println(\"a1 instanceof Dog: \" + (a1 instanceof Dog)); // true\n        System.out.println(\"a1 instanceof Animal: \" + (a1 instanceof Animal)); // true\n        System.out.println(\"a1 instanceof Cat: \" + (a1 instanceof Cat)); // false\n\n        // 2. Transitive subclass check\n        System.out.println(\"a2 instanceof Animal: \" + (a2 instanceof Animal)); // true\n        System.out.println(\"a2 instanceof Dog: \" + (a2 instanceof Dog)); // true\n\n        // 3. Null safety guarantee\n        System.out.println(\"a3 instanceof Animal: \" + (a3 instanceof Animal)); // false\n    }\n}",
+      "code": "class Animal {}\nclass Dog extends Animal {}\nclass Puppy extends Dog {}\nclass Cat extends Animal {}\n\npublic class InstanceofDemo {\n    public static void main(String[] args) {\n        Animal a1 = new Dog();\n        Animal a2 = new Puppy();\n        Animal a3 = null;\n\n        // 1. Direct class check\n        System.out.println(\"a1 instanceof Dog: \" + (a1 instanceof Dog)); // true\n        System.out.println(\"a1 instanceof Animal: \" + (a1 instanceof Animal)); // true\n        System.out.println(\"a1 instanceof Cat: \" + (a1 instanceof Cat)); // false\n\n        // 2. Transitive subclass check\n        System.out.println(\"a2 instanceof Animal: \" + (a2 instanceof Animal)); // true\n        System.out.println(\"a2 instanceof Dog: \" + (a2 instanceof Dog)); // true\n\n        // 3. Null safety guarantee\n        System.out.println(\"a3 instanceof Animal: \" + (a3 instanceof Animal)); // false\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates transitive hierarchy checking: Puppy is both Dog and Animal. Also shows that null instanceof AnyClass cleanly evaluates to false.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`a1` points to a `Dog` on the heap; testing against `Dog` and `Animal` yields true."
+        },
+        {
+          "step": 2,
+          "description": "`a2` points to a `Puppy`; because `Puppy extends Dog extends Animal`, tests against both yield true."
+        },
+        {
+          "step": 3,
+          "description": "`a3` is `null`; `null instanceof Animal` returns false safely."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-cw2",
+      "type": "code_walkthrough",
+      "title": "Safely Processing Heterogeneous Event Queues",
+      "codeSnippet": "interface SystemEvent {}\nclass LoginEvent implements SystemEvent {\n    public String username;\n    public LoginEvent(String u) { this.username = u; }\n}\nclass LogoutEvent implements SystemEvent {\n    public String username;\n    public LogoutEvent(String u) { this.username = u; }\n}\n\npublic class EventDispatcher {\n    public static void dispatch(SystemEvent event) {\n        if (event instanceof LoginEvent) {\n            LoginEvent le = (LoginEvent) event;\n            System.out.println(\"AUDIT: User logged in -> \" + le.username);\n        } else if (event instanceof LogoutEvent) {\n            LogoutEvent lo = (LogoutEvent) event;\n            System.out.println(\"AUDIT: User logged out -> \" + lo.username);\n        } else {\n            System.out.println(\"AUDIT: Unknown event received\");\n        }\n    }\n\n    public static void main(String[] args) {\n        dispatch(new LoginEvent(\"alice\"));\n        dispatch(new LogoutEvent(\"bob\"));\n    }\n}",
+      "code": "interface SystemEvent {}\nclass LoginEvent implements SystemEvent {\n    public String username;\n    public LoginEvent(String u) { this.username = u; }\n}\nclass LogoutEvent implements SystemEvent {\n    public String username;\n    public LogoutEvent(String u) { this.username = u; }\n}\n\npublic class EventDispatcher {\n    public static void dispatch(SystemEvent event) {\n        if (event instanceof LoginEvent) {\n            LoginEvent le = (LoginEvent) event;\n            System.out.println(\"AUDIT: User logged in -> \" + le.username);\n        } else if (event instanceof LogoutEvent) {\n            LogoutEvent lo = (LogoutEvent) event;\n            System.out.println(\"AUDIT: User logged out -> \" + lo.username);\n        } else {\n            System.out.println(\"AUDIT: Unknown event received\");\n        }\n    }\n\n    public static void main(String[] args) {\n        dispatch(new LoginEvent(\"alice\"));\n        dispatch(new LogoutEvent(\"bob\"));\n    }\n}",
+      "language": "java",
+      "explanation": "Guarding downcasts with instanceof prevents ClassCastExceptions when processing an incoming stream of diverse interface implementations.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SystemEvent` interface unifies diverse event payload types."
+        },
+        {
+          "step": 2,
+          "description": "`dispatch` receives a polymorphic `SystemEvent`."
+        },
+        {
+          "step": 3,
+          "description": "`instanceof LoginEvent` checks whether the payload is indeed a login event before casting."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-mcq",
+      "type": "mcq",
+      "title": "instanceof Operator Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the result of `null instanceof String`?",
+          "options": [
+            "true",
+            "false",
+            "NullPointerException",
+            "Compile error"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "In Java, `null instanceof TargetType` is defined by the JLS to always return `false` without throwing an exception."
+        },
+        {
+          "id": "q2",
+          "question": "If `B extends A` and `C extends B`, what does `new C() instanceof A` evaluate to?",
+          "options": [
+            "true",
+            "false",
+            "Compile-time error",
+            "ClassCastException"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Inheritance is transitive. Since C extends B and B extends A, an instance of C is also an instance of A."
+        },
+        {
+          "id": "q3",
+          "question": "When does the Java compiler reject an `instanceof` check with a compile-time error?",
+          "options": [
+            "When checking against an interface",
+            "When the reference type and target type have no inheritance relationship (inconvertible types)",
+            "When the target type is Object",
+            "When checking inside a static method"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "If the compiler knows at compile time that the reference type could never be cast to the target type (e.g. `String instanceof Integer`), it flags an error."
+        },
+        {
+          "id": "q4",
+          "question": "Can `instanceof` be used to test whether an object implements an interface?",
+          "options": [
+            "No, instanceof only works on class hierarchies",
+            "Yes, instanceof works identically on both classes and interfaces",
+            "Only if the interface extends Serializable",
+            "Only if the class is abstract"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`instanceof` tests whether the runtime object implements the specified interface."
+        },
+        {
+          "id": "q5",
+          "question": "What is the primary risk of executing a downcast `(Subclass) ref` without checking `instanceof` first?",
+          "options": [
+            "StackOverflowError",
+            "ClassCastException at runtime",
+            "Memory leak",
+            "Deadlock"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "If the actual heap object is not an instance of `Subclass`, the JVM immediately throws an unchecked `ClassCastException`."
+        },
+        {
+          "id": "q6",
+          "question": "If `Shape s = new Circle();`, what does `s instanceof Shape` evaluate to?",
+          "options": [
+            "false",
+            "true",
+            "null",
+            "undefined"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Since Circle extends Shape, the heap object is an instance of Shape."
+        },
+        {
+          "id": "q7",
+          "question": "What does `\"Java\" instanceof Object` return?",
+          "options": [
+            "true",
+            "false",
+            "Compile error",
+            "Boolean.FALSE"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Every class in Java directly or indirectly inherits from java.lang.Object."
+        },
+        {
+          "id": "q8",
+          "question": "Why is excessive use of `if (x instanceof A) ... else if (x instanceof B)` sometimes considered an OOP code smell?",
+          "options": [
+            "It makes bytecode 10x larger",
+            "It indicates a missed opportunity for polymorphism and violates Open/Closed Principle",
+            "It disables garbage collection",
+            "It forces variables to be final"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Type branching often indicates that behavior should be encapsulated in polymorphic methods on the classes themselves."
+        },
+        {
+          "id": "q9",
+          "question": "Can `instanceof` be used with primitive types like `int` or `double`?",
+          "options": [
+            "Yes, `5 instanceof int` returns true",
+            "No, instanceof only operates on reference types",
+            "Yes, if autoboxing is disabled",
+            "Only inside switch statements"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`instanceof` requires a reference type on both sides; primitive types cannot be tested with `instanceof`."
+        },
+        {
+          "id": "q10",
+          "question": "Which of the following expressions will evaluate to `true`?",
+          "options": [
+            "null instanceof Object",
+            "new Object() instanceof String",
+            "new Integer(10) instanceof Number",
+            "new String(\"test\") instanceof StringBuffer"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "Integer extends java.lang.Number, so an Integer instance is an instance of Number."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-interview",
+      "type": "interview_qa",
+      "title": "instanceof Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i2-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How does `instanceof` handle `null` references, and why was it designed that way?",
+          "answer": "If the operand is `null`, `instanceof` evaluates to `false` without throwing `NullPointerException`. The designers reasoned that `null` does not refer to any instance in heap memory, so it cannot be an instance of any class. This behavior eliminates tedious `if (obj != null && obj instanceof String)` boilerplate.",
+          "expectedAnswer": "null instanceof AnyType returns false. null represents no object, so it cannot be an instance of anything.",
+          "keyTakeaway": "null instanceof Type always returns false cleanly.",
+          "keyPoints": [
+            "null instanceof Type always returns false cleanly."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i2-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the performance cost of the `instanceof` operator in hot JVM loops?",
+          "answer": "Modern JVMs optimize `instanceof` aggressively. For class checks, it compares the object's klass pointer directly or scans a small fixed-size primary supers table in O(1) time. For interface checks, the JVM uses inline caches and secondary supers arrays. While highly optimized, avoiding unnecessary type checks in tight loops is preferable by leveraging polymorphism.",
+          "expectedAnswer": "Modern JVMs perform instanceof in O(1) time for class hierarchies and optimize it using inline caches.",
+          "keyTakeaway": "instanceof is heavily optimized by JIT compilers, but polymorphism is still cleaner.",
+          "keyPoints": [
+            "instanceof is heavily optimized by JIT compilers, but polymorphism is still cleaner."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i2-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between `obj instanceof MyClass` and `obj.getClass() == MyClass.class`?",
+          "answer": "`obj instanceof MyClass` checks whether `obj` is an instance of `MyClass` OR any of its subclasses (subtyping/polymorphic check). In contrast, `obj.getClass() == MyClass.class` checks for exact, literal class equality, returning `false` for any subclass. Furthermore, `getClass()` throws NPE if `obj` is null.",
+          "expectedAnswer": "instanceof checks type hierarchy (including subclasses), whereas getClass() == requires exact identical runtime class.",
+          "keyTakeaway": "instanceof allows subclasses; getClass() == forbids subclasses.",
+          "keyPoints": [
+            "instanceof allows subclasses; getClass() == forbids subclasses."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i2-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "When does the Java compiler produce an 'inconvertible types' error with `instanceof`?",
+          "answer": "When the compiler can statically prove that the reference type and target type have no path of inheritance between them. For example, since `String` is a `final` class that does not implement `List`, `str instanceof List` triggers a compile error because no object could ever satisfy both.",
+          "expectedAnswer": "When there is no possibility in the type hierarchy for the reference to ever be an instance of the target type.",
+          "keyTakeaway": "Inconvertible types cause compile-time failure for instanceof.",
+          "keyPoints": [
+            "Inconvertible types cause compile-time failure for instanceof."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i2-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How did Java 16 improve the traditional `instanceof` pattern?",
+          "answer": "Java 16 introduced Pattern Matching for `instanceof` (JEP 394). Instead of requiring a redundant cast `if (obj instanceof String) { String s = (String) obj; }`, developers write `if (obj instanceof String s) { ... }`, automatically binding the safely cast variable `s` within the matching flow scope.",
+          "expectedAnswer": "Pattern matching combines type testing and extraction into a single expression without explicit casting.",
+          "keyTakeaway": "Pattern matching for instanceof eliminates boilerplate casts.",
+          "keyPoints": [
+            "Pattern matching for instanceof eliminates boilerplate casts."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i2-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why does the Open/Closed Principle advise against long chains of `if-else instanceof` checks?",
+          "answer": "Because every time a new subclass is added to the system, the developer must locate and modify every `if-else instanceof` ladder across the codebase, violating the principle that classes should be open for extension but closed for modification. Polymorphic method overriding allows adding new subclasses without touching existing client code.",
+          "expectedAnswer": "Long instanceof chains require modifying existing code whenever new subtypes are added, violating OCP.",
+          "keyTakeaway": "Replace type branching with polymorphic method dispatch whenever possible.",
+          "keyPoints": [
+            "Replace type branching with polymorphic method dispatch whenever possible."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i2-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How does `instanceof` handle `null` references, and why was it designed that way?",
+          "answer": "If the operand is `null`, `instanceof` evaluates to `false` without throwing `NullPointerException`. The designers reasoned that `null` does not refer to any instance in heap memory, so it cannot be an instance of any class. This behavior eliminates tedious `if (obj != null && obj instanceof String)` boilerplate.",
+          "expectedAnswer": "null instanceof AnyType returns false. null represents no object, so it cannot be an instance of anything.",
+          "keyTakeaway": "null instanceof Type always returns false cleanly.",
+          "keyPoints": [
+            "null instanceof Type always returns false cleanly."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i2-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the performance cost of the `instanceof` operator in hot JVM loops?",
+          "answer": "Modern JVMs optimize `instanceof` aggressively. For class checks, it compares the object's klass pointer directly or scans a small fixed-size primary supers table in O(1) time. For interface checks, the JVM uses inline caches and secondary supers arrays. While highly optimized, avoiding unnecessary type checks in tight loops is preferable by leveraging polymorphism.",
+          "expectedAnswer": "Modern JVMs perform instanceof in O(1) time for class hierarchies and optimize it using inline caches.",
+          "keyTakeaway": "instanceof is heavily optimized by JIT compilers, but polymorphism is still cleaner.",
+          "keyPoints": [
+            "instanceof is heavily optimized by JIT compilers, but polymorphism is still cleaner."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i2-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between `obj instanceof MyClass` and `obj.getClass() == MyClass.class`?",
+          "answer": "`obj instanceof MyClass` checks whether `obj` is an instance of `MyClass` OR any of its subclasses (subtyping/polymorphic check). In contrast, `obj.getClass() == MyClass.class` checks for exact, literal class equality, returning `false` for any subclass. Furthermore, `getClass()` throws NPE if `obj` is null.",
+          "expectedAnswer": "instanceof checks type hierarchy (including subclasses), whereas getClass() == requires exact identical runtime class.",
+          "keyTakeaway": "instanceof allows subclasses; getClass() == forbids subclasses.",
+          "keyPoints": [
+            "instanceof allows subclasses; getClass() == forbids subclasses."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i2-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "When does the Java compiler produce an 'inconvertible types' error with `instanceof`?",
+          "answer": "When the compiler can statically prove that the reference type and target type have no path of inheritance between them. For example, since `String` is a `final` class that does not implement `List`, `str instanceof List` triggers a compile error because no object could ever satisfy both.",
+          "expectedAnswer": "When there is no possibility in the type hierarchy for the reference to ever be an instance of the target type.",
+          "keyTakeaway": "Inconvertible types cause compile-time failure for instanceof.",
+          "keyPoints": [
+            "Inconvertible types cause compile-time failure for instanceof."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i2-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How did Java 16 improve the traditional `instanceof` pattern?",
+          "answer": "Java 16 introduced Pattern Matching for `instanceof` (JEP 394). Instead of requiring a redundant cast `if (obj instanceof String) { String s = (String) obj; }`, developers write `if (obj instanceof String s) { ... }`, automatically binding the safely cast variable `s` within the matching flow scope.",
+          "expectedAnswer": "Pattern matching combines type testing and extraction into a single expression without explicit casting.",
+          "keyTakeaway": "Pattern matching for instanceof eliminates boilerplate casts.",
+          "keyPoints": [
+            "Pattern matching for instanceof eliminates boilerplate casts."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i2-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why does the Open/Closed Principle advise against long chains of `if-else instanceof` checks?",
+          "answer": "Because every time a new subclass is added to the system, the developer must locate and modify every `if-else instanceof` ladder across the codebase, violating the principle that classes should be open for extension but closed for modification. Polymorphic method overriding allows adding new subclasses without touching existing client code.",
+          "expectedAnswer": "Long instanceof chains require modifying existing code whenever new subtypes are added, violating OCP.",
+          "keyTakeaway": "Replace type branching with polymorphic method dispatch whenever possible.",
+          "keyPoints": [
+            "Replace type branching with polymorphic method dispatch whenever possible."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les2-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the exact syntax of the binary instanceof operator.",
+        "I understand why null instanceof AnyType always returns false without throwing an NPE.",
+        "I understand that instanceof evaluates to true for direct classes, ancestor classes, and implemented interfaces.",
+        "I know the difference between instanceof (hierarchical) and getClass() == (exact match).",
+        "I can identify compile-time inconvertible type errors with instanceof.",
+        "I understand how instanceof guards against runtime ClassCastExceptions.",
+        "I recognize when long instanceof chains indicate a violation of the Open/Closed Principle.",
+        "I know how the JIT compiler optimizes instanceof in bytecode.",
+        "I understand why instanceof cannot be applied to primitive types.",
+        "I can trace the execution of heterogeneous polymorphic pipelines utilizing instanceof."
+      ],
+      "items": [
+        "I know the exact syntax of the binary instanceof operator.",
+        "I understand why null instanceof AnyType always returns false without throwing an NPE.",
+        "I understand that instanceof evaluates to true for direct classes, ancestor classes, and implemented interfaces.",
+        "I know the difference between instanceof (hierarchical) and getClass() == (exact match).",
+        "I can identify compile-time inconvertible type errors with instanceof.",
+        "I understand how instanceof guards against runtime ClassCastExceptions.",
+        "I recognize when long instanceof chains indicate a violation of the Open/Closed Principle.",
+        "I know how the JIT compiler optimizes instanceof in bytecode.",
+        "I understand why instanceof cannot be applied to primitive types.",
+        "I can trace the execution of heterogeneous polymorphic pipelines utilizing instanceof."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les2-p1",
+      "lessonId": "java-oop-mod10-les2",
+      "orderIndex": 1,
+      "title": "Warmup: Safe Shape Drawer",
+      "difficulty": "easy",
+      "problemStatement": "Complete the shape drawing loop:\n1. Interface `Shape` with no methods.\n2. Class `Circle` implementing `Shape` with method `public void drawCircle()` printing `'Drawing Circle'`.\n3. Class `Square` implementing `Shape` with method `public void drawSquare()` printing `'Drawing Square'`.\n4. Complete `render(Shape s)`: using `instanceof` and casting, call `drawCircle()` if `s` is a `Circle`, or `drawSquare()` if `s` is a `Square`.\nIn `main`, pass a `Circle` and a `Square` to `render`.",
+      "starterCode": "interface Shape {}\nclass Circle implements Shape {\n    public void drawCircle() { System.out.println(\"Drawing Circle\"); }\n}\nclass Square implements Shape {\n    public void drawSquare() { System.out.println(\"Drawing Square\"); }\n}\n\npublic class ShapeApp {\n    public static void render(Shape s) {\n        // TODO: Check instanceof and call drawCircle() or drawSquare()\n    }\n    public static void main(String[] args) {\n        render(new Circle());\n        render(new Square());\n    }\n}",
+      "initialCode": "interface Shape {}\nclass Circle implements Shape {\n    public void drawCircle() { System.out.println(\"Drawing Circle\"); }\n}\nclass Square implements Shape {\n    public void drawSquare() { System.out.println(\"Drawing Square\"); }\n}\n\npublic class ShapeApp {\n    public static void render(Shape s) {\n        // TODO: Check instanceof and call drawCircle() or drawSquare()\n    }\n    public static void main(String[] args) {\n        render(new Circle());\n        render(new Square());\n    }\n}",
+      "solutionCode": "interface Shape {}\nclass Circle implements Shape {\n    public void drawCircle() { System.out.println(\"Drawing Circle\"); }\n}\nclass Square implements Shape {\n    public void drawSquare() { System.out.println(\"Drawing Square\"); }\n}\n\npublic class ShapeApp {\n    public static void render(Shape s) {\n        if (s instanceof Circle) {\n            Circle c = (Circle) s;\n            c.drawCircle();\n        } else if (s instanceof Square) {\n            Square sq = (Square) s;\n            sq.drawSquare();\n        }\n    }\n    public static void main(String[] args) {\n        render(new Circle());\n        render(new Square());\n    }\n}",
+      "expectedOutput": "Drawing Circle\nDrawing Square",
+      "hints": [
+        "Use `if (s instanceof Circle)` then cast: `Circle c = (Circle) s;`",
+        "Repeat for `Square`."
+      ]
+    },
+    {
+      "id": "prob-les2-p2",
+      "lessonId": "java-oop-mod10-les2",
+      "orderIndex": 2,
+      "title": "Smart Appliance Power Inspector",
+      "difficulty": "medium",
+      "problemStatement": "Build a polymorphic smart appliance inspection utility from scratch without starter code:\n1. Interface `Appliance` with `String getName()`.\n2. Class `AirConditioner` implementing `Appliance`: fields `name` (String) and `targetTemp` (int). Method `public int getTargetTemp()`.\n3. Class `WashingMachine` implementing `Appliance`: fields `name` (String) and `spinSpeed` (int). Method `public int getSpinSpeed()`.\n4. Class `ApplianceInspector` with static method `public static void inspect(Appliance a)`:\n   - Prints `'Appliance: ' + a.getName()`\n   - If `a instanceof AirConditioner`, casts and prints `'  Cooling to ' + ac.getTargetTemp() + 'C'`\n   - If `a instanceof WashingMachine`, casts and prints `'  Spinning at ' + wm.getSpinSpeed() + ' RPM'`\n5. In `Main`, call `inspect` with `new AirConditioner(\"Living Room AC\", 22)` and `new WashingMachine(\"LG TurboWash\", 1400)`.",
+      "solutionCode": "interface Appliance {\n    String getName();\n}\n\nclass AirConditioner implements Appliance {\n    private String name;\n    private int targetTemp;\n    public AirConditioner(String name, int targetTemp) {\n        this.name = name;\n        this.targetTemp = targetTemp;\n    }\n    @Override\n    public String getName() { return name; }\n    public int getTargetTemp() { return targetTemp; }\n}\n\nclass WashingMachine implements Appliance {\n    private String name;\n    private int spinSpeed;\n    public WashingMachine(String name, int spinSpeed) {\n        this.name = name;\n        this.spinSpeed = spinSpeed;\n    }\n    @Override\n    public String getName() { return name; }\n    public int getSpinSpeed() { return spinSpeed; }\n}\n\nclass ApplianceInspector {\n    public static void inspect(Appliance a) {\n        System.out.println(\"Appliance: \" + a.getName());\n        if (a instanceof AirConditioner) {\n            AirConditioner ac = (AirConditioner) a;\n            System.out.println(\"  Cooling to \" + ac.getTargetTemp() + \"C\");\n        } else if (a instanceof WashingMachine) {\n            WashingMachine wm = (WashingMachine) a;\n            System.out.println(\"  Spinning at \" + wm.getSpinSpeed() + \" RPM\");\n        }\n    }\n}\n\npublic class SmartHomeApp {\n    public static void main(String[] args) {\n        ApplianceInspector.inspect(new AirConditioner(\"Living Room AC\", 22));\n        ApplianceInspector.inspect(new WashingMachine(\"LG TurboWash\", 1400));\n    }\n}",
+      "expectedOutput": "Appliance: Living Room AC\n  Cooling to 22C\nAppliance: LG TurboWash\n  Spinning at 1400 RPM",
+      "hints": [
+        "Appliance interface requires String getName().",
+        "Use instanceof inside inspect() before casting to access getTargetTemp() or getSpinSpeed()."
+      ]
+    },
+    {
+      "id": "prob-les2-p3",
+      "lessonId": "java-oop-mod10-les2",
+      "orderIndex": 3,
+      "title": "Null-Safe Heterogeneous Payload Auditor",
+      "difficulty": "medium",
+      "problemStatement": "Build a null-safe payload auditor from scratch without starter code:\n1. Interface `Payload` with `String getId()`.\n2. Class `TextPayload` implementing `Payload`: fields `id` and `text`. Method `public int getCharCount()` returning `text.length()`.\n3. Class `BinaryPayload` implementing `Payload`: fields `id` and `byteSize` (int). Method `public int getByteSize()` returning `byteSize`.\n4. Utility class `Auditor` with static method `public static String summarize(Payload p)`:\n   - If `p == null` or !(p instanceof Payload), return `'Null or invalid payload'` (remember `p instanceof ...` already handles null!)\n   - If `p instanceof TextPayload`, return `'Text Payload [' + p.getId() + '] chars: ' + ((TextPayload) p).getCharCount()`\n   - If `p instanceof BinaryPayload`, return `'Binary Payload [' + p.getId() + '] bytes: ' + ((BinaryPayload) p).getByteSize()`\n   - Otherwise return `'Generic Payload [' + p.getId() + ']'`\n5. In `Main`, test `summarize` with `new TextPayload(\"p-1\", \"Hello World\")`, `new BinaryPayload(\"p-2\", 2048)`, and `null`.\nPrint each result on a new line.",
+      "solutionCode": "interface Payload {\n    String getId();\n}\n\nclass TextPayload implements Payload {\n    private String id;\n    private String text;\n    public TextPayload(String id, String text) {\n        this.id = id;\n        this.text = text;\n    }\n    @Override\n    public String getId() { return id; }\n    public int getCharCount() { return text.length(); }\n}\n\nclass BinaryPayload implements Payload {\n    private String id;\n    private int byteSize;\n    public BinaryPayload(String id, int byteSize) {\n        this.id = id;\n        this.byteSize = byteSize;\n    }\n    @Override\n    public String getId() { return id; }\n    public int getByteSize() { return byteSize; }\n}\n\nclass Auditor {\n    public static String summarize(Payload p) {\n        if (p == null) {\n            return \"Null or invalid payload\";\n        }\n        if (p instanceof TextPayload) {\n            TextPayload tp = (TextPayload) p;\n            return \"Text Payload [\" + tp.getId() + \"] chars: \" + tp.getCharCount();\n        } else if (p instanceof BinaryPayload) {\n            BinaryPayload bp = (BinaryPayload) p;\n            return \"Binary Payload [\" + bp.getId() + \"] bytes: \" + bp.getByteSize();\n        }\n        return \"Generic Payload [\" + p.getId() + \"]\";\n    }\n}\n\npublic class AuditApp {\n    public static void main(String[] args) {\n        System.out.println(Auditor.summarize(new TextPayload(\"p-1\", \"Hello World\")));\n        System.out.println(Auditor.summarize(new BinaryPayload(\"p-2\", 2048)));\n        System.out.println(Auditor.summarize(null));\n    }\n}",
+      "expectedOutput": "Text Payload [p-1] chars: 11\nBinary Payload [p-2] bytes: 2048\nNull or invalid payload",
+      "hints": [
+        "Check for null first, or leverage the fact that instanceof returns false for null.",
+        "\"Hello World\".length() is 11."
+      ]
+    },
+    {
+      "id": "prob-les2-p4",
+      "lessonId": "java-oop-mod10-les2",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Unguarded Downcast ClassCastException",
+      "difficulty": "hard",
+      "problemStatement": "The following code attempts to process an array of `Worker` objects. It blindly casts every worker to `Developer`, throwing `ClassCastException` when it encounters a `Designer`. Fix the bug by using `instanceof` checks so that developers write code, designers sketch, and no exception is thrown.",
+      "starterCode": "class Worker {\n    protected String name;\n    public Worker(String name) { this.name = name; }\n}\nclass Developer extends Worker {\n    public Developer(String name) { super(name); }\n    public void writeCode() { System.out.println(name + \" writing Java\"); }\n}\nclass Designer extends Worker {\n    public Designer(String name) { super(name); }\n    public void sketch() { System.out.println(name + \" sketching Figma\"); }\n}\n\npublic class TeamApp {\n    public static void main(String[] args) {\n        Worker[] team = new Worker[] {\n            new Developer(\"Dave\"),\n            new Designer(\"Dana\")\n        };\n        for (Worker w : team) {\n            // BUG: Blind downcast without instanceof causes crash on Dana!\n            Developer d = (Developer) w;\n            d.writeCode();\n        }\n    }\n}",
+      "initialCode": "class Worker {\n    protected String name;\n    public Worker(String name) { this.name = name; }\n}\nclass Developer extends Worker {\n    public Developer(String name) { super(name); }\n    public void writeCode() { System.out.println(name + \" writing Java\"); }\n}\nclass Designer extends Worker {\n    public Designer(String name) { super(name); }\n    public void sketch() { System.out.println(name + \" sketching Figma\"); }\n}\n\npublic class TeamApp {\n    public static void main(String[] args) {\n        Worker[] team = new Worker[] {\n            new Developer(\"Dave\"),\n            new Designer(\"Dana\")\n        };\n        for (Worker w : team) {\n            // BUG: Blind downcast without instanceof causes crash on Dana!\n            Developer d = (Developer) w;\n            d.writeCode();\n        }\n    }\n}",
+      "solutionCode": "class Worker {\n    protected String name;\n    public Worker(String name) { this.name = name; }\n}\nclass Developer extends Worker {\n    public Developer(String name) { super(name); }\n    public void writeCode() { System.out.println(name + \" writing Java\"); }\n}\nclass Designer extends Worker {\n    public Designer(String name) { super(name); }\n    public void sketch() { System.out.println(name + \" sketching Figma\"); }\n}\n\npublic class TeamApp {\n    public static void main(String[] args) {\n        Worker[] team = new Worker[] {\n            new Developer(\"Dave\"),\n            new Designer(\"Dana\")\n        };\n        for (Worker w : team) {\n            if (w instanceof Developer) {\n                Developer d = (Developer) w;\n                d.writeCode();\n            } else if (w instanceof Designer) {\n                Designer des = (Designer) w;\n                des.sketch();\n            }\n        }\n    }\n}",
+      "expectedOutput": "Dave writing Java\nDana sketching Figma",
+      "hints": [
+        "Wrap each downcast inside `if (w instanceof Developer)` or `if (w instanceof Designer)`.",
+        "Call the respective specialized method on the casted variable."
+      ]
+    },
+    {
+      "id": "prob-les2-p5",
+      "lessonId": "java-oop-mod10-les2",
+      "orderIndex": 5,
+      "title": "Advanced: Hierarchical Type Counter",
+      "difficulty": "advanced",
+      "problemStatement": "Build a hierarchical type counter from scratch without starter code:\n1. Class `Component`\n2. Class `Container extends Component`\n3. Class `Panel extends Container`\n4. Class `Button extends Component`\n5. In `Main`, create an array `Component[] elements` holding:\n   - `new Panel()`\n   - `new Container()`\n   - `new Button()`\n   - `new Component()`\n   - `null`\n6. Count how many elements in `elements` satisfy:\n   - `e instanceof Component`\n   - `e instanceof Container`\n   - `e instanceof Panel`\n7. Print:\n   `'Component count: ' + compCount`\n   `'Container count: ' + contCount`\n   `'Panel count: ' + panelCount`\nVerify that transitive subtyping and null safety correctly evaluate to 4 components, 2 containers, and 1 panel.",
+      "solutionCode": "class Component {}\nclass Container extends Component {}\nclass Panel extends Container {}\nclass Button extends Component {}\n\npublic class HierarchyApp {\n    public static void main(String[] args) {\n        Component[] elements = new Component[] {\n            new Panel(),\n            new Container(),\n            new Button(),\n            new Component(),\n            null\n        };\n\n        int compCount = 0;\n        int contCount = 0;\n        int panelCount = 0;\n\n        for (Component e : elements) {\n            if (e instanceof Component) compCount++;\n            if (e instanceof Container) contCount++;\n            if (e instanceof Panel) panelCount++;\n        }\n\n        System.out.println(\"Component count: \" + compCount);\n        System.out.println(\"Container count: \" + contCount);\n        System.out.println(\"Panel count: \" + panelCount);\n    }\n}",
+      "expectedOutput": "Component count: 4\nContainer count: 2\nPanel count: 1",
+      "hints": [
+        "Panel is an instance of Panel, Container, and Component.",
+        "Container is an instance of Container and Component.",
+        "Button and Component are instances of Component.",
+        "null matches none of the checks."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of instanceof",
+    "Analyze, predict, and trace code execution involving instanceof-operator",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in instanceof principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

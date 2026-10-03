@@ -1,0 +1,527 @@
+{
+  "id": "les-cast-3",
+  "slug": "upcasting-revisited",
+  "title": "Upcasting Revisited",
+  "summary": "Treating a specialized child as its broader parent type across collections and APIs.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les3-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Airport Luggage Cart",
+      "concept": "Upcasting (Implicit Widening Reference Conversion)",
+      "realWorldMetaphor": {
+        "scenario": "An airport luggage cart is designed to transport any piece of 'Luggage'. Whether you place a heavy hard-shell suitcase, a nylon duffel bag, or a compact camera backpack onto the cart, the cart handles it seamlessly without requiring any modifications or special adapters. The cart only cares that the item IS luggage.",
+        "mapping": "In Java, upcasting is assigning a subclass instance to a superclass reference variable (e.g. `Luggage item = new DuffelBag();`). Because a `DuffelBag` is guaranteed to have every property and method that `Luggage` defines, Java allows this conversion implicitly (without any cast syntax) and guarantees 100% type safety at runtime.",
+        "takeaway": "Upcasting is always safe and implicit because every specialized child is guaranteed to satisfy the broader parent contract."
+      }
+    },
+    {
+      "id": "act-les3-concept",
+      "type": "concept",
+      "title": "Upcasting: The Engine of Polymorphic Design",
+      "content": "### What is Upcasting?\n\n**Upcasting** is casting a reference from a specialized subclass to a more general superclass or interface up the inheritance hierarchy tree:\n\n```java\nDog myDog = new Dog();\nAnimal myAnimal = myDog; // Implicit upcast!\n```\n\n### Key Principles of Upcasting\n1. **Implicit and Automatic**: No cast operator `(Animal)` is required. The Java compiler performs the widening reference conversion automatically.\n2. **100% Type-Safe**: Upcasting can **never** fail at runtime and will **never** throw a `ClassCastException` because a subclass instance inherently possesses all state and behaviors defined by its ancestor.\n3. **Interface Upcasting**: Assigning an implementing class instance to an interface reference is also upcasting:\n   ```java\n   List<String> items = new ArrayList<>(); // Upcasting to List\n   ```\n4. **Restricted View**: The only trade-off is visibility: while the object remains fully intact in heap memory, you can only access the members exposed by the superclass reference.\n\n### Why Upcasting is Fundamental to OOP\nWithout upcasting, you would have to write separate methods for every subtype:\n- `printDog(Dog d)`\n- `printCat(Cat c)`\n- `printBird(Bird b)`\n\nWith upcasting, a single method `printAnimal(Animal a)` handles all existing and future subtypes."
+    },
+    {
+      "id": "act-les3-cw1",
+      "type": "code_walkthrough",
+      "title": "Implicit Upcasting in Method Arguments and Collections",
+      "codeSnippet": "class Employee {\n    private String name;\n    private double baseSalary;\n    public Employee(String name, double baseSalary) {\n        this.name = name;\n        this.baseSalary = baseSalary;\n    }\n    public double calculatePay() {\n        return baseSalary;\n    }\n    public String getName() { return name; }\n}\n\nclass Manager extends Employee {\n    private double bonus;\n    public Manager(String name, double baseSalary, double bonus) {\n        super(name, baseSalary);\n        this.bonus = bonus;\n    }\n    @Override\n    public double calculatePay() {\n        return super.calculatePay() + bonus;\n    }\n}\n\npublic class UpcastingDemo {\n    // Accepts any Employee or subclass through upcasting\n    public static void printPayStub(Employee emp) {\n        System.out.println(emp.getName() + \" Total Pay: $\" + emp.calculatePay());\n    }\n\n    public static void main(String[] args) {\n        Employee staff = new Employee(\"Bob\", 50000.0);\n        Manager mgr = new Manager(\"Alice\", 90000.0, 20000.0);\n\n        // Implicit upcast happens during method call\n        printPayStub(staff);\n        printPayStub(mgr); // Manager upcast to Employee automatically!\n    }\n}",
+      "code": "class Employee {\n    private String name;\n    private double baseSalary;\n    public Employee(String name, double baseSalary) {\n        this.name = name;\n        this.baseSalary = baseSalary;\n    }\n    public double calculatePay() {\n        return baseSalary;\n    }\n    public String getName() { return name; }\n}\n\nclass Manager extends Employee {\n    private double bonus;\n    public Manager(String name, double baseSalary, double bonus) {\n        super(name, baseSalary);\n        this.bonus = bonus;\n    }\n    @Override\n    public double calculatePay() {\n        return super.calculatePay() + bonus;\n    }\n}\n\npublic class UpcastingDemo {\n    // Accepts any Employee or subclass through upcasting\n    public static void printPayStub(Employee emp) {\n        System.out.println(emp.getName() + \" Total Pay: $\" + emp.calculatePay());\n    }\n\n    public static void main(String[] args) {\n        Employee staff = new Employee(\"Bob\", 50000.0);\n        Manager mgr = new Manager(\"Alice\", 90000.0, 20000.0);\n\n        // Implicit upcast happens during method call\n        printPayStub(staff);\n        printPayStub(mgr); // Manager upcast to Employee automatically!\n    }\n}",
+      "language": "java",
+      "explanation": "Manager is upcast to Employee when passed into printPayStub(). Dynamic method dispatch ensures calculatePay() computes Alice's bonus.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Employee` declares `calculatePay()` and `getName()`."
+        },
+        {
+          "step": 2,
+          "description": "`Manager` adds a `bonus` and overrides `calculatePay()`."
+        },
+        {
+          "step": 3,
+          "description": "`printPayStub(Employee emp)` takes an `Employee` reference parameter."
+        },
+        {
+          "step": 4,
+          "description": "Passing `mgr` upcasts `Manager` to `Employee` without explicit syntax, triggering dynamic dispatch."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-cw2",
+      "type": "code_walkthrough",
+      "title": "Multi-Level Interface Upcasting",
+      "codeSnippet": "interface Printable {\n    void print();\n}\ninterface Exportable extends Printable {\n    String exportJson();\n}\n\nclass Invoice implements Exportable {\n    private int invoiceId;\n    public Invoice(int id) { this.invoiceId = id; }\n    @Override\n    public void print() {\n        System.out.println(\"Printing Invoice #\" + invoiceId);\n    }\n    @Override\n    public String exportJson() {\n        return \"{\\\"invoiceId\\\": \" + invoiceId + \"}\";\n    }\n}\n\npublic class InterfaceUpcastDemo {\n    public static void main(String[] args) {\n        Invoice inv = new Invoice(101);\n\n        // 1. Upcast to immediate interface\n        Exportable exp = inv;\n        System.out.println(exp.exportJson());\n\n        // 2. Upcast further up to root interface\n        Printable p = exp;\n        p.print();\n    }\n}",
+      "code": "interface Printable {\n    void print();\n}\ninterface Exportable extends Printable {\n    String exportJson();\n}\n\nclass Invoice implements Exportable {\n    private int invoiceId;\n    public Invoice(int id) { this.invoiceId = id; }\n    @Override\n    public void print() {\n        System.out.println(\"Printing Invoice #\" + invoiceId);\n    }\n    @Override\n    public String exportJson() {\n        return \"{\\\"invoiceId\\\": \" + invoiceId + \"}\";\n    }\n}\n\npublic class InterfaceUpcastDemo {\n    public static void main(String[] args) {\n        Invoice inv = new Invoice(101);\n\n        // 1. Upcast to immediate interface\n        Exportable exp = inv;\n        System.out.println(exp.exportJson());\n\n        // 2. Upcast further up to root interface\n        Printable p = exp;\n        p.print();\n    }\n}",
+      "language": "java",
+      "explanation": "An object can be upcast to any interface in its hierarchy tree. At each higher level, only that level's contract is visible to the compiler.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Exportable` extends `Printable`."
+        },
+        {
+          "step": 2,
+          "description": "`Invoice` implements `Exportable`."
+        },
+        {
+          "step": 3,
+          "description": "Upcasting to `Exportable` allows both `print()` and `exportJson()`."
+        },
+        {
+          "step": 4,
+          "description": "Upcasting to `Printable` narrows view strictly to `print()`."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-mcq",
+      "type": "mcq",
+      "title": "Upcasting Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is upcasting in Java?",
+          "options": [
+            "Converting a primitive int to double",
+            "Assigning a subclass object to a superclass or interface reference",
+            "Converting an Object to a String via (String) obj",
+            "Allocating memory on the call stack"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Upcasting refers to moving up the inheritance tree by treating a specialized child as a broader supertype."
+        },
+        {
+          "id": "q2",
+          "question": "Does upcasting require an explicit cast operator like `(SuperClass) subObj`?",
+          "options": [
+            "Yes, always required by Java syntax",
+            "No, upcasting is implicit and performed automatically by the compiler",
+            "Only if the superclass is abstract",
+            "Only if generics are used"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Upcasting is safe and widening, so the Java compiler executes it implicitly without explicit cast syntax."
+        },
+        {
+          "id": "q3",
+          "question": "Can upcasting ever throw a `ClassCastException` at runtime?",
+          "options": [
+            "Yes, if the heap is out of memory",
+            "Never, upcasting is 100% type-safe and guaranteed by the compiler",
+            "Yes, if the object is null",
+            "Yes, if the child class overrides any private methods"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Because a subclass is always an instance of its parent (IS-A relationship), upcasting never fails."
+        },
+        {
+          "id": "q4",
+          "question": "Given `Animal a = new Cat();`, what happens to the Cat object on the heap?",
+          "options": [
+            "It is truncated to only retain Animal fields",
+            "It remains a complete Cat object in heap memory",
+            "It is cloned into an Animal instance",
+            "It is converted into bytecode"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Upcasting changes only the reference type (the lens through which the object is accessed); the heap object itself is completely unchanged."
+        },
+        {
+          "id": "q5",
+          "question": "What is the primary benefit of upcasting in API design?",
+          "options": [
+            "It accelerates garbage collection",
+            "It allows methods to accept and process any subtype polymorphically",
+            "It makes classes final",
+            "It eliminates virtual method tables"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "APIs accepting supertypes (e.g. `InputStream`, `List`) can handle any existing or future subclass seamlessly."
+        },
+        {
+          "id": "q6",
+          "question": "Which statement correctly demonstrates upcasting to an interface?",
+          "options": [
+            "ArrayList<String> list = new List<String>();",
+            "List<String> list = new ArrayList<>();",
+            "List list = (ArrayList) new List();",
+            "ArrayList list = (List) new Object();"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`List<String> list = new ArrayList<>();` upcasts the concrete ArrayList to the List interface."
+        },
+        {
+          "id": "q7",
+          "question": "If `B extends A`, and method `void foo(A a)` exists, what happens if you call `foo(new B())`?",
+          "options": [
+            "Compile error: type mismatch",
+            "Implicit upcast passes new B() as type A successfully",
+            "Runtime ClassCastException",
+            "foo is ignored"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Method arguments undergo automatic widening reference conversion (upcasting)."
+        },
+        {
+          "id": "q8",
+          "question": "Can you call a subclass-specific method immediately after upcasting to a superclass reference without casting back?",
+          "options": [
+            "Yes, dynamic dispatch finds all methods",
+            "No, the compiler restricts method calls to those declared in the superclass reference",
+            "Only if the method is public",
+            "Only if reflection is enabled"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The reference type determines method accessibility at compile time."
+        },
+        {
+          "id": "q9",
+          "question": "Given `Object o = \"Hello\";`, what is this operation called?",
+          "options": [
+            "Downcasting",
+            "Upcasting (to java.lang.Object)",
+            "Autoboxing",
+            "Unboxing"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Since String inherits from Object, assigning String to Object is an upcast."
+        },
+        {
+          "id": "q10",
+          "question": "Why does upcasting support the Open/Closed Principle?",
+          "options": [
+            "It requires modifying parent classes frequently",
+            "New subclasses can be introduced and passed to existing methods without altering their signatures",
+            "It forces all methods to be static",
+            "It disables method overriding"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Existing modules closed for modification can accept new open extensions through upcasting."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-interview",
+      "type": "interview_qa",
+      "title": "Upcasting Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i3-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is upcasting, and why does Java allow it to happen implicitly?",
+          "answer": "Upcasting is the assignment of a subclass object to a superclass reference. Java allows it implicitly because it adheres to the Liskov Substitution Principle: every subclass instance is guaranteed to support all members and contracts defined by its superclass. There is zero risk of type invalidity at runtime.",
+          "expectedAnswer": "Upcasting assigns a child instance to a parent reference. It is implicit because children are guaranteed to satisfy all parent contracts.",
+          "keyTakeaway": "Upcasting is safe and implicit due to the IS-A subtyping guarantee.",
+          "keyPoints": [
+            "Upcasting is safe and implicit due to the IS-A subtyping guarantee."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i3-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Does upcasting modify the underlying object in heap memory?",
+          "answer": "No. The heap object retains its full identity, all its instance fields, and its class metadata pointer. Upcasting only alters the static reference type used by the compiler to check method and field access.",
+          "expectedAnswer": "No heap changes occur. Upcasting only changes the compile-time view of the object.",
+          "keyTakeaway": "Upcasting changes the reference lens, not the heap object.",
+          "keyPoints": [
+            "Upcasting changes the reference lens, not the heap object."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i3-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How does upcasting enable the Strategy Pattern?",
+          "answer": "The Strategy Pattern defines a family of algorithms behind a common strategy interface. The client holds a reference to the strategy interface. Different concrete strategies can be upcast and injected at runtime without changing the client's code or recompiling.",
+          "expectedAnswer": "Upcasting allows injecting diverse algorithmic strategies into a common interface reference dynamically.",
+          "keyTakeaway": "Strategy pattern relies heavily on upcasting to strategy interfaces.",
+          "keyPoints": [
+            "Strategy pattern relies heavily on upcasting to strategy interfaces."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i3-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Can an array of subclasses be upcast to an array of superclasses in Java? What is this called and what danger does it present?",
+          "answer": "Yes, Java arrays are covariant: `Integer[]` can be upcast to `Number[]` or `Object[]`. The danger is that at runtime, assigning an incompatible type into the array (e.g. `objects[0] = \"text\"` when the array is actually `Integer[]`) throws an `ArrayStoreException`.",
+          "expectedAnswer": "Array covariance allows upcasting arrays, but can throw ArrayStoreException if an incompatible object is stored.",
+          "keyTakeaway": "Java array covariance permits upcasting but risks runtime ArrayStoreException.",
+          "keyPoints": [
+            "Java array covariance permits upcasting but risks runtime ArrayStoreException."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i3-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why are Java generics invariant whereas arrays are covariant?",
+          "answer": "Generics are invariant (`List<Integer>` is NOT a subtype of `List<Number>`) specifically to prevent the runtime errors that plague covariant arrays. Generics enforce complete compile-time type safety without relying on runtime store checks.",
+          "expectedAnswer": "Generics are invariant to eliminate runtime type corruption and provide compile-time safety.",
+          "keyTakeaway": "Generic invariance prevents runtime type mismatch errors.",
+          "keyPoints": [
+            "Generic invariance prevents runtime type mismatch errors."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i3-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does upcasting interact with method overloading resolution?",
+          "answer": "Method overloading is resolved at compile time using static binding based on the compile-time types of the arguments. If you have `process(Animal a)` and `process(Dog d)`, calling `process(myAnimal)` where `myAnimal` holds an upcast `Dog` will resolve to `process(Animal)` because the compiler only sees the `Animal` reference type.",
+          "expectedAnswer": "Overloading resolution uses the reference type at compile time, not the runtime object type.",
+          "keyTakeaway": "Method overloading is bound statically by reference type at compile time.",
+          "keyPoints": [
+            "Method overloading is bound statically by reference type at compile time."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i3-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is upcasting, and why does Java allow it to happen implicitly?",
+          "answer": "Upcasting is the assignment of a subclass object to a superclass reference. Java allows it implicitly because it adheres to the Liskov Substitution Principle: every subclass instance is guaranteed to support all members and contracts defined by its superclass. There is zero risk of type invalidity at runtime.",
+          "expectedAnswer": "Upcasting assigns a child instance to a parent reference. It is implicit because children are guaranteed to satisfy all parent contracts.",
+          "keyTakeaway": "Upcasting is safe and implicit due to the IS-A subtyping guarantee.",
+          "keyPoints": [
+            "Upcasting is safe and implicit due to the IS-A subtyping guarantee."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i3-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Does upcasting modify the underlying object in heap memory?",
+          "answer": "No. The heap object retains its full identity, all its instance fields, and its class metadata pointer. Upcasting only alters the static reference type used by the compiler to check method and field access.",
+          "expectedAnswer": "No heap changes occur. Upcasting only changes the compile-time view of the object.",
+          "keyTakeaway": "Upcasting changes the reference lens, not the heap object.",
+          "keyPoints": [
+            "Upcasting changes the reference lens, not the heap object."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i3-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How does upcasting enable the Strategy Pattern?",
+          "answer": "The Strategy Pattern defines a family of algorithms behind a common strategy interface. The client holds a reference to the strategy interface. Different concrete strategies can be upcast and injected at runtime without changing the client's code or recompiling.",
+          "expectedAnswer": "Upcasting allows injecting diverse algorithmic strategies into a common interface reference dynamically.",
+          "keyTakeaway": "Strategy pattern relies heavily on upcasting to strategy interfaces.",
+          "keyPoints": [
+            "Strategy pattern relies heavily on upcasting to strategy interfaces."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i3-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Can an array of subclasses be upcast to an array of superclasses in Java? What is this called and what danger does it present?",
+          "answer": "Yes, Java arrays are covariant: `Integer[]` can be upcast to `Number[]` or `Object[]`. The danger is that at runtime, assigning an incompatible type into the array (e.g. `objects[0] = \"text\"` when the array is actually `Integer[]`) throws an `ArrayStoreException`.",
+          "expectedAnswer": "Array covariance allows upcasting arrays, but can throw ArrayStoreException if an incompatible object is stored.",
+          "keyTakeaway": "Java array covariance permits upcasting but risks runtime ArrayStoreException.",
+          "keyPoints": [
+            "Java array covariance permits upcasting but risks runtime ArrayStoreException."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i3-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why are Java generics invariant whereas arrays are covariant?",
+          "answer": "Generics are invariant (`List<Integer>` is NOT a subtype of `List<Number>`) specifically to prevent the runtime errors that plague covariant arrays. Generics enforce complete compile-time type safety without relying on runtime store checks.",
+          "expectedAnswer": "Generics are invariant to eliminate runtime type corruption and provide compile-time safety.",
+          "keyTakeaway": "Generic invariance prevents runtime type mismatch errors.",
+          "keyPoints": [
+            "Generic invariance prevents runtime type mismatch errors."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i3-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does upcasting interact with method overloading resolution?",
+          "answer": "Method overloading is resolved at compile time using static binding based on the compile-time types of the arguments. If you have `process(Animal a)` and `process(Dog d)`, calling `process(myAnimal)` where `myAnimal` holds an upcast `Dog` will resolve to `process(Animal)` because the compiler only sees the `Animal` reference type.",
+          "expectedAnswer": "Overloading resolution uses the reference type at compile time, not the runtime object type.",
+          "keyTakeaway": "Method overloading is bound statically by reference type at compile time.",
+          "keyPoints": [
+            "Method overloading is bound statically by reference type at compile time."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les3-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand that upcasting moves up the inheritance hierarchy.",
+        "I know why upcasting is implicit and never requires explicit cast syntax.",
+        "I understand why upcasting is 100% type-safe and never throws ClassCastException.",
+        "I understand that upcasting restricts the compile-time view while leaving the heap object intact.",
+        "I know that dynamic dispatch still invokes subclass overrides after upcasting.",
+        "I understand how upcasting enables polymorphic parameters and collections.",
+        "I know how upcasting applies to both class hierarchies and interface implementations.",
+        "I can explain why array covariance in Java allows array upcasting with ArrayStoreException risks.",
+        "I understand why method overloading binds statically to the upcast reference type.",
+        "I can design extensible APIs that leverage upcasting to adhere to the Open/Closed Principle."
+      ],
+      "items": [
+        "I understand that upcasting moves up the inheritance hierarchy.",
+        "I know why upcasting is implicit and never requires explicit cast syntax.",
+        "I understand why upcasting is 100% type-safe and never throws ClassCastException.",
+        "I understand that upcasting restricts the compile-time view while leaving the heap object intact.",
+        "I know that dynamic dispatch still invokes subclass overrides after upcasting.",
+        "I understand how upcasting enables polymorphic parameters and collections.",
+        "I know how upcasting applies to both class hierarchies and interface implementations.",
+        "I can explain why array covariance in Java allows array upcasting with ArrayStoreException risks.",
+        "I understand why method overloading binds statically to the upcast reference type.",
+        "I can design extensible APIs that leverage upcasting to adhere to the Open/Closed Principle."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les3-p1",
+      "lessonId": "java-oop-mod10-les3",
+      "orderIndex": 1,
+      "title": "Warmup: Upcasting Vehicle Fleet",
+      "difficulty": "easy",
+      "problemStatement": "Complete the fleet maintenance runner:\n1. Base class `FleetVehicle` with method `public void performService()` printing `'Standard fluid inspection'`.\n2. Subclass `ElectricBus` extending `FleetVehicle`: overrides `performService()` printing `'Battery pack health diagnostic'`.\n3. In `main`, instantiate an `ElectricBus` and assign it implicitly to a `FleetVehicle` reference `v`. Call `v.performService()`.\nObserve that upcasting happens automatically and prints the electric diagnostic.",
+      "starterCode": "class FleetVehicle {\n    public void performService() {\n        System.out.println(\"Standard fluid inspection\");\n    }\n}\n\nclass ElectricBus extends FleetVehicle {\n    // TODO: Override performService()\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        // TODO: Assign ElectricBus to FleetVehicle reference and invoke performService()\n    }\n}",
+      "initialCode": "class FleetVehicle {\n    public void performService() {\n        System.out.println(\"Standard fluid inspection\");\n    }\n}\n\nclass ElectricBus extends FleetVehicle {\n    // TODO: Override performService()\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        // TODO: Assign ElectricBus to FleetVehicle reference and invoke performService()\n    }\n}",
+      "solutionCode": "class FleetVehicle {\n    public void performService() {\n        System.out.println(\"Standard fluid inspection\");\n    }\n}\n\nclass ElectricBus extends FleetVehicle {\n    @Override\n    public void performService() {\n        System.out.println(\"Battery pack health diagnostic\");\n    }\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        FleetVehicle v = new ElectricBus();\n        v.performService();\n    }\n}",
+      "expectedOutput": "Battery pack health diagnostic",
+      "hints": [
+        "Override performService() in ElectricBus with @Override.",
+        "Declare `FleetVehicle v = new ElectricBus();`."
+      ]
+    },
+    {
+      "id": "prob-les3-p2",
+      "lessonId": "java-oop-mod10-les3",
+      "orderIndex": 2,
+      "title": "Polymorphic Notification Broadcaster",
+      "difficulty": "medium",
+      "problemStatement": "Build a polymorphic notification broadcaster from scratch without starter code:\n1. Interface `MessageSender` with method `void send(String recipient, String message)`.\n2. Class `EmailSender` implementing `MessageSender`: prints `'EMAIL to ' + recipient + ': ' + message`.\n3. Class `SlackSender` implementing `MessageSender`: prints `'SLACK to #' + recipient + ': ' + message`.\n4. Class `AlertService` with method `public void broadcast(MessageSender sender, String target, String msg)` that calls `sender.send(target, msg)`.\n5. In `Main`, create an `AlertService`, an `EmailSender`, and a `SlackSender`. Call `broadcast` once with email target `'admin@company.com'` and message `'Server high load'`, and once with slack target `'dev-ops'` and message `'Deploy complete'`.",
+      "solutionCode": "interface MessageSender {\n    void send(String recipient, String message);\n}\n\nclass EmailSender implements MessageSender {\n    @Override\n    public void send(String recipient, String message) {\n        System.out.println(\"EMAIL to \" + recipient + \": \" + message);\n    }\n}\n\nclass SlackSender implements MessageSender {\n    @Override\n    public void send(String recipient, String message) {\n        System.out.println(\"SLACK to #\" + recipient + \": \" + message);\n    }\n}\n\nclass AlertService {\n    public void broadcast(MessageSender sender, String target, String msg) {\n        sender.send(target, msg);\n    }\n}\n\npublic class BroadcasterApp {\n    public static void main(String[] args) {\n        AlertService service = new AlertService();\n        MessageSender email = new EmailSender();\n        MessageSender slack = new SlackSender();\n\n        service.broadcast(email, \"admin@company.com\", \"Server high load\");\n        service.broadcast(slack, \"dev-ops\", \"Deploy complete\");\n    }\n}",
+      "expectedOutput": "EMAIL to admin@company.com: Server high load\nSLACK to #dev-ops: Deploy complete",
+      "hints": [
+        "AlertService.broadcast accepts MessageSender interface as the upcast parameter type.",
+        "Both EmailSender and SlackSender upcast to MessageSender implicitly."
+      ]
+    },
+    {
+      "id": "prob-les3-p3",
+      "lessonId": "java-oop-mod10-les3",
+      "orderIndex": 3,
+      "title": "Heterogeneous Payroll Engine",
+      "difficulty": "medium",
+      "problemStatement": "Build a payroll engine processing an upcast heterogeneous array of workers from scratch without starter code:\n1. Base class `StaffMember` with `protected String name`. Constructor `StaffMember(String name)`. Method `public abstract double getMonthlyEarnings()` (make class abstract).\n2. Subclass `SalariedStaff` extending `StaffMember`: field `monthlySalary` (double). `getMonthlyEarnings()` returns `monthlySalary`.\n3. Subclass `CommissionStaff` extending `StaffMember`: fields `basePay` (double), `salesAmount` (double), and `commissionRate` (double). `getMonthlyEarnings()` returns `basePay + (salesAmount * commissionRate)`.\n4. In `Main`, create an array `StaffMember[] payroll` holding:\n   - `new SalariedStaff(\"John Doe\", 6000.0)`\n   - `new CommissionStaff(\"Jane Smith\", 2500.0, 50000.0, 0.08)`\n5. Loop through `payroll` and print `'Staff: ' + s.name + ' Earnings: $' + s.getMonthlyEarnings()`.",
+      "solutionCode": "abstract class StaffMember {\n    protected String name;\n    public StaffMember(String name) {\n        this.name = name;\n    }\n    public abstract double getMonthlyEarnings();\n}\n\nclass SalariedStaff extends StaffMember {\n    private double monthlySalary;\n    public SalariedStaff(String name, double monthlySalary) {\n        super(name);\n        this.monthlySalary = monthlySalary;\n    }\n    @Override\n    public double getMonthlyEarnings() { return monthlySalary; }\n}\n\nclass CommissionStaff extends StaffMember {\n    private double basePay;\n    private double salesAmount;\n    private double commissionRate;\n    public CommissionStaff(String name, double basePay, double salesAmount, double commissionRate) {\n        super(name);\n        this.basePay = basePay;\n        this.salesAmount = salesAmount;\n        this.commissionRate = commissionRate;\n    }\n    @Override\n    public double getMonthlyEarnings() {\n        return basePay + (salesAmount * commissionRate);\n    }\n}\n\npublic class PayrollApp {\n    public static void main(String[] args) {\n        StaffMember[] payroll = new StaffMember[] {\n            new SalariedStaff(\"John Doe\", 6000.0),\n            new CommissionStaff(\"Jane Smith\", 2500.0, 50000.0, 0.08)\n        };\n        for (StaffMember s : payroll) {\n            System.out.println(\"Staff: \" + s.name + \" Earnings: $\" + s.getMonthlyEarnings());\n        }\n    }\n}",
+      "expectedOutput": "Staff: John Doe Earnings: $6000.0\nStaff: Jane Smith Earnings: $6500.0",
+      "hints": [
+        "Commission calculation: 2500.0 + (50000.0 * 0.08) = 2500.0 + 4000.0 = 6500.0.",
+        "StaffMember[] array upcasts both subclasses cleanly."
+      ]
+    },
+    {
+      "id": "prob-les3-p4",
+      "lessonId": "java-oop-mod10-les3",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Array Covariance Type Leak",
+      "difficulty": "hard",
+      "problemStatement": "The code below attempts to write an incompatible type into a covariant array, resulting in a runtime `ArrayStoreException`. Fix the code by declaring the array with the proper generic list or matching type, ensuring that all elements are valid integers and their sum is printed correctly as `'Sum: 30'`.",
+      "starterCode": "public class ArrayCovarianceBug {\n    public static void main(String[] args) {\n        Integer[] numbers = new Integer[3];\n        numbers[0] = 10;\n        numbers[1] = 20;\n\n        // Upcast Integer[] to Object[]\n        Object[] objects = numbers;\n\n        // BUG: Storing String into an underlying Integer[] throws ArrayStoreException!\n        objects[2] = \"oops\";\n\n        int sum = 0;\n        for (Object o : objects) {\n            sum += (Integer) o;\n        }\n        System.out.println(\"Sum: \" + sum);\n    }\n}",
+      "initialCode": "public class ArrayCovarianceBug {\n    public static void main(String[] args) {\n        Integer[] numbers = new Integer[3];\n        numbers[0] = 10;\n        numbers[1] = 20;\n\n        // Upcast Integer[] to Object[]\n        Object[] objects = numbers;\n\n        // BUG: Storing String into an underlying Integer[] throws ArrayStoreException!\n        objects[2] = \"oops\";\n\n        int sum = 0;\n        for (Object o : objects) {\n            sum += (Integer) o;\n        }\n        System.out.println(\"Sum: \" + sum);\n    }\n}",
+      "solutionCode": "public class ArrayCovarianceBug {\n    public static void main(String[] args) {\n        Integer[] numbers = new Integer[3];\n        numbers[0] = 10;\n        numbers[1] = 20;\n        numbers[2] = 0; // Fix: Store an Integer instead of incompatible String\n\n        int sum = 0;\n        for (Integer n : numbers) {\n            sum += n;\n        }\n        System.out.println(\"Sum: \" + sum);\n    }\n}",
+      "expectedOutput": "Sum: 30",
+      "hints": [
+        "Replace the invalid string assignment with an Integer so the underlying Integer[] is not corrupted.",
+        "Summing 10 + 20 + 0 produces 30."
+      ]
+    },
+    {
+      "id": "prob-les3-p5",
+      "lessonId": "java-oop-mod10-les3",
+      "orderIndex": 5,
+      "title": "Advanced: Multi-Level Interface Pipeline",
+      "difficulty": "advanced",
+      "problemStatement": "Build a multi-level filter pipeline from scratch without starter code:\n1. Interface `Filter` with `String apply(String input)`.\n2. Interface `AuditedFilter extends Filter` with `String getFilterName()`.\n3. Class `TrimFilter implements AuditedFilter`: `apply(String input)` returns `input.trim()`, `getFilterName()` returns `'TrimFilter'`.\n4. Class `UpperCaseFilter implements AuditedFilter`: `apply(String input)` returns `input.toUpperCase()`, `getFilterName()` returns `'UpperCaseFilter'`.\n5. Class `PipelineManager` with static method `public static String processAll(AuditedFilter[] filters, String text)`:\n   - Loops through each filter: prints `'Applying ' + f.getFilterName()`\n   - Applies filter to text: `text = f.apply(text)`\n   - Returns final transformed text.\n6. In `Main`, create an array `AuditedFilter[] filters` containing `new TrimFilter()` and `new UpperCaseFilter()`.\n7. Process text `'   learn by self   '` and print `'Result: [' + result + ']'`.",
+      "solutionCode": "interface Filter {\n    String apply(String input);\n}\n\ninterface AuditedFilter extends Filter {\n    String getFilterName();\n}\n\nclass TrimFilter implements AuditedFilter {\n    @Override\n    public String apply(String input) { return input.trim(); }\n    @Override\n    public String getFilterName() { return \"TrimFilter\"; }\n}\n\nclass UpperCaseFilter implements AuditedFilter {\n    @Override\n    public String apply(String input) { return input.toUpperCase(); }\n    @Override\n    public String getFilterName() { return \"UpperCaseFilter\"; }\n}\n\nclass PipelineManager {\n    public static String processAll(AuditedFilter[] filters, String text) {\n        for (AuditedFilter f : filters) {\n            System.out.println(\"Applying \" + f.getFilterName());\n            text = f.apply(text);\n        }\n        return text;\n    }\n}\n\npublic class PipelineApp {\n    public static void main(String[] args) {\n        AuditedFilter[] filters = new AuditedFilter[] {\n            new TrimFilter(),\n            new UpperCaseFilter()\n        };\n        String result = PipelineManager.processAll(filters, \"   learn by self   \");\n        System.out.println(\"Result: [\" + result + \"]\");\n    }\n}",
+      "expectedOutput": "Applying TrimFilter\nApplying UpperCaseFilter\nResult: [LEARN BY SELF]",
+      "hints": [
+        "AuditedFilter inherits apply() from Filter.",
+        "Sequential transformation trims whitespace first, then converts to uppercase."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Upcasting Revisited",
+    "Analyze, predict, and trace code execution involving upcasting-revisited",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Upcasting Revisited principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

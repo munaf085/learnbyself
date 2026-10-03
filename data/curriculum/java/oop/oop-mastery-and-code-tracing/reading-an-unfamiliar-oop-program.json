@@ -1,0 +1,523 @@
+{
+  "id": "les-mast-1",
+  "slug": "reading-an-unfamiliar-oop-program",
+  "title": "Reading an Unfamiliar OOP Program",
+  "summary": "Mental model walkthrough: reading classes, tracing flow, and sketching object diagrams.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les1-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The City Blueprint Inspector",
+      "concept": "Systematic Codebase Reading Strategy",
+      "realWorldMetaphor": {
+        "scenario": "When a civil engineer is tasked with inspecting an unfamiliar metropolis power grid, they do not start by unscrewing random light switches in apartment 4B. Instead, they open the master regional map: they identify the power generating stations (data sources/entry points), follow the high-voltage transmission lines (service orchestrators), locate the neighborhood substations (subsystems/packages), and finally trace the residential distribution meters (domain entities).",
+        "mapping": "In software engineering, professional developers spend 80% of their time reading unfamiliar code written by other people. You never read a multi-class codebase sequentially line-by-line from file 1 to file 50. Instead, you locate the system entry points (`main()`, controllers), categorize classes into Entities (nouns) and Services (verbs), map the object associations (Has-A vs Is-A), and trace the request execution thread.",
+        "takeaway": "Deconstruct unfamiliar OOP systems top-down: find the entry point, classify entities vs orchestrators, and trace data flow."
+      }
+    },
+    {
+      "id": "act-les1-concept",
+      "type": "concept",
+      "title": "The Senior Engineer's Code Reading Protocol",
+      "content": "### The 5-Step Codebase Triage Framework\n\nWhen dropped into an unfamiliar repository, apply this systematic protocol:\n\n1. **Step 1: Locate the Root Entry Points**\n   - Look for `public static void main(String[] args)`, Spring `@SpringBootApplication`, or API route controllers. This is where dependencies are instantiated and the event loop starts.\n\n2. **Step 2: Classify Classes into Nouns and Verbs**\n   - **Domain Entities (Nouns)**: Hold state and business invariants (`Customer`, `Account`, `Product`, `Transaction`). Look for fields, constructors, and validation.\n   - **Service Orchestrators (Verbs)**: Stateless or semi-stateless coordinators (`PaymentProcessor`, `EmailService`, `OrderFulfillmentEngine`). Look for methods that take entities as parameters.\n\n3. **Step 3: Map Core Relationships (Has-A vs Is-A)**\n   - Scan class declarations for `extends` (subtyping) and `implements` (capabilities).\n   - Scan instance fields for object composition (e.g. `Order` has `List<OrderItem>`).\n\n4. **Step 4: Trace a Single Happy-Path Flow**\n   - Pick one primary business transaction (e.g. 'Customer places order'). Follow the method invocation chain across classes from entry point to persistence.\n\n5. **Step 5: Sketch a Mental Object Graph**\n   - Visualize which objects reside on the heap and how references link them together."
+    },
+    {
+      "id": "act-les1-cw1",
+      "type": "code_walkthrough",
+      "title": "Deconstructing a Multi-Class E-Commerce Architecture",
+      "codeSnippet": "// 1. Domain Entities (Nouns)\nclass Product {\n    private String id;\n    private double price;\n    public Product(String id, double price) { this.id = id; this.price = price; }\n    public double getPrice() { return price; }\n    public String getId() { return id; }\n}\n\nclass CartItem {\n    private Product product; // Has-A\n    private int quantity;\n    public CartItem(Product p, int q) { this.product = p; this.quantity = q; }\n    public double getSubtotal() { return product.getPrice() * quantity; }\n}\n\n// 2. Service Orchestrator (Verb)\nclass CheckoutService {\n    public double calculateTotal(CartItem[] items, double discountRate) {\n        double total = 0;\n        for (CartItem item : items) {\n            total += item.getSubtotal(); // Delegation!\n        }\n        return total * (1.0 - discountRate);\n    }\n}\n\n// 3. System Entry Point\npublic class StoreApp {\n    public static void main(String[] args) {\n        Product laptop = new Product(\"PROD-LAPTOP\", 1200.0);\n        Product mouse = new Product(\"PROD-MOUSE\", 25.0);\n\n        CartItem[] cart = new CartItem[] {\n            new CartItem(laptop, 1),\n            new CartItem(mouse, 2)\n        };\n\n        CheckoutService checkout = new CheckoutService();\n        double finalTotal = checkout.calculateTotal(cart, 0.10); // 10% discount\n        System.out.println(\"Checkout Total: $\" + finalTotal);\n    }\n}",
+      "code": "// 1. Domain Entities (Nouns)\nclass Product {\n    private String id;\n    private double price;\n    public Product(String id, double price) { this.id = id; this.price = price; }\n    public double getPrice() { return price; }\n    public String getId() { return id; }\n}\n\nclass CartItem {\n    private Product product; // Has-A\n    private int quantity;\n    public CartItem(Product p, int q) { this.product = p; this.quantity = q; }\n    public double getSubtotal() { return product.getPrice() * quantity; }\n}\n\n// 2. Service Orchestrator (Verb)\nclass CheckoutService {\n    public double calculateTotal(CartItem[] items, double discountRate) {\n        double total = 0;\n        for (CartItem item : items) {\n            total += item.getSubtotal(); // Delegation!\n        }\n        return total * (1.0 - discountRate);\n    }\n}\n\n// 3. System Entry Point\npublic class StoreApp {\n    public static void main(String[] args) {\n        Product laptop = new Product(\"PROD-LAPTOP\", 1200.0);\n        Product mouse = new Product(\"PROD-MOUSE\", 25.0);\n\n        CartItem[] cart = new CartItem[] {\n            new CartItem(laptop, 1),\n            new CartItem(mouse, 2)\n        };\n\n        CheckoutService checkout = new CheckoutService();\n        double finalTotal = checkout.calculateTotal(cart, 0.10); // 10% discount\n        System.out.println(\"Checkout Total: $\" + finalTotal);\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates how separating entities (Product, CartItem) from orchestrators (CheckoutService) makes reading and tracing object collaborations straightforward.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Identify entities: `Product` encapsulates id and price; `CartItem` composes `Product` and quantity."
+        },
+        {
+          "step": 2,
+          "description": "Identify orchestrator: `CheckoutService` has no state; it coordinates items and applies business calculations."
+        },
+        {
+          "step": 3,
+          "description": "Trace execution: `main` allocates instances, passes `cart` to `calculateTotal`, which delegates subtotal to `CartItem`."
+        },
+        {
+          "step": 4,
+          "description": "Total calculation: (1200*1 + 25*2) = 1250. With 10% discount: 1250 * 0.9 = 1125.0."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-cw2",
+      "type": "code_walkthrough",
+      "title": "Tracing Layered Architecture: Controller -> Service -> Repository",
+      "codeSnippet": "import java.util.HashMap;\nimport java.util.Map;\n\n// 1. Repository Layer (Data Access)\nclass UserRepository {\n    private Map<String, String> db = new HashMap<>();\n    public void save(String user, String role) { db.put(user, role); }\n    public String findRole(String user) { return db.getOrDefault(user, \"GUEST\"); }\n}\n\n// 2. Service Layer (Business Logic)\nclass AuthenticationService {\n    private UserRepository repo;\n    public AuthenticationService(UserRepository repo) { this.repo = repo; }\n    public boolean authorize(String user, String requiredRole) {\n        return requiredRole.equalsIgnoreCase(repo.findRole(user));\n    }\n}\n\n// 3. Entry Controller\npublic class LayeredApp {\n    public static void main(String[] args) {\n        UserRepository repo = new UserRepository();\n        repo.save(\"munaf085\", \"ADMIN\");\n\n        AuthenticationService auth = new AuthenticationService(repo);\n        boolean isAllowed = auth.authorize(\"munaf085\", \"admin\");\n        System.out.println(\"Access Granted: \" + isAllowed);\n    }\n}",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\n// 1. Repository Layer (Data Access)\nclass UserRepository {\n    private Map<String, String> db = new HashMap<>();\n    public void save(String user, String role) { db.put(user, role); }\n    public String findRole(String user) { return db.getOrDefault(user, \"GUEST\"); }\n}\n\n// 2. Service Layer (Business Logic)\nclass AuthenticationService {\n    private UserRepository repo;\n    public AuthenticationService(UserRepository repo) { this.repo = repo; }\n    public boolean authorize(String user, String requiredRole) {\n        return requiredRole.equalsIgnoreCase(repo.findRole(user));\n    }\n}\n\n// 3. Entry Controller\npublic class LayeredApp {\n    public static void main(String[] args) {\n        UserRepository repo = new UserRepository();\n        repo.save(\"munaf085\", \"ADMIN\");\n\n        AuthenticationService auth = new AuthenticationService(repo);\n        boolean isAllowed = auth.authorize(\"munaf085\", \"admin\");\n        System.out.println(\"Access Granted: \" + isAllowed);\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates the universal 3-tier enterprise architecture: Controller instantiates dependencies, Service coordinates business rules, and Repository encapsulates data access.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`UserRepository` encapsulates raw data structures."
+        },
+        {
+          "step": 2,
+          "description": "`AuthenticationService` receives `UserRepository` via constructor injection."
+        },
+        {
+          "step": 3,
+          "description": "`authorize()` invokes the repository and applies case-insensitive business comparison."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-mcq",
+      "type": "mcq",
+      "title": "Reading OOP Programs Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the recommended first step when exploring an unfamiliar OOP Java codebase?",
+          "options": [
+            "Read every class file alphabetically",
+            "Locate the system entry point (`main`, API controller, application config) to trace dependency setup",
+            "Rewrite all constructors as records",
+            "Delete test files to reduce code size"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Locating entry points reveals how the system bootstraps dependencies and dispatches requests."
+        },
+        {
+          "id": "q2",
+          "question": "What distinguishes a Domain Entity from a Service Orchestrator?",
+          "options": [
+            "Entities are interfaces; services are abstract classes",
+            "Entities represent nouns and hold business state; services represent verbs and coordinate operations across entities",
+            "Entities can only have static methods",
+            "Services are always stored in heap memory while entities are in registers"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Entities represent core domain data (nouns); services orchestrate actions (verbs)."
+        },
+        {
+          "id": "q3",
+          "question": "When scanning a class declaration `public class OrderService implements Service`, what does `implements Service` signify?",
+          "options": [
+            "OrderService inherits fields from Service",
+            "OrderService fulfills the interface contract defined by Service (Can-Do / Behavior contract)",
+            "Service is a private inner class",
+            "OrderService cannot be instantiated"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`implements` declares that the class guarantees the capabilities of that interface."
+        },
+        {
+          "id": "q4",
+          "question": "What is 'Mental Object Graphing'?",
+          "options": [
+            "A graphing calculator plugin for Eclipse",
+            "Visualizing which objects exist in heap memory and how reference variables link them together",
+            "A technique for sorting arrays",
+            "Drawing database tables only"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Mental object graphing helps engineers trace reference relationships and dynamic dispatch paths."
+        },
+        {
+          "id": "q5",
+          "question": "If a method is invoked on an interface reference (`service.execute()`), how do you determine which code runs?",
+          "options": [
+            "Look at the interface file only",
+            "Identify the concrete implementing class assigned to the reference variable at runtime",
+            "Check the operating system version",
+            "Methods on interfaces cannot execute"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Dynamic dispatch routes execution to the concrete class instantiated on the heap."
+        },
+        {
+          "id": "q6",
+          "question": "What is the primary indicator of object composition in a class definition?",
+          "options": [
+            "A class having no methods",
+            "An instance variable whose type is another custom class (e.g. `private Engine engine;`)",
+            "A public static void main method",
+            "A final class with zero fields"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Declaring fields of other class types represents a Has-A composition relationship."
+        },
+        {
+          "id": "q7",
+          "question": "What is the 'Happy Path' when tracing code?",
+          "options": [
+            "A path with no if statements",
+            "The standard default execution flow where no exceptions, errors, or edge cases occur",
+            "Code written by senior architects only",
+            "A method that always returns true"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Tracing the happy path first builds core mental models before examining complex error-handling branches."
+        },
+        {
+          "id": "q8",
+          "question": "Why is Constructor Dependency Injection helpful when reading unfamiliar code?",
+          "options": [
+            "It hides what classes depend on",
+            "It explicitly lists all required collaborator dependencies right in the constructor parameter list",
+            "It makes the class final",
+            "It eliminates bytecode compilation"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Constructor injection makes an object's dependencies completely transparent at a glance."
+        },
+        {
+          "id": "q9",
+          "question": "What is package structuring's role in code navigation?",
+          "options": [
+            "It groups related classes into cohesive namespaces (e.g. `model`, `service`, `repository`)",
+            "It makes all classes public",
+            "It forces code to run in alphabetical order",
+            "It disables imports"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Clean package boundaries partition system responsibilities for rapid navigation."
+        },
+        {
+          "id": "q10",
+          "question": "Which tool in modern IDEs lets you instantly jump to the concrete implementation of an interface method?",
+          "options": [
+            "Format Code",
+            "Go to Implementation (Ctrl+Alt+B / Cmd+Opt+B)",
+            "Find and Replace",
+            "Revert Git Commit"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "'Go to Implementation' navigates directly from an interface signature to concrete implementations."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-interview",
+      "type": "interview_qa",
+      "title": "Reading OOP Programs Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i1-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you approach understanding a 100,000-line legacy Java codebase on your first day at a new company?",
+          "answer": "1) Run the test suite and build pipeline to verify health. 2) Locate entry points (controllers, main entry points, message consumers). 3) Classify high-level package architecture (domain models vs orchestrators vs infrastructure). 4) Trace a single high-priority user journey from entry to database. 5) Use IDE dependency diagrams and call hierarchies to build a mental map without trying to memorize every line.",
+          "expectedAnswer": "Start with entry points, run tests, trace one primary user transaction, map domain entities and services, and use IDE call hierarchies.",
+          "keyTakeaway": "Trace high-value user journeys rather than reading files sequentially.",
+          "keyPoints": [
+            "Trace high-value user journeys rather than reading files sequentially."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i1-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What code smells in class dependencies immediately catch your attention when auditing an unfamiliar repository?",
+          "answer": "1) **Circular Dependencies**: Class A depends on B, and B depends on A, creating tight coupling. 2) **God Classes**: Single classes with thousands of lines and dozens of dependencies. 3) **Leaky Abstractions**: Services exposing database entities or internal collections directly to external consumers. 4) **Deep Inheritance Hierarchies**: Subclasses extending 5 levels deep.",
+          "expectedAnswer": "Circular dependencies, God classes, leaked mutable internals, and excessively deep inheritance trees.",
+          "keyTakeaway": "Identify architectural smells early to locate brittle hotspots.",
+          "keyPoints": [
+            "Identify architectural smells early to locate brittle hotspots."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i1-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you distinguish between essential business complexity and accidental architectural complexity?",
+          "answer": "Essential complexity is inherent to the problem domain (e.g. tax calculation rules, financial regulatory compliance). Accidental complexity arises from poor architectural choices: convoluted inheritance trees, unnecessary design pattern overuse, redundant wrapper layers, and premature optimizations.",
+          "expectedAnswer": "Essential complexity is the domain problem itself; accidental complexity is introduced by poor code structure and pattern overuse.",
+          "keyTakeaway": "Differentiate domain business rules from over-engineered architectural scaffolding.",
+          "keyPoints": [
+            "Differentiate domain business rules from over-engineered architectural scaffolding."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i1-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why are automated unit tests often the best documentation when reading an unfamiliar system?",
+          "answer": "Because documentation goes stale, but tests must compile and pass! Unit tests explicitly demonstrate: 1) How classes are instantiated, 2) Which dependencies are required, 3) What inputs produce what outputs, and 4) How the original author expected edge cases and failures to be handled.",
+          "expectedAnswer": "Tests are living documentation: they reveal intended usage, required dependencies, and expected edge case behavior.",
+          "keyTakeaway": "Unit tests provide the most reliable, up-to-date documentation of expected behavior.",
+          "keyPoints": [
+            "Unit tests provide the most reliable, up-to-date documentation of expected behavior."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i1-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the single responsibility of a Service Orchestrator versus a Domain Model?",
+          "answer": "A Domain Model is responsible for its own internal state, encapsulating data and enforcing business invariants for that specific entity. A Service Orchestrator coordinates multi-entity workflows, transaction boundaries, and interactions with external systems (payments, emails, databases) without managing internal entity fields directly.",
+          "expectedAnswer": "Domain models enforce entity invariants; orchestrators coordinate workflows and transactions across multiple entities.",
+          "keyTakeaway": "Entities protect internal state; orchestrators coordinate external multi-object workflows.",
+          "keyPoints": [
+            "Entities protect internal state; orchestrators coordinate external multi-object workflows."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i1-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does reading code systematically reduce the risk of introducing regression bugs?",
+          "answer": "By understanding the complete call graph and object lifecycle before making modifications, you identify downstream consumers, side effects, and shared state that could be impacted. Tracing dependencies prevents breaking implicit assumptions or modifying objects shared across threads.",
+          "expectedAnswer": "It reveals downstream dependencies and shared mutable state, preventing unexpected ripple effects.",
+          "keyTakeaway": "Map downstream consumers before modifying shared components.",
+          "keyPoints": [
+            "Map downstream consumers before modifying shared components."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i1-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you approach understanding a 100,000-line legacy Java codebase on your first day at a new company?",
+          "answer": "1) Run the test suite and build pipeline to verify health. 2) Locate entry points (controllers, main entry points, message consumers). 3) Classify high-level package architecture (domain models vs orchestrators vs infrastructure). 4) Trace a single high-priority user journey from entry to database. 5) Use IDE dependency diagrams and call hierarchies to build a mental map without trying to memorize every line.",
+          "expectedAnswer": "Start with entry points, run tests, trace one primary user transaction, map domain entities and services, and use IDE call hierarchies.",
+          "keyTakeaway": "Trace high-value user journeys rather than reading files sequentially.",
+          "keyPoints": [
+            "Trace high-value user journeys rather than reading files sequentially."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i1-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What code smells in class dependencies immediately catch your attention when auditing an unfamiliar repository?",
+          "answer": "1) **Circular Dependencies**: Class A depends on B, and B depends on A, creating tight coupling. 2) **God Classes**: Single classes with thousands of lines and dozens of dependencies. 3) **Leaky Abstractions**: Services exposing database entities or internal collections directly to external consumers. 4) **Deep Inheritance Hierarchies**: Subclasses extending 5 levels deep.",
+          "expectedAnswer": "Circular dependencies, God classes, leaked mutable internals, and excessively deep inheritance trees.",
+          "keyTakeaway": "Identify architectural smells early to locate brittle hotspots.",
+          "keyPoints": [
+            "Identify architectural smells early to locate brittle hotspots."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i1-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you distinguish between essential business complexity and accidental architectural complexity?",
+          "answer": "Essential complexity is inherent to the problem domain (e.g. tax calculation rules, financial regulatory compliance). Accidental complexity arises from poor architectural choices: convoluted inheritance trees, unnecessary design pattern overuse, redundant wrapper layers, and premature optimizations.",
+          "expectedAnswer": "Essential complexity is the domain problem itself; accidental complexity is introduced by poor code structure and pattern overuse.",
+          "keyTakeaway": "Differentiate domain business rules from over-engineered architectural scaffolding.",
+          "keyPoints": [
+            "Differentiate domain business rules from over-engineered architectural scaffolding."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i1-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why are automated unit tests often the best documentation when reading an unfamiliar system?",
+          "answer": "Because documentation goes stale, but tests must compile and pass! Unit tests explicitly demonstrate: 1) How classes are instantiated, 2) Which dependencies are required, 3) What inputs produce what outputs, and 4) How the original author expected edge cases and failures to be handled.",
+          "expectedAnswer": "Tests are living documentation: they reveal intended usage, required dependencies, and expected edge case behavior.",
+          "keyTakeaway": "Unit tests provide the most reliable, up-to-date documentation of expected behavior.",
+          "keyPoints": [
+            "Unit tests provide the most reliable, up-to-date documentation of expected behavior."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i1-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the single responsibility of a Service Orchestrator versus a Domain Model?",
+          "answer": "A Domain Model is responsible for its own internal state, encapsulating data and enforcing business invariants for that specific entity. A Service Orchestrator coordinates multi-entity workflows, transaction boundaries, and interactions with external systems (payments, emails, databases) without managing internal entity fields directly.",
+          "expectedAnswer": "Domain models enforce entity invariants; orchestrators coordinate workflows and transactions across multiple entities.",
+          "keyTakeaway": "Entities protect internal state; orchestrators coordinate external multi-object workflows.",
+          "keyPoints": [
+            "Entities protect internal state; orchestrators coordinate external multi-object workflows."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i1-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does reading code systematically reduce the risk of introducing regression bugs?",
+          "answer": "By understanding the complete call graph and object lifecycle before making modifications, you identify downstream consumers, side effects, and shared state that could be impacted. Tracing dependencies prevents breaking implicit assumptions or modifying objects shared across threads.",
+          "expectedAnswer": "It reveals downstream dependencies and shared mutable state, preventing unexpected ripple effects.",
+          "keyTakeaway": "Map downstream consumers before modifying shared components.",
+          "keyPoints": [
+            "Map downstream consumers before modifying shared components."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les1-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can locate system entry points quickly in an unfamiliar repository.",
+        "I know how to classify classes into Domain Entities (nouns) and Services (verbs).",
+        "I can identify Has-A composition and Is-A inheritance from class declarations.",
+        "I know how to trace a single happy-path transaction from caller to delegate.",
+        "I can sketch a mental object graph of heap allocations and reference links.",
+        "I know how to use unit tests as living documentation to understand class behavior.",
+        "I can spot code smells like circular dependencies and God classes during triage.",
+        "I understand the separation of concerns between Controllers, Services, and Repositories.",
+        "I know how to navigate polymorphic interface methods to concrete implementations in an IDE.",
+        "I can explain unfamiliar code clearly to another engineer."
+      ],
+      "items": [
+        "I can locate system entry points quickly in an unfamiliar repository.",
+        "I know how to classify classes into Domain Entities (nouns) and Services (verbs).",
+        "I can identify Has-A composition and Is-A inheritance from class declarations.",
+        "I know how to trace a single happy-path transaction from caller to delegate.",
+        "I can sketch a mental object graph of heap allocations and reference links.",
+        "I know how to use unit tests as living documentation to understand class behavior.",
+        "I can spot code smells like circular dependencies and God classes during triage.",
+        "I understand the separation of concerns between Controllers, Services, and Repositories.",
+        "I know how to navigate polymorphic interface methods to concrete implementations in an IDE.",
+        "I can explain unfamiliar code clearly to another engineer."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les1-p1",
+      "lessonId": "java-oop-mod11-les1",
+      "orderIndex": 1,
+      "title": "Warmup: Order Invoicing Flow Trace",
+      "difficulty": "easy",
+      "problemStatement": "Complete the order invoice generator:\n1. Entity `InvoiceItem`: fields `description` (String), `unitPrice` (double), and `quantity` (int). Method `getTotal()` returns `unitPrice * quantity`.\n2. Complete `InvoiceService.generateInvoice(String customer, InvoiceItem[] items)`:\n   - Sums all item totals\n   - Prints `'Invoice for ' + customer + ': $' + sum`\nIn `main`, create an invoice for `'Acme Corp'` with two items: `('Server Hosting', 500.0, 2)` and `('Domain Name', 20.0, 1)`. Total must be `$1020.0`.",
+      "starterCode": "class InvoiceItem {\n    private String description;\n    private double unitPrice;\n    private int quantity;\n\n    public InvoiceItem(String desc, double price, int qty) {\n        this.description = desc;\n        this.unitPrice = price;\n        this.quantity = qty;\n    }\n    public double getTotal() { return unitPrice * quantity; }\n}\n\nclass InvoiceService {\n    public static void generateInvoice(String customer, InvoiceItem[] items) {\n        // TODO: Sum items and print \"Invoice for \" + customer + \": $\" + sum\n    }\n}\n\npublic class InvoiceApp {\n    public static void main(String[] args) {\n        InvoiceItem[] items = new InvoiceItem[] {\n            new InvoiceItem(\"Server Hosting\", 500.0, 2),\n            new InvoiceItem(\"Domain Name\", 20.0, 1)\n        };\n        InvoiceService.generateInvoice(\"Acme Corp\", items);\n    }\n}",
+      "initialCode": "class InvoiceItem {\n    private String description;\n    private double unitPrice;\n    private int quantity;\n\n    public InvoiceItem(String desc, double price, int qty) {\n        this.description = desc;\n        this.unitPrice = price;\n        this.quantity = qty;\n    }\n    public double getTotal() { return unitPrice * quantity; }\n}\n\nclass InvoiceService {\n    public static void generateInvoice(String customer, InvoiceItem[] items) {\n        // TODO: Sum items and print \"Invoice for \" + customer + \": $\" + sum\n    }\n}\n\npublic class InvoiceApp {\n    public static void main(String[] args) {\n        InvoiceItem[] items = new InvoiceItem[] {\n            new InvoiceItem(\"Server Hosting\", 500.0, 2),\n            new InvoiceItem(\"Domain Name\", 20.0, 1)\n        };\n        InvoiceService.generateInvoice(\"Acme Corp\", items);\n    }\n}",
+      "solutionCode": "class InvoiceItem {\n    private String description;\n    private double unitPrice;\n    private int quantity;\n\n    public InvoiceItem(String desc, double price, int qty) {\n        this.description = desc;\n        this.unitPrice = price;\n        this.quantity = qty;\n    }\n    public double getTotal() { return unitPrice * quantity; }\n}\n\nclass InvoiceService {\n    public static void generateInvoice(String customer, InvoiceItem[] items) {\n        double sum = 0;\n        for (InvoiceItem item : items) {\n            sum += item.getTotal();\n        }\n        System.out.println(\"Invoice for \" + customer + \": $\" + sum);\n    }\n}\n\npublic class InvoiceApp {\n    public static void main(String[] args) {\n        InvoiceItem[] items = new InvoiceItem[] {\n            new InvoiceItem(\"Server Hosting\", 500.0, 2),\n            new InvoiceItem(\"Domain Name\", 20.0, 1)\n        };\n        InvoiceService.generateInvoice(\"Acme Corp\", items);\n    }\n}",
+      "expectedOutput": "Invoice for Acme Corp: $1020.0",
+      "hints": [
+        "Iterate through items, accumulating item.getTotal().",
+        "500.0 * 2 + 20.0 * 1 = 1020.0."
+      ]
+    },
+    {
+      "id": "prob-les1-p2",
+      "lessonId": "java-oop-mod11-les1",
+      "orderIndex": 2,
+      "title": "Hospital Patient Triage Flow",
+      "difficulty": "medium",
+      "problemStatement": "Build a multi-class hospital patient triage system from scratch without starter code:\n1. Entity `Patient`: fields `name` (String), `severityCode` (int, 1 to 5). Getters for both.\n2. Orchestrator `TriageDesk` with method `public void processPatient(Patient p)`:\n   - If `severityCode <= 2`: prints `'URGENT: Dispatch ' + p.getName() + ' to Emergency Room'`\n   - If `severityCode > 2`: prints `'STANDARD: Assign ' + p.getName() + ' to Waiting Lounge'`\n3. In `Main`, create an array `Patient[] arrivals` holding `new Patient(\"John\", 1)` and `new Patient(\"Sarah\", 4)`.\n4. Instantiate `TriageDesk` and process each patient in `arrivals`.",
+      "solutionCode": "class Patient {\n    private String name;\n    private int severityCode;\n    public Patient(String name, int severityCode) {\n        this.name = name;\n        this.severityCode = severityCode;\n    }\n    public String getName() { return name; }\n    public int getSeverityCode() { return severityCode; }\n}\n\nclass TriageDesk {\n    public void processPatient(Patient p) {\n        if (p.getSeverityCode() <= 2) {\n            System.out.println(\"URGENT: Dispatch \" + p.getName() + \" to Emergency Room\");\n        } else {\n            System.out.println(\"STANDARD: Assign \" + p.getName() + \" to Waiting Lounge\");\n        }\n    }\n}\n\npublic class TriageApp {\n    public static void main(String[] args) {\n        Patient[] arrivals = new Patient[] {\n            new Patient(\"John\", 1),\n            new Patient(\"Sarah\", 4)\n        };\n        TriageDesk desk = new TriageDesk();\n        for (Patient p : arrivals) {\n            desk.processPatient(p);\n        }\n    }\n}",
+      "expectedOutput": "URGENT: Dispatch John to Emergency Room\nSTANDARD: Assign Sarah to Waiting Lounge",
+      "hints": [
+        "Patient is the domain entity; TriageDesk is the service orchestrator.",
+        "Loop through arrivals and call desk.processPatient(p)."
+      ]
+    },
+    {
+      "id": "prob-les1-p3",
+      "lessonId": "java-oop-mod11-les1",
+      "orderIndex": 3,
+      "title": "Clean 3-Tier Banking Architecture",
+      "difficulty": "medium",
+      "problemStatement": "Build a clean 3-tier banking flow from scratch without starter code:\n1. Model `Account`: fields `id` (String), `balance` (double). Method `debit(double amt)` subtracting amt, method `credit(double amt)` adding amt. Getters.\n2. Data Layer `AccountStorage`: has `Map<String, Account>` storing accounts. Methods `save(Account acc)` and `find(String id)`.\n3. Service Layer `TransferCoordinator`: receives `AccountStorage` in constructor. Method `public boolean transfer(String fromId, String toId, double amount)`:\n   - Finds `from` and `to` accounts\n   - If `from.getBalance() >= amount`, performs `from.debit(amount)`, `to.credit(amount)`, returns `true`\n   - Otherwise returns `false`\n4. In `Main`:\n   - Initialize storage with `Account(\"ACC-1\", 500.0)` and `Account(\"ACC-2\", 200.0)`\n   - Coordinate transfer of `$150.0` from `ACC-1` to `ACC-2`\n   - Print `'Transfer success: ' + result`\n   - Print `'ACC-1 balance: $' + acc1.getBalance()`\n   - Print `'ACC-2 balance: $' + acc2.getBalance()`.",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Account {\n    private String id;\n    private double balance;\n    public Account(String id, double balance) {\n        this.id = id;\n        this.balance = balance;\n    }\n    public String getId() { return id; }\n    public double getBalance() { return balance; }\n    public void debit(double amt) { this.balance -= amt; }\n    public void credit(double amt) { this.balance += amt; }\n}\n\nclass AccountStorage {\n    private Map<String, Account> map = new HashMap<>();\n    public void save(Account acc) { map.put(acc.getId(), acc); }\n    public Account find(String id) { return map.get(id); }\n}\n\nclass TransferCoordinator {\n    private AccountStorage storage;\n    public TransferCoordinator(AccountStorage storage) {\n        this.storage = storage;\n    }\n    public boolean transfer(String fromId, String toId, double amount) {\n        Account from = storage.find(fromId);\n        Account to = storage.find(toId);\n        if (from != null && to != null && from.getBalance() >= amount) {\n            from.debit(amount);\n            to.credit(amount);\n            return true;\n        }\n        return false;\n    }\n}\n\npublic class BankApp {\n    public static void main(String[] args) {\n        AccountStorage storage = new AccountStorage();\n        Account a1 = new Account(\"ACC-1\", 500.0);\n        Account a2 = new Account(\"ACC-2\", 200.0);\n        storage.save(a1);\n        storage.save(a2);\n\n        TransferCoordinator tc = new TransferCoordinator(storage);\n        boolean ok = tc.transfer(\"ACC-1\", \"ACC-2\", 150.0);\n\n        System.out.println(\"Transfer success: \" + ok);\n        System.out.println(\"ACC-1 balance: $\" + a1.getBalance());\n        System.out.println(\"ACC-2 balance: $\" + a2.getBalance());\n    }\n}",
+      "expectedOutput": "Transfer success: true\nACC-1 balance: $350.0\nACC-2 balance: $350.0",
+      "hints": [
+        "Account encapsulates balances.",
+        "TransferCoordinator coordinates between AccountStorage and Account instances."
+      ]
+    },
+    {
+      "id": "prob-les1-p4",
+      "lessonId": "java-oop-mod11-les1",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Circular Reference in Trace Flow",
+      "difficulty": "hard",
+      "problemStatement": "The code below exhibits a classic circular dependency bug: `Department` calls `Employee.describe()`, which calls `Department.describe()`, triggering an infinite recursion and throwing `StackOverflowError`! Break the cycle so that each department prints its name and iterates through its employees without recursive loop calls.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Department {\n    private String name;\n    private List<Employee> staff = new ArrayList<>();\n    public Department(String name) { this.name = name; }\n    public void addEmployee(Employee e) { staff.add(e); }\n    public String getName() { return name; }\n    public void printReport() {\n        System.out.println(\"Dept: \" + name);\n        for (Employee e : staff) {\n            // BUG: e.describe() calls dept.printReport() causing StackOverflowError!\n            e.describe();\n        }\n    }\n}\n\nclass Employee {\n    private String name;\n    private Department dept;\n    public Employee(String name, Department dept) {\n        this.name = name;\n        this.dept = dept;\n    }\n    public void describe() {\n        System.out.println(\"  Emp: \" + name);\n        dept.printReport(); // Circular recursion bug!\n    }\n}\n\npublic class CircularBug {\n    public static void main(String[] args) {\n        Department eng = new Department(\"Engineering\");\n        Employee dev = new Employee(\"Dave\", eng);\n        eng.addEmployee(dev);\n        eng.printReport();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Department {\n    private String name;\n    private List<Employee> staff = new ArrayList<>();\n    public Department(String name) { this.name = name; }\n    public void addEmployee(Employee e) { staff.add(e); }\n    public String getName() { return name; }\n    public void printReport() {\n        System.out.println(\"Dept: \" + name);\n        for (Employee e : staff) {\n            // BUG: e.describe() calls dept.printReport() causing StackOverflowError!\n            e.describe();\n        }\n    }\n}\n\nclass Employee {\n    private String name;\n    private Department dept;\n    public Employee(String name, Department dept) {\n        this.name = name;\n        this.dept = dept;\n    }\n    public void describe() {\n        System.out.println(\"  Emp: \" + name);\n        dept.printReport(); // Circular recursion bug!\n    }\n}\n\npublic class CircularBug {\n    public static void main(String[] args) {\n        Department eng = new Department(\"Engineering\");\n        Employee dev = new Employee(\"Dave\", eng);\n        eng.addEmployee(dev);\n        eng.printReport();\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Department {\n    private String name;\n    private List<Employee> staff = new ArrayList<>();\n    public Department(String name) { this.name = name; }\n    public void addEmployee(Employee e) { staff.add(e); }\n    public String getName() { return name; }\n    public void printReport() {\n        System.out.println(\"Dept: \" + name);\n        for (Employee e : staff) {\n            e.describe();\n        }\n    }\n}\n\nclass Employee {\n    private String name;\n    private Department dept;\n    public Employee(String name, Department dept) {\n        this.name = name;\n        this.dept = dept;\n    }\n    public void describe() {\n        System.out.println(\"  Emp: \" + name + \" in \" + dept.getName());\n    }\n}\n\npublic class CircularBug {\n    public static void main(String[] args) {\n        Department eng = new Department(\"Engineering\");\n        Employee dev = new Employee(\"Dave\", eng);\n        eng.addEmployee(dev);\n        eng.printReport();\n    }\n}",
+      "expectedOutput": "Dept: Engineering\n  Emp: Dave in Engineering",
+      "hints": [
+        "Remove the recursive call `dept.printReport()` inside `Employee.describe()`.",
+        "Simply print the department's name: `dept.getName()`."
+      ]
+    },
+    {
+      "id": "prob-les1-p5",
+      "lessonId": "java-oop-mod11-les1",
+      "orderIndex": 5,
+      "title": "Advanced: Multi-Layer Diagnostic Tracer",
+      "difficulty": "advanced",
+      "problemStatement": "Build a multi-layer diagnostic tracer from scratch without starter code:\n1. Model `TelemetryReading`: `metric` (String), `val` (double). Getters.\n2. Filter Interface `MetricFilter`: `boolean allow(TelemetryReading r)`.\n3. Class `HighValueFilter implements MetricFilter`: field `threshold` (double). `allow(r)` returns `r.getVal() >= threshold`.\n4. Service `TelemetryIngestor`: receives `MetricFilter`. Method `public int countAccepted(TelemetryReading[] stream)`: counts how many readings pass the filter.\n5. In `Main`:\n   - Create an array of 3 readings: `(\"CPU\", 85.0)`, `(\"CPU\", 42.0)`, `(\"CPU\", 92.0)`\n   - Ingest using `HighValueFilter(80.0)`\n   - Print `'Accepted high metrics: ' + count` (should be 2).",
+      "solutionCode": "class TelemetryReading {\n    private String metric;\n    private double val;\n    public TelemetryReading(String metric, double val) {\n        this.metric = metric;\n        this.val = val;\n    }\n    public String getMetric() { return metric; }\n    public double getVal() { return val; }\n}\n\ninterface MetricFilter {\n    boolean allow(TelemetryReading r);\n}\n\nclass HighValueFilter implements MetricFilter {\n    private double threshold;\n    public HighValueFilter(double threshold) {\n        this.threshold = threshold;\n    }\n    @Override\n    public boolean allow(TelemetryReading r) {\n        return r.getVal() >= threshold;\n    }\n}\n\nclass TelemetryIngestor {\n    private MetricFilter filter;\n    public TelemetryIngestor(MetricFilter filter) {\n        this.filter = filter;\n    }\n    public int countAccepted(TelemetryReading[] stream) {\n        int count = 0;\n        for (TelemetryReading r : stream) {\n            if (filter.allow(r)) count++;\n        }\n        return count;\n    }\n}\n\npublic class TracerApp {\n    public static void main(String[] args) {\n        TelemetryReading[] stream = new TelemetryReading[] {\n            new TelemetryReading(\"CPU\", 85.0),\n            new TelemetryReading(\"CPU\", 42.0),\n            new TelemetryReading(\"CPU\", 92.0)\n        };\n        TelemetryIngestor ingestor = new TelemetryIngestor(new HighValueFilter(80.0));\n        System.out.println(\"Accepted high metrics: \" + ingestor.countAccepted(stream));\n    }\n}",
+      "expectedOutput": "Accepted high metrics: 2",
+      "hints": [
+        "Readings with 85.0 and 92.0 pass the >= 80.0 filter.",
+        "TelemetryIngestor decouples collection filtering logic through the MetricFilter interface."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Reading an Unfamiliar OOP Program",
+    "Analyze, predict, and trace code execution involving reading-an-unfamiliar-oop-program",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Reading an Unfamiliar OOP Program principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

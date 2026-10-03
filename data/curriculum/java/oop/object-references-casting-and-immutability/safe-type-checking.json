@@ -1,0 +1,523 @@
+{
+  "id": "les-cast-5",
+  "slug": "safe-type-checking",
+  "title": "Safe Type Checking",
+  "summary": "Modern Java pattern matching for instanceof and clean type assertions.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les5-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Biometric Smartphone Unlock",
+      "concept": "Pattern Matching for instanceof (Identification + Binding in One Atomic Step)",
+      "realWorldMetaphor": {
+        "scenario": "In older phones, unlocking required two distinct steps: 1) You pressed the power button to wake the screen (type check), and then 2) You typed in a 6-digit PIN code to actually access your apps (casting). In modern smartphones with Face ID or fingerprint sensors, you look at the phone: it identifies you AND grants access immediately in one seamless, atomic motion.",
+        "mapping": "In legacy Java, type checking required two steps: `if (obj instanceof String)` followed by `String s = (String) obj;`. In modern Java (Java 16+), Pattern Matching for `instanceof` combines testing and extraction into a single atomic expression: `if (obj instanceof String s) { ... }`. The variable `s` is automatically typed, safely bound, and in scope.",
+        "takeaway": "Pattern matching for instanceof combines type verification and variable binding, eliminating redundant and error-prone casts."
+      }
+    },
+    {
+      "id": "act-les5-concept",
+      "type": "concept",
+      "title": "Pattern Matching for instanceof (Java 16+)",
+      "content": "### The Evolution of Type Checking\n\nFor over 25 years, Java developers wrote this repetitive, clumsy boilerplate:\n```java\n// LEGACY: 3 repetitions of 'String'\nif (obj instanceof String) {\n    String s = (String) obj; // Redundant manual cast!\n    System.out.println(s.toUpperCase());\n}\n```\n\nStarting with Java 16 (JEP 394), **Pattern Matching for `instanceof`** became a standard language feature:\n```java\n// MODERN: Single atomic expression\nif (obj instanceof String s) {\n    System.out.println(s.toUpperCase()); // 's' is automatically bound as String!\n}\n```\n\n### Flow Scoping: Where is the Pattern Variable in Scope?\nPattern variables use **flow scoping** (definite assignment):\n1. **Inside the Positive Branch**: `s` is only in scope where the compiler can guarantee the pattern matched.\n2. **Compound Conditions with `&&`**: You can immediately use `s` in subsequent conditions:\n   ```java\n   if (obj instanceof String s && s.length() > 5) {\n       System.out.println(\"Long string: \" + s);\n   }\n   ```\n   *(Note: You CANNOT use `||` because if the left side is false, `s` would not be bound!)*\n3. **Early Exit Guard Pattern**:\n   ```java\n   if (!(obj instanceof String s)) {\n       return; // If not String, exit early\n   }\n   // 's' is in scope for the REST of the method!\n   System.out.println(s.trim());\n   ```\n\n### The Impact on equals()\nPattern matching transformed messy `equals()` methods into clean, readable single-expression checks."
+    },
+    {
+      "id": "act-les5-cw1",
+      "type": "code_walkthrough",
+      "title": "Legacy Cast vs Modern Pattern Matching",
+      "codeSnippet": "public class PatternMatchingDemo {\n    // Legacy approach: repetitive and noisy\n    public static void printLegacy(Object obj) {\n        if (obj instanceof String) {\n            String s = (String) obj;\n            System.out.println(\"Legacy string: \" + s.toLowerCase());\n        }\n    }\n\n    // Modern Java 16+ approach: clean, atomic, flow-scoped\n    public static void printModern(Object obj) {\n        // Pattern matching with compound condition\n        if (obj instanceof String s && !s.isBlank()) {\n            System.out.println(\"Modern string: \" + s.toLowerCase());\n        } else if (obj instanceof Integer num && num > 0) {\n            System.out.println(\"Positive integer: \" + num);\n        }\n    }\n\n    public static void main(String[] args) {\n        printLegacy(\"HELLO LEGACY\");\n        printModern(\"HELLO MODERN\");\n        printModern(42);\n    }\n}",
+      "code": "public class PatternMatchingDemo {\n    // Legacy approach: repetitive and noisy\n    public static void printLegacy(Object obj) {\n        if (obj instanceof String) {\n            String s = (String) obj;\n            System.out.println(\"Legacy string: \" + s.toLowerCase());\n        }\n    }\n\n    // Modern Java 16+ approach: clean, atomic, flow-scoped\n    public static void printModern(Object obj) {\n        // Pattern matching with compound condition\n        if (obj instanceof String s && !s.isBlank()) {\n            System.out.println(\"Modern string: \" + s.toLowerCase());\n        } else if (obj instanceof Integer num && num > 0) {\n            System.out.println(\"Positive integer: \" + num);\n        }\n    }\n\n    public static void main(String[] args) {\n        printLegacy(\"HELLO LEGACY\");\n        printModern(\"HELLO MODERN\");\n        printModern(42);\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates modern pattern matching for instanceof. Pattern variables 's' and 'num' are automatically bound and usable in subsequent conditions with &&.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`printLegacy` requires checking `instanceof` and then explicitly casting `(String) obj`."
+        },
+        {
+          "step": 2,
+          "description": "`printModern` uses `obj instanceof String s` to test and bind `s` in one step."
+        },
+        {
+          "step": 3,
+          "description": "The compound condition `&& !s.isBlank()` safely accesses methods on `s` because `&&` short-circuits."
+        },
+        {
+          "step": 4,
+          "description": "The `else if` demonstrates pattern matching with `Integer num`."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-cw2",
+      "type": "code_walkthrough",
+      "title": "Clean equals() Implementation with Pattern Matching",
+      "codeSnippet": "import java.util.Objects;\n\nclass UserProfile {\n    private String username;\n    private String email;\n\n    public UserProfile(String username, String email) {\n        this.username = username;\n        this.email = email;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        // Identity check\n        if (this == obj) return true;\n        // Modern pattern matching handles null and type check in one line\n        if (obj instanceof UserProfile other) {\n            return Objects.equals(this.username, other.username) &&\n                   Objects.equals(this.email, other.email);\n        }\n        return false;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(username, email);\n    }\n}\n\npublic class EqualsPatternDemo {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(\"munafe\", \"munaf@example.com\");\n        UserProfile u2 = new UserProfile(\"munafe\", \"munaf@example.com\");\n        UserProfile u3 = new UserProfile(\"alice\", \"alice@example.com\");\n\n        System.out.println(\"u1 equals u2: \" + u1.equals(u2)); // true\n        System.out.println(\"u1 equals u3: \" + u1.equals(u3)); // false\n        System.out.println(\"u1 equals null: \" + u1.equals(null)); // false\n    }\n}",
+      "code": "import java.util.Objects;\n\nclass UserProfile {\n    private String username;\n    private String email;\n\n    public UserProfile(String username, String email) {\n        this.username = username;\n        this.email = email;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        // Identity check\n        if (this == obj) return true;\n        // Modern pattern matching handles null and type check in one line\n        if (obj instanceof UserProfile other) {\n            return Objects.equals(this.username, other.username) &&\n                   Objects.equals(this.email, other.email);\n        }\n        return false;\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(username, email);\n    }\n}\n\npublic class EqualsPatternDemo {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(\"munafe\", \"munaf@example.com\");\n        UserProfile u2 = new UserProfile(\"munafe\", \"munaf@example.com\");\n        UserProfile u3 = new UserProfile(\"alice\", \"alice@example.com\");\n\n        System.out.println(\"u1 equals u2: \" + u1.equals(u2)); // true\n        System.out.println(\"u1 equals u3: \" + u1.equals(u3)); // false\n        System.out.println(\"u1 equals null: \" + u1.equals(null)); // false\n    }\n}",
+      "language": "java",
+      "explanation": "Pattern matching streamlines equals() by removing the ugly manual cast. If obj is null or a different type, instanceof evaluates to false safely.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`if (this == obj) return true;` quickly handles reference identity."
+        },
+        {
+          "step": 2,
+          "description": "`if (obj instanceof UserProfile other)` checks null, validates type, and casts to `other` simultaneously."
+        },
+        {
+          "step": 3,
+          "description": "`Objects.equals()` compares fields safely against null."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-mcq",
+      "type": "mcq",
+      "title": "Safe Type Checking Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Which Java version finalized Pattern Matching for instanceof as a standard language feature?",
+          "options": [
+            "Java 8",
+            "Java 11",
+            "Java 16",
+            "Java 21"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "Pattern Matching for instanceof was introduced as a preview in Java 14 and finalized as a permanent standard feature in Java 16 (JEP 394)."
+        },
+        {
+          "id": "q2",
+          "question": "What is the primary advantage of writing `if (obj instanceof String s)`?",
+          "options": [
+            "It makes the JVM execute bytecode without CPU registers",
+            "It combines the type check and the cast into an atomic, error-proof operation",
+            "It automatically internizes all Strings",
+            "It turns String into a mutable buffer"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "It eliminates the boilerplate manual cast `String s = (String) obj;` and avoids ClassCastException."
+        },
+        {
+          "id": "q3",
+          "question": "What scoping rule does a pattern variable follow?",
+          "options": [
+            "Lexical block scoping (always bounded by curly braces)",
+            "Flow scoping (in scope wherever the compiler can prove the pattern matched)",
+            "Global scope across the entire class",
+            "Package-private scope"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Pattern variables use flow scoping: they are in scope only in regions of code where the condition was evaluated as true."
+        },
+        {
+          "id": "q4",
+          "question": "Which operator is legal to combine with pattern matching in the same if statement?",
+          "options": [
+            "`&&` (logical AND)",
+            "`||` (logical OR)",
+            "`^` (bitwise XOR)",
+            "`~` (bitwise NOT)"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "`&&` is legal because if the left pattern matches, the variable is guaranteed to be bound for the right expression. `||` is illegal because the right side could execute without the left matching."
+        },
+        {
+          "id": "q5",
+          "question": "In the code: `if (!(obj instanceof String s)) return; System.out.println(s.length());`, why is `s` accessible after the if block?",
+          "options": [
+            "It is a compiler bug in modern Java",
+            "Because of flow scoping: if execution proceeds past the if statement, the object MUST have been a String",
+            "Because return resets all local variables",
+            "Because String is final"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Flow scoping recognizes that if the method didn't return, `!(obj instanceof String s)` was false, meaning `obj` is definitely a String."
+        },
+        {
+          "id": "q6",
+          "question": "What happens if `obj` is null in `if (obj instanceof String s)`?",
+          "options": [
+            "NullPointerException is thrown",
+            "The if condition evaluates to false, and s is not bound",
+            "s is assigned the literal string 'null'",
+            "The JVM halts"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`instanceof` on null always evaluates to false, so the block is bypassed safely without NPE."
+        },
+        {
+          "id": "q7",
+          "question": "Can a pattern variable have the same name as an existing local variable in the same scope?",
+          "options": [
+            "Yes, it shadows the existing variable",
+            "No, declaring a pattern variable with the same name as an active local variable causes a compile error",
+            "Only if the existing variable is null",
+            "Only if the pattern variable is final"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java forbids shadowing local variables with pattern variables in overlapping scopes to prevent ambiguity."
+        },
+        {
+          "id": "q8",
+          "question": "Can pattern variables be modified (reassigned) inside the block?",
+          "options": [
+            "No, pattern variables are implicitly final and cannot be modified",
+            "Yes, pattern variables are effectively final but can be reassigned unless declared with `final`",
+            "Only inside while loops",
+            "Only if passed to a setter"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Pattern variables are not implicitly final; you can reassign them unless you explicitly declare `final`: `if (obj instanceof final String s)`."
+        },
+        {
+          "id": "q9",
+          "question": "How does pattern matching improve the readability of `equals(Object o)`?",
+          "options": [
+            "It speeds up bytecode by 50%",
+            "It combines null check, class check, and casting into a single readable line `if (o instanceof MyClass other)`",
+            "It eliminates the need for hashCode()",
+            "It allows comparing private fields without getters"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "It condenses three verbose steps (null check, type check, cast) into one clean check."
+        },
+        {
+          "id": "q10",
+          "question": "Which statement is ILLEGAL in Java 16+?",
+          "options": [
+            "`if (obj instanceof String s && s.length() > 0)`",
+            "`if (obj instanceof String s || s.length() > 0)`",
+            "`if (!(obj instanceof String s)) throw new IllegalArgumentException();`",
+            "`if (obj instanceof final String s)`"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Using `||` is illegal because if `obj` is not a String, `s` would be unbound when evaluating `s.length() > 0`."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-interview",
+      "type": "interview_qa",
+      "title": "Safe Type Checking Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i5-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is Flow Scoping in the context of Java pattern matching?",
+          "answer": "Flow scoping means that the scope of a pattern variable is determined by the flow of control, rather than syntactic curly-brace boundaries. A pattern variable is only in scope where the compiler can deduce that the pattern has definitely matched. For instance, in `if (obj instanceof String s && s.length() > 0)`, `s` is in scope on the right side of `&&`. But in `if (obj instanceof String s || ...) `, it is illegal because the right side executes when the match fails.",
+          "expectedAnswer": "Flow scoping makes pattern variables visible only in execution paths where the pattern is guaranteed to have matched.",
+          "keyTakeaway": "Flow scoping binds pattern variables strictly where match truth is guaranteed.",
+          "keyPoints": [
+            "Flow scoping binds pattern variables strictly where match truth is guaranteed."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i5-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does the compiler forbid the `||` operator with pattern matching?",
+          "answer": "The short-circuiting OR operator `||` evaluates its right-hand operand only when its left-hand operand evaluates to `false`. If the left operand `obj instanceof String s` is `false`, `s` has NOT been bound. Therefore, referring to `s` on the right side would access an unassigned variable. To guarantee type safety, the language specification forbids `||` when the pattern variable is referenced.",
+          "expectedAnswer": "Because || evaluates the right side only when the left test fails, meaning the pattern variable is unbound.",
+          "keyTakeaway": "Logical OR is forbidden with pattern variables due to unbound execution paths.",
+          "keyPoints": [
+            "Logical OR is forbidden with pattern variables due to unbound execution paths."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i5-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can pattern matching for `instanceof` be used with `final` modifiers?",
+          "answer": "Yes. You can declare `if (obj instanceof final String s)`. This makes the pattern variable `s` explicitly `final`, preventing any reassignment to `s` within the body of the matching block.",
+          "expectedAnswer": "Yes, pattern variables can be declared with final to enforce immutability within the block.",
+          "keyTakeaway": "Pattern variables can be declared final explicitly.",
+          "keyPoints": [
+            "Pattern variables can be declared final explicitly."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i5-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How did Pattern Matching for `instanceof` pave the way for Pattern Matching in `switch` statements (Java 21)?",
+          "answer": "Pattern matching for `instanceof` was the foundational stepping stone in Project Amber. By standardizing type patterns and flow scoping, Java was able to expand pattern matching to `switch` expressions (JEP 441 in Java 21) and record deconstruction patterns (JEP 440), enabling powerful algebraic data types and pattern matching.",
+          "expectedAnswer": "It established pattern syntax and flow scoping rules that enabled switch pattern matching and record deconstruction.",
+          "keyTakeaway": "Instanceof pattern matching laid the groundwork for modern Java switch expressions.",
+          "keyPoints": [
+            "Instanceof pattern matching laid the groundwork for modern Java switch expressions."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i5-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does early return interact with flow scoping?",
+          "answer": "When an `if` block with a negated pattern exits the method (via `return`, `throw`, or infinite loop), the pattern variable remains in scope for the remainder of the enclosing method. For example: `if (!(obj instanceof User u)) return; System.out.println(u.getName());`. Because the method terminates if `obj` is not a `User`, any subsequent statement is guaranteed to execute only when `obj` is a `User`.",
+          "expectedAnswer": "Negating the pattern and returning early extends the pattern variable's scope to the rest of the method.",
+          "keyTakeaway": "Early exit guards extend pattern variable scope to subsequent method lines.",
+          "keyPoints": [
+            "Early exit guards extend pattern variable scope to subsequent method lines."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i5-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Are pattern matching `instanceof` checks faster than traditional casting in bytecode?",
+          "answer": "In bytecode, modern pattern matching still generates `instanceof` followed by `checkcast` and store instructions. The performance is practically identical. However, the elimination of human error, avoidance of accidental mismatched casts, and improved compiler optimization visibility make it strictly superior.",
+          "expectedAnswer": "Bytecode execution is virtually identical, but code reliability and maintainability are vastly improved.",
+          "keyTakeaway": "Pattern matching improves code quality without sacrificing performance.",
+          "keyPoints": [
+            "Pattern matching improves code quality without sacrificing performance."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i5-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is Flow Scoping in the context of Java pattern matching?",
+          "answer": "Flow scoping means that the scope of a pattern variable is determined by the flow of control, rather than syntactic curly-brace boundaries. A pattern variable is only in scope where the compiler can deduce that the pattern has definitely matched. For instance, in `if (obj instanceof String s && s.length() > 0)`, `s` is in scope on the right side of `&&`. But in `if (obj instanceof String s || ...) `, it is illegal because the right side executes when the match fails.",
+          "expectedAnswer": "Flow scoping makes pattern variables visible only in execution paths where the pattern is guaranteed to have matched.",
+          "keyTakeaway": "Flow scoping binds pattern variables strictly where match truth is guaranteed.",
+          "keyPoints": [
+            "Flow scoping binds pattern variables strictly where match truth is guaranteed."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i5-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does the compiler forbid the `||` operator with pattern matching?",
+          "answer": "The short-circuiting OR operator `||` evaluates its right-hand operand only when its left-hand operand evaluates to `false`. If the left operand `obj instanceof String s` is `false`, `s` has NOT been bound. Therefore, referring to `s` on the right side would access an unassigned variable. To guarantee type safety, the language specification forbids `||` when the pattern variable is referenced.",
+          "expectedAnswer": "Because || evaluates the right side only when the left test fails, meaning the pattern variable is unbound.",
+          "keyTakeaway": "Logical OR is forbidden with pattern variables due to unbound execution paths.",
+          "keyPoints": [
+            "Logical OR is forbidden with pattern variables due to unbound execution paths."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i5-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can pattern matching for `instanceof` be used with `final` modifiers?",
+          "answer": "Yes. You can declare `if (obj instanceof final String s)`. This makes the pattern variable `s` explicitly `final`, preventing any reassignment to `s` within the body of the matching block.",
+          "expectedAnswer": "Yes, pattern variables can be declared with final to enforce immutability within the block.",
+          "keyTakeaway": "Pattern variables can be declared final explicitly.",
+          "keyPoints": [
+            "Pattern variables can be declared final explicitly."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i5-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How did Pattern Matching for `instanceof` pave the way for Pattern Matching in `switch` statements (Java 21)?",
+          "answer": "Pattern matching for `instanceof` was the foundational stepping stone in Project Amber. By standardizing type patterns and flow scoping, Java was able to expand pattern matching to `switch` expressions (JEP 441 in Java 21) and record deconstruction patterns (JEP 440), enabling powerful algebraic data types and pattern matching.",
+          "expectedAnswer": "It established pattern syntax and flow scoping rules that enabled switch pattern matching and record deconstruction.",
+          "keyTakeaway": "Instanceof pattern matching laid the groundwork for modern Java switch expressions.",
+          "keyPoints": [
+            "Instanceof pattern matching laid the groundwork for modern Java switch expressions."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i5-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does early return interact with flow scoping?",
+          "answer": "When an `if` block with a negated pattern exits the method (via `return`, `throw`, or infinite loop), the pattern variable remains in scope for the remainder of the enclosing method. For example: `if (!(obj instanceof User u)) return; System.out.println(u.getName());`. Because the method terminates if `obj` is not a `User`, any subsequent statement is guaranteed to execute only when `obj` is a `User`.",
+          "expectedAnswer": "Negating the pattern and returning early extends the pattern variable's scope to the rest of the method.",
+          "keyTakeaway": "Early exit guards extend pattern variable scope to subsequent method lines.",
+          "keyPoints": [
+            "Early exit guards extend pattern variable scope to subsequent method lines."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i5-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Are pattern matching `instanceof` checks faster than traditional casting in bytecode?",
+          "answer": "In bytecode, modern pattern matching still generates `instanceof` followed by `checkcast` and store instructions. The performance is practically identical. However, the elimination of human error, avoidance of accidental mismatched casts, and improved compiler optimization visibility make it strictly superior.",
+          "expectedAnswer": "Bytecode execution is virtually identical, but code reliability and maintainability are vastly improved.",
+          "keyTakeaway": "Pattern matching improves code quality without sacrificing performance.",
+          "keyPoints": [
+            "Pattern matching improves code quality without sacrificing performance."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les5-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the modern Java 16+ syntax for pattern matching: `if (obj instanceof Type t)`.",
+        "I understand how pattern matching combines type testing and variable binding atomically.",
+        "I understand flow scoping and can predict where a pattern variable is in scope.",
+        "I know why compound conditions with `&&` are legal but `||` is illegal.",
+        "I know how to write clean early-return guards: `if (!(obj instanceof Type t)) return;`.",
+        "I understand that `instanceof` on null evaluates to false, keeping pattern matching safe from NPE.",
+        "I can write modern, clean `equals()` methods using pattern matching.",
+        "I know that pattern variables can be declared `final` explicitly.",
+        "I understand how pattern matching eliminates verbose manual casting boilerplate.",
+        "I know how pattern matching for instanceof led to switch pattern matching in Java 21."
+      ],
+      "items": [
+        "I know the modern Java 16+ syntax for pattern matching: `if (obj instanceof Type t)`.",
+        "I understand how pattern matching combines type testing and variable binding atomically.",
+        "I understand flow scoping and can predict where a pattern variable is in scope.",
+        "I know why compound conditions with `&&` are legal but `||` is illegal.",
+        "I know how to write clean early-return guards: `if (!(obj instanceof Type t)) return;`.",
+        "I understand that `instanceof` on null evaluates to false, keeping pattern matching safe from NPE.",
+        "I can write modern, clean `equals()` methods using pattern matching.",
+        "I know that pattern variables can be declared `final` explicitly.",
+        "I understand how pattern matching eliminates verbose manual casting boilerplate.",
+        "I know how pattern matching for instanceof led to switch pattern matching in Java 21."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les5-p1",
+      "lessonId": "java-oop-mod10-les5",
+      "orderIndex": 1,
+      "title": "Warmup: Modern Pattern Matching Formatter",
+      "difficulty": "easy",
+      "problemStatement": "Refactor the legacy type formatter using Java 16+ pattern matching:\n1. In `formatObject(Object obj)`:\n   - If `obj instanceof String s`, return `'String: ' + s.toUpperCase()`\n   - If `obj instanceof Integer i`, return `'Int: ' + (i * 10)`\n   - Otherwise return `'Unknown'`\n2. In `main`, call `formatObject` with `\"java\"`, `5`, and `3.14`.\nVerify the output matches the expected strings without any manual casts.",
+      "starterCode": "public class PatternApp {\n    public static String formatObject(Object obj) {\n        // TODO: Refactor with Java 16+ pattern matching (no manual casts!)\n        return \"Unknown\";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(formatObject(\"java\"));\n        System.out.println(formatObject(5));\n        System.out.println(formatObject(3.14));\n    }\n}",
+      "initialCode": "public class PatternApp {\n    public static String formatObject(Object obj) {\n        // TODO: Refactor with Java 16+ pattern matching (no manual casts!)\n        return \"Unknown\";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(formatObject(\"java\"));\n        System.out.println(formatObject(5));\n        System.out.println(formatObject(3.14));\n    }\n}",
+      "solutionCode": "public class PatternApp {\n    public static String formatObject(Object obj) {\n        if (obj instanceof String s) {\n            return \"String: \" + s.toUpperCase();\n        } else if (obj instanceof Integer i) {\n            return \"Int: \" + (i * 10);\n        }\n        return \"Unknown\";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(formatObject(\"java\"));\n        System.out.println(formatObject(5));\n        System.out.println(formatObject(3.14));\n    }\n}",
+      "expectedOutput": "String: JAVA\nInt: 50\nUnknown",
+      "hints": [
+        "Use `if (obj instanceof String s)` and `else if (obj instanceof Integer i)`.",
+        "Access `s` and `i` directly without writing `(String) obj` or `(Integer) obj`."
+      ]
+    },
+    {
+      "id": "prob-les5-p2",
+      "lessonId": "java-oop-mod10-les5",
+      "orderIndex": 2,
+      "title": "Compound Pattern Matching Validator",
+      "difficulty": "medium",
+      "problemStatement": "Build a compound pattern matching validator from scratch without starter code:\n1. Class `Validator` with static method `public static void validateInput(Object input)`:\n   - If `input instanceof String s && s.length() >= 5`, print `'Valid long string: ' + s`\n   - If `input instanceof String s && s.length() < 5`, print `'Short string rejected: ' + s`\n   - If `input instanceof Double d && d > 0.0`, print `'Positive double: ' + d`\n   - Otherwise, print `'Unsupported input'`\n2. In `Main`, test `validateInput` with `\"Administrator\"`, `\"Cat\"`, `99.5`, and `-4.2`.",
+      "solutionCode": "public class ValidatorApp {\n    public static void validateInput(Object input) {\n        if (input instanceof String s && s.length() >= 5) {\n            System.out.println(\"Valid long string: \" + s);\n        } else if (input instanceof String s && s.length() < 5) {\n            System.out.println(\"Short string rejected: \" + s);\n        } else if (input instanceof Double d && d > 0.0) {\n            System.out.println(\"Positive double: \" + d);\n        } else {\n            System.out.println(\"Unsupported input\");\n        }\n    }\n\n    public static void main(String[] args) {\n        validateInput(\"Administrator\");\n        validateInput(\"Cat\");\n        validateInput(99.5);\n        validateInput(-4.2);\n    }\n}",
+      "expectedOutput": "Valid long string: Administrator\nShort string rejected: Cat\nPositive double: 99.5\nUnsupported input",
+      "hints": [
+        "Use compound `&&` in the if conditions to inspect length or numerical positivity.",
+        "-4.2 is not > 0.0, so it falls to 'Unsupported input'."
+      ]
+    },
+    {
+      "id": "prob-les5-p3",
+      "lessonId": "java-oop-mod10-les5",
+      "orderIndex": 3,
+      "title": "Early Return Guard Clause Processor",
+      "difficulty": "medium",
+      "problemStatement": "Implement an early return guard pattern from scratch without starter code:\n1. Class `SecureMessage` with fields `sender` (String) and `content` (String). Constructor sets both. Methods `getSender()` and `getContent()`.\n2. Class `MessageProcessor` with static method `public static void process(Object raw)`:\n   - Guard clause: `if (!(raw instanceof SecureMessage msg)) { System.out.println(\"Error: Not a secure message\"); return; }`\n   - Because of flow scoping, `msg` is in scope below the guard! Print `'Processing message from ' + msg.getSender() + ': ' + msg.getContent()`.\n3. In `Main`, call `process` with `new SecureMessage(\"Alice\", \"Top secret payload\")` and with `\"Just a plain string\"`.",
+      "solutionCode": "class SecureMessage {\n    private String sender;\n    private String content;\n    public SecureMessage(String sender, String content) {\n        this.sender = sender;\n        this.content = content;\n    }\n    public String getSender() { return sender; }\n    public String getContent() { return content; }\n}\n\nclass MessageProcessor {\n    public static void process(Object raw) {\n        if (!(raw instanceof SecureMessage msg)) {\n            System.out.println(\"Error: Not a secure message\");\n            return;\n        }\n        // msg is in scope here because the method returns if not SecureMessage!\n        System.out.println(\"Processing message from \" + msg.getSender() + \": \" + msg.getContent());\n    }\n}\n\npublic class GuardApp {\n    public static void main(String[] args) {\n        MessageProcessor.process(new SecureMessage(\"Alice\", \"Top secret payload\"));\n        MessageProcessor.process(\"Just a plain string\");\n    }\n}",
+      "expectedOutput": "Processing message from Alice: Top secret payload\nError: Not a secure message",
+      "hints": [
+        "Use the early return guard: `if (!(raw instanceof SecureMessage msg)) return;`",
+        "Flow scoping automatically makes `msg` available in subsequent statements."
+      ]
+    },
+    {
+      "id": "prob-les5-p4",
+      "lessonId": "java-oop-mod10-les5",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Illegal OR Operator in Pattern Matching",
+      "difficulty": "hard",
+      "problemStatement": "A developer tried to write a pattern matching check using `||` in `checkToken(Object obj)`, causing a compile-time error. Fix the code so it properly checks if `obj` is either a valid non-empty `String` or a positive `Integer`, printing `'Valid token'` or `'Invalid token'` accordingly.",
+      "starterCode": "public class OrOperatorBug {\n    public static void checkToken(Object obj) {\n        // BUG: In Java, || is illegal with pattern variables because s would be unbound!\n        // if (obj instanceof String s || s.isEmpty()) ...\n        if (obj instanceof String s && !s.isEmpty()) {\n            System.out.println(\"Valid token: \" + s);\n        } else {\n            // Fix: handle Integer positive token as well\n            System.out.println(\"Invalid token\");\n        }\n    }\n\n    public static void main(String[] args) {\n        checkToken(\"AUTH-XYZ\");\n        checkToken(\"\");\n        checkToken(100); // Should print \"Valid token: 100\"\n    }\n}",
+      "initialCode": "public class OrOperatorBug {\n    public static void checkToken(Object obj) {\n        // BUG: In Java, || is illegal with pattern variables because s would be unbound!\n        // if (obj instanceof String s || s.isEmpty()) ...\n        if (obj instanceof String s && !s.isEmpty()) {\n            System.out.println(\"Valid token: \" + s);\n        } else {\n            // Fix: handle Integer positive token as well\n            System.out.println(\"Invalid token\");\n        }\n    }\n\n    public static void main(String[] args) {\n        checkToken(\"AUTH-XYZ\");\n        checkToken(\"\");\n        checkToken(100); // Should print \"Valid token: 100\"\n    }\n}",
+      "solutionCode": "public class OrOperatorBug {\n    public static void checkToken(Object obj) {\n        if (obj instanceof String s && !s.isEmpty()) {\n            System.out.println(\"Valid token: \" + s);\n        } else if (obj instanceof Integer i && i > 0) {\n            System.out.println(\"Valid token: \" + i);\n        } else {\n            System.out.println(\"Invalid token\");\n        }\n    }\n\n    public static void main(String[] args) {\n        checkToken(\"AUTH-XYZ\");\n        checkToken(\"\");\n        checkToken(100);\n    }\n}",
+      "expectedOutput": "Valid token: AUTH-XYZ\nInvalid token\nValid token: 100",
+      "hints": [
+        "Separate the conditions using `else if (obj instanceof Integer i && i > 0)` instead of trying to merge into a single illegal `||` expression.",
+        "Print 'Valid token: ' + i for positive integers."
+      ]
+    },
+    {
+      "id": "prob-les5-p5",
+      "lessonId": "java-oop-mod10-les5",
+      "orderIndex": 5,
+      "title": "Advanced: Pattern Matching Domain Evaluator",
+      "difficulty": "advanced",
+      "problemStatement": "Build a domain expression evaluator from scratch without starter code:\n1. Interface `Expr`\n2. Class `Literal implements Expr`: field `value` (double). Method `getValue()`.\n3. Class `Add implements Expr`: fields `left` (Expr) and `right` (Expr). Methods `getLeft()`, `getRight()`.\n4. Class `Multiply implements Expr`: fields `left` (Expr) and `right` (Expr). Methods `getLeft()`, `getRight()`.\n5. Class `Evaluator` with static method `public static double evaluate(Expr expr)` using recursive pattern matching:\n   - `if (expr instanceof Literal lit) return lit.getValue();`\n   - `if (expr instanceof Add add) return evaluate(add.getLeft()) + evaluate(add.getRight());`\n   - `if (expr instanceof Multiply mul) return evaluate(mul.getLeft()) * evaluate(mul.getRight());`\n   - Otherwise throw new IllegalArgumentException(\"Unknown expr\")\n6. In `Main`, construct `(3.0 + 4.0) * 2.0`:\n   `Expr expr = new Multiply(new Add(new Literal(3.0), new Literal(4.0)), new Literal(2.0));`\n7. Evaluate and print `'Result: ' + Evaluator.evaluate(expr)` (should output `'Result: 14.0'`).",
+      "solutionCode": "interface Expr {}\n\nclass Literal implements Expr {\n    private double value;\n    public Literal(double value) { this.value = value; }\n    public double getValue() { return value; }\n}\n\nclass Add implements Expr {\n    private Expr left, right;\n    public Add(Expr left, Expr right) { this.left = left; this.right = right; }\n    public Expr getLeft() { return left; }\n    public Expr getRight() { return right; }\n}\n\nclass Multiply implements Expr {\n    private Expr left, right;\n    public Multiply(Expr left, Expr right) { this.left = left; this.right = right; }\n    public Expr getLeft() { return left; }\n    public Expr getRight() { return right; }\n}\n\nclass Evaluator {\n    public static double evaluate(Expr expr) {\n        if (expr instanceof Literal lit) {\n            return lit.getValue();\n        } else if (expr instanceof Add add) {\n            return evaluate(add.getLeft()) + evaluate(add.getRight());\n        } else if (expr instanceof Multiply mul) {\n            return evaluate(mul.getLeft()) * evaluate(mul.getRight());\n        }\n        throw new IllegalArgumentException(\"Unknown expr\");\n    }\n}\n\npublic class ExpressionApp {\n    public static void main(String[] args) {\n        Expr expr = new Multiply(\n            new Add(new Literal(3.0), new Literal(4.0)),\n            new Literal(2.0)\n        );\n        System.out.println(\"Result: \" + Evaluator.evaluate(expr));\n    }\n}",
+      "expectedOutput": "Result: 14.0",
+      "hints": [
+        "Recursively call evaluate() on the sub-expressions inside Add and Multiply.",
+        "(3.0 + 4.0) * 2.0 = 7.0 * 2.0 = 14.0."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Safe Type Checking",
+    "Analyze, predict, and trace code execution involving safe-type-checking",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Safe Type Checking principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

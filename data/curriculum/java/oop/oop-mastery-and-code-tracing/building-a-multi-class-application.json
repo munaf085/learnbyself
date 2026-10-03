@@ -1,0 +1,516 @@
+{
+  "id": "les-mast-8",
+  "slug": "building-a-multi-class-application",
+  "title": "Building a Multi-Class Application",
+  "summary": "Structuring packages, coordinating collaborating services, and managing clean entry points.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 8,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les8-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Modern International Airport",
+      "concept": "Layered Multi-Class Enterprise Architecture",
+      "realWorldMetaphor": {
+        "scenario": "An international airport cannot function if luggage handlers are also piloting the Boeing 777, stamping passports at customs, and baking croissants in the terminal cafe. An airport operates through strict, specialized zones: 1) The Terminal Concourse (Presentation / CLI), 2) Security and Border Control (Validation / Gateways), 3) Air Traffic Control (Service Orchestration), and 4) The Fuel and Baggage Depots (Repository / Storage). Each zone interacts only through standardized communication channels.",
+        "mapping": "In software engineering, professional multi-class Java applications are never jammed into one package or one file. They follow layered architecture: Domain Models (Entities & Value Objects) hold core state; Repositories abstract persistence; Services coordinate business transactions; and Controllers/CLI entry points handle user input. The 'Composition Root' in `main()` wires all layers together using Dependency Injection.",
+        "takeaway": "Divide multi-class applications into distinct layers: Domain, Repository, Service, and Entry Point."
+      }
+    },
+    {
+      "id": "act-les8-concept",
+      "type": "concept",
+      "title": "The Universal 4-Layer Architecture Pattern",
+      "content": "### Layered Enterprise Architecture\n\n```\n[Presentation Layer (CLI / Web Controller)]\n  │  - Parses user arguments and renders responses\n  ▼\n[Service / Application Layer]\n  │  - Coordinates business workflows, transactions, and security checks\n  ▼\n[Domain Layer (Core Entities & Value Objects)]\n  │  - Pure business logic, invariants, and domain calculations\n  ▼\n[Repository / Persistence Layer]\n     - In-memory maps, file storage, or SQL databases\n```\n\n### The Composition Root Pattern\n- The entry point (`public static void main`) acts as the **Composition Root**.\n- It is the ONLY place in the application where concrete implementations are instantiated via `new` and wired together.\n- Services and Repositories accept dependencies via constructors, never instantiating each other directly.\n\n### Package Organization Best Practices\n- `com.app.domain`: Entities (`User`, `Account`), Value Objects (`Email`, `Money`). Pure Java, no framework dependencies.\n- `com.app.repository`: Interfaces (`AccountRepository`) and concrete implementations (`InMemoryAccountRepository`).\n- `com.app.service`: Business coordinators (`TransferService`, `AuthService`).\n- `com.app.cli`: CLI runners and terminal formatters."
+    },
+    {
+      "id": "act-les8-cw1",
+      "type": "code_walkthrough",
+      "title": "A Complete Layered Banking Transfer Application",
+      "codeSnippet": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\n\n// 1. DOMAIN LAYER: Pure Entity\nclass BankAccount {\n    private final String id;\n    private double balance;\n\n    public BankAccount(String id, double initialBalance) {\n        this.id = id;\n        this.balance = initialBalance;\n    }\n    public String getId() { return id; }\n    public double getBalance() { return balance; }\n    public boolean debit(double amt) {\n        if (amt <= 0 || amt > balance) return false;\n        balance -= amt;\n        return true;\n    }\n    public void credit(double amt) {\n        if (amt > 0) balance += amt;\n    }\n}\n\n// 2. REPOSITORY LAYER: Data Abstraction\ninterface AccountRepository {\n    void save(BankAccount account);\n    Optional<BankAccount> findById(String id);\n}\n\nclass InMemoryAccountRepository implements AccountRepository {\n    private final Map<String, BankAccount> store = new HashMap<>();\n    @Override\n    public void save(BankAccount account) { store.put(account.getId(), account); }\n    @Override\n    public Optional<BankAccount> findById(String id) { return Optional.ofNullable(store.get(id)); }\n}\n\n// 3. SERVICE LAYER: Business Orchestrator\nclass TransferService {\n    private final AccountRepository repo;\n    public TransferService(AccountRepository repo) { this.repo = repo; }\n\n    public boolean transferFunds(String fromId, String toId, double amount) {\n        Optional<BankAccount> sourceOpt = repo.findById(fromId);\n        Optional<BankAccount> targetOpt = repo.findById(toId);\n        if (sourceOpt.isEmpty() || targetOpt.isEmpty()) return false;\n\n        BankAccount source = sourceOpt.get();\n        BankAccount target = targetOpt.get();\n        if (!source.debit(amount)) return false;\n        target.credit(amount);\n        return true;\n    }\n}\n\n// 4. PRESENTATION LAYER & COMPOSITION ROOT\npublic class LayeredBankApp {\n    public static void main(String[] args) {\n        // Composition Root: Wiring dependencies\n        AccountRepository repo = new InMemoryAccountRepository();\n        repo.save(new BankAccount(\"ACC-1\", 500.0));\n        repo.save(new BankAccount(\"ACC-2\", 200.0));\n\n        TransferService transferService = new TransferService(repo);\n        boolean success = transferService.transferFunds(\"ACC-1\", \"ACC-2\", 150.0);\n\n        System.out.println(\"Transfer Success: \" + success);\n        System.out.println(\"ACC-1: $\" + repo.findById(\"ACC-1\").get().getBalance());\n        System.out.println(\"ACC-2: $\" + repo.findById(\"ACC-2\").get().getBalance());\n    }\n}",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\n\n// 1. DOMAIN LAYER: Pure Entity\nclass BankAccount {\n    private final String id;\n    private double balance;\n\n    public BankAccount(String id, double initialBalance) {\n        this.id = id;\n        this.balance = initialBalance;\n    }\n    public String getId() { return id; }\n    public double getBalance() { return balance; }\n    public boolean debit(double amt) {\n        if (amt <= 0 || amt > balance) return false;\n        balance -= amt;\n        return true;\n    }\n    public void credit(double amt) {\n        if (amt > 0) balance += amt;\n    }\n}\n\n// 2. REPOSITORY LAYER: Data Abstraction\ninterface AccountRepository {\n    void save(BankAccount account);\n    Optional<BankAccount> findById(String id);\n}\n\nclass InMemoryAccountRepository implements AccountRepository {\n    private final Map<String, BankAccount> store = new HashMap<>();\n    @Override\n    public void save(BankAccount account) { store.put(account.getId(), account); }\n    @Override\n    public Optional<BankAccount> findById(String id) { return Optional.ofNullable(store.get(id)); }\n}\n\n// 3. SERVICE LAYER: Business Orchestrator\nclass TransferService {\n    private final AccountRepository repo;\n    public TransferService(AccountRepository repo) { this.repo = repo; }\n\n    public boolean transferFunds(String fromId, String toId, double amount) {\n        Optional<BankAccount> sourceOpt = repo.findById(fromId);\n        Optional<BankAccount> targetOpt = repo.findById(toId);\n        if (sourceOpt.isEmpty() || targetOpt.isEmpty()) return false;\n\n        BankAccount source = sourceOpt.get();\n        BankAccount target = targetOpt.get();\n        if (!source.debit(amount)) return false;\n        target.credit(amount);\n        return true;\n    }\n}\n\n// 4. PRESENTATION LAYER & COMPOSITION ROOT\npublic class LayeredBankApp {\n    public static void main(String[] args) {\n        // Composition Root: Wiring dependencies\n        AccountRepository repo = new InMemoryAccountRepository();\n        repo.save(new BankAccount(\"ACC-1\", 500.0));\n        repo.save(new BankAccount(\"ACC-2\", 200.0));\n\n        TransferService transferService = new TransferService(repo);\n        boolean success = transferService.transferFunds(\"ACC-1\", \"ACC-2\", 150.0);\n\n        System.out.println(\"Transfer Success: \" + success);\n        System.out.println(\"ACC-1: $\" + repo.findById(\"ACC-1\").get().getBalance());\n        System.out.println(\"ACC-2: $\" + repo.findById(\"ACC-2\").get().getBalance());\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates clean enterprise separation: BankAccount handles domain math, AccountRepository handles storage, TransferService coordinates transfers, and main wires dependencies.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`BankAccount` guards debit and credit operations."
+        },
+        {
+          "step": 2,
+          "description": "`AccountRepository` defines storage contracts; `InMemoryAccountRepository` implements via Map."
+        },
+        {
+          "step": 3,
+          "description": "`TransferService` orchestrates the multi-account debit/credit sequence."
+        },
+        {
+          "step": 4,
+          "description": "`main` acts as Composition Root, wiring repo into service and executing transfer."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-cw2",
+      "type": "code_walkthrough",
+      "title": "Exception Handling and Domain Events Across Layers",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\n// Custom Domain Exception\nclass InsufficientInventoryException extends Exception {\n    public InsufficientInventoryException(String msg) { super(msg); }\n}\n\n// Domain Observer / Event Listener\ninterface OrderEventListener {\n    void onOrderPlaced(String orderId, double amount);\n}\n\nclass AuditLogListener implements OrderEventListener {\n    @Override\n    public void onOrderPlaced(String orderId, double amount) {\n        System.out.println(\"[AUDIT LOG] Order created: \" + orderId + \" for $\" + amount);\n    }\n}\n\nclass InventoryService {\n    private int stock = 5;\n    public void deduct(int count) throws InsufficientInventoryException {\n        if (count > stock) {\n            throw new InsufficientInventoryException(\"Requested: \" + count + \", Available: \" + stock);\n        }\n        stock -= count;\n    }\n}\n\nclass OrderService {\n    private final InventoryService inventory;\n    private final List<OrderEventListener> listeners = new ArrayList<>();\n\n    public OrderService(InventoryService inv) { this.inventory = inv; }\n    public void addListener(OrderEventListener l) { listeners.add(l); }\n\n    public void placeOrder(String orderId, int qty, double price) {\n        try {\n            inventory.deduct(qty);\n            for (OrderEventListener l : listeners) {\n                l.onOrderPlaced(orderId, qty * price);\n            }\n            System.out.println(\"Order processed successfully.\");\n        } catch (InsufficientInventoryException e) {\n            System.out.println(\"Order Failed: \" + e.getMessage());\n        }\n    }\n}\n\npublic class DomainEventsDemo {\n    public static void main(String[] args) {\n        InventoryService inv = new InventoryService();\n        OrderService orderSvc = new OrderService(inv);\n        orderSvc.addListener(new AuditLogListener());\n\n        orderSvc.placeOrder(\"ORD-101\", 2, 50.0);\n        orderSvc.placeOrder(\"ORD-102\", 10, 50.0); // Triggers domain exception!\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\n// Custom Domain Exception\nclass InsufficientInventoryException extends Exception {\n    public InsufficientInventoryException(String msg) { super(msg); }\n}\n\n// Domain Observer / Event Listener\ninterface OrderEventListener {\n    void onOrderPlaced(String orderId, double amount);\n}\n\nclass AuditLogListener implements OrderEventListener {\n    @Override\n    public void onOrderPlaced(String orderId, double amount) {\n        System.out.println(\"[AUDIT LOG] Order created: \" + orderId + \" for $\" + amount);\n    }\n}\n\nclass InventoryService {\n    private int stock = 5;\n    public void deduct(int count) throws InsufficientInventoryException {\n        if (count > stock) {\n            throw new InsufficientInventoryException(\"Requested: \" + count + \", Available: \" + stock);\n        }\n        stock -= count;\n    }\n}\n\nclass OrderService {\n    private final InventoryService inventory;\n    private final List<OrderEventListener> listeners = new ArrayList<>();\n\n    public OrderService(InventoryService inv) { this.inventory = inv; }\n    public void addListener(OrderEventListener l) { listeners.add(l); }\n\n    public void placeOrder(String orderId, int qty, double price) {\n        try {\n            inventory.deduct(qty);\n            for (OrderEventListener l : listeners) {\n                l.onOrderPlaced(orderId, qty * price);\n            }\n            System.out.println(\"Order processed successfully.\");\n        } catch (InsufficientInventoryException e) {\n            System.out.println(\"Order Failed: \" + e.getMessage());\n        }\n    }\n}\n\npublic class DomainEventsDemo {\n    public static void main(String[] args) {\n        InventoryService inv = new InventoryService();\n        OrderService orderSvc = new OrderService(inv);\n        orderSvc.addListener(new AuditLogListener());\n\n        orderSvc.placeOrder(\"ORD-101\", 2, 50.0);\n        orderSvc.placeOrder(\"ORD-102\", 10, 50.0); // Triggers domain exception!\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates domain exceptions and observer event listeners decoupled across collaborating enterprise services.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`InsufficientInventoryException` represents a meaningful business failure."
+        },
+        {
+          "step": 2,
+          "description": "`InventoryService.deduct()` throws the checked domain exception when inventory is insufficient."
+        },
+        {
+          "step": 3,
+          "description": "`OrderService` catches the exception and stops downstream listener dispatch."
+        },
+        {
+          "step": 4,
+          "description": "Listeners decouple audit logging from core business processing."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-quiz",
+      "type": "mcq",
+      "title": "Knowledge Assessment: Building Multi-Class Applications",
+      "questions": [
+        {
+          "id": "q-les8-1",
+          "question": "What is the 'Composition Root' in a software application?",
+          "options": [
+            "The root directory of the git repository",
+            "The unique centralized location (typically `main()`) where the dependency graph of the application is instantiated and composed",
+            "The java.lang.Object class",
+            "A database root table"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The Composition Root is where concrete implementations are instantiated and wired into service constructors at startup."
+        },
+        {
+          "id": "q-les8-2",
+          "question": "Why should Domain Entities (like `Customer` or `Product`) avoid holding references to Repositories or UI components?",
+          "options": [
+            "Domain entities should be pure, self-contained business models free from I/O, database, or presentation dependencies",
+            "Because entities cannot contain instance variables",
+            "Java does not allow entities to call other classes",
+            "It causes memory leaks in modern operating systems"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Domain entities should remain pure business logic, shielded from external infrastructure, storage, or presentation concerns."
+        },
+        {
+          "id": "q-les8-3",
+          "question": "What is the primary benefit of the Repository Pattern?",
+          "options": [
+            "It encrypts all strings in bytecode",
+            "It abstracts data access behind an interface, allowing business services to work with domain entities without knowing whether they are stored in memory, files, or SQL databases",
+            "It forces all classes to be singletons",
+            "It speeds up JVM startup time by 50%"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Repositories decouple business services from database details, allowing easy swapping with in-memory doubles for testing."
+        },
+        {
+          "id": "q-les8-4",
+          "question": "What is the difference between a Checked Exception and an Unchecked Exception in Java?",
+          "options": [
+            "Checked exceptions extend `RuntimeException`; unchecked exceptions extend `Error`",
+            "Checked exceptions (extending `Exception`) must be declared in method signatures or caught at compile time; unchecked exceptions (extending `RuntimeException`) represent programming bugs and are not forced to be declared",
+            "Checked exceptions are faster than unchecked exceptions",
+            "Unchecked exceptions can only be thrown by the JVM itself"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Checked exceptions enforce compile-time handling for recoverable conditions, whereas RuntimeExceptions represent unexpected or illegal client conditions."
+        },
+        {
+          "id": "q-les8-5",
+          "question": "What is 'Package-Private' access in Java and how does it protect multi-class module boundaries?",
+          "options": [
+            "Methods marked with `private package` keyword",
+            "The default access level (no modifier), which allows classes within the same package to access members while hiding them from classes in outside packages",
+            "Access granted only to classes running in Docker containers",
+            "A deprecated feature from Java 1.0"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Package-private visibility hides internal implementation classes (like package helper classes) while exposing only the public interfaces to consumers."
+        },
+        {
+          "id": "q-les8-6",
+          "question": "Why should business service methods accept Domain Objects rather than raw HTTP request / JSON string blobs?",
+          "options": [
+            "To prevent buffer overflows in C++ libraries",
+            "Parsing and validating raw input belongs in the presentation/controller layer; service layers should operate on validated, type-safe domain entities",
+            "JSON strings cannot be passed across method calls in Java",
+            "It decreases the number of lines of code"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Separating input validation/parsing from business logic ensures that core domain services remain robust, type-safe, and transport-agnostic."
+        },
+        {
+          "id": "q-les8-7",
+          "question": "What is an 'In-Memory Test Double'?",
+          "options": [
+            "A duplicate CPU chip",
+            "A lightweight, in-memory implementation of an interface (like `InMemoryAccountRepository` backed by a `HashMap`) used to test services quickly without a real database",
+            "A thread that runs twice as fast",
+            "A clone of the JVM operating system"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "In-memory test doubles implement repository interfaces using collections, enabling fast, isolated, deterministic unit tests."
+        },
+        {
+          "id": "q-les8-8",
+          "question": "In a 3-tier architecture, in which direction should dependencies flow?",
+          "options": [
+            "From Domain outward to UI and Database",
+            "From Presentation / Infrastructure inward toward Application Services and Core Domain",
+            "Circularly between all classes",
+            "Database directly into the UI views"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The Dependency Rule states that source code dependencies must only point inward toward higher-level domain policies."
+        },
+        {
+          "id": "q-les8-9",
+          "question": "What role does the `java.util.Optional` class play in repository design?",
+          "options": [
+            "It makes database connections faster",
+            "It explicitly signals that an entity might not exist (e.g. `findById`), forcing callers to handle the empty case and avoiding NullPointerExceptions",
+            "It allows arrays to resize dynamically",
+            "It replaces all if statements"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Returning Optional from lookup methods explicitly documents that a queried entity may be missing, forcing callers to handle that scenario safely."
+        },
+        {
+          "id": "q-les8-10",
+          "question": "Why is it dangerous to let Controller classes directly execute SQL queries?",
+          "options": [
+            "Controllers cannot import java.sql.*",
+            "It violates separation of concerns, couples UI routing to database schemas, and makes testing business logic without a live database impossible",
+            "SQL queries run slower when called from controllers",
+            "Browsers reject responses generated with SQL"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Coupling controllers to database persistence destroys testability and spreads database schema dependencies throughout presentation code."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-interview",
+      "type": "interview_qa",
+      "title": "FAANG Technical Interview: Multi-Class Application Architecture",
+      "questions": [
+        {
+          "id": "qa-les8-1",
+          "company": "Amazon",
+          "role": "Principal Software Engineer",
+          "question": "How do you organize a multi-module Java application to enforce clean architectural boundaries?",
+          "answer": "I organize into separate Maven/Gradle submodules: 1) `:domain` contains pure business models and repository interfaces with zero external framework dependencies. 2) `:application` contains business use cases and orchestrators. 3) `:infrastructure` contains database adapters, external HTTP clients, and AWS SDK integrations. 4) `:web` contains REST controllers and entry points. Because `:domain` has no dependencies on `:infrastructure`, developers physically cannot write SQL queries inside domain entities; the compiler enforces architectural discipline.",
+          "keyTakeaway": "Use build tool module boundaries to enforce unidirectional inward architecture.",
+          "keyPoints": [
+            "Separate core domain from infrastructure using build modules",
+            "Prevent accidental leaking of database/HTTP logic into domain",
+            "Compiler enforces the Dependency Inversion Rule"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les8-2",
+          "company": "Google",
+          "role": "Staff Software Engineer",
+          "question": "What is the difference between anemic domain services and rich domain models?",
+          "answer": "An anemic domain model has 'dumb' entity data bags with getters/setters and 'smart' procedural services executing all validations and calculations. This scatters business logic across services and makes invariants hard to protect. A rich domain model places business logic, invariant validations, and state transitions directly inside the domain entities (`order.applyCoupon(c)`, `account.debit(a)`). Services act merely as thin orchestrators loading aggregates from repositories, invoking entity domain methods, and saving results.",
+          "keyTakeaway": "Entities should guard their own invariants; services merely orchestrate workflows.",
+          "keyPoints": [
+            "Rich entities own their state transitions and calculations",
+            "Thin services coordinate repository loading, transactions, and events",
+            "Prevents duplicate validation logic across multiple services"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les8-3",
+          "company": "Meta",
+          "role": "Production Engineering Manager",
+          "question": "How do you test a distributed transaction or multi-entity business workflow without spinning up slow test databases?",
+          "answer": "By relying on the Repository pattern and Dependency Injection. In our unit tests, we inject in-memory repositories (e.g. `InMemoryUserRepository` backed by `ConcurrentHashMap`) into our services. We can run 5,000 unit tests in under 3 seconds, testing error cases, timeouts, rollbacks, and concurrent race conditions deterministically. Real databases (PostgreSQL/MySQL) are tested separately in a smaller suite of end-to-end integration tests using Testcontainers.",
+          "keyTakeaway": "In-memory repository test doubles deliver blazing-fast, isolated unit testing for complex services.",
+          "keyPoints": [
+            "Repository interfaces decouple services from concrete databases",
+            "In-memory implementations test transactions in milliseconds",
+            "Reserve live databases for a targeted integration test suite"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les8-4",
+          "company": "Microsoft",
+          "role": "Senior Software Architect",
+          "question": "What is the Composition Root pattern, and where should it be located?",
+          "answer": "The Composition Root is the single point in the runtime execution graph where all concrete modules and services are instantiated and wired together. In a Java application, it resides at the application entry point (`public static void main` or the DI bootstrap configurator). Outside of the Composition Root, code should rely purely on interfaces and constructor injection, never using `new ConcreteService()` internally. This keeps the rest of the application completely decoupled and testable.",
+          "keyTakeaway": "Instantiate and wire concrete dependencies exclusively in the Composition Root.",
+          "keyPoints": [
+            "Located at application entry point (main or DI configuration)",
+            "Rest of codebase relies on constructor-injected abstractions",
+            "Prevents scattered 'new' calls across business services"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les8-5",
+          "company": "Apple",
+          "role": "Senior Software Engineer",
+          "question": "When should you define custom Domain Exceptions vs using standard Java exceptions?",
+          "answer": "Standard exceptions (`IllegalArgumentException`, `IllegalStateException`) are great for technical violations like null checks or out-of-range bounds. However, when a business invariant is violated that callers need to handle with specific business logic (e.g. `InsufficientFundsException`, `FlightOverbookedException`, `AccountSuspendedException`), defining custom domain exceptions allows callers to catch specific business failure modes and present tailored user error messaging or recovery workflows.",
+          "keyTakeaway": "Use custom domain exceptions for meaningful business failures that require distinct recovery.",
+          "keyPoints": [
+            "Standard exceptions for technical programming errors",
+            "Domain exceptions convey business domain context",
+            "Allows specific catch blocks for tailored error recovery"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les8-6",
+          "company": "Netflix",
+          "role": "Staff Platform Engineer",
+          "question": "How do you handle domain events to decouple side-effects like sending emails or updating search indices?",
+          "answer": "We publish domain events (e.g. `UserRegisteredEvent`, `OrderPlacedEvent`) via an Observer / Event Publisher mechanism. When the core transaction completes, the service publishes the event. Independent event listeners (like `EmailNotificationListener`, `SearchIndexUpdater`, `MetricsEmitter`) receive the event and execute asynchronously or in separate threads. This keeps the primary order placement logic lean, fast, and completely unaware of downstream notification mechanisms.",
+          "keyTakeaway": "Domain events decouple primary transactions from secondary side-effects and notifications.",
+          "keyPoints": [
+            "Primary business logic completes and emits domain events",
+            "Listeners handle secondary concerns (email, analytics, cache invalidation)",
+            "Promotes Single Responsibility and Open-Closed principles"
+          ],
+          "companyTag": "Netflix"
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "qa-les8-1",
+          "company": "Amazon",
+          "role": "Principal Software Engineer",
+          "question": "How do you organize a multi-module Java application to enforce clean architectural boundaries?",
+          "answer": "I organize into separate Maven/Gradle submodules: 1) `:domain` contains pure business models and repository interfaces with zero external framework dependencies. 2) `:application` contains business use cases and orchestrators. 3) `:infrastructure` contains database adapters, external HTTP clients, and AWS SDK integrations. 4) `:web` contains REST controllers and entry points. Because `:domain` has no dependencies on `:infrastructure`, developers physically cannot write SQL queries inside domain entities; the compiler enforces architectural discipline.",
+          "keyTakeaway": "Use build tool module boundaries to enforce unidirectional inward architecture.",
+          "keyPoints": [
+            "Separate core domain from infrastructure using build modules",
+            "Prevent accidental leaking of database/HTTP logic into domain",
+            "Compiler enforces the Dependency Inversion Rule"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les8-2",
+          "company": "Google",
+          "role": "Staff Software Engineer",
+          "question": "What is the difference between anemic domain services and rich domain models?",
+          "answer": "An anemic domain model has 'dumb' entity data bags with getters/setters and 'smart' procedural services executing all validations and calculations. This scatters business logic across services and makes invariants hard to protect. A rich domain model places business logic, invariant validations, and state transitions directly inside the domain entities (`order.applyCoupon(c)`, `account.debit(a)`). Services act merely as thin orchestrators loading aggregates from repositories, invoking entity domain methods, and saving results.",
+          "keyTakeaway": "Entities should guard their own invariants; services merely orchestrate workflows.",
+          "keyPoints": [
+            "Rich entities own their state transitions and calculations",
+            "Thin services coordinate repository loading, transactions, and events",
+            "Prevents duplicate validation logic across multiple services"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les8-3",
+          "company": "Meta",
+          "role": "Production Engineering Manager",
+          "question": "How do you test a distributed transaction or multi-entity business workflow without spinning up slow test databases?",
+          "answer": "By relying on the Repository pattern and Dependency Injection. In our unit tests, we inject in-memory repositories (e.g. `InMemoryUserRepository` backed by `ConcurrentHashMap`) into our services. We can run 5,000 unit tests in under 3 seconds, testing error cases, timeouts, rollbacks, and concurrent race conditions deterministically. Real databases (PostgreSQL/MySQL) are tested separately in a smaller suite of end-to-end integration tests using Testcontainers.",
+          "keyTakeaway": "In-memory repository test doubles deliver blazing-fast, isolated unit testing for complex services.",
+          "keyPoints": [
+            "Repository interfaces decouple services from concrete databases",
+            "In-memory implementations test transactions in milliseconds",
+            "Reserve live databases for a targeted integration test suite"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les8-4",
+          "company": "Microsoft",
+          "role": "Senior Software Architect",
+          "question": "What is the Composition Root pattern, and where should it be located?",
+          "answer": "The Composition Root is the single point in the runtime execution graph where all concrete modules and services are instantiated and wired together. In a Java application, it resides at the application entry point (`public static void main` or the DI bootstrap configurator). Outside of the Composition Root, code should rely purely on interfaces and constructor injection, never using `new ConcreteService()` internally. This keeps the rest of the application completely decoupled and testable.",
+          "keyTakeaway": "Instantiate and wire concrete dependencies exclusively in the Composition Root.",
+          "keyPoints": [
+            "Located at application entry point (main or DI configuration)",
+            "Rest of codebase relies on constructor-injected abstractions",
+            "Prevents scattered 'new' calls across business services"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les8-5",
+          "company": "Apple",
+          "role": "Senior Software Engineer",
+          "question": "When should you define custom Domain Exceptions vs using standard Java exceptions?",
+          "answer": "Standard exceptions (`IllegalArgumentException`, `IllegalStateException`) are great for technical violations like null checks or out-of-range bounds. However, when a business invariant is violated that callers need to handle with specific business logic (e.g. `InsufficientFundsException`, `FlightOverbookedException`, `AccountSuspendedException`), defining custom domain exceptions allows callers to catch specific business failure modes and present tailored user error messaging or recovery workflows.",
+          "keyTakeaway": "Use custom domain exceptions for meaningful business failures that require distinct recovery.",
+          "keyPoints": [
+            "Standard exceptions for technical programming errors",
+            "Domain exceptions convey business domain context",
+            "Allows specific catch blocks for tailored error recovery"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les8-6",
+          "company": "Netflix",
+          "role": "Staff Platform Engineer",
+          "question": "How do you handle domain events to decouple side-effects like sending emails or updating search indices?",
+          "answer": "We publish domain events (e.g. `UserRegisteredEvent`, `OrderPlacedEvent`) via an Observer / Event Publisher mechanism. When the core transaction completes, the service publishes the event. Independent event listeners (like `EmailNotificationListener`, `SearchIndexUpdater`, `MetricsEmitter`) receive the event and execute asynchronously or in separate threads. This keeps the primary order placement logic lean, fast, and completely unaware of downstream notification mechanisms.",
+          "keyTakeaway": "Domain events decouple primary transactions from secondary side-effects and notifications.",
+          "keyPoints": [
+            "Primary business logic completes and emits domain events",
+            "Listeners handle secondary concerns (email, analytics, cache invalidation)",
+            "Promotes Single Responsibility and Open-Closed principles"
+          ],
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les8-checklist",
+      "type": "self_evaluation",
+      "title": "Module 11 Self-Evaluation: Building Multi-Class Applications",
+      "checklist": [
+        "I organize Java applications into Domain, Repository, Service, and Presentation layers.",
+        "I implement the Composition Root in main() to wire all dependencies cleanly.",
+        "I use the Repository pattern with java.util.Optional for data access abstraction.",
+        "I keep Domain Entities pure and free of I/O, database, or UI dependencies.",
+        "I create In-Memory repository test doubles for rapid, deterministic unit testing.",
+        "I use package-private visibility to protect internal subsystem implementation classes.",
+        "I model domain exceptions for business failures and standard exceptions for technical bugs.",
+        "I publish domain events to decouple secondary side-effects from core transactions.",
+        "I validate user input at presentation boundaries before passing domain entities to services.",
+        "I can architect and defend a multi-package enterprise system in a technical interview."
+      ],
+      "items": [
+        "I organize Java applications into Domain, Repository, Service, and Presentation layers.",
+        "I implement the Composition Root in main() to wire all dependencies cleanly.",
+        "I use the Repository pattern with java.util.Optional for data access abstraction.",
+        "I keep Domain Entities pure and free of I/O, database, or UI dependencies.",
+        "I create In-Memory repository test doubles for rapid, deterministic unit testing.",
+        "I use package-private visibility to protect internal subsystem implementation classes.",
+        "I model domain exceptions for business failures and standard exceptions for technical bugs.",
+        "I publish domain events to decouple secondary side-effects from core transactions.",
+        "I validate user input at presentation boundaries before passing domain entities to services.",
+        "I can architect and defend a multi-package enterprise system in a technical interview."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Building a Multi-Class Application",
+    "Analyze, predict, and trace code execution involving building-a-multi-class-application",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Building a Multi-Class Application principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les8-p1",
+      "lessonId": "java-oop-mod11-les8",
+      "orderIndex": 1,
+      "title": "Warmup: Wiring Repository and Service in Composition Root",
+      "difficulty": "easy",
+      "problemStatement": "In the provided starter code, complete the `UserRepository` and `UserService` wiring in `main()`:\n1. Model `User`: `id` (String), `email` (String). Getters.\n2. Interface `UserRepository`: `void save(User u)`, `User findById(String id)`.\n3. Class `InMemoryUserRepository implements UserRepository`: backing map `store`.\n4. Class `UserService`: takes `UserRepository` in constructor. Method `String getUserEmail(String id)` delegates to repo.\nIn `main()` wire them together, save `User(\"U-1\", \"user@domain.com\")`, and print the email.",
+      "starterCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass User {\n    private String id;\n    private String email;\n    public User(String id, String email) { this.id = id; this.email = email; }\n    public String getId() { return id; }\n    public String getEmail() { return email; }\n}\n\n// TODO: Implement UserRepository, InMemoryUserRepository, and UserService\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        // Wire up repository and service\n    }\n}",
+      "initialCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass User {\n    private String id;\n    private String email;\n    public User(String id, String email) { this.id = id; this.email = email; }\n    public String getId() { return id; }\n    public String getEmail() { return email; }\n}\n\n// TODO: Implement UserRepository, InMemoryUserRepository, and UserService\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        // Wire up repository and service\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass User {\n    private String id;\n    private String email;\n    public User(String id, String email) { this.id = id; this.email = email; }\n    public String getId() { return id; }\n    public String getEmail() { return email; }\n}\n\ninterface UserRepository {\n    void save(User u);\n    User findById(String id);\n}\n\nclass InMemoryUserRepository implements UserRepository {\n    private final Map<String, User> store = new HashMap<>();\n    @Override\n    public void save(User u) { store.put(u.getId(), u); }\n    @Override\n    public User findById(String id) { return store.get(id); }\n}\n\nclass UserService {\n    private final UserRepository repo;\n    public UserService(UserRepository repo) { this.repo = repo; }\n    public String getUserEmail(String id) {\n        User u = repo.findById(id);\n        return u != null ? u.getEmail() : \"NOT_FOUND\";\n    }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        UserRepository repo = new InMemoryUserRepository();\n        repo.save(new User(\"U-1\", \"user@domain.com\"));\n        UserService service = new UserService(repo);\n        System.out.println(\"Email: \" + service.getUserEmail(\"U-1\"));\n    }\n}",
+      "expectedOutput": "Email: user@domain.com",
+      "hints": [
+        "InMemoryUserRepository stores users in a Map<String, User>.",
+        "UserService receives UserRepository via constructor."
+      ]
+    },
+    {
+      "id": "prob-les8-p2",
+      "lessonId": "java-oop-mod11-les8",
+      "orderIndex": 2,
+      "title": "Scratch: Modeling a Custom Domain Exception Pipeline",
+      "difficulty": "medium",
+      "problemStatement": "Build a domain validation pipeline with custom exceptions from scratch without starter code:\n1. Custom Exception `DuplicateUsernameException extends Exception`: message constructor.\n2. Entity `Member`: `username` (String). Getter.\n3. Service `RegistrationService`: private list of `registeredUsernames`. Method `void register(String username) throws DuplicateUsernameException`.\n   - If username already exists in list, throw `DuplicateUsernameException(\"Username '\" + username + \"' is already taken\")`.\n   - Otherwise, add to list and print `'Registered: ' + username`.\n4. In `Main`:\n   - Create service\n   - Register `'munaf085'` (succeeds)\n   - Register `'munaf085'` again inside try-catch and print `'Caught: ' + e.getMessage()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass DuplicateUsernameException extends Exception {\n    public DuplicateUsernameException(String message) {\n        super(message);\n    }\n}\n\nclass RegistrationService {\n    private final List<String> registered = new ArrayList<>();\n\n    public void register(String username) throws DuplicateUsernameException {\n        if (registered.contains(username)) {\n            throw new DuplicateUsernameException(\"Username '\" + username + \"' is already taken\");\n        }\n        registered.add(username);\n        System.out.println(\"Registered: \" + username);\n    }\n}\n\npublic class DomainExceptionApp {\n    public static void main(String[] args) {\n        RegistrationService service = new RegistrationService();\n        try {\n            service.register(\"munaf085\");\n            service.register(\"munaf085\");\n        } catch (DuplicateUsernameException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+      "expectedOutput": "Registered: munaf085\nCaught: Username 'munaf085' is already taken",
+      "hints": [
+        "DuplicateUsernameException is a checked domain exception extending Exception.",
+        "Catch the exception in main and print e.getMessage()."
+      ]
+    },
+    {
+      "id": "prob-les8-p3",
+      "lessonId": "java-oop-mod11-les8",
+      "orderIndex": 3,
+      "title": "Scratch: Domain Event Observer System",
+      "difficulty": "medium",
+      "problemStatement": "Build a domain event publisher from scratch without starter code:\n1. Interface `DomainEventListener`: `void onEvent(String topic, String payload)`.\n2. Class `ConsoleAuditListener implements DomainEventListener`: prints `'[AUDIT] ' + topic + ': ' + payload`.\n3. Class `EventPublisher`: private list of listeners. Methods `subscribe(DomainEventListener l)` and `publish(String topic, String payload)` which iterates and notifies all listeners.\n4. In `Main`:\n   - Create `EventPublisher`\n   - Subscribe `ConsoleAuditListener`\n   - Publish topic `'USER_LOGIN'`, payload `'User munaf logged in from 192.168.1.1'`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\ninterface DomainEventListener {\n    void onEvent(String topic, String payload);\n}\n\nclass ConsoleAuditListener implements DomainEventListener {\n    @Override\n    public void onEvent(String topic, String payload) {\n        System.out.println(\"[AUDIT] \" + topic + \": \" + payload);\n    }\n}\n\nclass EventPublisher {\n    private final List<DomainEventListener> listeners = new ArrayList<>();\n\n    public void subscribe(DomainEventListener l) {\n        listeners.add(l);\n    }\n\n    public void publish(String topic, String payload) {\n        for (DomainEventListener l : listeners) {\n            l.onEvent(topic, payload);\n        }\n    }\n}\n\npublic class DomainEventsApp {\n    public static void main(String[] args) {\n        EventPublisher publisher = new EventPublisher();\n        publisher.subscribe(new ConsoleAuditListener());\n        publisher.publish(\"USER_LOGIN\", \"User munaf logged in from 192.168.1.1\");\n    }\n}",
+      "expectedOutput": "[AUDIT] USER_LOGIN: User munaf logged in from 192.168.1.1",
+      "hints": [
+        "EventPublisher manages observer subscriptions and broadcasts events.",
+        "ConsoleAuditListener handles notifications decoupled from event sources."
+      ]
+    },
+    {
+      "id": "prob-les8-p4",
+      "lessonId": "java-oop-mod11-les8",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Fixing Unhandled Missing Repository Entities",
+      "difficulty": "hard",
+      "problemStatement": "In the provided buggy code, `ProductService.getPrice()` directly accesses `repo.find(id).getPrice()` without checking if the product was found, crashing with `NullPointerException`!\nRefactor the system:\n1. Change `ProductRepository.find(String id)` to return `java.util.Optional<Product>`.\n2. In `ProductService.getPrice(String id)`, if not found, throw `java.util.NoSuchElementException(\"Product not found: \" + id)`.\n3. In `main()`, catch the exception and print `'Caught: Product not found: PROD-999'`.",
+      "starterCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Product {\n    private String id;\n    private double price;\n    public Product(String id, double p) { this.id = id; this.price = p; }\n    public double getPrice() { return price; }\n}\n\nclass ProductRepository {\n    private Map<String, Product> db = new HashMap<>();\n    public void add(Product p) { db.put(p.getPrice() + \"\", p); }\n    // BUG: Returns null leading to NPE\n    public Product find(String id) { return db.get(id); }\n}\n\npublic class NpeBugDemo {\n    public static void main(String[] args) {\n        ProductRepository repo = new ProductRepository();\n        // Missing product triggers crash:\n        double price = repo.find(\"PROD-999\").getPrice();\n        System.out.println(\"Price: \" + price);\n    }\n}",
+      "initialCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Product {\n    private String id;\n    private double price;\n    public Product(String id, double p) { this.id = id; this.price = p; }\n    public double getPrice() { return price; }\n}\n\nclass ProductRepository {\n    private Map<String, Product> db = new HashMap<>();\n    public void add(Product p) { db.put(p.getPrice() + \"\", p); }\n    // BUG: Returns null leading to NPE\n    public Product find(String id) { return db.get(id); }\n}\n\npublic class NpeBugDemo {\n    public static void main(String[] args) {\n        ProductRepository repo = new ProductRepository();\n        // Missing product triggers crash:\n        double price = repo.find(\"PROD-999\").getPrice();\n        System.out.println(\"Price: \" + price);\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.NoSuchElementException;\nimport java.util.Optional;\n\nclass Product {\n    private String id;\n    private double price;\n    public Product(String id, double p) { this.id = id; this.price = p; }\n    public String getId() { return id; }\n    public double getPrice() { return price; }\n}\n\nclass ProductRepository {\n    private Map<String, Product> db = new HashMap<>();\n    public void add(Product p) { db.put(p.getId(), p); }\n    public Optional<Product> find(String id) {\n        return Optional.ofNullable(db.get(id));\n    }\n}\n\nclass ProductService {\n    private final ProductRepository repo;\n    public ProductService(ProductRepository repo) { this.repo = repo; }\n    public double getPrice(String id) {\n        return repo.find(id)\n                .map(Product::getPrice)\n                .orElseThrow(() -> new NoSuchElementException(\"Product not found: \" + id));\n    }\n}\n\npublic class NpeBugDemo {\n    public static void main(String[] args) {\n        ProductRepository repo = new ProductRepository();\n        ProductService service = new ProductService(repo);\n        try {\n            service.getPrice(\"PROD-999\");\n        } catch (NoSuchElementException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+      "expectedOutput": "Caught: Product not found: PROD-999",
+      "hints": [
+        "Wrap repository lookups in Optional.ofNullable.",
+        "Throw NoSuchElementException using orElseThrow() on Optional."
+      ]
+    },
+    {
+      "id": "prob-les8-p5",
+      "lessonId": "java-oop-mod11-les8",
+      "orderIndex": 5,
+      "title": "Advanced: Complete Multi-Tier Order Fulfillment System",
+      "difficulty": "advanced",
+      "problemStatement": "Build a multi-tier order fulfillment system across 3 layers from scratch:\n1. Domain Entity `OrderEntity`: `id` (String), `amount` (double), `status` (String: starts as 'PENDING'). Method `void markPaid()` sets status to 'PAID'. Getters.\n2. Interface `OrderRepo`: `void save(OrderEntity o)`, `Optional<OrderEntity> find(String id)`.\n3. Class `InMemoryOrderRepo implements OrderRepo`: uses `Map<String, OrderEntity>`.\n4. Service `FulfillmentService`: takes `OrderRepo`. Method `boolean processPayment(String id)`: finds order, calls `markPaid()`, saves order, returns true; returns false if not found.\n5. In `Main` (Composition Root):\n   - Instantiate repo, add order `('ORD-1', 250.0)`\n   - Instantiate service with repo\n   - Call `processPayment('ORD-1')`\n   - Print `'Order ORD-1 status: ' + repo.find('ORD-1').get().getStatus()` (PAID).",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\n\nclass OrderEntity {\n    private final String id;\n    private final double amount;\n    private String status;\n\n    public OrderEntity(String id, double amount) {\n        this.id = id;\n        this.amount = amount;\n        this.status = \"PENDING\";\n    }\n    public void markPaid() { this.status = \"PAID\"; }\n    public String getId() { return id; }\n    public double getAmount() { return amount; }\n    public String getStatus() { return status; }\n}\n\ninterface OrderRepo {\n    void save(OrderEntity o);\n    Optional<OrderEntity> find(String id);\n}\n\nclass InMemoryOrderRepo implements OrderRepo {\n    private final Map<String, OrderEntity> map = new HashMap<>();\n    @Override\n    public void save(OrderEntity o) { map.put(o.getId(), o); }\n    @Override\n    public Optional<OrderEntity> find(String id) { return Optional.ofNullable(map.get(id)); }\n}\n\nclass FulfillmentService {\n    private final OrderRepo repo;\n    public FulfillmentService(OrderRepo repo) { this.repo = repo; }\n\n    public boolean processPayment(String id) {\n        Optional<OrderEntity> opt = repo.find(id);\n        if (opt.isEmpty()) return false;\n        OrderEntity o = opt.get();\n        o.markPaid();\n        repo.save(o);\n        return true;\n    }\n}\n\npublic class MultiTierApp {\n    public static void main(String[] args) {\n        OrderRepo repo = new InMemoryOrderRepo();\n        repo.save(new OrderEntity(\"ORD-1\", 250.0));\n\n        FulfillmentService service = new FulfillmentService(repo);\n        service.processPayment(\"ORD-1\");\n\n        System.out.println(\"Order ORD-1 status: \" + repo.find(\"ORD-1\").get().getStatus());\n    }\n}",
+      "expectedOutput": "Order ORD-1 status: PAID",
+      "hints": [
+        "OrderEntity encapsulates status transitions.",
+        "FulfillmentService coordinates lookup, state change, and save.",
+        "Main wires the architecture cleanly."
+      ]
+    }
+  ]
+}

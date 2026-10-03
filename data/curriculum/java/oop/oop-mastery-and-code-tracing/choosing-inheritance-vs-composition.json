@@ -1,0 +1,515 @@
+{
+  "id": "les-mast-7",
+  "slug": "choosing-inheritance-vs-composition",
+  "title": "Choosing Inheritance vs Composition",
+  "summary": "Real-world decision matrix: when to use extends vs when to use instance variable composition.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les7-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: Smartphone Accessories vs Genetically Engineered Limbs",
+      "concept": "Composition over Inheritance Decision Matrix",
+      "realWorldMetaphor": {
+        "scenario": "Imagine if you wanted a flashlight at night, so you underwent surgery to fuse an LED flashlight permanently into your forearm (Inheritance). If the bulb burns out, or a brighter LED comes along, you need major surgery. If you go swimming, you risk electrocution. Instead, humans use tools: you pick up an external flashlight with your hand (Composition). When the battery dies, you swap it. If you want a camera instead, you pick up a camera. Your body remains unchanged.",
+        "mapping": "In OOP, `class Manager extends Employee` fuses roles into classes at compile time. What happens when a Developer is promoted to Manager? In Java, you cannot change an object's class on the heap! With Composition, `Employee` has a `Role` reference. When the developer is promoted, you simply call `emp.setRole(new ManagerRole())` at runtime. Composition confers dynamic flexibility; inheritance enforces static rigidity.",
+        "takeaway": "Favor object composition over class inheritance: composition binds at runtime; inheritance binds at compile time."
+      }
+    },
+    {
+      "id": "act-les7-concept",
+      "type": "concept",
+      "title": "The Senior Decision Matrix: Extends vs Composes",
+      "content": "### The Gang of Four Principle\n> *\"Favor object composition over class inheritance.\"*\n\n### The 5 Architectural Tests\nBefore writing `extends SuperClass`, run these 5 tests:\n\n1. **The Strict IS-A Test (Liskov Substitution)**:\n   - Is Subclass genuinely a subtype of Superclass in ALL contexts, without overriding methods just to throw exceptions or do nothing? If no -> **Composition**.\n\n2. **The Polymorphic Lifetime Test**:\n   - Does the object need to change its role, behavior, or strategy at runtime? (e.g. `GuestUser` becomes `PremiumUser`). You cannot change an object's class at runtime. If yes -> **Composition**.\n\n3. **The Fragile Base Class Test**:\n   - Does the subclass rely on internal implementation details of the superclass (e.g. self-use of methods)? A change in the superclass can silently break subclasses. If yes -> **Composition**.\n\n4. **The Multiple Dimensions Test**:\n   - Do you have multiple independent axes of variation? (e.g. `Vehicle` with Engine types [Gas, Electric] and Body types [Sedan, SUV]). Inheritance causes combinatorial explosion: `ElectricSedan`, `GasSedan`, `ElectricSUV`, `GasSUV` (2 x 2 = 4 classes; 5 x 5 = 25 classes!). Composition keeps it linear (2 + 2 = 4 classes).\n\n5. **When IS Inheritance Appropriate?**\n   - Building Template Method frameworks (e.g. `HttpServlet.doGet()`).\n   - True mathematical/semantic hierarchies where LSP is unconditionally preserved.\n   - Abstract base classes sharing internal boilerplate across sealed family members."
+    },
+    {
+      "id": "act-les7-cw1",
+      "type": "code_walkthrough",
+      "title": "The Fragile Base Class Trap: Inheriting from ArrayList",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\n\n// ANTI-PATTERN: Inheriting from a concrete library class\nclass BrokenInstrumentedList<E> extends ArrayList<E> {\n    private int addCount = 0;\n\n    @Override\n    public boolean add(E e) {\n        addCount++;\n        return super.add(e);\n    }\n\n    @Override\n    public boolean addAll(Collection<? extends E> c) {\n        // BUG: In ArrayList, addAll() internally calls add()!\n        // If we increment here AND super calls add(), count is doubled!\n        addCount += c.size();\n        return super.addAll(c);\n    }\n\n    public int getAddCount() { return addCount; }\n}\n\npublic class FragileBaseDemo {\n    public static void main(String[] args) {\n        BrokenInstrumentedList<String> list = new BrokenInstrumentedList<>();\n        list.addAll(List.of(\"A\", \"B\", \"C\"));\n\n        // Expected: 3. Actual: 6 (if ArrayList.addAll calls add())!\n        System.out.println(\"Add Count: \" + list.getAddCount());\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\n\n// ANTI-PATTERN: Inheriting from a concrete library class\nclass BrokenInstrumentedList<E> extends ArrayList<E> {\n    private int addCount = 0;\n\n    @Override\n    public boolean add(E e) {\n        addCount++;\n        return super.add(e);\n    }\n\n    @Override\n    public boolean addAll(Collection<? extends E> c) {\n        // BUG: In ArrayList, addAll() internally calls add()!\n        // If we increment here AND super calls add(), count is doubled!\n        addCount += c.size();\n        return super.addAll(c);\n    }\n\n    public int getAddCount() { return addCount; }\n}\n\npublic class FragileBaseDemo {\n    public static void main(String[] args) {\n        BrokenInstrumentedList<String> list = new BrokenInstrumentedList<>();\n        list.addAll(List.of(\"A\", \"B\", \"C\"));\n\n        // Expected: 3. Actual: 6 (if ArrayList.addAll calls add())!\n        System.out.println(\"Add Count: \" + list.getAddCount());\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates the classic Fragile Base Class trap: overriding methods in inherited concrete classes can cause double-counting when superclasses internally call their own methods.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`BrokenInstrumentedList` extends `ArrayList` and overrides `add()` and `addAll()`."
+        },
+        {
+          "step": 2,
+          "description": "When `addAll()` runs, it adds 3 to `addCount` and delegates to `super.addAll()`."
+        },
+        {
+          "step": 3,
+          "description": "If the superclass implementation internally loops and calls `add()`, `addCount` is incremented again."
+        },
+        {
+          "step": 4,
+          "description": "Subclass behavior is fatally coupled to undocumented parent implementation details."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-cw2",
+      "type": "code_walkthrough",
+      "title": "The Solution: Composition & Delegation (Decorator Pattern)",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\n\n// SAFE PATTERN: Composition and Delegation\nclass SafeInstrumentedList<E> {\n    // Composed internal instance\n    private final List<E> internalList = new ArrayList<>();\n    private int addCount = 0;\n\n    public void add(E e) {\n        addCount++;\n        internalList.add(e); // Explicit delegation\n    }\n\n    public void addAll(Collection<? extends E> c) {\n        addCount += c.size();\n        internalList.addAll(c); // Independent of internal implementation!\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return internalList.size(); }\n}\n\npublic class CompositionSafeDemo {\n    public static void main(String[] args) {\n        SafeInstrumentedList<String> list = new SafeInstrumentedList<>();\n        list.addAll(List.of(\"A\", \"B\", \"C\"));\n\n        System.out.println(\"Items in list: \" + list.size());\n        System.out.println(\"Accurate Add Count: \" + list.getAddCount());\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\n\n// SAFE PATTERN: Composition and Delegation\nclass SafeInstrumentedList<E> {\n    // Composed internal instance\n    private final List<E> internalList = new ArrayList<>();\n    private int addCount = 0;\n\n    public void add(E e) {\n        addCount++;\n        internalList.add(e); // Explicit delegation\n    }\n\n    public void addAll(Collection<? extends E> c) {\n        addCount += c.size();\n        internalList.addAll(c); // Independent of internal implementation!\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return internalList.size(); }\n}\n\npublic class CompositionSafeDemo {\n    public static void main(String[] args) {\n        SafeInstrumentedList<String> list = new SafeInstrumentedList<>();\n        list.addAll(List.of(\"A\", \"B\", \"C\"));\n\n        System.out.println(\"Items in list: \" + list.size());\n        System.out.println(\"Accurate Add Count: \" + list.getAddCount());\n    }\n}",
+      "language": "java",
+      "explanation": "Shows the composition solution: wrapping an internal List and delegating explicitly protects against fragile base class bugs and encapsulates the count accurately.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SafeInstrumentedList` holds a `private final List<E>` instead of extending `ArrayList`."
+        },
+        {
+          "step": 2,
+          "description": "`add()` and `addAll()` manage their own counters and delegate explicitly to the internal list."
+        },
+        {
+          "step": 3,
+          "description": "Internal implementation details of `List` cannot corrupt the counter."
+        },
+        {
+          "step": 4,
+          "description": "Add count is guaranteed to equal 3."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-quiz",
+      "type": "mcq",
+      "title": "Knowledge Assessment: Inheritance vs Composition",
+      "questions": [
+        {
+          "id": "q-les7-1",
+          "question": "What is the 'Fragile Base Class' problem?",
+          "options": [
+            "Base classes taking too long to compile in Gradle",
+            "Subclasses breaking unexpectedly when a superclass is modified or when superclass methods invoke other overridable methods",
+            "Base classes having only private constructors",
+            "A class having more than 5 subclasses"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The fragile base class problem occurs when changes to a superclass break subclasses because inheritance exposes internal implementation details."
+        },
+        {
+          "id": "q-les7-2",
+          "question": "Why is composition considered more flexible than inheritance at runtime?",
+          "options": [
+            "Composed objects run in separate JVM processes",
+            "Composed references can be swapped or replaced with different implementations dynamically at runtime, while inheritance binds classes permanently at compile-time",
+            "Inheritance consumes more RAM",
+            "Composition does not require public methods"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "You can change an instance variable reference (composition) at any time during execution, but an object cannot change its superclass."
+        },
+        {
+          "id": "q-les7-3",
+          "question": "What phenomenon occurs when using inheritance to model multiple independent axes of variation?",
+          "options": [
+            "Combinatorial class explosion (e.g. NxM subclasses)",
+            "Stack overflow during class loading",
+            "Garbage collector lockups",
+            "Automatic interface extraction"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Combining 3 rendering engines and 4 operating systems via inheritance requires 12 subclasses; with composition (Bridge pattern), it requires only 3 + 4 = 7 classes."
+        },
+        {
+          "id": "q-les7-4",
+          "question": "When is inheritance genuinely appropriate?",
+          "options": [
+            "Whenever you want to save typing 5 lines of code",
+            "When there is a genuine, unconditional IS-A relationship honoring LSP, and often when utilizing framework Template Method patterns",
+            "Whenever two classes have one variable with the same name",
+            "Never; inheritance is completely banned in Java"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Inheritance is appropriate for true subtypes that honor all base class contracts and when implementing template methods in frameworks."
+        },
+        {
+          "id": "q-les7-5",
+          "question": "In Java's standard library, what is the classic example of a flawed inheritance design?",
+          "options": [
+            "java.util.List",
+            "java.util.Stack extending java.util.Vector",
+            "java.lang.String",
+            "java.lang.Math"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`Stack` extends `Vector`, allowing callers to insert elements at arbitrary indices via `stack.insertElementAt(e, 0)`, violating the LIFO contract of a stack."
+        },
+        {
+          "id": "q-les7-6",
+          "question": "What does 'Delegation' mean in the context of composition?",
+          "options": [
+            "Passing a task to a background thread",
+            "An outer class method forwarding a call directly to a method of its internal composed helper object",
+            "Assigning Jira tickets to developers",
+            "Calling super.toString()"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Delegation is when an object handles a request by dispatching it to an internal composed object."
+        },
+        {
+          "id": "q-les7-7",
+          "question": "How does composition improve automated unit testing?",
+          "options": [
+            "It makes tests run in parallel automatically",
+            "Dependencies can be mocked or stubbed through interfaces and injected, allowing isolated testing without triggering superclass side-effects",
+            "Tests do not need assertions",
+            "It disables private variable checks"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Composed collaborator dependencies can easily be swapped with mocks, whereas testing inherited superclass behavior in isolation is difficult."
+        },
+        {
+          "id": "q-les7-8",
+          "question": "What is the relationship between the Decorator pattern and composition?",
+          "options": [
+            "The Decorator pattern forbids composition",
+            "The Decorator pattern uses composition to wrap an object and add dynamic behavior while implementing the same interface",
+            "Decorators are only used for CSS styling",
+            "Decorators require multiple inheritance"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Decorators compose an instance of the component interface, delegating default calls while adding enhanced behaviors."
+        },
+        {
+          "id": "q-les7-9",
+          "question": "Why does inheritance violate encapsulation to some extent?",
+          "options": [
+            "Because all superclass variables must be public",
+            "Subclasses depend on internal implementation details and call patterns of the superclass (white-box reuse)",
+            "Subclasses can read the private fields of superclasses directly",
+            "Inheritance removes method signatures from bytecode"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Inheritance is 'white-box reuse' where subclasses are exposed to and depend on the internal execution structure of superclasses."
+        },
+        {
+          "id": "q-les7-10",
+          "question": "If a class `Car` needs an `Engine`, should it extend `Engine` or compose `Engine`?",
+          "options": [
+            "Extend Engine, because a car runs on an engine",
+            "Compose Engine, because a Car HAS-A Engine and is not an Engine itself",
+            "Neither, Engine should extend Car",
+            "Car should make Engine static"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "A Car HAS-A Engine (composition). A Car is not a subtype of an Engine."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-interview",
+      "type": "interview_qa",
+      "title": "FAANG Technical Interview: Inheritance vs Composition",
+      "questions": [
+        {
+          "id": "qa-les7-1",
+          "company": "Google",
+          "role": "Staff Software Engineer",
+          "question": "Why did Effective Java Item 18 state: 'Favor composition over inheritance'?",
+          "answer": "Because inheritance crosses encapsulation boundaries. In inheritance, a subclass is tightly bound to its superclass's implementation details. If the superclass author updates a method in a future library release (for example, having method A call method B internally), existing subclass overrides can double-count, enter infinite loops, or violate security invariants. With composition, you treat the collaborator as a black box with a defined API contract. You compose an instance, delegate calls, and are immune to internal parent refactoring.",
+          "keyTakeaway": "Composition treats collaborators as black boxes, preserving encapsulation and avoiding fragile base classes.",
+          "keyPoints": [
+            "Inheritance is white-box reuse; composition is black-box reuse",
+            "Superclass implementation updates can break subclass invariants",
+            "Composition isolates your class behind explicit delegated APIs"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les7-2",
+          "company": "Amazon",
+          "role": "Principal Engineer",
+          "question": "What is the Bridge pattern and how does it prevent subclass explosion?",
+          "answer": "The Bridge pattern decouples an abstraction from its implementation so that the two can vary independently. If you have `Shape` (Circle, Square) and `Renderer` (VectorRenderer, RasterRenderer), creating subclasses for each combination results in `VectorCircle`, `RasterCircle`, `VectorSquare`, `RasterSquare` ($N \\times M$). With the Bridge pattern, `Shape` composes a `Renderer` interface reference. You write 2 shape classes and 2 renderer classes ($N + M$), combining them dynamically at runtime: `new Circle(new VectorRenderer())`.",
+          "keyTakeaway": "Bridge uses composition to reduce exponential subclass hierarchies to linear additive classes.",
+          "keyPoints": [
+            "Decouples abstraction hierarchy from implementation hierarchy",
+            "Replaces NxM subclass combinations with N+M modular classes",
+            "Enables independent extension of both dimensions"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les7-3",
+          "company": "Meta",
+          "role": "Senior Infrastructure Engineer",
+          "question": "Explain how the flawed design of java.util.Stack and java.util.Properties teaches us about inheritance dangers.",
+          "answer": "Both are historic Java mistakes. `java.util.Stack` extends `Vector`. A Stack is a LIFO structure with `push()` and `pop()`. But because it extends Vector, callers can invoke `stack.remove(0)` or `stack.insertElementAt(item, 2)`, directly breaking stack invariants. Similarly, `Properties` extends `Hashtable<Object, Object>`. Callers can call `properties.put(1, 2)` instead of `setProperty(String, String)`. Both should have used composition: `Stack` should have composed a private `Vector` and exposed only stack operations.",
+          "keyTakeaway": "Inheriting from a collection exposes inappropriate mutating methods that violate domain invariants.",
+          "keyPoints": [
+            "Stack extending Vector exposes arbitrary index mutations",
+            "Properties extending Hashtable exposes non-String key insertion",
+            "Composition restricts exposed API to domain-appropriate operations"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les7-4",
+          "company": "Microsoft",
+          "role": "L6 Software Engineer",
+          "question": "When is inheritance actually the right choice over composition?",
+          "answer": "Inheritance is right when: 1) There is an undeniable IS-A relationship where every single method and invariant of the superclass makes logical sense on the subclass (LSP holds unconditionally). 2) You are creating a framework using the Template Method pattern, where the superclass controls the invariant workflow skeleton and subclasses fill in specific hook steps. 3) Both classes are within the same package and maintained by the same team, eliminating the third-party version mismatch risk.",
+          "keyTakeaway": "Inheritance excels in controlled Template Method frameworks and strict, unchanging IS-A hierarchies.",
+          "keyPoints": [
+            "Strict Liskov Substitution Principle adherence across all methods",
+            "Template Method workflows where base class orchestrates lifecycle hooks",
+            "Same-package, same-team maintenance minimizes fragile base class risk"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les7-5",
+          "company": "Apple",
+          "role": "Senior Systems Engineer",
+          "question": "How do you refactor an inheritance hierarchy into composition without breaking existing client callers?",
+          "answer": "I use the 'Replace Inheritance with Delegation' refactoring: 1) In the subclass, add a private field holding an instance of the superclass. 2) Update subclass methods that were relying on `super.method()` to call `field.method()` instead. 3) For any superclass methods that external clients were calling on the subclass, add explicit forwarding/delegation methods on the subclass. 4) Remove `extends SuperClass` from the class declaration. 5) Run all unit tests to confirm zero regression.",
+          "keyTakeaway": "Replace 'extends' with a private instance field and forward client calls through explicit delegation.",
+          "keyPoints": [
+            "Add private instance variable of superclass type",
+            "Forward necessary public methods to internal instance",
+            "Drop extends clause and verify with test suite"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les7-6",
+          "company": "Netflix",
+          "role": "Staff Platform Engineer",
+          "question": "How does modern Java use interfaces with default methods to blend composition and inheritance?",
+          "answer": "Default methods on interfaces allow multiple interface inheritance of behavior (mixins or traits) without inheriting mutable state. For instance, an interface `LoggingAuditor` can provide default methods for auditing, and any class can implement it without burning its single class inheritance slot. However, because interfaces cannot hold instance variables, true stateful behavior sharing is still best accomplished by composing a dedicated stateful helper object.",
+          "keyTakeaway": "Interface default methods share stateless behavior; stateful reuse still requires composition.",
+          "keyPoints": [
+            "Interface default methods enable multiple inheritance of behavior",
+            "Interfaces cannot maintain mutable instance state",
+            "Stateful capabilities remain cleanly solved by composition"
+          ],
+          "companyTag": "Netflix"
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "qa-les7-1",
+          "company": "Google",
+          "role": "Staff Software Engineer",
+          "question": "Why did Effective Java Item 18 state: 'Favor composition over inheritance'?",
+          "answer": "Because inheritance crosses encapsulation boundaries. In inheritance, a subclass is tightly bound to its superclass's implementation details. If the superclass author updates a method in a future library release (for example, having method A call method B internally), existing subclass overrides can double-count, enter infinite loops, or violate security invariants. With composition, you treat the collaborator as a black box with a defined API contract. You compose an instance, delegate calls, and are immune to internal parent refactoring.",
+          "keyTakeaway": "Composition treats collaborators as black boxes, preserving encapsulation and avoiding fragile base classes.",
+          "keyPoints": [
+            "Inheritance is white-box reuse; composition is black-box reuse",
+            "Superclass implementation updates can break subclass invariants",
+            "Composition isolates your class behind explicit delegated APIs"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les7-2",
+          "company": "Amazon",
+          "role": "Principal Engineer",
+          "question": "What is the Bridge pattern and how does it prevent subclass explosion?",
+          "answer": "The Bridge pattern decouples an abstraction from its implementation so that the two can vary independently. If you have `Shape` (Circle, Square) and `Renderer` (VectorRenderer, RasterRenderer), creating subclasses for each combination results in `VectorCircle`, `RasterCircle`, `VectorSquare`, `RasterSquare` ($N \\times M$). With the Bridge pattern, `Shape` composes a `Renderer` interface reference. You write 2 shape classes and 2 renderer classes ($N + M$), combining them dynamically at runtime: `new Circle(new VectorRenderer())`.",
+          "keyTakeaway": "Bridge uses composition to reduce exponential subclass hierarchies to linear additive classes.",
+          "keyPoints": [
+            "Decouples abstraction hierarchy from implementation hierarchy",
+            "Replaces NxM subclass combinations with N+M modular classes",
+            "Enables independent extension of both dimensions"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les7-3",
+          "company": "Meta",
+          "role": "Senior Infrastructure Engineer",
+          "question": "Explain how the flawed design of java.util.Stack and java.util.Properties teaches us about inheritance dangers.",
+          "answer": "Both are historic Java mistakes. `java.util.Stack` extends `Vector`. A Stack is a LIFO structure with `push()` and `pop()`. But because it extends Vector, callers can invoke `stack.remove(0)` or `stack.insertElementAt(item, 2)`, directly breaking stack invariants. Similarly, `Properties` extends `Hashtable<Object, Object>`. Callers can call `properties.put(1, 2)` instead of `setProperty(String, String)`. Both should have used composition: `Stack` should have composed a private `Vector` and exposed only stack operations.",
+          "keyTakeaway": "Inheriting from a collection exposes inappropriate mutating methods that violate domain invariants.",
+          "keyPoints": [
+            "Stack extending Vector exposes arbitrary index mutations",
+            "Properties extending Hashtable exposes non-String key insertion",
+            "Composition restricts exposed API to domain-appropriate operations"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les7-4",
+          "company": "Microsoft",
+          "role": "L6 Software Engineer",
+          "question": "When is inheritance actually the right choice over composition?",
+          "answer": "Inheritance is right when: 1) There is an undeniable IS-A relationship where every single method and invariant of the superclass makes logical sense on the subclass (LSP holds unconditionally). 2) You are creating a framework using the Template Method pattern, where the superclass controls the invariant workflow skeleton and subclasses fill in specific hook steps. 3) Both classes are within the same package and maintained by the same team, eliminating the third-party version mismatch risk.",
+          "keyTakeaway": "Inheritance excels in controlled Template Method frameworks and strict, unchanging IS-A hierarchies.",
+          "keyPoints": [
+            "Strict Liskov Substitution Principle adherence across all methods",
+            "Template Method workflows where base class orchestrates lifecycle hooks",
+            "Same-package, same-team maintenance minimizes fragile base class risk"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les7-5",
+          "company": "Apple",
+          "role": "Senior Systems Engineer",
+          "question": "How do you refactor an inheritance hierarchy into composition without breaking existing client callers?",
+          "answer": "I use the 'Replace Inheritance with Delegation' refactoring: 1) In the subclass, add a private field holding an instance of the superclass. 2) Update subclass methods that were relying on `super.method()` to call `field.method()` instead. 3) For any superclass methods that external clients were calling on the subclass, add explicit forwarding/delegation methods on the subclass. 4) Remove `extends SuperClass` from the class declaration. 5) Run all unit tests to confirm zero regression.",
+          "keyTakeaway": "Replace 'extends' with a private instance field and forward client calls through explicit delegation.",
+          "keyPoints": [
+            "Add private instance variable of superclass type",
+            "Forward necessary public methods to internal instance",
+            "Drop extends clause and verify with test suite"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les7-6",
+          "company": "Netflix",
+          "role": "Staff Platform Engineer",
+          "question": "How does modern Java use interfaces with default methods to blend composition and inheritance?",
+          "answer": "Default methods on interfaces allow multiple interface inheritance of behavior (mixins or traits) without inheriting mutable state. For instance, an interface `LoggingAuditor` can provide default methods for auditing, and any class can implement it without burning its single class inheritance slot. However, because interfaces cannot hold instance variables, true stateful behavior sharing is still best accomplished by composing a dedicated stateful helper object.",
+          "keyTakeaway": "Interface default methods share stateless behavior; stateful reuse still requires composition.",
+          "keyPoints": [
+            "Interface default methods enable multiple inheritance of behavior",
+            "Interfaces cannot maintain mutable instance state",
+            "Stateful capabilities remain cleanly solved by composition"
+          ],
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les7-checklist",
+      "type": "self_evaluation",
+      "title": "Module 11 Self-Evaluation: Inheritance vs Composition",
+      "checklist": [
+        "I evaluate the 5 architectural tests before declaring 'extends'.",
+        "I understand how the Fragile Base Class problem silently breaks subclasses.",
+        "I recognize when inheritance leads to combinatorial subclass explosions.",
+        "I use Composition and Delegation to wrap collections instead of extending them.",
+        "I can implement the Decorator pattern to add dynamic behavior at runtime.",
+        "I use the Strategy pattern to swap object behaviors dynamically.",
+        "I know why java.util.Stack extending Vector is considered an anti-pattern.",
+        "I can refactor inheritance to composition via explicit delegation methods.",
+        "I reserve inheritance for true IS-A relationships and Template Method frameworks.",
+        "I can defend 'Favor composition over inheritance' in a FAANG design interview."
+      ],
+      "items": [
+        "I evaluate the 5 architectural tests before declaring 'extends'.",
+        "I understand how the Fragile Base Class problem silently breaks subclasses.",
+        "I recognize when inheritance leads to combinatorial subclass explosions.",
+        "I use Composition and Delegation to wrap collections instead of extending them.",
+        "I can implement the Decorator pattern to add dynamic behavior at runtime.",
+        "I use the Strategy pattern to swap object behaviors dynamically.",
+        "I know why java.util.Stack extending Vector is considered an anti-pattern.",
+        "I can refactor inheritance to composition via explicit delegation methods.",
+        "I reserve inheritance for true IS-A relationships and Template Method frameworks.",
+        "I can defend 'Favor composition over inheritance' in a FAANG design interview."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Choosing Inheritance vs Composition",
+    "Analyze, predict, and trace code execution involving choosing-inheritance-vs-composition",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Choosing Inheritance vs Composition principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les7-p1",
+      "lessonId": "java-oop-mod11-les7",
+      "orderIndex": 1,
+      "title": "Warmup: Building a Composed Safe Stack",
+      "difficulty": "easy",
+      "problemStatement": "In the provided starter code, complete `SafeStack` using composition over `java.util.ArrayList`:\n1. Private field `List<String> storage = new ArrayList<>()`.\n2. Method `void push(String item)`: adds to end.\n3. Method `String pop()`: removes and returns last element (or throws `IllegalStateException` if empty).\n4. Method `int size()`: returns storage.size().\nIn `main()` push `'Alpha'`, `'Beta'`, then pop and print `'Popped: ' + popped`, then print `'Remaining size: ' + stack.size()`.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SafeStack {\n    // TODO: Implement using composition\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        SafeStack stack = new SafeStack();\n        stack.push(\"Alpha\");\n        stack.push(\"Beta\");\n        System.out.println(\"Popped: \" + stack.pop());\n        System.out.println(\"Remaining size: \" + stack.size());\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SafeStack {\n    // TODO: Implement using composition\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        SafeStack stack = new SafeStack();\n        stack.push(\"Alpha\");\n        stack.push(\"Beta\");\n        System.out.println(\"Popped: \" + stack.pop());\n        System.out.println(\"Remaining size: \" + stack.size());\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SafeStack {\n    private final List<String> storage = new ArrayList<>();\n\n    public void push(String item) {\n        storage.add(item);\n    }\n\n    public String pop() {\n        if (storage.isEmpty()) throw new IllegalStateException(\"Stack is empty\");\n        return storage.remove(storage.size() - 1);\n    }\n\n    public int size() {\n        return storage.size();\n    }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        SafeStack stack = new SafeStack();\n        stack.push(\"Alpha\");\n        stack.push(\"Beta\");\n        System.out.println(\"Popped: \" + stack.pop());\n        System.out.println(\"Remaining size: \" + stack.size());\n    }\n}",
+      "expectedOutput": "Popped: Beta\nRemaining size: 1",
+      "hints": [
+        "Remove last element with storage.remove(storage.size() - 1).",
+        "Do not extend ArrayList; compose it privately."
+      ]
+    },
+    {
+      "id": "prob-les7-p2",
+      "lessonId": "java-oop-mod11-les7",
+      "orderIndex": 2,
+      "title": "Scratch: Dynamic Role Pattern with Composition",
+      "difficulty": "medium",
+      "problemStatement": "Build dynamic role swapping from scratch without starter code:\n1. Interface `EmployeeRole`: `String getRoleTitle()`, `double calculateBonus(double baseSalary)`.\n2. Class `DeveloperRole implements EmployeeRole`: title `'Senior Developer'`, bonus 10% (`0.10 * baseSalary`).\n3. Class `ManagerRole implements EmployeeRole`: title `'Engineering Manager'`, bonus 25% (`0.25 * baseSalary`).\n4. Class `Employee`: `name` (String), `baseSalary` (double), `EmployeeRole` role. Method `setRole(EmployeeRole r)`.\n   - Method `double getTotalCompensation()`: returns `baseSalary + role.calculateBonus(baseSalary)`.\n   - Method `void printProfile()`: prints `name + ' (' + role.getRoleTitle() + '): $' + getTotalCompensation()`.\n5. In `Main`:\n   - Create Employee `('Dave', 100000.0, new DeveloperRole())`\n   - Call `emp.printProfile()` (prints $110000.0)\n   - Promote Dave: `emp.setRole(new ManagerRole())`\n   - Call `emp.printProfile()` (prints $125000.0).",
+      "solutionCode": "interface EmployeeRole {\n    String getRoleTitle();\n    double calculateBonus(double baseSalary);\n}\n\nclass DeveloperRole implements EmployeeRole {\n    @Override\n    public String getRoleTitle() { return \"Senior Developer\"; }\n    @Override\n    public double calculateBonus(double baseSalary) { return baseSalary * 0.10; }\n}\n\nclass ManagerRole implements EmployeeRole {\n    @Override\n    public String getRoleTitle() { return \"Engineering Manager\"; }\n    @Override\n    public double calculateBonus(double baseSalary) { return baseSalary * 0.25; }\n}\n\nclass Employee {\n    private final String name;\n    private final double baseSalary;\n    private EmployeeRole role;\n\n    public Employee(String name, double baseSalary, EmployeeRole role) {\n        this.name = name;\n        this.baseSalary = baseSalary;\n        this.role = role;\n    }\n\n    public void setRole(EmployeeRole role) { this.role = role; }\n    public double getTotalCompensation() { return baseSalary + role.calculateBonus(baseSalary); }\n    public void printProfile() {\n        System.out.println(name + \" (\" + role.getRoleTitle() + \"): $\" + getTotalCompensation());\n    }\n}\n\npublic class DynamicRoleApp {\n    public static void main(String[] args) {\n        Employee emp = new Employee(\"Dave\", 100000.0, new DeveloperRole());\n        emp.printProfile();\n\n        emp.setRole(new ManagerRole());\n        emp.printProfile();\n    }\n}",
+      "expectedOutput": "Dave (Senior Developer): $110000.0\nDave (Engineering Manager): $125000.0",
+      "hints": [
+        "Composition allows runtime mutation of role via setRole().",
+        "Developer gets 10% bonus (110k); Manager gets 25% bonus (125k)."
+      ]
+    },
+    {
+      "id": "prob-les7-p3",
+      "lessonId": "java-oop-mod11-les7",
+      "orderIndex": 3,
+      "title": "Scratch: Eliminating Subclass Explosion via Bridge Composition",
+      "difficulty": "medium",
+      "problemStatement": "Eliminate combinatorial subclass explosion using composition from scratch:\n1. Interface `Engine`: `String start()`.\n2. Class `ElectricEngine implements Engine`: returns `'Silent Electric Drive'`.\n3. Class `GasEngine implements Engine`: returns `'V8 Roar'`.\n4. Class `Vehicle`: `model` (String), `Engine` engine. Method `void drive()` prints `model + ' moving with ' + engine.start()`.\n5. In `Main`:\n   - Create `new Vehicle(\"Tesla Model S\", new ElectricEngine())` and call `drive()`\n   - Create `new Vehicle(\"Ford Mustang\", new GasEngine())` and call `drive()`",
+      "solutionCode": "interface Engine {\n    String start();\n}\n\nclass ElectricEngine implements Engine {\n    @Override\n    public String start() { return \"Silent Electric Drive\"; }\n}\n\nclass GasEngine implements Engine {\n    @Override\n    public String start() { return \"V8 Roar\"; }\n}\n\nclass Vehicle {\n    private final String model;\n    private final Engine engine;\n    public Vehicle(String model, Engine engine) {\n        this.model = model;\n        this.engine = engine;\n    }\n    public void drive() {\n        System.out.println(model + \" moving with \" + engine.start());\n    }\n}\n\npublic class BridgeApp {\n    public static void main(String[] args) {\n        Vehicle car1 = new Vehicle(\"Tesla Model S\", new ElectricEngine());\n        car1.drive();\n\n        Vehicle car2 = new Vehicle(\"Ford Mustang\", new GasEngine());\n        car2.drive();\n    }\n}",
+      "expectedOutput": "Tesla Model S moving with Silent Electric Drive\nFord Mustang moving with V8 Roar",
+      "hints": [
+        "Vehicle composes Engine rather than creating ElectricVehicle and GasVehicle subclasses.",
+        "Adding a new engine type does not require creating new vehicle subclasses."
+      ]
+    },
+    {
+      "id": "prob-les7-p4",
+      "lessonId": "java-oop-mod11-les7",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Fixing Illegal Mutation in a Subclassed Dictionary",
+      "difficulty": "hard",
+      "problemStatement": "In the provided buggy code, `StringDictionary` extends `java.util.HashMap<String, Object>`. A client accidentally calls `dict.put(\"KEY\", 12345)` which inserts an Integer into what should strictly be a string-only dictionary!\nRefactor `StringDictionary`:\n1. Stop extending `HashMap`.\n2. Compose a private `Map<String, String> internalMap = new HashMap<>()`.\n3. Expose only `void set(String key, String val)` and `String get(String key)`.\n4. In `main()` test with `('host', 'localhost')` and print `'Host: ' + dict.get('host')`.",
+      "starterCode": "import java.util.HashMap;\n\n// BUG: Extending HashMap exposes all raw map mutations\nclass StringDictionary extends HashMap<String, Object> {\n    public void addEntry(String k, String v) {\n        put(k, v);\n    }\n}\n\npublic class DictBugDemo {\n    public static void main(String[] args) {\n        StringDictionary dict = new StringDictionary();\n        dict.addEntry(\"host\", \"localhost\");\n        // Type safety breached via inherited put:\n        dict.put(\"port\", 8080); // Corrupts string dictionary!\n        System.out.println(\"Host: \" + dict.get(\"host\"));\n    }\n}",
+      "initialCode": "import java.util.HashMap;\n\n// BUG: Extending HashMap exposes all raw map mutations\nclass StringDictionary extends HashMap<String, Object> {\n    public void addEntry(String k, String v) {\n        put(k, v);\n    }\n}\n\npublic class DictBugDemo {\n    public static void main(String[] args) {\n        StringDictionary dict = new StringDictionary();\n        dict.addEntry(\"host\", \"localhost\");\n        // Type safety breached via inherited put:\n        dict.put(\"port\", 8080); // Corrupts string dictionary!\n        System.out.println(\"Host: \" + dict.get(\"host\"));\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass StringDictionary {\n    private final Map<String, String> internalMap = new HashMap<>();\n\n    public void set(String key, String val) {\n        internalMap.put(key, val);\n    }\n\n    public String get(String key) {\n        return internalMap.get(key);\n    }\n}\n\npublic class DictBugDemo {\n    public static void main(String[] args) {\n        StringDictionary dict = new StringDictionary();\n        dict.set(\"host\", \"localhost\");\n        System.out.println(\"Host: \" + dict.get(\"host\"));\n    }\n}",
+      "expectedOutput": "Host: localhost",
+      "hints": [
+        "Remove `extends HashMap`.",
+        "Store a private `Map<String, String>` and expose only type-safe methods."
+      ]
+    },
+    {
+      "id": "prob-les7-p5",
+      "lessonId": "java-oop-mod11-les7",
+      "orderIndex": 5,
+      "title": "Advanced: Logging Decorator via Composition",
+      "difficulty": "advanced",
+      "problemStatement": "Build a secure audit logging pipeline using the Decorator pattern via composition from scratch:\n1. Interface `DataWriter`: `void write(String data)`.\n2. Class `FileWriter implements DataWriter`: method prints `'Writing to disk: ' + data`.\n3. Decorator `AuditedDataWriter implements DataWriter`: composes a `DataWriter delegate` and private int writeCount = 0.\n   - In `write(data)`: increments writeCount, prints `'[AUDIT] Action #' + writeCount`, and delegates to `delegate.write(data)`.\n   - Getter `getWriteCount()`.\n4. In `Main`:\n   - Decorate `new FileWriter()` with `AuditedDataWriter`\n   - Write `'User logged in'`\n   - Write `'Password changed'`\n   - Print `'Total Audited: ' + auditor.getWriteCount()` (2).",
+      "solutionCode": "interface DataWriter {\n    void write(String data);\n}\n\nclass FileWriter implements DataWriter {\n    @Override\n    public void write(String data) {\n        System.out.println(\"Writing to disk: \" + data);\n    }\n}\n\nclass AuditedDataWriter implements DataWriter {\n    private final DataWriter delegate;\n    private int writeCount = 0;\n\n    public AuditedDataWriter(DataWriter delegate) {\n        this.delegate = delegate;\n    }\n\n    @Override\n    public void write(String data) {\n        writeCount++;\n        System.out.println(\"[AUDIT] Action #\" + writeCount);\n        delegate.write(data);\n    }\n\n    public int getWriteCount() { return writeCount; }\n}\n\npublic class DecoratorApp {\n    public static void main(String[] args) {\n        AuditedDataWriter auditor = new AuditedDataWriter(new FileWriter());\n        auditor.write(\"User logged in\");\n        auditor.write(\"Password changed\");\n        System.out.println(\"Total Audited: \" + auditor.getWriteCount());\n    }\n}",
+      "expectedOutput": "[AUDIT] Action #1\nWriting to disk: User logged in\n[AUDIT] Action #2\nWriting to disk: Password changed\nTotal Audited: 2",
+      "hints": [
+        "AuditedDataWriter composes a DataWriter delegate and implements DataWriter.",
+        "Decorator augments behavior before delegating the write operation."
+      ]
+    }
+  ]
+}

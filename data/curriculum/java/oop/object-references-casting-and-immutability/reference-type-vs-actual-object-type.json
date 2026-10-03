@@ -1,0 +1,523 @@
+{
+  "id": "les-cast-1",
+  "slug": "reference-type-vs-actual-object-type",
+  "title": "Reference Type vs Actual Object Type",
+  "summary": "Compile-time view vs runtime execution reality.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les1-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Universal Remote Control",
+      "concept": "Reference Type (Compile-Time Lens) vs Actual Object Type (Runtime Reality)",
+      "realWorldMetaphor": {
+        "scenario": "Imagine you have a universal television remote control labeled 'Basic TV Remote' that only has Power, Volume, and Channel buttons. You point it at an ultra-modern 8K Smart OLED TV capable of 3D gaming, voice streaming, and ambient lighting. Because your remote only has basic buttons, you can only press Volume and Channel through that remote. However, when you press 'Power On', the screen doesn't turn on like an old CRT; it fires up its advanced 8K OLED processor and displays HDR visuals!",
+        "mapping": "In Java, the reference variable is the 'remote control' (reference type), and the object in the Heap is the 'actual device' (runtime object type). The reference type dictates which methods you are allowed to call at compile-time (the remote's physical buttons). But the actual object type dictates HOW those methods execute at runtime (the TV's true hardware response).",
+        "takeaway": "Compile time looks at the reference type to verify method existence; runtime looks at the actual object type on the heap to execute the overridden implementation."
+      }
+    },
+    {
+      "id": "act-les1-concept",
+      "type": "concept",
+      "title": "The Duality of Java References",
+      "content": "### Two Worlds: Compile Time vs Runtime\n\nEvery object reference in Java exists in two distinct phases:\n\n1. **Compile-Time Reference Type (The View)**:\n   - This is the type declared on the left side of the assignment: `Vehicle v = new SportsCar();`\n   - The compiler uses `v`'s declared type (`Vehicle`) as a strict filter. You can **only** call methods that exist in `Vehicle`.\n   - If `SportsCar` has an exclusive method `turboBoost()`, calling `v.turboBoost()` results in a compile-time error: `cannot find symbol method turboBoost()`.\n\n2. **Runtime Actual Object Type (The Heap Instance)**:\n   - This is the concrete class instantiated with `new` on the right side: `new SportsCar()`.\n   - When a valid method (like `v.start()`) is invoked, the Java Virtual Machine uses **dynamic method dispatch** to execute the version defined in `SportsCar`, not `Vehicle`.\n\n### The Fundamental Rule of Method Resolution\n> **Method Accessibility is determined by the Reference Type; Method Execution is determined by the Actual Object Type.**\n\n```\nReference Type (Vehicle)  --------> Decides WHAT can be called (Compile-Time Check)\nActual Object (SportsCar) --------> Decides WHICH code executes (Runtime Dispatch)\n```\n\n### Memory Visualization\n- **Stack Frame**: Holds the reference variable `v` (4 or 8 bytes containing a 64-bit memory address).\n- **Heap Space**: Holds the full `SportsCar` instance with all its fields, its virtual method table (`vtable`) pointer, and header metadata."
+    },
+    {
+      "id": "act-les1-cw1",
+      "type": "code_walkthrough",
+      "title": "Demonstrating Reference Type Restrictions and Dynamic Dispatch",
+      "codeSnippet": "class Vehicle {\n    public void start() {\n        System.out.println(\"Generic vehicle engine humming\");\n    }\n}\n\nclass SportsCar extends Vehicle {\n    @Override\n    public void start() {\n        System.out.println(\"Twin-turbo V8 roaring to life!\");\n    }\n\n    public void turboBoost() {\n        System.out.println(\"Nitrous injected! 200 MPH!\");\n    }\n}\n\npublic class ReferenceDemo {\n    public static void main(String[] args) {\n        // Reference type: Vehicle, Actual Object type: SportsCar\n        Vehicle v = new SportsCar();\n\n        // 1. Dynamic dispatch: executes SportsCar's start()\n        v.start();\n\n        // 2. Compile-time check fails if we uncomment:\n        // v.turboBoost(); // Error: cannot find symbol turboBoost() in class Vehicle\n    }\n}",
+      "code": "class Vehicle {\n    public void start() {\n        System.out.println(\"Generic vehicle engine humming\");\n    }\n}\n\nclass SportsCar extends Vehicle {\n    @Override\n    public void start() {\n        System.out.println(\"Twin-turbo V8 roaring to life!\");\n    }\n\n    public void turboBoost() {\n        System.out.println(\"Nitrous injected! 200 MPH!\");\n    }\n}\n\npublic class ReferenceDemo {\n    public static void main(String[] args) {\n        // Reference type: Vehicle, Actual Object type: SportsCar\n        Vehicle v = new SportsCar();\n\n        // 1. Dynamic dispatch: executes SportsCar's start()\n        v.start();\n\n        // 2. Compile-time check fails if we uncomment:\n        // v.turboBoost(); // Error: cannot find symbol turboBoost() in class Vehicle\n    }\n}",
+      "language": "java",
+      "explanation": "Even though the heap holds a SportsCar, variable v is typed as Vehicle. Thus, the compiler only permits calling methods declared on Vehicle. But when start() is called, SportsCar's override runs.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Base class `Vehicle` defines `start()`."
+        },
+        {
+          "step": 2,
+          "description": "`SportsCar` overrides `start()` and adds a new method `turboBoost()`."
+        },
+        {
+          "step": 3,
+          "description": "`Vehicle v = new SportsCar();` stores a SportsCar in a Vehicle reference."
+        },
+        {
+          "step": 4,
+          "description": "`v.start()` passes compiler validation (Vehicle has `start()`) and dispatches to SportsCar's method at runtime."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-cw2",
+      "type": "code_walkthrough",
+      "title": "Heterogeneous Processing via Superclass Reference",
+      "codeSnippet": "abstract class Notification {\n    public abstract void send(String msg);\n}\n\nclass EmailNotification extends Notification {\n    @Override\n    public void send(String msg) {\n        System.out.println(\"Emailing: \" + msg);\n    }\n}\n\nclass SmsNotification extends Notification {\n    @Override\n    public void send(String msg) {\n        System.out.println(\"SMS sending: \" + msg);\n    }\n}\n\npublic class DispatchArrayDemo {\n    public static void main(String[] args) {\n        // Common reference type allows uniform array processing\n        Notification[] channels = new Notification[] {\n            new EmailNotification(),\n            new SmsNotification()\n        };\n\n        for (Notification n : channels) {\n            // Runtime actual object determines specific output\n            n.send(\"System Maintenance at 2 AM\");\n        }\n    }\n}",
+      "code": "abstract class Notification {\n    public abstract void send(String msg);\n}\n\nclass EmailNotification extends Notification {\n    @Override\n    public void send(String msg) {\n        System.out.println(\"Emailing: \" + msg);\n    }\n}\n\nclass SmsNotification extends Notification {\n    @Override\n    public void send(String msg) {\n        System.out.println(\"SMS sending: \" + msg);\n    }\n}\n\npublic class DispatchArrayDemo {\n    public static void main(String[] args) {\n        // Common reference type allows uniform array processing\n        Notification[] channels = new Notification[] {\n            new EmailNotification(),\n            new SmsNotification()\n        };\n\n        for (Notification n : channels) {\n            // Runtime actual object determines specific output\n            n.send(\"System Maintenance at 2 AM\");\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "An array of the superclass reference type can hold any subclass instance. The loop calls send() polymorphically without knowing concrete types.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`channels` is declared with reference type `Notification[]`."
+        },
+        {
+          "step": 2,
+          "description": "Index 0 holds an `EmailNotification`; Index 1 holds an `SmsNotification`."
+        },
+        {
+          "step": 3,
+          "description": "The loop invokes `n.send()`; the JVM checks each object's actual class in heap memory and calls the proper implementation."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-mcq",
+      "type": "mcq",
+      "title": "Reference Type vs Actual Object Type Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Given `Animal a = new Dog();`, what is the reference type and actual object type?",
+          "options": [
+            "Reference type is Animal; Actual object type is Dog",
+            "Reference type is Dog; Actual object type is Animal",
+            "Both reference and actual object types are Animal",
+            "Both reference and actual object types are Dog"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "The reference type is declared on the left (Animal); the actual instantiated object type is on the right with `new` (Dog)."
+        },
+        {
+          "id": "q2",
+          "question": "What decides which methods you are allowed to call on an object variable at compile time?",
+          "options": [
+            "The runtime heap object type",
+            "The declared reference type of the variable",
+            "The JVM garbage collector",
+            "The return type of the enclosing method"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The Java compiler strictly inspects the declared reference type to ensure invoked methods exist on that class or interface."
+        },
+        {
+          "id": "q3",
+          "question": "If `Dog` has a method `bark()`, but `Animal` does NOT declare `bark()`, what happens if you execute `Animal a = new Dog(); a.bark();`?",
+          "options": [
+            "It compiles and prints nothing",
+            "It throws ClassCastException at runtime",
+            "It produces a compile-time compiler error",
+            "The JVM dynamically injects bark into Animal"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "Because `Animal` does not define `bark()`, the compiler rejects the call before any bytecode is generated."
+        },
+        {
+          "id": "q4",
+          "question": "Which mechanism enables Java to call the subclass's overridden method when invoked through a superclass reference?",
+          "options": [
+            "Static linking",
+            "Dynamic method dispatch (late binding)",
+            "Bytecode compression",
+            "Thread synchronization"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Dynamic method dispatch looks up the object's virtual method table (vtable) at runtime to invoke the actual overridden method."
+        },
+        {
+          "id": "q5",
+          "question": "Where does the reference variable live, and where does the actual object live in memory?",
+          "options": [
+            "Reference variable is on the Heap; object is on the Stack",
+            "Reference variable is on the Stack (or inside enclosing object); actual object is in the Heap",
+            "Both reside solely in the CPU L1 cache",
+            "Both reside in the PermGen space"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Local reference variables are stored in stack frames, whereas instantiated objects reside in heap memory."
+        },
+        {
+          "id": "q6",
+          "question": "Can an interface be used as a reference type in Java?",
+          "options": [
+            "No, only concrete classes can be reference types",
+            "No, only abstract classes can be reference types",
+            "Yes, any interface can serve as a reference type for classes that implement it",
+            "Yes, but only if the interface has zero methods"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "Interfaces are widely used as reference types (e.g. `List<String> list = new ArrayList<>()`), encouraging programming to interfaces."
+        },
+        {
+          "id": "q7",
+          "question": "Given `Object obj = \"LearnBySelf\";`, which of the following is legal without casting?",
+          "options": [
+            "obj.toUpperCase()",
+            "obj.substring(0, 5)",
+            "obj.toString()",
+            "obj.charAt(2)"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "`toString()` is defined on `java.lang.Object`, so the compiler permits it. `toUpperCase()`, `substring()`, and `charAt()` require a `String` reference or casting."
+        },
+        {
+          "id": "q8",
+          "question": "Why is programming to a superclass or interface reference type considered a best practice?",
+          "options": [
+            "It bypasses garbage collection",
+            "It decouples code from concrete implementations, allowing future replacement with zero client code changes",
+            "It speeds up arithmetic operations",
+            "It enables multiple class inheritance"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Coding to abstractions (e.g., `List` instead of `ArrayList`) maximizes modularity and loose coupling."
+        },
+        {
+          "id": "q9",
+          "question": "What is the size of an object reference variable in 64-bit Java with Compressed OOPs enabled?",
+          "options": [
+            "1 byte",
+            "4 bytes",
+            "16 bytes",
+            "64 bytes"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Under 64-bit JVMs with Compressed OOPs (ordinary object pointers) active (heaps < 32GB), references take 4 bytes."
+        },
+        {
+          "id": "q10",
+          "question": "If `class Cat extends Animal`, can you write `Cat c = new Animal();`?",
+          "options": [
+            "Yes, without any error",
+            "Yes, but only if Cat has no extra methods",
+            "No, it results in a compile-time type mismatch error",
+            "No, it throws a NullPointerException"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "You cannot assign a general parent object to a specialized child reference; an Animal is not necessarily a Cat."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-interview",
+      "type": "interview_qa",
+      "title": "Reference Type vs Actual Object Type Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i1-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Explain the difference between compile-time type and runtime type of an object in Java.",
+          "answer": "The compile-time type (static type) is the declared type of the reference variable. The compiler verifies method calls, access privileges, and assignments against this type. The runtime type (dynamic type) is the exact class instantiated on the heap with 'new'. The JVM uses the runtime type for dynamic method dispatch when invoking overridden instance methods.",
+          "expectedAnswer": "Compile-time type determines what operations are permissible by the compiler. Runtime type determines which overridden method implementation executes in the JVM.",
+          "keyTakeaway": "Reference type = compile-time gatekeeper; Actual type = runtime execution logic.",
+          "keyPoints": [
+            "Reference type = compile-time gatekeeper; Actual type = runtime execution logic."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i1-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does `List<String> list = new ArrayList<>();` compile, but calling a method unique to `ArrayList` fail on `list`?",
+          "answer": "Because `list` is declared with reference type `List<String>`, the compiler only allows methods declared in the `List` interface. Even though the underlying heap object is an `ArrayList`, methods specific to `ArrayList` (like `trimToSize()`) are invisible to the compiler through the `List` lens.",
+          "expectedAnswer": "The compiler checks method validity strictly against the reference type 'List', where implementation-specific methods do not exist.",
+          "keyTakeaway": "Program to the interface to prevent leaking implementation details to callers.",
+          "keyPoints": [
+            "Program to the interface to prevent leaking implementation details to callers."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i1-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the virtual method table (vtable) and how does it relate to runtime object types?",
+          "answer": "The vtable is an internal JVM data structure associated with each loaded class containing pointers to the executable code of its instance methods. When `v.method()` is invoked, the JVM dereferences the object header in the heap to locate its class vtable and jumps to the concrete method implementation.",
+          "expectedAnswer": "A vtable contains pointers to method implementations. The JVM inspects the heap object's class vtable to execute dynamic dispatch.",
+          "keyTakeaway": "Virtual method tables power dynamic dispatch at runtime.",
+          "keyPoints": [
+            "Virtual method tables power dynamic dispatch at runtime."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i1-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Can static methods be dynamically dispatched based on the actual object type?",
+          "answer": "No. Static methods belong to the class, not the instance. They are resolved at compile time using static binding based solely on the declared reference type. Subclassing a static method merely hides it, rather than overriding it.",
+          "expectedAnswer": "Static methods are resolved at compile time based on reference type; they are never polymorphic.",
+          "keyTakeaway": "Polymorphism and dynamic dispatch only apply to non-private, non-static instance methods.",
+          "keyPoints": [
+            "Polymorphism and dynamic dispatch only apply to non-private, non-static instance methods."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i1-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What happens if a class extends a class and overrides a method with a covariant return type?",
+          "answer": "Java allows an overriding method to declare a return type that is a subclass of the return type declared in the superclass (covariant return type). While the reference type determines the return type seen at compile time, the actual object returns the subtype at runtime.",
+          "expectedAnswer": "Covariant return types allow subclasses to narrow the returned type while upholding the superclass contract.",
+          "keyTakeaway": "Overridden methods may narrow return types safely.",
+          "keyPoints": [
+            "Overridden methods may narrow return types safely."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i1-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does `final` on a class or method impact the relationship between reference type and object type?",
+          "answer": "A `final` method cannot be overridden, which allows the JVM/JIT compiler to perform devirtualization and inline the method call directly, eliminating vtable lookup overhead. A `final` class cannot be extended, meaning reference type and actual object type will always be identical.",
+          "expectedAnswer": "Marking methods or classes final eliminates dynamic dispatch overhead via JIT inlining.",
+          "keyTakeaway": "Final prevents polymorphic specialization and enables performance inlining.",
+          "keyPoints": [
+            "Final prevents polymorphic specialization and enables performance inlining."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i1-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Explain the difference between compile-time type and runtime type of an object in Java.",
+          "answer": "The compile-time type (static type) is the declared type of the reference variable. The compiler verifies method calls, access privileges, and assignments against this type. The runtime type (dynamic type) is the exact class instantiated on the heap with 'new'. The JVM uses the runtime type for dynamic method dispatch when invoking overridden instance methods.",
+          "expectedAnswer": "Compile-time type determines what operations are permissible by the compiler. Runtime type determines which overridden method implementation executes in the JVM.",
+          "keyTakeaway": "Reference type = compile-time gatekeeper; Actual type = runtime execution logic.",
+          "keyPoints": [
+            "Reference type = compile-time gatekeeper; Actual type = runtime execution logic."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i1-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does `List<String> list = new ArrayList<>();` compile, but calling a method unique to `ArrayList` fail on `list`?",
+          "answer": "Because `list` is declared with reference type `List<String>`, the compiler only allows methods declared in the `List` interface. Even though the underlying heap object is an `ArrayList`, methods specific to `ArrayList` (like `trimToSize()`) are invisible to the compiler through the `List` lens.",
+          "expectedAnswer": "The compiler checks method validity strictly against the reference type 'List', where implementation-specific methods do not exist.",
+          "keyTakeaway": "Program to the interface to prevent leaking implementation details to callers.",
+          "keyPoints": [
+            "Program to the interface to prevent leaking implementation details to callers."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i1-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the virtual method table (vtable) and how does it relate to runtime object types?",
+          "answer": "The vtable is an internal JVM data structure associated with each loaded class containing pointers to the executable code of its instance methods. When `v.method()` is invoked, the JVM dereferences the object header in the heap to locate its class vtable and jumps to the concrete method implementation.",
+          "expectedAnswer": "A vtable contains pointers to method implementations. The JVM inspects the heap object's class vtable to execute dynamic dispatch.",
+          "keyTakeaway": "Virtual method tables power dynamic dispatch at runtime.",
+          "keyPoints": [
+            "Virtual method tables power dynamic dispatch at runtime."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i1-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Can static methods be dynamically dispatched based on the actual object type?",
+          "answer": "No. Static methods belong to the class, not the instance. They are resolved at compile time using static binding based solely on the declared reference type. Subclassing a static method merely hides it, rather than overriding it.",
+          "expectedAnswer": "Static methods are resolved at compile time based on reference type; they are never polymorphic.",
+          "keyTakeaway": "Polymorphism and dynamic dispatch only apply to non-private, non-static instance methods.",
+          "keyPoints": [
+            "Polymorphism and dynamic dispatch only apply to non-private, non-static instance methods."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i1-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What happens if a class extends a class and overrides a method with a covariant return type?",
+          "answer": "Java allows an overriding method to declare a return type that is a subclass of the return type declared in the superclass (covariant return type). While the reference type determines the return type seen at compile time, the actual object returns the subtype at runtime.",
+          "expectedAnswer": "Covariant return types allow subclasses to narrow the returned type while upholding the superclass contract.",
+          "keyTakeaway": "Overridden methods may narrow return types safely.",
+          "keyPoints": [
+            "Overridden methods may narrow return types safely."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i1-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does `final` on a class or method impact the relationship between reference type and object type?",
+          "answer": "A `final` method cannot be overridden, which allows the JVM/JIT compiler to perform devirtualization and inline the method call directly, eliminating vtable lookup overhead. A `final` class cannot be extended, meaning reference type and actual object type will always be identical.",
+          "expectedAnswer": "Marking methods or classes final eliminates dynamic dispatch overhead via JIT inlining.",
+          "keyTakeaway": "Final prevents polymorphic specialization and enables performance inlining.",
+          "keyPoints": [
+            "Final prevents polymorphic specialization and enables performance inlining."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les1-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can clearly distinguish between declared reference type and runtime object type.",
+        "I understand that the compiler uses the reference type to check method existence.",
+        "I understand that the JVM uses the actual object type for dynamic method dispatch.",
+        "I know why calling subclass-only methods through a superclass reference causes a compile error.",
+        "I can explain why static methods are resolved by reference type and not object type.",
+        "I can trace where references live (stack/heap) versus where instantiated objects live (heap).",
+        "I understand how polymorphic arrays (`Super[] arr`) handle heterogeneous child objects.",
+        "I know why 'programming to an interface' produces more maintainable code.",
+        "I can describe the role of the virtual method table (vtable) in method resolution.",
+        "I can predict the exact output of code combining inheritance and reference polymorphism."
+      ],
+      "items": [
+        "I can clearly distinguish between declared reference type and runtime object type.",
+        "I understand that the compiler uses the reference type to check method existence.",
+        "I understand that the JVM uses the actual object type for dynamic method dispatch.",
+        "I know why calling subclass-only methods through a superclass reference causes a compile error.",
+        "I can explain why static methods are resolved by reference type and not object type.",
+        "I can trace where references live (stack/heap) versus where instantiated objects live (heap).",
+        "I understand how polymorphic arrays (`Super[] arr`) handle heterogeneous child objects.",
+        "I know why 'programming to an interface' produces more maintainable code.",
+        "I can describe the role of the virtual method table (vtable) in method resolution.",
+        "I can predict the exact output of code combining inheritance and reference polymorphism."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les1-p1",
+      "lessonId": "java-oop-mod10-les1",
+      "orderIndex": 1,
+      "title": "Warmup: Payment Gateway Reference View",
+      "difficulty": "easy",
+      "problemStatement": "Complete the payment gateway demo:\n1. Base class `Payment` with method `public void process(double amount)` printing `'Processing generic payment of $' + amount`.\n2. Subclass `CreditCardPayment` extending `Payment`: overrides `process(double amount)` printing `'Charging credit card: $' + amount`.\n3. In `main`, declare a reference variable of type `Payment` and instantiate it with `new CreditCardPayment()`. Call `process(150.0)`.\nObserve that the method prints the credit card specific message.",
+      "starterCode": "class Payment {\n    public void process(double amount) {\n        System.out.println(\"Processing generic payment of $\" + amount);\n    }\n}\n\nclass CreditCardPayment extends Payment {\n    // TODO: Override process(double amount)\n}\n\npublic class PaymentApp {\n    public static void main(String[] args) {\n        // TODO: Declare Payment reference assigned to CreditCardPayment instance and call process(150.0)\n    }\n}",
+      "initialCode": "class Payment {\n    public void process(double amount) {\n        System.out.println(\"Processing generic payment of $\" + amount);\n    }\n}\n\nclass CreditCardPayment extends Payment {\n    // TODO: Override process(double amount)\n}\n\npublic class PaymentApp {\n    public static void main(String[] args) {\n        // TODO: Declare Payment reference assigned to CreditCardPayment instance and call process(150.0)\n    }\n}",
+      "solutionCode": "class Payment {\n    public void process(double amount) {\n        System.out.println(\"Processing generic payment of $\" + amount);\n    }\n}\n\nclass CreditCardPayment extends Payment {\n    @Override\n    public void process(double amount) {\n        System.out.println(\"Charging credit card: $\" + amount);\n    }\n}\n\npublic class PaymentApp {\n    public static void main(String[] args) {\n        Payment p = new CreditCardPayment();\n        p.process(150.0);\n    }\n}",
+      "expectedOutput": "Charging credit card: $150.0",
+      "hints": [
+        "Use @Override on CreditCardPayment.process()",
+        "Declare `Payment p = new CreditCardPayment();` in main."
+      ]
+    },
+    {
+      "id": "prob-les1-p2",
+      "lessonId": "java-oop-mod10-les1",
+      "orderIndex": 2,
+      "title": "Polymorphic Media Player Stream",
+      "difficulty": "medium",
+      "problemStatement": "Build a media player hierarchy from scratch without starter code:\n1. Base class `MediaItem` with a protected string `title`. Constructor takes `title`. Defines method `public void play()` printing `'Playing media: ' + title`.\n2. Subclass `AudioTrack` extending `MediaItem`: constructor takes `(title, bitrate)`. Overrides `play()` printing `'Playing audio track: ' + title + ' @ ' + bitrate + 'kbps'`.\n3. Subclass `VideoTrack` extending `MediaItem`: constructor takes `(title, resolution)`. Overrides `play()` printing `'Streaming video: ' + title + ' in ' + resolution`.\n4. In `Main`, create an array `MediaItem[] playlist` containing an `AudioTrack(\"Podcast Ep 1\", 320)` and a `VideoTrack(\"Nature Doc\", \"4K UHD\")`.\n5. Iterate through `playlist` invoking `play()` on each item.",
+      "solutionCode": "class MediaItem {\n    protected String title;\n    public MediaItem(String title) {\n        this.title = title;\n    }\n    public void play() {\n        System.out.println(\"Playing media: \" + title);\n    }\n}\n\nclass AudioTrack extends MediaItem {\n    private int bitrate;\n    public AudioTrack(String title, int bitrate) {\n        super(title);\n        this.bitrate = bitrate;\n    }\n    @Override\n    public void play() {\n        System.out.println(\"Playing audio track: \" + title + \" @ \" + bitrate + \"kbps\");\n    }\n}\n\nclass VideoTrack extends MediaItem {\n    private String resolution;\n    public VideoTrack(String title, String resolution) {\n        super(title);\n        this.resolution = resolution;\n    }\n    @Override\n    public void play() {\n        System.out.println(\"Streaming video: \" + title + \" in \" + resolution);\n    }\n}\n\npublic class MediaApp {\n    public static void main(String[] args) {\n        MediaItem[] playlist = new MediaItem[] {\n            new AudioTrack(\"Podcast Ep 1\", 320),\n            new VideoTrack(\"Nature Doc\", \"4K UHD\")\n        };\n        for (MediaItem item : playlist) {\n            item.play();\n        }\n    }\n}",
+      "expectedOutput": "Playing audio track: Podcast Ep 1 @ 320kbps\nStreaming video: Nature Doc in 4K UHD",
+      "hints": [
+        "Constructor chaining with super(title) is required in both subclasses.",
+        "Iterate over MediaItem[] using an enhanced for-loop."
+      ]
+    },
+    {
+      "id": "prob-les1-p3",
+      "lessonId": "java-oop-mod10-les1",
+      "orderIndex": 3,
+      "title": "Cloud Resource Metric Collector",
+      "difficulty": "medium",
+      "problemStatement": "Implement an extensible cloud resource metric collector from scratch without starter code:\n1. Interface `CloudResource` with `String getId()` and `double getUtilization()`.\n2. Class `ComputeInstance` implementing `CloudResource`: fields `id` (String) and `cpuPercent` (double). Implements interface methods accordingly.\n3. Class `StorageBucket` implementing `CloudResource`: fields `id` (String), `usedGb` (double), `totalGb` (double). `getUtilization()` returns `(usedGb / totalGb) * 100.0`.\n4. Class `ClusterMonitor` with static method `public static void printReport(CloudResource resource)` that prints `'Resource [' + resource.getId() + '] Utilization: ' + resource.getUtilization() + '%' `.\n5. In `Main`, instantiate a `ComputeInstance(\"vm-web-01\", 78.5)` and a `StorageBucket(\"s3-assets\", 400.0, 1000.0)` as `CloudResource` references and pass each to `ClusterMonitor.printReport()`.",
+      "solutionCode": "interface CloudResource {\n    String getId();\n    double getUtilization();\n}\n\nclass ComputeInstance implements CloudResource {\n    private String id;\n    private double cpuPercent;\n    public ComputeInstance(String id, double cpuPercent) {\n        this.id = id;\n        this.cpuPercent = cpuPercent;\n    }\n    @Override\n    public String getId() { return id; }\n    @Override\n    public double getUtilization() { return cpuPercent; }\n}\n\nclass StorageBucket implements CloudResource {\n    private String id;\n    private double usedGb;\n    private double totalGb;\n    public StorageBucket(String id, double usedGb, double totalGb) {\n        this.id = id;\n        this.usedGb = usedGb;\n        this.totalGb = totalGb;\n    }\n    @Override\n    public String getId() { return id; }\n    @Override\n    public double getUtilization() { return (usedGb / totalGb) * 100.0; }\n}\n\nclass ClusterMonitor {\n    public static void printReport(CloudResource resource) {\n        System.out.println(\"Resource [\" + resource.getId() + \"] Utilization: \" + resource.getUtilization() + \"%\");\n    }\n}\n\npublic class CloudApp {\n    public static void main(String[] args) {\n        CloudResource vm = new ComputeInstance(\"vm-web-01\", 78.5);\n        CloudResource storage = new StorageBucket(\"s3-assets\", 400.0, 1000.0);\n        ClusterMonitor.printReport(vm);\n        ClusterMonitor.printReport(storage);\n    }\n}",
+      "expectedOutput": "Resource [vm-web-01] Utilization: 78.5%\nResource [s3-assets] Utilization: 40.0%",
+      "hints": [
+        "CloudResource interface acts as the polymorphic parameter type in printReport.",
+        "Storage bucket formula: (400.0 / 1000.0) * 100.0 gives 40.0."
+      ]
+    },
+    {
+      "id": "prob-les1-p4",
+      "lessonId": "java-oop-mod10-les1",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Subclass-Only Method Call on Parent Reference",
+      "difficulty": "hard",
+      "problemStatement": "A developer wrote the following code attempting to call a specialized subclass method `reboot()` through a superclass reference variable `Server s`, causing a compilation error. Fix the code by declaring `Server` appropriately or adjusting the method so the code compiles and outputs `'Rebooting node node-42'`.",
+      "starterCode": "class Server {\n    protected String name;\n    public Server(String name) { this.name = name; }\n    public void ping() {\n        System.out.println(name + \" is alive\");\n    }\n}\n\nclass DatabaseServer extends Server {\n    public DatabaseServer(String name) { super(name); }\n    public void reboot() {\n        System.out.println(\"Rebooting node \" + name);\n    }\n}\n\npublic class ServerApp {\n    public static void main(String[] args) {\n        Server s = new DatabaseServer(\"node-42\");\n        // BUG: Server does not declare reboot()!\n        s.reboot();\n    }\n}",
+      "initialCode": "class Server {\n    protected String name;\n    public Server(String name) { this.name = name; }\n    public void ping() {\n        System.out.println(name + \" is alive\");\n    }\n}\n\nclass DatabaseServer extends Server {\n    public DatabaseServer(String name) { super(name); }\n    public void reboot() {\n        System.out.println(\"Rebooting node \" + name);\n    }\n}\n\npublic class ServerApp {\n    public static void main(String[] args) {\n        Server s = new DatabaseServer(\"node-42\");\n        // BUG: Server does not declare reboot()!\n        s.reboot();\n    }\n}",
+      "solutionCode": "class Server {\n    protected String name;\n    public Server(String name) { this.name = name; }\n    public void ping() {\n        System.out.println(name + \" is alive\");\n    }\n    public void reboot() {\n        System.out.println(\"Generic reboot\");\n    }\n}\n\nclass DatabaseServer extends Server {\n    public DatabaseServer(String name) { super(name); }\n    @Override\n    public void reboot() {\n        System.out.println(\"Rebooting node \" + name);\n    }\n}\n\npublic class ServerApp {\n    public static void main(String[] args) {\n        Server s = new DatabaseServer(\"node-42\");\n        s.reboot();\n    }\n}",
+      "expectedOutput": "Rebooting node node-42",
+      "hints": [
+        "To call s.reboot() through reference type Server, reboot() must be declared in Server.",
+        "Subclass DatabaseServer overrides reboot() to provide its specialized implementation."
+      ]
+    },
+    {
+      "id": "prob-les1-p5",
+      "lessonId": "java-oop-mod10-les1",
+      "orderIndex": 5,
+      "title": "Advanced: Dynamic Dispatch with Covariant Clone",
+      "difficulty": "advanced",
+      "problemStatement": "Build a prototype cloner demonstrating covariant returns from scratch without starter code:\n1. Base class `Document` with protected `String content`. Constructor `Document(String content)`. Method `public Document copy()` that returns `new Document(this.content)`. Method `public void display()` printing `'Document: ' + content`.\n2. Subclass `Spreadsheet` extending `Document`: constructor takes `content`. Overrides `copy()` with covariant return type `public Spreadsheet copy()` returning `new Spreadsheet(this.content + ' [GRID]')`. Overrides `display()` printing `'Spreadsheet: ' + content`.\n3. In `Main`, create a `Document docRef = new Spreadsheet(\"Q3 Revenue\")`.\n4. Call `Document duplicate = docRef.copy();`.\n5. Call `duplicate.display();`.\nVerify that dynamic dispatch runs `Spreadsheet.copy()` and outputs `'Spreadsheet: Q3 Revenue [GRID]'`.",
+      "solutionCode": "class Document {\n    protected String content;\n    public Document(String content) {\n        this.content = content;\n    }\n    public Document copy() {\n        return new Document(this.content);\n    }\n    public void display() {\n        System.out.println(\"Document: \" + content);\n    }\n}\n\nclass Spreadsheet extends Document {\n    public Spreadsheet(String content) {\n        super(content);\n    }\n    @Override\n    public Spreadsheet copy() {\n        return new Spreadsheet(this.content + \" [GRID]\");\n    }\n    @Override\n    public void display() {\n        System.out.println(\"Spreadsheet: \" + content);\n    }\n}\n\npublic class PrototypeApp {\n    public static void main(String[] args) {\n        Document docRef = new Spreadsheet(\"Q3 Revenue\");\n        Document duplicate = docRef.copy();\n        duplicate.display();\n    }\n}",
+      "expectedOutput": "Spreadsheet: Q3 Revenue [GRID]",
+      "hints": [
+        "In Spreadsheet, public Spreadsheet copy() is a legal covariant override of public Document copy().",
+        "When called through docRef, dynamic dispatch executes Spreadsheet's copy method."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Reference Type vs Actual Object Type",
+    "Analyze, predict, and trace code execution involving reference-type-vs-actual-object-type",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Reference Type vs Actual Object Type principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

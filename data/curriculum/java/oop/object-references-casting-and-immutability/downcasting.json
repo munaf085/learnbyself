@@ -1,0 +1,523 @@
+{
+  "id": "les-cast-4",
+  "slug": "downcasting",
+  "title": "Downcasting",
+  "summary": "Casting a parent reference back to its specialized child and avoiding ClassCastException.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 4,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les4-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Specialized Tool Case",
+      "concept": "Downcasting (Explicit Narrowing Reference Conversion)",
+      "realWorldMetaphor": {
+        "scenario": "Imagine a mechanic reaches into a communal drawer labeled 'Hand Tools'. They pull out an item. Looking at it, it fits the description of a general hand tool. But before attempting to tighten a Torx security bolt, the mechanic must look closely at the tip to confirm: 'Is this specifically a Torx screwdriver?' If it is, they use it for Torx screws. If it's a flathead and they try to force it into a Torx bolt anyway, they strip the bolt immediately!",
+        "mapping": "In Java, when you hold a general superclass reference (`Tool t`), the compiler only lets you perform general tool actions. If you want to use specialized subclass capabilities (`torx.tightenSecurityBolt()`), you must perform an explicit downcast `(TorxDriver) t`. If the object on the heap is NOT actually a `TorxDriver`, the JVM throws an immediate `ClassCastException`!",
+        "takeaway": "Downcasting requires an explicit cast syntax and must always be verified with instanceof to prevent runtime crashes."
+      }
+    },
+    {
+      "id": "act-les4-concept",
+      "type": "concept",
+      "title": "Downcasting Rules and the ClassCastException",
+      "content": "### What is Downcasting?\n\n**Downcasting** is casting a reference from a general superclass or interface back down to a more specialized subclass:\n\n```java\nAnimal a = new Dog(); // Upcast\nDog d = (Dog) a;      // Explicit downcast!\n```\n\n### The 3 Critical Rules of Downcasting\n1. **Explicit Cast Syntax Required**: Because downcasting narrows the type, the compiler cannot guarantee that the heap object is actually of the target subtype. You must write `(TargetType) reference`.\n2. **The Golden Guard Rule**: **Never downcast without checking `instanceof` first**:\n   ```java\n   if (a instanceof Dog) {\n       Dog d = (Dog) a; // 100% Safe!\n       d.bark();\n   }\n   ```\n3. **Casting Does NOT Transform Objects**: You can never cast a genuine parent object into a child instance:\n   ```java\n   Animal realAnimal = new Animal();\n   Dog d = (Dog) realAnimal; // CRASH! ClassCastException at runtime!\n   ```\n   Downcasting only restores specialized access to an object that was **already** an instance of that subclass when created.\n\n### Compile Time vs Runtime in Downcasting\n- **Compile Time**: The compiler only checks if the cast is *plausible* (i.e., whether the source type and target type belong to the same hierarchy branch).\n- **Runtime**: The JVM checks the actual heap object header. If the object does not pass the IS-A test for the target type, it throws `java.lang.ClassCastException`."
+    },
+    {
+      "id": "act-les4-cw1",
+      "type": "code_walkthrough",
+      "title": "Unsafe Downcasting vs Guarded Downcasting",
+      "codeSnippet": "class Device {\n    public void turnOn() { System.out.println(\"Device powered on\"); }\n}\nclass SmartPhone extends Device {\n    public void makeCall(String number) {\n        System.out.println(\"Dialing \" + number);\n    }\n}\nclass Laptop extends Device {\n    public void compileCode() {\n        System.out.println(\"Compiling Java project...\");\n    }\n}\n\npublic class DowncastDemo {\n    public static void main(String[] args) {\n        Device d1 = new SmartPhone();\n        Device d2 = new Laptop();\n\n        // 1. Safe guarded downcast\n        if (d1 instanceof SmartPhone) {\n            SmartPhone phone = (SmartPhone) d1;\n            phone.makeCall(\"555-0199\");\n        }\n\n        // 2. Unsafe downcast demo (uncomment to see crash)\n        // SmartPhone fakePhone = (SmartPhone) d2; // Throws ClassCastException: Laptop cannot be cast to SmartPhone!\n\n        // 3. Safe check for d2\n        if (d2 instanceof Laptop) {\n            Laptop laptop = (Laptop) d2;\n            laptop.compileCode();\n        }\n    }\n}",
+      "code": "class Device {\n    public void turnOn() { System.out.println(\"Device powered on\"); }\n}\nclass SmartPhone extends Device {\n    public void makeCall(String number) {\n        System.out.println(\"Dialing \" + number);\n    }\n}\nclass Laptop extends Device {\n    public void compileCode() {\n        System.out.println(\"Compiling Java project...\");\n    }\n}\n\npublic class DowncastDemo {\n    public static void main(String[] args) {\n        Device d1 = new SmartPhone();\n        Device d2 = new Laptop();\n\n        // 1. Safe guarded downcast\n        if (d1 instanceof SmartPhone) {\n            SmartPhone phone = (SmartPhone) d1;\n            phone.makeCall(\"555-0199\");\n        }\n\n        // 2. Unsafe downcast demo (uncomment to see crash)\n        // SmartPhone fakePhone = (SmartPhone) d2; // Throws ClassCastException: Laptop cannot be cast to SmartPhone!\n\n        // 3. Safe check for d2\n        if (d2 instanceof Laptop) {\n            Laptop laptop = (Laptop) d2;\n            laptop.compileCode();\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "Guarding with instanceof prevents the catastrophic ClassCastException that occurs if an incompatible object (Laptop) is cast to SmartPhone.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`d1` holds a `SmartPhone`; `instanceof SmartPhone` evaluates to true."
+        },
+        {
+          "step": 2,
+          "description": "The cast `(SmartPhone) d1` succeeds and binds `phone`."
+        },
+        {
+          "step": 3,
+          "description": "`d2` holds a `Laptop`; casting directly to `SmartPhone` would crash at runtime."
+        },
+        {
+          "step": 4,
+          "description": "Checking `d2 instanceof Laptop` ensures safe downcasting to `Laptop`."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-cw2",
+      "type": "code_walkthrough",
+      "title": "Restoring Capabilities in a Plugin Architecture",
+      "codeSnippet": "interface Plugin {\n    String getName();\n}\ninterface ConfigurablePlugin extends Plugin {\n    void configure(String configJson);\n}\n\nclass LoggingPlugin implements ConfigurablePlugin {\n    @Override public String getName() { return \"ConsoleLogger\"; }\n    @Override public void configure(String configJson) {\n        System.out.println(\"Logger configured with: \" + configJson);\n    }\n}\n\nclass MetricsPlugin implements Plugin {\n    @Override public String getName() { return \"MetricsCollector\"; }\n}\n\npublic class PluginManager {\n    public static void initializePlugin(Plugin p, String config) {\n        System.out.println(\"Initializing plugin: \" + p.getName());\n        // Downcast to ConfigurablePlugin if supported\n        if (p instanceof ConfigurablePlugin) {\n            ConfigurablePlugin cp = (ConfigurablePlugin) p;\n            cp.configure(config);\n        } else {\n            System.out.println(\"Plugin does not require custom configuration.\");\n        }\n    }\n\n    public static void main(String[] args) {\n        initializePlugin(new LoggingPlugin(), \"{\\\"level\\\": \\\"DEBUG\\\"}\");\n        initializePlugin(new MetricsPlugin(), \"{}\");\n    }\n}",
+      "code": "interface Plugin {\n    String getName();\n}\ninterface ConfigurablePlugin extends Plugin {\n    void configure(String configJson);\n}\n\nclass LoggingPlugin implements ConfigurablePlugin {\n    @Override public String getName() { return \"ConsoleLogger\"; }\n    @Override public void configure(String configJson) {\n        System.out.println(\"Logger configured with: \" + configJson);\n    }\n}\n\nclass MetricsPlugin implements Plugin {\n    @Override public String getName() { return \"MetricsCollector\"; }\n}\n\npublic class PluginManager {\n    public static void initializePlugin(Plugin p, String config) {\n        System.out.println(\"Initializing plugin: \" + p.getName());\n        // Downcast to ConfigurablePlugin if supported\n        if (p instanceof ConfigurablePlugin) {\n            ConfigurablePlugin cp = (ConfigurablePlugin) p;\n            cp.configure(config);\n        } else {\n            System.out.println(\"Plugin does not require custom configuration.\");\n        }\n    }\n\n    public static void main(String[] args) {\n        initializePlugin(new LoggingPlugin(), \"{\\\"level\\\": \\\"DEBUG\\\"}\");\n        initializePlugin(new MetricsPlugin(), \"{}\");\n    }\n}",
+      "language": "java",
+      "explanation": "Downcasting across interfaces (query interface pattern): tests whether a general Plugin also supports ConfigurablePlugin.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`initializePlugin` accepts any general `Plugin`."
+        },
+        {
+          "step": 2,
+          "description": "It checks `p instanceof ConfigurablePlugin`."
+        },
+        {
+          "step": 3,
+          "description": "`LoggingPlugin` implements `ConfigurablePlugin`, so it downcasts safely and calls `configure()`."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-mcq",
+      "type": "mcq",
+      "title": "Downcasting Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is downcasting in Java?",
+          "options": [
+            "Casting a primitive to a smaller byte size",
+            "Casting a superclass reference to a subclass type",
+            "Deleting an object from the heap",
+            "Overriding a method with private visibility"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Downcasting moves down the inheritance tree, casting a general superclass reference to a more specific subclass."
+        },
+        {
+          "id": "q2",
+          "question": "Why does downcasting require explicit syntax `(Subclass) ref` while upcasting does not?",
+          "options": [
+            "Because the compiler cannot verify whether the runtime heap object is truly an instance of the subclass",
+            "Because downcasting allocates additional heap memory",
+            "Because downcasting disables garbage collection",
+            "Because subclasses have smaller bytecode"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Downcasting is potentially unsafe; the developer must explicitly acknowledge the conversion with a cast."
+        },
+        {
+          "id": "q3",
+          "question": "What happens if you execute `Animal a = new Animal(); Dog d = (Dog) a;`?",
+          "options": [
+            "a is successfully converted to Dog with default Dog fields",
+            "The JVM throws a ClassCastException at runtime",
+            "The code fails to compile with an inconvertible types error",
+            "d becomes null"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "A pure `Animal` instance is not a `Dog`. Casting it throws a runtime `ClassCastException`."
+        },
+        {
+          "id": "q4",
+          "question": "What is the best practice before performing a downcast?",
+          "options": [
+            "Always wrap the cast in a try-catch block for NullPointerException",
+            "Always test the reference with `instanceof` first",
+            "Call System.gc() before casting",
+            "Set the reference variable to null"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Guarding downcasts with `if (ref instanceof Subclass)` guarantees type safety and prevents exceptions."
+        },
+        {
+          "id": "q5",
+          "question": "Can downcasting modify the fields of the object on the heap?",
+          "options": [
+            "Yes, it resets all fields to default values",
+            "No, casting only changes the reference type view, not the heap object itself",
+            "Yes, it removes superclass fields",
+            "Only if the fields are protected"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Type casting in Java never alters or reallocates the underlying heap object."
+        },
+        {
+          "id": "q6",
+          "question": "Which of the following will result in a compile-time error?",
+          "options": [
+            "Object o = \"text\"; String s = (String) o;",
+            "String s = \"text\"; Integer i = (Integer) s;",
+            "Number n = Integer.valueOf(5); Integer i = (Integer) n;",
+            "CharSequence cs = \"hello\"; String s = (String) cs;"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`String` and `Integer` are unrelated classes with no inheritance relationship, so the compiler rejects the cast immediately."
+        },
+        {
+          "id": "q7",
+          "question": "What exception is thrown when an illegal downcast executes at runtime?",
+          "options": [
+            "IllegalStateException",
+            "ClassCastException",
+            "IllegalArgumentException",
+            "NullPointerException"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The JVM throws `java.lang.ClassCastException` upon an incompatible downcast."
+        },
+        {
+          "id": "q8",
+          "question": "Given `Object obj = null; String s = (String) obj;`, what happens?",
+          "options": [
+            "ClassCastException is thrown",
+            "s is assigned null without error",
+            "Compile-time error",
+            "NullPointerException is thrown"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "In Java, casting `null` to any reference type succeeds and simply yields `null`."
+        },
+        {
+          "id": "q9",
+          "question": "What is the primary reason developers downcast?",
+          "options": [
+            "To invoke subclass-specific methods that are not declared in the superclass",
+            "To improve performance of arithmetic loops",
+            "To prevent the object from being garbage collected",
+            "To bypass access modifiers"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Downcasting unlocks access to methods and fields declared exclusively on the subclass."
+        },
+        {
+          "id": "q10",
+          "question": "If you find yourself writing downcasts everywhere in your codebase, what is likely wrong?",
+          "options": [
+            "You should be using C++ instead",
+            "Your OOP abstraction is leaky or insufficient; polymorphic methods should be added to the superclass",
+            "Your classes are too small",
+            "The JVM version is outdated"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Widespread downcasting is a code smell indicating that the base abstraction fails to provide the necessary common operations."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-interview",
+      "type": "interview_qa",
+      "title": "Downcasting Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i4-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why is downcasting considered potentially dangerous in Java?",
+          "answer": "Downcasting is dangerous because the compiler cannot statically guarantee that the reference points to an object of the target subtype at runtime. If the heap object is incompatible, the JVM throws an unchecked `ClassCastException`, which can crash the application in production if unguarded.",
+          "expectedAnswer": "Downcasting bypasses static compile-time safety and risks runtime ClassCastException if the heap object is incompatible.",
+          "keyTakeaway": "Downcasting shifts type verification from compile time to runtime.",
+          "keyPoints": [
+            "Downcasting shifts type verification from compile time to runtime."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i4-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Can you cast an instance of a parent class into a child class? Why or why not?",
+          "answer": "No. An instance created with `new Parent()` only possesses the state and implementation of the parent. It lacks the specialized fields and behaviors of the child. Attempting `Child c = (Child) new Parent()` throws `ClassCastException` at runtime. Downcasting only works when the object was instantiated as the child in the first place.",
+          "expectedAnswer": "No. A genuine parent instance does not satisfy the child contract and throws ClassCastException.",
+          "keyTakeaway": "Downcasting cannot create child state out of thin air; the object must already be a child instance.",
+          "keyPoints": [
+            "Downcasting cannot create child state out of thin air; the object must already be a child instance."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i4-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the bytecode instruction executed when a downcast occurs?",
+          "answer": "The Java bytecode instruction is `checkcast`. The JVM's execution engine checks the object header against the class token. If the check fails, the JVM raises a `ClassCastException`. If the reference is null or the check succeeds, execution continues.",
+          "expectedAnswer": "The bytecode instruction is checkcast, which validates the heap object type before completing the cast.",
+          "keyTakeaway": "Downcasting maps directly to the checkcast bytecode instruction.",
+          "keyPoints": [
+            "Downcasting maps directly to the checkcast bytecode instruction."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i4-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the 'Query Interface' idiom, and how does downcasting enable it?",
+          "answer": "In extensible architectures (like Eclipse or Spring plugins), components implement multiple capability interfaces. Client code receives a base interface (`Component`) and dynamically 'queries' for additional capabilities using downcasting: `if (c instanceof Auditable) ((Auditable) c).audit()`. This allows optional behaviors without polluting the base interface.",
+          "expectedAnswer": "Query Interface uses instanceof downcasting to test and activate optional interface capabilities dynamically.",
+          "keyTakeaway": "Query interface pattern uses downcasting to discover optional capabilities.",
+          "keyPoints": [
+            "Query interface pattern uses downcasting to discover optional capabilities."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i4-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How can you refactor code to eliminate unnecessary downcasting?",
+          "answer": "You can eliminate downcasting by: 1) Declaring polymorphic abstract/default methods in the common supertype, 2) Applying the Visitor Pattern to handle subtype-specific operations cleanly, or 3) Leveraging Java generics with bounded type parameters (`<T extends Subtype>`).",
+          "expectedAnswer": "Eliminate downcasting by pushing common methods to the supertype, using the Visitor pattern, or employing generics.",
+          "keyTakeaway": "Polymorphism, Visitor Pattern, and Generics eliminate ugly downcasting.",
+          "keyPoints": [
+            "Polymorphism, Visitor Pattern, and Generics eliminate ugly downcasting."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i4-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is heap pollution in Java, and how does it relate to casting?",
+          "answer": "Heap pollution occurs when a variable of a parameterized type refers to an object that is not of that parameterized type, typically caused by mixing raw types and unchecked casts. While the cast appears to succeed initially, an unexpected `ClassCastException` will be thrown later when an element is extracted and cast implicitly by the compiler.",
+          "expectedAnswer": "Heap pollution happens when generic type erasure masks an incompatible type, causing ClassCastException at extraction.",
+          "keyTakeaway": "Heap pollution delays ClassCastExceptions to later access points.",
+          "keyPoints": [
+            "Heap pollution delays ClassCastExceptions to later access points."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i4-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why is downcasting considered potentially dangerous in Java?",
+          "answer": "Downcasting is dangerous because the compiler cannot statically guarantee that the reference points to an object of the target subtype at runtime. If the heap object is incompatible, the JVM throws an unchecked `ClassCastException`, which can crash the application in production if unguarded.",
+          "expectedAnswer": "Downcasting bypasses static compile-time safety and risks runtime ClassCastException if the heap object is incompatible.",
+          "keyTakeaway": "Downcasting shifts type verification from compile time to runtime.",
+          "keyPoints": [
+            "Downcasting shifts type verification from compile time to runtime."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i4-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Can you cast an instance of a parent class into a child class? Why or why not?",
+          "answer": "No. An instance created with `new Parent()` only possesses the state and implementation of the parent. It lacks the specialized fields and behaviors of the child. Attempting `Child c = (Child) new Parent()` throws `ClassCastException` at runtime. Downcasting only works when the object was instantiated as the child in the first place.",
+          "expectedAnswer": "No. A genuine parent instance does not satisfy the child contract and throws ClassCastException.",
+          "keyTakeaway": "Downcasting cannot create child state out of thin air; the object must already be a child instance.",
+          "keyPoints": [
+            "Downcasting cannot create child state out of thin air; the object must already be a child instance."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i4-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the bytecode instruction executed when a downcast occurs?",
+          "answer": "The Java bytecode instruction is `checkcast`. The JVM's execution engine checks the object header against the class token. If the check fails, the JVM raises a `ClassCastException`. If the reference is null or the check succeeds, execution continues.",
+          "expectedAnswer": "The bytecode instruction is checkcast, which validates the heap object type before completing the cast.",
+          "keyTakeaway": "Downcasting maps directly to the checkcast bytecode instruction.",
+          "keyPoints": [
+            "Downcasting maps directly to the checkcast bytecode instruction."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i4-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the 'Query Interface' idiom, and how does downcasting enable it?",
+          "answer": "In extensible architectures (like Eclipse or Spring plugins), components implement multiple capability interfaces. Client code receives a base interface (`Component`) and dynamically 'queries' for additional capabilities using downcasting: `if (c instanceof Auditable) ((Auditable) c).audit()`. This allows optional behaviors without polluting the base interface.",
+          "expectedAnswer": "Query Interface uses instanceof downcasting to test and activate optional interface capabilities dynamically.",
+          "keyTakeaway": "Query interface pattern uses downcasting to discover optional capabilities.",
+          "keyPoints": [
+            "Query interface pattern uses downcasting to discover optional capabilities."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i4-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How can you refactor code to eliminate unnecessary downcasting?",
+          "answer": "You can eliminate downcasting by: 1) Declaring polymorphic abstract/default methods in the common supertype, 2) Applying the Visitor Pattern to handle subtype-specific operations cleanly, or 3) Leveraging Java generics with bounded type parameters (`<T extends Subtype>`).",
+          "expectedAnswer": "Eliminate downcasting by pushing common methods to the supertype, using the Visitor pattern, or employing generics.",
+          "keyTakeaway": "Polymorphism, Visitor Pattern, and Generics eliminate ugly downcasting.",
+          "keyPoints": [
+            "Polymorphism, Visitor Pattern, and Generics eliminate ugly downcasting."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i4-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is heap pollution in Java, and how does it relate to casting?",
+          "answer": "Heap pollution occurs when a variable of a parameterized type refers to an object that is not of that parameterized type, typically caused by mixing raw types and unchecked casts. While the cast appears to succeed initially, an unexpected `ClassCastException` will be thrown later when an element is extracted and cast implicitly by the compiler.",
+          "expectedAnswer": "Heap pollution happens when generic type erasure masks an incompatible type, causing ClassCastException at extraction.",
+          "keyTakeaway": "Heap pollution delays ClassCastExceptions to later access points.",
+          "keyPoints": [
+            "Heap pollution delays ClassCastExceptions to later access points."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les4-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand that downcasting moves down the inheritance tree to restore subclass access.",
+        "I know why explicit cast syntax `(Subclass) ref` is mandatory for downcasting.",
+        "I understand why casting a genuine parent object throws ClassCastException.",
+        "I always guard downcasts with an `instanceof` check to ensure runtime safety.",
+        "I know the difference between compile-time inconvertible type errors and runtime ClassCastException.",
+        "I know that casting null to any reference type succeeds and returns null.",
+        "I understand that downcasting changes the compiler's view without modifying the heap object.",
+        "I can identify code smells when downcasting is overused across a system.",
+        "I understand the role of the `checkcast` bytecode instruction in the JVM.",
+        "I can refactor downcast-heavy designs into clean polymorphic methods or Visitor patterns."
+      ],
+      "items": [
+        "I understand that downcasting moves down the inheritance tree to restore subclass access.",
+        "I know why explicit cast syntax `(Subclass) ref` is mandatory for downcasting.",
+        "I understand why casting a genuine parent object throws ClassCastException.",
+        "I always guard downcasts with an `instanceof` check to ensure runtime safety.",
+        "I know the difference between compile-time inconvertible type errors and runtime ClassCastException.",
+        "I know that casting null to any reference type succeeds and returns null.",
+        "I understand that downcasting changes the compiler's view without modifying the heap object.",
+        "I can identify code smells when downcasting is overused across a system.",
+        "I understand the role of the `checkcast` bytecode instruction in the JVM.",
+        "I can refactor downcast-heavy designs into clean polymorphic methods or Visitor patterns."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les4-p1",
+      "lessonId": "java-oop-mod10-les4",
+      "orderIndex": 1,
+      "title": "Warmup: Guarded Account Downcast",
+      "difficulty": "easy",
+      "problemStatement": "Complete the account processor:\n1. Base class `Account` with `protected String id` and `protected double balance`.\n2. Subclass `SavingsAccount extends Account` with method `public void applyInterest(double rate)` adding `balance * rate` to `balance`.\n3. In `processInterest(Account acc)`: check if `acc` is an instance of `SavingsAccount`. If so, safely downcast and call `applyInterest(0.05)`.\nIn `main`, pass a `SavingsAccount(\"SA-101\", 1000.0)` and print the balance: `'Updated Balance: $1050.0'`.",
+      "starterCode": "class Account {\n    protected String id;\n    protected double balance;\n    public Account(String id, double balance) {\n        this.id = id;\n        this.balance = balance;\n    }\n    public double getBalance() { return balance; }\n}\n\nclass SavingsAccount extends Account {\n    public SavingsAccount(String id, double balance) { super(id, balance); }\n    public void applyInterest(double rate) {\n        this.balance += this.balance * rate;\n    }\n}\n\npublic class AccountApp {\n    public static void processInterest(Account acc) {\n        // TODO: Use instanceof and downcast to call applyInterest(0.05)\n    }\n\n    public static void main(String[] args) {\n        Account acc = new SavingsAccount(\"SA-101\", 1000.0);\n        processInterest(acc);\n        System.out.println(\"Updated Balance: $\" + acc.getBalance());\n    }\n}",
+      "initialCode": "class Account {\n    protected String id;\n    protected double balance;\n    public Account(String id, double balance) {\n        this.id = id;\n        this.balance = balance;\n    }\n    public double getBalance() { return balance; }\n}\n\nclass SavingsAccount extends Account {\n    public SavingsAccount(String id, double balance) { super(id, balance); }\n    public void applyInterest(double rate) {\n        this.balance += this.balance * rate;\n    }\n}\n\npublic class AccountApp {\n    public static void processInterest(Account acc) {\n        // TODO: Use instanceof and downcast to call applyInterest(0.05)\n    }\n\n    public static void main(String[] args) {\n        Account acc = new SavingsAccount(\"SA-101\", 1000.0);\n        processInterest(acc);\n        System.out.println(\"Updated Balance: $\" + acc.getBalance());\n    }\n}",
+      "solutionCode": "class Account {\n    protected String id;\n    protected double balance;\n    public Account(String id, double balance) {\n        this.id = id;\n        this.balance = balance;\n    }\n    public double getBalance() { return balance; }\n}\n\nclass SavingsAccount extends Account {\n    public SavingsAccount(String id, double balance) { super(id, balance); }\n    public void applyInterest(double rate) {\n        this.balance += this.balance * rate;\n    }\n}\n\npublic class AccountApp {\n    public static void processInterest(Account acc) {\n        if (acc instanceof SavingsAccount) {\n            SavingsAccount sa = (SavingsAccount) acc;\n            sa.applyInterest(0.05);\n        }\n    }\n\n    public static void main(String[] args) {\n        Account acc = new SavingsAccount(\"SA-101\", 1000.0);\n        processInterest(acc);\n        System.out.println(\"Updated Balance: $\" + acc.getBalance());\n    }\n}",
+      "expectedOutput": "Updated Balance: $1050.0",
+      "hints": [
+        "Test `if (acc instanceof SavingsAccount)` before downcasting.",
+        "Cast: `SavingsAccount sa = (SavingsAccount) acc;`."
+      ]
+    },
+    {
+      "id": "prob-les4-p2",
+      "lessonId": "java-oop-mod10-les4",
+      "orderIndex": 2,
+      "title": "Document Formatter Downcaster",
+      "difficulty": "medium",
+      "problemStatement": "Build a document formatting tool from scratch without starter code:\n1. Base class `Document` with `protected String title`. Constructor `Document(String title)`. Method `public String getTitle()`.\n2. Subclass `PdfDocument extends Document`: constructor `(title, numPages)`. Method `public void renderVectorGraphics()` printing `'Rendering PDF vector graphics across ' + numPages + ' pages'`.\n3. Subclass `TextDocument extends Document`: constructor `(title, encoding)`. Method `public void applyWordWrap()` printing `'Applying word wrap with encoding ' + encoding`.\n4. Class `DocumentRenderer` with static method `public static void renderSpecialized(Document doc)`:\n   - Prints `'Processing document: ' + doc.getTitle()`\n   - If `doc instanceof PdfDocument`, safely downcasts and calls `renderVectorGraphics()`\n   - If `doc instanceof TextDocument`, safely downcasts and calls `applyWordWrap()`\n5. In `Main`, call `renderSpecialized` with a `new PdfDocument(\"Whitepaper\", 14)` and a `new TextDocument(\"Notes\", \"UTF-8\")`.",
+      "solutionCode": "class Document {\n    protected String title;\n    public Document(String title) {\n        this.title = title;\n    }\n    public String getTitle() { return title; }\n}\n\nclass PdfDocument extends Document {\n    private int numPages;\n    public PdfDocument(String title, int numPages) {\n        super(title);\n        this.numPages = numPages;\n    }\n    public void renderVectorGraphics() {\n        System.out.println(\"Rendering PDF vector graphics across \" + numPages + \" pages\");\n    }\n}\n\nclass TextDocument extends Document {\n    private String encoding;\n    public TextDocument(String title, String encoding) {\n        super(title);\n        this.encoding = encoding;\n    }\n    public void applyWordWrap() {\n        System.out.println(\"Applying word wrap with encoding \" + encoding);\n    }\n}\n\nclass DocumentRenderer {\n    public static void renderSpecialized(Document doc) {\n        System.out.println(\"Processing document: \" + doc.getTitle());\n        if (doc instanceof PdfDocument) {\n            PdfDocument pdf = (PdfDocument) doc;\n            pdf.renderVectorGraphics();\n        } else if (doc instanceof TextDocument) {\n            TextDocument txt = (TextDocument) doc;\n            txt.applyWordWrap();\n        }\n    }\n}\n\npublic class DocApp {\n    public static void main(String[] args) {\n        DocumentRenderer.renderSpecialized(new PdfDocument(\"Whitepaper\", 14));\n        DocumentRenderer.renderSpecialized(new TextDocument(\"Notes\", \"UTF-8\"));\n    }\n}",
+      "expectedOutput": "Processing document: Whitepaper\nRendering PDF vector graphics across 14 pages\nProcessing document: Notes\nApplying word wrap with encoding UTF-8",
+      "hints": [
+        "DocumentRenderer checks instanceof for PdfDocument and TextDocument.",
+        "Downcast explicitly to access renderVectorGraphics() and applyWordWrap()."
+      ]
+    },
+    {
+      "id": "prob-les4-p3",
+      "lessonId": "java-oop-mod10-les4",
+      "orderIndex": 3,
+      "title": "Smart Audio Mixer Controller",
+      "difficulty": "medium",
+      "problemStatement": "Build an audio channel mixer from scratch without starter code:\n1. Base class `AudioChannel` with field `channelName` (String). Constructor sets `channelName`. Method `public String getChannelName()`.\n2. Subclass `VocalChannel extends AudioChannel`: method `public void autoTune(int pitchCorrection)` printing `'Autotuning ' + channelName + ' by ' + pitchCorrection + ' cents'`.\n3. Subclass `BassChannel extends AudioChannel`: method `public void boostSubBass(double db)` printing `'Boosting sub-bass on ' + channelName + ' by ' + db + ' dB'`.\n4. Class `MixerDesk` with method `public void processChannels(AudioChannel[] channels)`:\n   - Iterates through `channels`\n   - If channel is a `VocalChannel`, downcasts and calls `autoTune(25)`\n   - If channel is a `BassChannel`, downcasts and calls `boostSubBass(6.0)`\n5. In `Main`, create an array `AudioChannel[] desk` holding a `new VocalChannel(\"Lead Vocal\")` and a `new BassChannel(\"808 Sub\")`. Pass it to `MixerDesk.processChannels()`.",
+      "solutionCode": "class AudioChannel {\n    protected String channelName;\n    public AudioChannel(String name) {\n        this.channelName = name;\n    }\n    public String getChannelName() { return channelName; }\n}\n\nclass VocalChannel extends AudioChannel {\n    public VocalChannel(String name) { super(name); }\n    public void autoTune(int pitchCorrection) {\n        System.out.println(\"Autotuning \" + channelName + \" by \" + pitchCorrection + \" cents\");\n    }\n}\n\nclass BassChannel extends AudioChannel {\n    public BassChannel(String name) { super(name); }\n    public void boostSubBass(double db) {\n        System.out.println(\"Boosting sub-bass on \" + channelName + \" by \" + db + \" dB\");\n    }\n}\n\nclass MixerDesk {\n    public void processChannels(AudioChannel[] channels) {\n        for (AudioChannel ch : channels) {\n            if (ch instanceof VocalChannel) {\n                VocalChannel v = (VocalChannel) ch;\n                v.autoTune(25);\n            } else if (ch instanceof BassChannel) {\n                BassChannel b = (BassChannel) ch;\n                b.boostSubBass(6.0);\n            }\n        }\n    }\n}\n\npublic class MixerApp {\n    public static void main(String[] args) {\n        AudioChannel[] desk = new AudioChannel[] {\n            new VocalChannel(\"Lead Vocal\"),\n            new BassChannel(\"808 Sub\")\n        };\n        MixerDesk mixer = new MixerDesk();\n        mixer.processChannels(desk);\n    }\n}",
+      "expectedOutput": "Autotuning Lead Vocal by 25 cents\nBoosting sub-bass on 808 Sub by 6.0 dB",
+      "hints": [
+        "Use super(name) in VocalChannel and BassChannel constructors.",
+        "Process channels with an enhanced for-loop and instanceof downcasts."
+      ]
+    },
+    {
+      "id": "prob-les4-p4",
+      "lessonId": "java-oop-mod10-les4",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Blind Downcast in Shape Processing",
+      "difficulty": "hard",
+      "problemStatement": "The code below blindly downcasts elements of a `Shape` array to `Circle`, crashing with a `ClassCastException` on `Rectangle`. Fix the code by properly checking the type before downcasting, so circles print their radius and rectangles print their dimensions without throwing any exceptions.",
+      "starterCode": "class Shape {}\nclass Circle extends Shape {\n    private double radius;\n    public Circle(double r) { this.radius = r; }\n    public void printRadius() { System.out.println(\"Circle radius: \" + radius); }\n}\nclass Rectangle extends Shape {\n    private double width, height;\n    public Rectangle(double w, double h) { this.width = w; this.height = h; }\n    public void printDimensions() { System.out.println(\"Rectangle: \" + width + \"x\" + height); }\n}\n\npublic class ShapeProcessor {\n    public static void main(String[] args) {\n        Shape[] shapes = new Shape[] {\n            new Circle(5.0),\n            new Rectangle(4.0, 6.0)\n        };\n        for (Shape s : shapes) {\n            // BUG: Blind downcast crashes on Rectangle!\n            Circle c = (Circle) s;\n            c.printRadius();\n        }\n    }\n}",
+      "initialCode": "class Shape {}\nclass Circle extends Shape {\n    private double radius;\n    public Circle(double r) { this.radius = r; }\n    public void printRadius() { System.out.println(\"Circle radius: \" + radius); }\n}\nclass Rectangle extends Shape {\n    private double width, height;\n    public Rectangle(double w, double h) { this.width = w; this.height = h; }\n    public void printDimensions() { System.out.println(\"Rectangle: \" + width + \"x\" + height); }\n}\n\npublic class ShapeProcessor {\n    public static void main(String[] args) {\n        Shape[] shapes = new Shape[] {\n            new Circle(5.0),\n            new Rectangle(4.0, 6.0)\n        };\n        for (Shape s : shapes) {\n            // BUG: Blind downcast crashes on Rectangle!\n            Circle c = (Circle) s;\n            c.printRadius();\n        }\n    }\n}",
+      "solutionCode": "class Shape {}\nclass Circle extends Shape {\n    private double radius;\n    public Circle(double r) { this.radius = r; }\n    public void printRadius() { System.out.println(\"Circle radius: \" + radius); }\n}\nclass Rectangle extends Shape {\n    private double width, height;\n    public Rectangle(double w, double h) { this.width = w; this.height = h; }\n    public void printDimensions() { System.out.println(\"Rectangle: \" + width + \"x\" + height); }\n}\n\npublic class ShapeProcessor {\n    public static void main(String[] args) {\n        Shape[] shapes = new Shape[] {\n            new Circle(5.0),\n            new Rectangle(4.0, 6.0)\n        };\n        for (Shape s : shapes) {\n            if (s instanceof Circle) {\n                Circle c = (Circle) s;\n                c.printRadius();\n            } else if (s instanceof Rectangle) {\n                Rectangle r = (Rectangle) s;\n                r.printDimensions();\n            }\n        }\n    }\n}",
+      "expectedOutput": "Circle radius: 5.0\nRectangle: 4.0x6.0",
+      "hints": [
+        "Use `if (s instanceof Circle)` for circles and `else if (s instanceof Rectangle)` for rectangles.",
+        "Call printRadius() on circle and printDimensions() on rectangle."
+      ]
+    },
+    {
+      "id": "prob-les4-p5",
+      "lessonId": "java-oop-mod10-les4",
+      "orderIndex": 5,
+      "title": "Advanced: Safe Heterogeneous Cast Pipeline",
+      "difficulty": "advanced",
+      "problemStatement": "Build a safe heterogeneous casting pipeline from scratch without starter code:\n1. Interface `Command` with `void execute()`.\n2. Subclass `RestartCommand implements Command`: `execute()` prints `'Executing system reboot'`.\n3. Subclass `BackupCommand implements Command`: fields `destination` (String). Constructor sets `destination`. `execute()` prints `'Executing backup to ' + destination`. Method `public void verifyChecksum()` printing `'Checksum verified for ' + destination`.\n4. Class `CommandRunner` with static method `public static void runAndVerify(Command[] batch)`:\n   - For each command in `batch`, call `cmd.execute()`\n   - If `cmd` is an instance of `BackupCommand`, downcast and call `verifyChecksum()`\n5. In `Main`, create an array `Command[] batch` containing `new RestartCommand()` and `new BackupCommand(\"/mnt/nas/daily.bak\")`.\n6. Run `runAndVerify(batch)`.",
+      "solutionCode": "interface Command {\n    void execute();\n}\n\nclass RestartCommand implements Command {\n    @Override\n    public void execute() {\n        System.out.println(\"Executing system reboot\");\n    }\n}\n\nclass BackupCommand implements Command {\n    private String destination;\n    public BackupCommand(String destination) {\n        this.destination = destination;\n    }\n    @Override\n    public void execute() {\n        System.out.println(\"Executing backup to \" + destination);\n    }\n    public void verifyChecksum() {\n        System.out.println(\"Checksum verified for \" + destination);\n    }\n}\n\nclass CommandRunner {\n    public static void runAndVerify(Command[] batch) {\n        for (Command cmd : batch) {\n            cmd.execute();\n            if (cmd instanceof BackupCommand) {\n                BackupCommand bc = (BackupCommand) cmd;\n                bc.verifyChecksum();\n            }\n        }\n    }\n}\n\npublic class CommandApp {\n    public static void main(String[] args) {\n        Command[] batch = new Command[] {\n            new RestartCommand(),\n            new BackupCommand(\"/mnt/nas/daily.bak\")\n        };\n        CommandRunner.runAndVerify(batch);\n    }\n}",
+      "expectedOutput": "Executing system reboot\nExecuting backup to /mnt/nas/daily.bak\nChecksum verified for /mnt/nas/daily.bak",
+      "hints": [
+        "Call cmd.execute() polymorphically first.",
+        "Guard verifyChecksum() with `if (cmd instanceof BackupCommand)`."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Downcasting",
+    "Analyze, predict, and trace code execution involving downcasting",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Downcasting principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

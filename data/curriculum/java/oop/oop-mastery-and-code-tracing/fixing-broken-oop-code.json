@@ -1,0 +1,511 @@
+{
+  "id": "les-mast-5",
+  "slug": "fixing-broken-oop-code",
+  "title": "Fix Broken OOP Code",
+  "summary": "Refactor a buggy, tightly-coupled procedural system into clean, extensible OOP classes.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les5-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Modular Audio Studio",
+      "concept": "Refactoring Procedural Monoliths into Modular Collaborations",
+      "realWorldMetaphor": {
+        "scenario": "Imagine an old 1970s radio console where the microphone, guitar input, tape recorder, and speaker amplifier are all soldered onto a single tangled circuit board. If the microphone fails, you have to throw away the whole cabinet. If you want to connect a modern digital synthesizer, you must splice into existing wires with wire cutters. Today, recording studios use modular audio racks: standard 1/4-inch and XLR patch cables connect independent components. Any microphone or effects unit can be swapped in 5 seconds without touching the mixer.",
+        "mapping": "Procedural Java code with static variables, switch ladders, and hardcoded `new` expressions is like that soldered console: changing one feature requires surgical alterations across every method. Clean OOP refactoring replaces procedural switches with Polymorphism, hardcoded dependencies with Dependency Injection, and sprawling methods with dedicated collaborating classes.",
+        "takeaway": "De-solder monolithic procedural code into interchangeable, polymorphic modules connected via clean interfaces."
+      }
+    },
+    {
+      "id": "act-les5-concept",
+      "type": "concept",
+      "title": "The Refactoring Playbook: Procedural to Polymorphic",
+      "content": "### Step-by-Step Monolith Refactoring\n\nWhen handed a broken, tightly coupled codebase, follow this 4-step transformation:\n\n#### Step 1: Replace Type Codes with Polymorphic Strategies\n- **Before**: `switch(type) { case 1: calcDomestic(); case 2: calcInternational(); }`\n- **After**: Introduce interface `ShippingCalculator` with implementations `DomesticShipping` and `InternationalShipping`.\n\n#### Step 2: Invert Dependencies via Constructor Injection\n- **Before**: Class `OrderService` writes `private Emailer emailer = new SMTPEmailer();` inside its constructor.\n- **After**: Accept `Emailer` interface as a constructor parameter (`public OrderService(Emailer emailer)`). This allows instant substitution of a `MockEmailer` for unit tests.\n\n#### Step 3: Eliminate Global Static State\n- **Before**: `DatabaseConnection.CURRENT_USER = user;` accessed across 20 classes.\n- **After**: Pass an immutable `UserSession` context parameter through service method calls or hold it as an injected scoped dependency.\n\n#### Step 4: Enforce Encapsulation & Fail-Fast Validation\n- Reject invalid arguments immediately in constructors using `IllegalArgumentException`.\n- Make fields `private final` wherever state should not change after construction."
+    },
+    {
+      "id": "act-les5-cw1",
+      "type": "code_walkthrough",
+      "title": "Before Refactoring: Buggy Procedural Switch Ladder",
+      "codeSnippet": "// BROKEN PROCEDURAL ANTI-PATTERN:\nclass TaxCalculatorBroken {\n    // Type code flags: 1 = USA, 2 = EU, 3 = EXEMPT\n    public double calculateTax(int countryCode, double amount) {\n        // Switch ladder smell: Every new country requires editing this class!\n        if (countryCode == 1) {\n            return amount * 0.08; // USA 8%\n        } else if (countryCode == 2) {\n            return amount * 0.20; // EU VAT 20%\n        } else if (countryCode == 3) {\n            return 0.0; // Exempt\n        } else {\n            System.out.println(\"Unknown country code!\");\n            return -1.0; // Bug-prone sentinel return\n        }\n    }\n}\n\npublic class BeforeRefactoringDemo {\n    public static void main(String[] args) {\n        TaxCalculatorBroken calc = new TaxCalculatorBroken();\n        double tax = calc.calculateTax(1, 100.0);\n        System.out.println(\"Calculated Tax: $\" + tax);\n    }\n}",
+      "code": "// BROKEN PROCEDURAL ANTI-PATTERN:\nclass TaxCalculatorBroken {\n    // Type code flags: 1 = USA, 2 = EU, 3 = EXEMPT\n    public double calculateTax(int countryCode, double amount) {\n        // Switch ladder smell: Every new country requires editing this class!\n        if (countryCode == 1) {\n            return amount * 0.08; // USA 8%\n        } else if (countryCode == 2) {\n            return amount * 0.20; // EU VAT 20%\n        } else if (countryCode == 3) {\n            return 0.0; // Exempt\n        } else {\n            System.out.println(\"Unknown country code!\");\n            return -1.0; // Bug-prone sentinel return\n        }\n    }\n}\n\npublic class BeforeRefactoringDemo {\n    public static void main(String[] args) {\n        TaxCalculatorBroken calc = new TaxCalculatorBroken();\n        double tax = calc.calculateTax(1, 100.0);\n        System.out.println(\"Calculated Tax: $\" + tax);\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates the fragile procedural switch ladder: adding a new jurisdiction violates the Open-Closed Principle.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Type codes (1, 2, 3) carry no compile-time type safety; passing 99 fails silently with -1.0."
+        },
+        {
+          "step": 2,
+          "description": "Every new jurisdiction requires editing and re-testing `TaxCalculatorBroken`."
+        },
+        {
+          "step": 3,
+          "description": "Returning -1.0 sentinel values invites silent downstream accounting bugs."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-cw2",
+      "type": "code_walkthrough",
+      "title": "After Refactoring: Clean Polymorphic Strategy Architecture",
+      "codeSnippet": "// 1. Strategy Interface\ninterface TaxStrategy {\n    double computeTax(double amount);\n}\n\n// 2. Concrete Polymorphic Implementations\nclass UsTaxStrategy implements TaxStrategy {\n    @Override\n    public double computeTax(double amount) { return amount * 0.08; }\n}\n\nclass EuVatStrategy implements TaxStrategy {\n    @Override\n    public double computeTax(double amount) { return amount * 0.20; }\n}\n\nclass TaxExemptStrategy implements TaxStrategy {\n    @Override\n    public double computeTax(double amount) { return 0.0; }\n}\n\n// 3. Service Using Injected Strategy (Open-Closed Principle)\nclass InvoiceProcessor {\n    private final TaxStrategy strategy;\n    public InvoiceProcessor(TaxStrategy strategy) {\n        if (strategy == null) throw new IllegalArgumentException(\"Strategy cannot be null\");\n        this.strategy = strategy;\n    }\n    public double generateTotal(double subtotal) {\n        return subtotal + strategy.computeTax(subtotal);\n    }\n}\n\npublic class AfterRefactoringDemo {\n    public static void main(String[] args) {\n        InvoiceProcessor usInvoice = new InvoiceProcessor(new UsTaxStrategy());\n        System.out.println(\"US Total: $\" + usInvoice.generateTotal(100.0));\n\n        InvoiceProcessor euInvoice = new InvoiceProcessor(new EuVatStrategy());\n        System.out.println(\"EU Total: $\" + euInvoice.generateTotal(100.0));\n    }\n}",
+      "code": "// 1. Strategy Interface\ninterface TaxStrategy {\n    double computeTax(double amount);\n}\n\n// 2. Concrete Polymorphic Implementations\nclass UsTaxStrategy implements TaxStrategy {\n    @Override\n    public double computeTax(double amount) { return amount * 0.08; }\n}\n\nclass EuVatStrategy implements TaxStrategy {\n    @Override\n    public double computeTax(double amount) { return amount * 0.20; }\n}\n\nclass TaxExemptStrategy implements TaxStrategy {\n    @Override\n    public double computeTax(double amount) { return 0.0; }\n}\n\n// 3. Service Using Injected Strategy (Open-Closed Principle)\nclass InvoiceProcessor {\n    private final TaxStrategy strategy;\n    public InvoiceProcessor(TaxStrategy strategy) {\n        if (strategy == null) throw new IllegalArgumentException(\"Strategy cannot be null\");\n        this.strategy = strategy;\n    }\n    public double generateTotal(double subtotal) {\n        return subtotal + strategy.computeTax(subtotal);\n    }\n}\n\npublic class AfterRefactoringDemo {\n    public static void main(String[] args) {\n        InvoiceProcessor usInvoice = new InvoiceProcessor(new UsTaxStrategy());\n        System.out.println(\"US Total: $\" + usInvoice.generateTotal(100.0));\n\n        InvoiceProcessor euInvoice = new InvoiceProcessor(new EuVatStrategy());\n        System.out.println(\"EU Total: $\" + euInvoice.generateTotal(100.0));\n    }\n}",
+      "language": "java",
+      "explanation": "Shows the refactored system: adding a new tax rule requires only writing a new class implementing TaxStrategy, leaving InvoiceProcessor untouched.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`TaxStrategy` defines common abstraction contract."
+        },
+        {
+          "step": 2,
+          "description": "`UsTaxStrategy`, `EuVatStrategy`, and `TaxExemptStrategy` encapsulate isolated tax rules."
+        },
+        {
+          "step": 3,
+          "description": "`InvoiceProcessor` depends only on `TaxStrategy` via constructor injection."
+        },
+        {
+          "step": 4,
+          "description": "New strategies can be plugged in without modifying existing tested code."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-quiz",
+      "type": "mcq",
+      "title": "Knowledge Assessment: Fixing Broken OOP Code",
+      "questions": [
+        {
+          "id": "q-les5-1",
+          "question": "What is the primary refactoring pattern used to eliminate conditional `if/else` or `switch` ladders based on object types?",
+          "options": [
+            "Replace Conditional with Polymorphism (Strategy/State Pattern)",
+            "Extract Superclass with static methods",
+            "Replace Interface with Abstract Class",
+            "Convert all methods to private"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Replacing type-checking conditionals with polymorphic dispatch encapsulates variations into dedicated classes and honors the Open-Closed Principle."
+        },
+        {
+          "id": "q-les5-2",
+          "question": "Why is Constructor Injection preferred over creating dependencies via `new` inside a class body?",
+          "options": [
+            "Because the `new` keyword is deprecated in modern Java",
+            "Constructor injection enables easy dependency substitution (e.g. passing mock objects during unit testing) and reduces coupling",
+            "It prevents objects from ever being garbage collected",
+            "It makes all fields automatically static"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Constructor injection allows callers to pass alternate or mock implementations, enabling isolated testing and loose coupling."
+        },
+        {
+          "id": "q-les5-3",
+          "question": "What is a 'sentinel value' (such as returning `-1` or `\"ERROR\"`) and why is it considered an anti-pattern?",
+          "options": [
+            "A value used exclusively by the JVM garbage collector",
+            "An in-band return value meant to signal failure that callers can easily forget to check, causing silent data corruption",
+            "A constant stored in a static final variable",
+            "A type-safe enum"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Sentinel return values place the burden on callers to remember checking for `-1`. Throwing meaningful exceptions or using Optional prevents silent propagation of errors."
+        },
+        {
+          "id": "q-les5-4",
+          "question": "What does the Open-Closed Principle (OCP) state?",
+          "options": [
+            "Software entities should be open for extension, but closed for modification",
+            "Classes must be declared open and all methods public",
+            "All files must be closed using try-with-resources",
+            "Constructors must be private and classes sealed"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "OCP states that you should be able to introduce new system behaviors by adding new code (subclasses/implementations) without changing existing tested code."
+        },
+        {
+          "id": "q-les5-5",
+          "question": "What problem arises when using global static state across multiple classes?",
+          "options": [
+            "Compilation time increases exponentially",
+            "Hidden couplings, non-repeatable unit tests due to shared state pollution, and thread-safety vulnerabilities",
+            "Static variables cannot hold strings or numbers",
+            "Classes with static state cannot be imported"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Global static variables introduce hidden mutable state that makes tests order-dependent and creates race conditions in multi-threaded environments."
+        },
+        {
+          "id": "q-les5-6",
+          "question": "What is the 'Fail-Fast' principle in constructor design?",
+          "options": [
+            "Terminating the JVM immediately if memory usage exceeds 10MB",
+            "Validating constructor arguments immediately upon entry and throwing exceptions on invalid input before the object can be created in an invalid state",
+            "Making constructors return null on invalid input",
+            "Never allowing constructors to have arguments"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Fail-Fast ensures invalid objects can never be constructed, stopping defective state at the boundary before it corrupts system state."
+        },
+        {
+          "id": "q-les5-7",
+          "question": "In refactoring, what is 'Extract Method'?",
+          "options": [
+            "Deleting an unused method from bytecode",
+            "Taking a cohesive fragment of code from a long method and placing it into its own descriptive, well-named private method",
+            "Moving a method to the Object base class",
+            "Converting an instance method into a native C++ function"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Extract Method breaks down long, monolithic methods into smaller, self-documenting units with single responsibilities."
+        },
+        {
+          "id": "q-les5-8",
+          "question": "Why is tightly coupling a class to `System.out.println` an architectural smell in enterprise applications?",
+          "options": [
+            "Because System.out.println only prints in ASCII",
+            "It prevents capturing, redirecting, or suppressing log output in test environments or routing logs to centralized logging aggregators",
+            "System.out is deprecated in Java 17+",
+            "Printing text causes memory leaks in the JVM"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Hardcoding console output prevents formatting, log level filtering (DEBUG vs ERROR), and routing logs to monitoring infrastructure."
+        },
+        {
+          "id": "q-les5-9",
+          "question": "What role does an Interface play when decoupling two classes?",
+          "options": [
+            "It forces both classes to share the exact same heap memory address",
+            "It acts as an abstract contract specifying what behaviors are available without binding the caller to any specific concrete implementation",
+            "It makes all instance variables public",
+            "It automatically writes unit tests"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Interfaces establish behavioral contracts, isolating consumers from concrete implementation changes."
+        },
+        {
+          "id": "q-les5-10",
+          "question": "When refactoring legacy code without tests, what is the safest first step?",
+          "options": [
+            "Rewrite the entire application from scratch in one weekend",
+            "Write characterization unit tests around existing behavior before modifying any code to ensure refactoring does not break existing functionality",
+            "Delete all comments and reformat indentation",
+            "Rename all classes and packages"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Characterization tests capture existing behavior like a safety harness, ensuring that subsequent architectural refactoring introduces zero regressions."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-interview",
+      "type": "interview_qa",
+      "title": "FAANG Technical Interview: Refactoring Broken OOP Systems",
+      "questions": [
+        {
+          "id": "qa-les5-1",
+          "company": "Amazon",
+          "role": "Software Development Engineer II",
+          "question": "You inherit a 3,000-line legacy service where every method has a 10-branch switch statement on an enum. How do you refactor this safely into production?",
+          "answer": "I execute a 4-stage refactoring: 1) Write characterization tests covering all 10 branches to create a regression safety net. 2) Define a Strategy interface encapsulating the branch logic. 3) Incrementally extract one branch at a time into a concrete Strategy class, using a factory map to look up the strategy by enum key. 4) Once all 10 branches are migrated, delete the switch statement completely. This minimizes blast radius and keeps the app shippable after every commit.",
+          "keyTakeaway": "Refactor branch ladders incrementally behind characterization tests using Strategy and Factory patterns.",
+          "keyPoints": [
+            "Create regression safety net with characterization tests",
+            "Define polymorphic Strategy interface",
+            "Migrate branches one by one via Map-based registry"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les5-2",
+          "company": "Google",
+          "role": "Senior Software Engineer",
+          "question": "What are the tradeoffs of Dependency Injection (DI) frameworks vs pure manual constructor injection?",
+          "answer": "Pure manual constructor injection has zero magic: you can navigate dependency graphs via standard IDE 'Find Usages', compilation guarantees all dependencies are supplied, and there is zero startup overhead or reflection. However, in huge applications with hundreds of services, manual wiring creates verbose 'composition root' boilerplate. DI frameworks (like Guice or Spring) automate dependency resolution, lifecycle scopes (Singleton, Request), and configuration injection, but introduce reflection overhead, slower startup, and runtime errors for misconfigured bindings.",
+          "keyTakeaway": "Manual DI provides transparency and compile-time safety; DI frameworks eliminate wiring boilerplate at scale.",
+          "keyPoints": [
+            "Manual DI provides transparent IDE navigation and zero reflection",
+            "DI frameworks automate lifecycle and wiring boilerplate",
+            "Balance application complexity against framework overhead"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les5-3",
+          "company": "Microsoft",
+          "role": "Principal Software Engineer",
+          "question": "How do you handle breaking down circular dependencies when class A and class B mutually depend on each other?",
+          "answer": "I use one of two architectural patterns: 1) Dependency Inversion: If A calls B.action() and B calls A.callback(), I extract an interface `ActionCallback` that A implements. B now depends only on `ActionCallback`, breaking the direct cycle back to A. 2) Mediator / Coordinator extraction: If A and B are sharing state or coordinating steps, I extract an orchestrator class C (like `OrderCoordinator`) that takes both A and B, removing the need for A and B to reference each other directly.",
+          "keyTakeaway": "Cycles are broken by extracting interfaces or introducing higher-level mediator orchestrators.",
+          "keyPoints": [
+            "Extract callback interface to invert one dependency direction",
+            "Extract third-party coordinator class to own mutual interaction",
+            "Enforce unidirectional dependency flow"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les5-4",
+          "company": "Meta",
+          "role": "L5 Backend Engineer",
+          "question": "Why is 'Tell, Don't Ask' fundamentally superior to procedural getter/setter pipelines?",
+          "answer": "'Ask' style forces the caller to query fields (`if (acc.getBalance() >= amt) acc.setBalance(acc.getBalance() - amt)`), which duplicates business validation logic across every caller and destroys encapsulation. 'Tell' style moves the operation into the owner object (`acc.withdraw(amt)`). The owner object guards its own invariants, centralizes validation in one place, and enables callers to interact with high-level business intentions rather than low-level data structures.",
+          "keyTakeaway": "Tell, Don't Ask centralizes business rules and invariant protection inside the entity.",
+          "keyPoints": [
+            "Prevents business logic duplication across multiple callers",
+            "Guarantees that invariants are validated in one central method",
+            "Improves testability and domain clarity"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les5-5",
+          "company": "Apple",
+          "role": "Senior iOS/Java Systems Engineer",
+          "question": "What is the Strangler Fig refactoring pattern and when do you use it?",
+          "answer": "The Strangler Fig pattern is an architectural pattern for modernizing monolithic legacy systems without doing a risky 'big bang' rewrite. You build the new OOP architecture alongside the old system. An abstraction layer (like an API gateway or facade) routes traffic: initially 100% goes to the legacy system. As individual capabilities are rebuilt in the new clean architecture, traffic for those capabilities is rerouted to the new system. Over time, the new system strangles the old one until the legacy codebase can simply be deleted.",
+          "keyTakeaway": "Strangler Fig replaces legacy systems progressively without downtime or high-risk rewrites.",
+          "keyPoints": [
+            "Avoids high-risk big bang rewrites",
+            "New modular code grows alongside old legacy code",
+            "Traffic is routed progressively until legacy is decommissioned"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les5-6",
+          "company": "Netflix",
+          "role": "Staff Platform Engineer",
+          "question": "How do you convince engineering leadership to invest time into refactoring 'working' code?",
+          "answer": "I frame refactoring in business and delivery metrics rather than aesthetic code elegance: 1) Lead time for new features: show how tightly coupled code causes feature development velocity to degrade quarter-over-quarter. 2) Regression rate: show how bug fixes in one area cause unintended outages in unrelated features due to lack of encapsulation. 3) Onboarding friction: explain how high cognitive load slows down new hires. I propose an incremental approach: allocate 15-20% of sprint capacity to refactor high-churn hot-spots rather than asking for a 3-month feature freeze.",
+          "keyTakeaway": "Tie technical debt and refactoring directly to delivery velocity, defect rates, and business risk.",
+          "keyPoints": [
+            "Connect technical debt to velocity decay and defect rates",
+            "Focus refactoring on high-churn code paths rather than dormant files",
+            "Incorporate continuous refactoring into ongoing feature sprints"
+          ],
+          "companyTag": "Netflix"
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "qa-les5-1",
+          "company": "Amazon",
+          "role": "Software Development Engineer II",
+          "question": "You inherit a 3,000-line legacy service where every method has a 10-branch switch statement on an enum. How do you refactor this safely into production?",
+          "answer": "I execute a 4-stage refactoring: 1) Write characterization tests covering all 10 branches to create a regression safety net. 2) Define a Strategy interface encapsulating the branch logic. 3) Incrementally extract one branch at a time into a concrete Strategy class, using a factory map to look up the strategy by enum key. 4) Once all 10 branches are migrated, delete the switch statement completely. This minimizes blast radius and keeps the app shippable after every commit.",
+          "keyTakeaway": "Refactor branch ladders incrementally behind characterization tests using Strategy and Factory patterns.",
+          "keyPoints": [
+            "Create regression safety net with characterization tests",
+            "Define polymorphic Strategy interface",
+            "Migrate branches one by one via Map-based registry"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les5-2",
+          "company": "Google",
+          "role": "Senior Software Engineer",
+          "question": "What are the tradeoffs of Dependency Injection (DI) frameworks vs pure manual constructor injection?",
+          "answer": "Pure manual constructor injection has zero magic: you can navigate dependency graphs via standard IDE 'Find Usages', compilation guarantees all dependencies are supplied, and there is zero startup overhead or reflection. However, in huge applications with hundreds of services, manual wiring creates verbose 'composition root' boilerplate. DI frameworks (like Guice or Spring) automate dependency resolution, lifecycle scopes (Singleton, Request), and configuration injection, but introduce reflection overhead, slower startup, and runtime errors for misconfigured bindings.",
+          "keyTakeaway": "Manual DI provides transparency and compile-time safety; DI frameworks eliminate wiring boilerplate at scale.",
+          "keyPoints": [
+            "Manual DI provides transparent IDE navigation and zero reflection",
+            "DI frameworks automate lifecycle and wiring boilerplate",
+            "Balance application complexity against framework overhead"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les5-3",
+          "company": "Microsoft",
+          "role": "Principal Software Engineer",
+          "question": "How do you handle breaking down circular dependencies when class A and class B mutually depend on each other?",
+          "answer": "I use one of two architectural patterns: 1) Dependency Inversion: If A calls B.action() and B calls A.callback(), I extract an interface `ActionCallback` that A implements. B now depends only on `ActionCallback`, breaking the direct cycle back to A. 2) Mediator / Coordinator extraction: If A and B are sharing state or coordinating steps, I extract an orchestrator class C (like `OrderCoordinator`) that takes both A and B, removing the need for A and B to reference each other directly.",
+          "keyTakeaway": "Cycles are broken by extracting interfaces or introducing higher-level mediator orchestrators.",
+          "keyPoints": [
+            "Extract callback interface to invert one dependency direction",
+            "Extract third-party coordinator class to own mutual interaction",
+            "Enforce unidirectional dependency flow"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les5-4",
+          "company": "Meta",
+          "role": "L5 Backend Engineer",
+          "question": "Why is 'Tell, Don't Ask' fundamentally superior to procedural getter/setter pipelines?",
+          "answer": "'Ask' style forces the caller to query fields (`if (acc.getBalance() >= amt) acc.setBalance(acc.getBalance() - amt)`), which duplicates business validation logic across every caller and destroys encapsulation. 'Tell' style moves the operation into the owner object (`acc.withdraw(amt)`). The owner object guards its own invariants, centralizes validation in one place, and enables callers to interact with high-level business intentions rather than low-level data structures.",
+          "keyTakeaway": "Tell, Don't Ask centralizes business rules and invariant protection inside the entity.",
+          "keyPoints": [
+            "Prevents business logic duplication across multiple callers",
+            "Guarantees that invariants are validated in one central method",
+            "Improves testability and domain clarity"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les5-5",
+          "company": "Apple",
+          "role": "Senior iOS/Java Systems Engineer",
+          "question": "What is the Strangler Fig refactoring pattern and when do you use it?",
+          "answer": "The Strangler Fig pattern is an architectural pattern for modernizing monolithic legacy systems without doing a risky 'big bang' rewrite. You build the new OOP architecture alongside the old system. An abstraction layer (like an API gateway or facade) routes traffic: initially 100% goes to the legacy system. As individual capabilities are rebuilt in the new clean architecture, traffic for those capabilities is rerouted to the new system. Over time, the new system strangles the old one until the legacy codebase can simply be deleted.",
+          "keyTakeaway": "Strangler Fig replaces legacy systems progressively without downtime or high-risk rewrites.",
+          "keyPoints": [
+            "Avoids high-risk big bang rewrites",
+            "New modular code grows alongside old legacy code",
+            "Traffic is routed progressively until legacy is decommissioned"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les5-6",
+          "company": "Netflix",
+          "role": "Staff Platform Engineer",
+          "question": "How do you convince engineering leadership to invest time into refactoring 'working' code?",
+          "answer": "I frame refactoring in business and delivery metrics rather than aesthetic code elegance: 1) Lead time for new features: show how tightly coupled code causes feature development velocity to degrade quarter-over-quarter. 2) Regression rate: show how bug fixes in one area cause unintended outages in unrelated features due to lack of encapsulation. 3) Onboarding friction: explain how high cognitive load slows down new hires. I propose an incremental approach: allocate 15-20% of sprint capacity to refactor high-churn hot-spots rather than asking for a 3-month feature freeze.",
+          "keyTakeaway": "Tie technical debt and refactoring directly to delivery velocity, defect rates, and business risk.",
+          "keyPoints": [
+            "Connect technical debt to velocity decay and defect rates",
+            "Focus refactoring on high-churn code paths rather than dormant files",
+            "Incorporate continuous refactoring into ongoing feature sprints"
+          ],
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les5-checklist",
+      "type": "self_evaluation",
+      "title": "Module 11 Self-Evaluation: Refactoring Broken OOP Systems",
+      "checklist": [
+        "I can refactor procedural switch ladders into polymorphic Strategy hierarchies.",
+        "I replace hardcoded 'new' instantiations with constructor-injected dependencies.",
+        "I eliminate global static state in favor of scoped contextual objects.",
+        "I eliminate fragile sentinel return values (-1, null) in favor of exceptions or Optionals.",
+        "I apply Tell, Don't Ask to co-locate calculations with their underlying data.",
+        "I write characterization tests to secure baseline behavior before refactoring.",
+        "I apply Fail-Fast argument validation in constructors to stop invalid states.",
+        "I break circular dependencies by extracting interfaces or mediator coordinators.",
+        "I design classes to be Open for extension but Closed for modification (OCP).",
+        "I safely decompose monolithic methods into smaller single-responsibility methods."
+      ],
+      "items": [
+        "I can refactor procedural switch ladders into polymorphic Strategy hierarchies.",
+        "I replace hardcoded 'new' instantiations with constructor-injected dependencies.",
+        "I eliminate global static state in favor of scoped contextual objects.",
+        "I eliminate fragile sentinel return values (-1, null) in favor of exceptions or Optionals.",
+        "I apply Tell, Don't Ask to co-locate calculations with their underlying data.",
+        "I write characterization tests to secure baseline behavior before refactoring.",
+        "I apply Fail-Fast argument validation in constructors to stop invalid states.",
+        "I break circular dependencies by extracting interfaces or mediator coordinators.",
+        "I design classes to be Open for extension but Closed for modification (OCP).",
+        "I safely decompose monolithic methods into smaller single-responsibility methods."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Fix Broken OOP Code",
+    "Analyze, predict, and trace code execution involving fixing-broken-oop-code",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Fix Broken OOP Code principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les5-p1",
+      "lessonId": "java-oop-mod11-les5",
+      "orderIndex": 1,
+      "title": "Warmup: Refactoring Conditionals to Polymorphism",
+      "difficulty": "easy",
+      "problemStatement": "In the provided starter code, `DiscountCalculator` uses a switch ladder on strings. Refactor it into a polymorphic hierarchy:\n1. Interface `DiscountRule`: `double applyDiscount(double price)`\n2. Class `VipDiscount implements DiscountRule`: 20% off (`price * 0.8`)\n3. Class `RegularDiscount implements DiscountRule`: 5% off (`price * 0.95`)\n4. Service `CheckoutEngine`: constructor takes `DiscountRule`. Method `double calculate(double price)` delegates to the rule.\nIn `main()` test both rules on price 100.0 and print outputs.",
+      "starterCode": "interface DiscountRule {\n    double applyDiscount(double price);\n}\n\n// TODO: Implement VipDiscount (20% off) and RegularDiscount (5% off)\n\nclass CheckoutEngine {\n    private DiscountRule rule;\n    public CheckoutEngine(DiscountRule rule) { this.rule = rule; }\n    public double calculate(double price) { return rule.applyDiscount(price); }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        // Test VIP and Regular\n    }\n}",
+      "initialCode": "interface DiscountRule {\n    double applyDiscount(double price);\n}\n\n// TODO: Implement VipDiscount (20% off) and RegularDiscount (5% off)\n\nclass CheckoutEngine {\n    private DiscountRule rule;\n    public CheckoutEngine(DiscountRule rule) { this.rule = rule; }\n    public double calculate(double price) { return rule.applyDiscount(price); }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        // Test VIP and Regular\n    }\n}",
+      "solutionCode": "interface DiscountRule {\n    double applyDiscount(double price);\n}\n\nclass VipDiscount implements DiscountRule {\n    @Override\n    public double applyDiscount(double price) {\n        return price * 0.80;\n    }\n}\n\nclass RegularDiscount implements DiscountRule {\n    @Override\n    public double applyDiscount(double price) {\n        return price * 0.95;\n    }\n}\n\nclass CheckoutEngine {\n    private DiscountRule rule;\n    public CheckoutEngine(DiscountRule rule) { this.rule = rule; }\n    public double calculate(double price) { return rule.applyDiscount(price); }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        CheckoutEngine vip = new CheckoutEngine(new VipDiscount());\n        CheckoutEngine regular = new CheckoutEngine(new RegularDiscount());\n        System.out.println(\"VIP: $\" + vip.calculate(100.0));\n        System.out.println(\"Regular: $\" + regular.calculate(100.0));\n    }\n}",
+      "expectedOutput": "VIP: $80.0\nRegular: $95.0",
+      "hints": [
+        "VipDiscount multiplies price by 0.80.",
+        "RegularDiscount multiplies price by 0.95."
+      ]
+    },
+    {
+      "id": "prob-les5-p2",
+      "lessonId": "java-oop-mod11-les5",
+      "orderIndex": 2,
+      "title": "Scratch: Inverting Notification Dependencies",
+      "difficulty": "medium",
+      "problemStatement": "Write a decoupled notification architecture from scratch without starter code:\n1. Interface `MessageChannel`: `void deliver(String recipient, String message)`\n2. Class `SmsChannel implements MessageChannel`: prints `'SMS to ' + recipient + ': ' + message`\n3. Class `EmailChannel implements MessageChannel`: prints `'Email to ' + recipient + ': ' + message`\n4. Class `AlertDispatcher`: constructor receives `MessageChannel`. Method `void dispatchAlert(String user, String alert)` delegates to channel.\n5. In `Main`:\n   - Dispatch an SMS to `'555-1234'` with `'Server High CPU'`\n   - Dispatch an Email to `'ops@cloud.com'` with `'Database Failover'`",
+      "solutionCode": "interface MessageChannel {\n    void deliver(String recipient, String message);\n}\n\nclass SmsChannel implements MessageChannel {\n    @Override\n    public void deliver(String recipient, String message) {\n        System.out.println(\"SMS to \" + recipient + \": \" + message);\n    }\n}\n\nclass EmailChannel implements MessageChannel {\n    @Override\n    public void deliver(String recipient, String message) {\n        System.out.println(\"Email to \" + recipient + \": \" + message);\n    }\n}\n\nclass AlertDispatcher {\n    private final MessageChannel channel;\n    public AlertDispatcher(MessageChannel channel) {\n        this.channel = channel;\n    }\n    public void dispatchAlert(String user, String alert) {\n        channel.deliver(user, alert);\n    }\n}\n\npublic class InversionDemo {\n    public static void main(String[] args) {\n        AlertDispatcher smsAlert = new AlertDispatcher(new SmsChannel());\n        smsAlert.dispatchAlert(\"555-1234\", \"Server High CPU\");\n\n        AlertDispatcher emailAlert = new AlertDispatcher(new EmailChannel());\n        emailAlert.dispatchAlert(\"ops@cloud.com\", \"Database Failover\");\n    }\n}",
+      "expectedOutput": "SMS to 555-1234: Server High CPU\nEmail to ops@cloud.com: Database Failover",
+      "hints": [
+        "AlertDispatcher depends only on the MessageChannel abstraction.",
+        "Different concrete channels can be supplied at runtime."
+      ]
+    },
+    {
+      "id": "prob-les5-p3",
+      "lessonId": "java-oop-mod11-les5",
+      "orderIndex": 3,
+      "title": "Scratch: Eradicating Global Mutable State",
+      "difficulty": "medium",
+      "problemStatement": "Eliminate global static state by modeling a context-scoped Session from scratch:\n1. Immutable class `UserSession`: private final `username` (String), private final `role` (String). Getters for both.\n2. Interface `AccessGuard`: `boolean canExecute(UserSession session, String operation)`\n3. Class `RoleAccessGuard implements AccessGuard`: returns true if `session.getRole().equalsIgnoreCase(\"ADMIN\")`, otherwise false.\n4. In `Main`:\n   - Create `UserSession admin = new UserSession(\"keert\", \"ADMIN\")`\n   - Create `UserSession guest = new UserSession(\"visitor\", \"GUEST\")`\n   - Guard check for operation `'DELETE_DB'`:\n     Print `'Admin allowed: ' + guard.canExecute(admin, \"DELETE_DB\")`\n     Print `'Guest allowed: ' + guard.canExecute(guest, \"DELETE_DB\")`",
+      "solutionCode": "class UserSession {\n    private final String username;\n    private final String role;\n    public UserSession(String username, String role) {\n        this.username = username;\n        this.role = role;\n    }\n    public String getUsername() { return username; }\n    public String getRole() { return role; }\n}\n\ninterface AccessGuard {\n    boolean canExecute(UserSession session, String operation);\n}\n\nclass RoleAccessGuard implements AccessGuard {\n    @Override\n    public boolean canExecute(UserSession session, String operation) {\n        return \"ADMIN\".equalsIgnoreCase(session.getRole());\n    }\n}\n\npublic class SessionRefactorDemo {\n    public static void main(String[] args) {\n        AccessGuard guard = new RoleAccessGuard();\n        UserSession admin = new UserSession(\"keert\", \"ADMIN\");\n        UserSession guest = new UserSession(\"visitor\", \"GUEST\");\n\n        System.out.println(\"Admin allowed: \" + guard.canExecute(admin, \"DELETE_DB\"));\n        System.out.println(\"Guest allowed: \" + guard.canExecute(guest, \"DELETE_DB\"));\n    }\n}",
+      "expectedOutput": "Admin allowed: true\nGuest allowed: false",
+      "hints": [
+        "Passing the UserSession as an explicit parameter eliminates static globals.",
+        "Immutable sessions are thread-safe and isolated."
+      ]
+    },
+    {
+      "id": "prob-les5-p4",
+      "lessonId": "java-oop-mod11-les5",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Fixing Fragile Sentinel Return Values",
+      "difficulty": "hard",
+      "problemStatement": "In the provided buggy code, `findScore()` returns `-1` when a student is not found. The caller forgets to check and prints invalid math!\nRefactor the system:\n1. Change `findScore(String name)` to throw `java.util.NoSuchElementException(\"Student not found: \" + name)` if the student does not exist.\n2. In `main()`, wrap the call in a try-catch block and print `'Caught: Student not found: Alice'` when the exception occurs.",
+      "starterCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.NoSuchElementException;\n\nclass GradeBook {\n    private Map<String, Integer> grades = new HashMap<>();\n    public void addGrade(String name, int score) { grades.put(name, score); }\n    \n    // BUG: Returning -1 sentinel invites silent errors\n    public int findScore(String name) {\n        if (!grades.containsKey(name)) return -1;\n        return grades.get(name);\n    }\n}\n\npublic class SentinelBugDemo {\n    public static void main(String[] args) {\n        GradeBook book = new GradeBook();\n        book.addGrade(\"Bob\", 90);\n        \n        // Unchecked sentinel bug:\n        int score = book.findScore(\"Alice\");\n        System.out.println(\"Score + bonus: \" + (score + 10)); // prints 9 instead of failing!\n    }\n}",
+      "initialCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.NoSuchElementException;\n\nclass GradeBook {\n    private Map<String, Integer> grades = new HashMap<>();\n    public void addGrade(String name, int score) { grades.put(name, score); }\n    \n    // BUG: Returning -1 sentinel invites silent errors\n    public int findScore(String name) {\n        if (!grades.containsKey(name)) return -1;\n        return grades.get(name);\n    }\n}\n\npublic class SentinelBugDemo {\n    public static void main(String[] args) {\n        GradeBook book = new GradeBook();\n        book.addGrade(\"Bob\", 90);\n        \n        // Unchecked sentinel bug:\n        int score = book.findScore(\"Alice\");\n        System.out.println(\"Score + bonus: \" + (score + 10)); // prints 9 instead of failing!\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.NoSuchElementException;\n\nclass GradeBook {\n    private Map<String, Integer> grades = new HashMap<>();\n    public void addGrade(String name, int score) { grades.put(name, score); }\n    \n    public int findScore(String name) {\n        if (!grades.containsKey(name)) {\n            throw new NoSuchElementException(\"Student not found: \" + name);\n        }\n        return grades.get(name);\n    }\n}\n\npublic class SentinelBugDemo {\n    public static void main(String[] args) {\n        GradeBook book = new GradeBook();\n        book.addGrade(\"Bob\", 90);\n        \n        try {\n            book.findScore(\"Alice\");\n        } catch (NoSuchElementException e) {\n            System.out.println(\"Caught: \" + e.getMessage());\n        }\n    }\n}",
+      "expectedOutput": "Caught: Student not found: Alice",
+      "hints": [
+        "Replace `return -1;` with throwing `new NoSuchElementException(...)`.",
+        "Catch NoSuchElementException in main and print e.getMessage()."
+      ]
+    },
+    {
+      "id": "prob-les5-p5",
+      "lessonId": "java-oop-mod11-les5",
+      "orderIndex": 5,
+      "title": "Advanced: Complete Architectural Refactoring Pipeline",
+      "difficulty": "advanced",
+      "problemStatement": "Build a production-grade polymorphic pricing engine from scratch:\n1. Interface `FeePolicy`: `double calculateFee(double transactionAmount)`\n2. Concrete `FlatFeePolicy implements FeePolicy`: private final `flatFee` (double). Returns `flatFee`.\n3. Concrete `TieredFeePolicy implements FeePolicy`: if transactionAmount > 1000, 1% (`0.01 * transactionAmount`); otherwise 2% (`0.02 * transactionAmount`).\n4. Class `PaymentTransaction`: `id` (String), `amount` (double), constructor validates non-null id and amount > 0. Getters.\n5. Service `PaymentSettler`: constructor takes `FeePolicy`. Method `double computeNetPayout(PaymentTransaction tx)` returns `tx.getAmount() - policy.calculateFee(tx.getAmount())`.\n6. In `Main`:\n   - Create transaction with id `'TX-101'`, amount 2000.0\n   - Settle with FlatFeePolicy(15.0) -> print `'Flat Net: $' + net1` (1985.0)\n   - Settle with TieredFeePolicy() -> print `'Tiered Net: $' + net2` (2000 - 20 = 1980.0)",
+      "solutionCode": "interface FeePolicy {\n    double calculateFee(double transactionAmount);\n}\n\nclass FlatFeePolicy implements FeePolicy {\n    private final double flatFee;\n    public FlatFeePolicy(double flatFee) {\n        this.flatFee = flatFee;\n    }\n    @Override\n    public double calculateFee(double transactionAmount) {\n        return flatFee;\n    }\n}\n\nclass TieredFeePolicy implements FeePolicy {\n    @Override\n    public double calculateFee(double transactionAmount) {\n        if (transactionAmount > 1000.0) {\n            return transactionAmount * 0.01;\n        }\n        return transactionAmount * 0.02;\n    }\n}\n\nclass PaymentTransaction {\n    private final String id;\n    private final double amount;\n    public PaymentTransaction(String id, double amount) {\n        if (id == null || amount <= 0) {\n            throw new IllegalArgumentException(\"Invalid transaction args\");\n        }\n        this.id = id;\n        this.amount = amount;\n    }\n    public String getId() { return id; }\n    public double getAmount() { return amount; }\n}\n\nclass PaymentSettler {\n    private final FeePolicy feePolicy;\n    public PaymentSettler(FeePolicy feePolicy) {\n        if (feePolicy == null) throw new IllegalArgumentException(\"Null policy\");\n        this.feePolicy = feePolicy;\n    }\n    public double computeNetPayout(PaymentTransaction tx) {\n        return tx.getAmount() - feePolicy.calculateFee(tx.getAmount());\n    }\n}\n\npublic class PaymentRefactorEngineApp {\n    public static void main(String[] args) {\n        PaymentTransaction tx = new PaymentTransaction(\"TX-101\", 2000.0);\n\n        PaymentSettler flatSettler = new PaymentSettler(new FlatFeePolicy(15.0));\n        System.out.println(\"Flat Net: $\" + flatSettler.computeNetPayout(tx));\n\n        PaymentSettler tieredSettler = new PaymentSettler(new TieredFeePolicy());\n        System.out.println(\"Tiered Net: $\" + tieredSettler.computeNetPayout(tx));\n    }\n}",
+      "expectedOutput": "Flat Net: $1985.0\nTiered Net: $1980.0",
+      "hints": [
+        "Flat policy subtracts 15.0 from 2000.0 = 1985.0.",
+        "Tiered policy on 2000.0 (> 1000) calculates 1% fee = 20.0; net payout = 1980.0."
+      ]
+    }
+  ]
+}

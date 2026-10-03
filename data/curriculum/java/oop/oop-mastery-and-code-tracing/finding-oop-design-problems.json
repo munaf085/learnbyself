@@ -1,0 +1,516 @@
+{
+  "id": "les-mast-4",
+  "slug": "finding-oop-design-problems",
+  "title": "Finding OOP Design Problems",
+  "summary": "Audit code snippets for leaked mutable references, tight coupling, God classes, and encapsulation violations.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 4,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les4-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Structural Building Inspector",
+      "concept": "Auditing Code Smells and Architectural Flaws",
+      "realWorldMetaphor": {
+        "scenario": "A building inspector walks into a newly constructed high-rise. The walls have fresh paint, and the lights turn on, but behind the dry-wall, the inspector notices electrical conduit taped to water supply pipes, load-bearing pillars drilled through for air vents, and emergency exits padlocked from the outside. The building appears operational on day one, but the moment an earthquake or fire hits, it collapses catastrophically.",
+        "mapping": "In software systems, broken OOP code often compiles and passes a naive happy-path unit test. However, behind the facade lie fatal design smells: 'God Classes' that do everything, getter methods leaking internal mutable arrays, circular dependencies that prevent testing in isolation, and subclasses violating Liskov Substitution by throwing UnsupportedOperationException. Recognizing these smells before production deployment is the hallmark of a senior engineer.",
+        "takeaway": "Working code is not necessarily well-designed code; structural rot will collapse a codebase under changing requirements."
+      }
+    },
+    {
+      "id": "act-les4-concept",
+      "type": "concept",
+      "title": "The Senior Code Auditor's Smells Checklist",
+      "content": "### The 6 Fatal OOP Smells You Must Spot Instantly\n\n#### 1. The God Class (Blob Class / Anti-Single Responsibility)\n- **Symptom**: A single class spanning 1,000+ lines handling UI input, business calculations, SQL queries, and email formatting.\n- **Root Cause**: Failure to delineate domain boundaries.\n- **Fix**: Extract cohesive responsibilities into dedicated collaborators (`ReportGenerator`, `EmailNotifier`, `AccountRepository`).\n\n#### 2. Encapsulation Leaks (Mutable Escapes)\n- **Symptom**: `public List<Order> getOrders() { return this.orders; }` allowing external callers to call `account.getOrders().clear()`.\n- **Fix**: Return unmodifiable views (`Collections.unmodifiableList(orders)`) or defensive snapshots (`new ArrayList<>(orders)`).\n\n#### 3. Primitive Obsession\n- **Symptom**: Using raw strings and doubles for complex business concepts: `String zipCode`, `double currencyAmount`, `String taxId` with no validation.\n- **Fix**: Model lightweight Value Objects (`PostalCode`, `Money`, `TaxIdentifier`) that validate domain invariants on construction.\n\n#### 4. Feature Envy & Inappropriate Intimacy\n- **Symptom**: Method in Class A makes 6 consecutive getter calls into Class B to calculate something that Class B should calculate itself (`order.getCustomer().getAddress().getZip().calculateTax()`).\n- **Fix**: Apply the Law of Demeter and Tell, Don't Ask: move the behavior to the class holding the data (`order.calculateTax()`).\n\n#### 5. Type Code Conditionals (The Switch Ladder Smell)\n- **Symptom**: `if (userType == 1) ... else if (userType == 2) ... else if (userType == 3)` duplicated across 5 methods.\n- **Fix**: Replace type codes with Polymorphism and Strategy/State patterns.\n\n#### 6. Liskov Substitution Violation (LSP)\n- **Symptom**: Subclass overrides a superclass method by doing nothing or throwing `throw new UnsupportedOperationException()` (e.g. `Square extends Rectangle` where `setHeight` breaks width).\n- **Fix**: Re-evaluate hierarchy; use composition or introduce a more abstract common interface."
+    },
+    {
+      "id": "act-les4-cw1",
+      "type": "code_walkthrough",
+      "title": "Auditing a Smell-Riddled E-Commerce System",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\n// SMELL 1: God Class & Primitive Obsession & Leaked Encapsulation\nclass CustomerAccountManager {\n    public String customerName;\n    public String rawCardNumber; // Sensitive primitive unencrypted\n    public double balance;\n    private List<String> purchaseHistory = new ArrayList<>();\n\n    // SMELL 2: Leaked mutable internal reference\n    public List<String> getPurchaseHistory() {\n        return purchaseHistory; // Callers can wipe out records!\n    }\n\n    // SMELL 3: Violates Single Responsibility (Charges + Emails + Logs)\n    public void checkout(String item, double price) {\n        // Feature Envy / Broken Invariants\n        if (balance >= price) {\n            balance -= price;\n            purchaseHistory.add(item);\n            System.out.println(\"Charged: $\" + price);\n            System.out.println(\"Sending SMTP Email to customer for \" + item); // Direct IO coupling\n        } else {\n            System.out.println(\"Insufficient funds!\");\n        }\n    }\n}\n\npublic class CodeSmellAuditDemo {\n    public static void main(String[] args) {\n        CustomerAccountManager mgr = new CustomerAccountManager();\n        mgr.customerName = \"Alice\";\n        mgr.balance = 500.0;\n        mgr.checkout(\"Keyboard\", 100.0);\n\n        // Exploit leaked reference:\n        List<String> leaked = mgr.getPurchaseHistory();\n        leaked.clear(); // Audit trail destroyed outside class control!\n        System.out.println(\"History length after external tampering: \" + mgr.getPurchaseHistory().size());\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\n// SMELL 1: God Class & Primitive Obsession & Leaked Encapsulation\nclass CustomerAccountManager {\n    public String customerName;\n    public String rawCardNumber; // Sensitive primitive unencrypted\n    public double balance;\n    private List<String> purchaseHistory = new ArrayList<>();\n\n    // SMELL 2: Leaked mutable internal reference\n    public List<String> getPurchaseHistory() {\n        return purchaseHistory; // Callers can wipe out records!\n    }\n\n    // SMELL 3: Violates Single Responsibility (Charges + Emails + Logs)\n    public void checkout(String item, double price) {\n        // Feature Envy / Broken Invariants\n        if (balance >= price) {\n            balance -= price;\n            purchaseHistory.add(item);\n            System.out.println(\"Charged: $\" + price);\n            System.out.println(\"Sending SMTP Email to customer for \" + item); // Direct IO coupling\n        } else {\n            System.out.println(\"Insufficient funds!\");\n        }\n    }\n}\n\npublic class CodeSmellAuditDemo {\n    public static void main(String[] args) {\n        CustomerAccountManager mgr = new CustomerAccountManager();\n        mgr.customerName = \"Alice\";\n        mgr.balance = 500.0;\n        mgr.checkout(\"Keyboard\", 100.0);\n\n        // Exploit leaked reference:\n        List<String> leaked = mgr.getPurchaseHistory();\n        leaked.clear(); // Audit trail destroyed outside class control!\n        System.out.println(\"History length after external tampering: \" + mgr.getPurchaseHistory().size());\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates how public fields and escaping internal lists destroy encapsulation and enable external callers to corrupt class invariants.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Public fields `customerName` and `balance` bypass any validation logic."
+        },
+        {
+          "step": 2,
+          "description": "`getPurchaseHistory()` returns direct alias to internal `purchaseHistory` ArrayList."
+        },
+        {
+          "step": 3,
+          "description": "External client calls `leaked.clear()`, wiping the audit history without the manager's awareness."
+        },
+        {
+          "step": 4,
+          "description": "Output prints history length 0, proving encapsulation failure."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-cw2",
+      "type": "code_walkthrough",
+      "title": "Refactoring: Strict Encapsulation and Separation of Concerns",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Decoupled Notification Service\ninterface NotificationService {\n    void notifyPurchase(String customer, String item);\n}\n\nclass ConsoleNotifier implements NotificationService {\n    @Override\n    public void notifyPurchase(String customer, String item) {\n        System.out.println(\"Notification dispatched to \" + customer + \" for \" + item);\n    }\n}\n\n// 2. Clean Domain Entity with Immutable Audit View\nclass SecureWallet {\n    private final String owner;\n    private double balance;\n    private final List<String> transactions = new ArrayList<>();\n\n    public SecureWallet(String owner, double initialBalance) {\n        if (initialBalance < 0) throw new IllegalArgumentException(\"Negative balance disallowed\");\n        this.owner = owner;\n        this.balance = initialBalance;\n    }\n\n    public boolean debit(double amount, String item) {\n        if (amount <= 0 || amount > balance) return false;\n        balance -= amount;\n        transactions.add(\"Purchased: \" + item + \" for $\" + amount);\n        return true;\n    }\n\n    public double getBalance() { return balance; }\n    public String getOwner() { return owner; }\n\n    // Defensive unmodifiable view prevents external tampering\n    public List<String> getTransactions() {\n        return Collections.unmodifiableList(transactions);\n    }\n}\n\npublic class RefactoredAuditDemo {\n    public static void main(String[] args) {\n        SecureWallet wallet = new SecureWallet(\"Alice\", 500.0);\n        NotificationService notifier = new ConsoleNotifier();\n\n        if (wallet.debit(100.0, \"Mechanical Keyboard\")) {\n            notifier.notifyPurchase(wallet.getOwner(), \"Mechanical Keyboard\");\n        }\n\n        System.out.println(\"Remaining Balance: $\" + wallet.getBalance());\n        System.out.println(\"Logged Transactions: \" + wallet.getTransactions().size());\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Decoupled Notification Service\ninterface NotificationService {\n    void notifyPurchase(String customer, String item);\n}\n\nclass ConsoleNotifier implements NotificationService {\n    @Override\n    public void notifyPurchase(String customer, String item) {\n        System.out.println(\"Notification dispatched to \" + customer + \" for \" + item);\n    }\n}\n\n// 2. Clean Domain Entity with Immutable Audit View\nclass SecureWallet {\n    private final String owner;\n    private double balance;\n    private final List<String> transactions = new ArrayList<>();\n\n    public SecureWallet(String owner, double initialBalance) {\n        if (initialBalance < 0) throw new IllegalArgumentException(\"Negative balance disallowed\");\n        this.owner = owner;\n        this.balance = initialBalance;\n    }\n\n    public boolean debit(double amount, String item) {\n        if (amount <= 0 || amount > balance) return false;\n        balance -= amount;\n        transactions.add(\"Purchased: \" + item + \" for $\" + amount);\n        return true;\n    }\n\n    public double getBalance() { return balance; }\n    public String getOwner() { return owner; }\n\n    // Defensive unmodifiable view prevents external tampering\n    public List<String> getTransactions() {\n        return Collections.unmodifiableList(transactions);\n    }\n}\n\npublic class RefactoredAuditDemo {\n    public static void main(String[] args) {\n        SecureWallet wallet = new SecureWallet(\"Alice\", 500.0);\n        NotificationService notifier = new ConsoleNotifier();\n\n        if (wallet.debit(100.0, \"Mechanical Keyboard\")) {\n            notifier.notifyPurchase(wallet.getOwner(), \"Mechanical Keyboard\");\n        }\n\n        System.out.println(\"Remaining Balance: $\" + wallet.getBalance());\n        System.out.println(\"Logged Transactions: \" + wallet.getTransactions().size());\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates the fix: private fields, defensive unmodifiable collections, invariant validation in constructors and methods, and separated notifications.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SecureWallet` enforces non-negative initial balances."
+        },
+        {
+          "step": 2,
+          "description": "`debit()` guards balance invariants before debiting."
+        },
+        {
+          "step": 3,
+          "description": "`Collections.unmodifiableList()` wraps transactions so callers cannot invoke `.clear()` or `.add()`."
+        },
+        {
+          "step": 4,
+          "description": "`NotificationService` is injected and decoupled from financial debit logic."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-quiz",
+      "type": "mcq",
+      "title": "Knowledge Assessment: Finding OOP Design Problems",
+      "questions": [
+        {
+          "id": "q-les4-1",
+          "question": "What is the primary indicator of the 'God Class' (or Blob) code smell?",
+          "options": [
+            "A class having more than two constructor overloads",
+            "A single class monopolizing state and business responsibilities across multiple unrelated domains",
+            "A class using generic type parameters",
+            "A class inheriting from an abstract base class"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "A God Class centralizes too many responsibilities, violating Single Responsibility Principle and creating massive maintenance bottlenecks."
+        },
+        {
+          "id": "q-les4-2",
+          "question": "What dangerous bug is introduced by writing `public List<Item> getItems() { return this.items; }`?",
+          "options": [
+            "A NullPointerException during compilation",
+            "Encapsulation leak: callers obtain a mutable reference and can modify the internal list without the class's knowledge",
+            "The garbage collector immediately deallocates the items collection",
+            "It prevents polymorphism in subclasses"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Returning internal mutable collections lets external code bypass validation rules and corrupt state invariants."
+        },
+        {
+          "id": "q-les4-3",
+          "question": "What is 'Primitive Obsession' in object-oriented design?",
+          "options": [
+            "Using primitive types like `int` instead of wrapper classes like `Integer` for performance",
+            "Reluctance to create small domain classes (like Money, EmailAddress, ZipCode), instead representing everything as raw strings and numbers",
+            "Designing classes with only static fields",
+            "Refusing to use inheritance hierarchies"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Primitive obsession means relying on raw primitives instead of modeling rich value objects with embedded domain validation."
+        },
+        {
+          "id": "q-les4-4",
+          "question": "Which code smell occurs when a method in class A continuously reaches into class B's getters to perform calculations that B should do?",
+          "options": [
+            "Dead Code",
+            "Feature Envy",
+            "Shotgun Surgery",
+            "Data Clumps"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Feature Envy describes a method that seems more interested in the data of another class than its own; the solution is to move the method to that class."
+        },
+        {
+          "id": "q-les4-5",
+          "question": "How does returning `Collections.unmodifiableList(list)` protect encapsulation?",
+          "options": [
+            "It clones the entire list in O(1) time",
+            "It returns a read-only wrapper where mutating methods like `.add()` and `.remove()` throw UnsupportedOperationException",
+            "It encrypts the list items on the heap",
+            "It converts the list to a primitive array"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`Collections.unmodifiableList` provides a read-only view backed by the original list, preventing external code from mutating it."
+        },
+        {
+          "id": "q-les4-6",
+          "question": "If a subclass overrides a parent method solely to `throw new UnsupportedOperationException(\"Not supported\")`, what design principle is violated?",
+          "options": [
+            "Open-Closed Principle",
+            "Liskov Substitution Principle (LSP)",
+            "Dependency Inversion Principle",
+            "Law of Demeter"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "LSP states that subtypes must be substitutable for their base types without altering program correctness. Throwing an unexpected exception breaks this guarantee."
+        },
+        {
+          "id": "q-les4-7",
+          "question": "What is the 'Shotgun Surgery' smell?",
+          "options": [
+            "Refactoring a single class with excessive unit tests",
+            "A single change requirement forcing small edits across a dozen different classes",
+            "Using regular expressions to parse Java source code",
+            "Deleting unused private methods"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Shotgun Surgery occurs when a single conceptual change forces you to make many tiny changes to different classes, indicating that responsibilities are scattered."
+        },
+        {
+          "id": "q-les4-8",
+          "question": "What is the primary danger of having public mutable instance variables in a class?",
+          "options": [
+            "Slower execution speed in bytecode",
+            "Inability to enforce class invariants, validation rules, or detect when fields are changed",
+            "The class cannot implement interfaces",
+            "Constructors cannot initialize public fields"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Public mutable fields surrender control of the object's internal state to any external caller, making invariants impossible to guarantee."
+        },
+        {
+          "id": "q-les4-9",
+          "question": "What rule of thumb does the 'Law of Demeter' (Principle of Least Knowledge) advise?",
+          "options": [
+            "Only talk to your immediate friends; avoid method chaining chains like `a.getB().getC().getD().doSomething()`",
+            "Never use interfaces with more than two methods",
+            "Every class must extend `java.lang.Exception`",
+            "Always declare all methods static"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Law of Demeter advises that an object should only invoke methods on itself, its fields, its parameters, or objects it creates, avoiding deep navigation chains."
+        },
+        {
+          "id": "q-les4-10",
+          "question": "Why is hardcoding `new MySQLDatabase()` inside a service class constructor considered an OOP design smell?",
+          "options": [
+            "Because MySQL cannot run on Java",
+            "It creates tight coupling to a concrete implementation, making automated unit testing with mock databases impossible",
+            "Constructors cannot instantiate other objects",
+            "It triggers garbage collection pauses"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Directly instantiating concrete external dependencies tightly couples the class, violating Dependency Inversion and preventing test isolation."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-interview",
+      "type": "interview_qa",
+      "title": "FAANG Technical Interview: Spotting Design Smells",
+      "questions": [
+        {
+          "id": "qa-les4-1",
+          "company": "Google",
+          "role": "Staff Software Engineer",
+          "question": "How do you systematically identify that a class violates the Single Responsibility Principle (SRP) during a code review?",
+          "answer": "I look for three clear indicators: 1) Reasons to change: If a change in the database schema, a change in business tax rules, AND a change in the email formatting template all require modifying this same class, it has multiple responsibilities. 2) Cohesion analysis: If methods A and B only access fields 1 and 2, while methods C and D only access fields 3 and 4, the class can cleanly be split into two separate classes. 3) Class naming: If the class is named `...Manager`, `...Helper`, or `...Processor` and contains 40+ public methods, it is almost certainly a God Class that should be decomposed into cohesive domain entities and collaborating services.",
+          "keyTakeaway": "Count the axes of change and inspect field cohesion to detect SRP violations.",
+          "keyPoints": [
+            "Count independent reasons to change",
+            "Examine method-field cohesion clusters",
+            "Watch out for vague 'Manager/Processor' naming"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les4-2",
+          "company": "Amazon",
+          "role": "Principal Engineer",
+          "question": "What is the difference between returning an unmodifiable list and returning a defensive copy?",
+          "answer": "`Collections.unmodifiableList(list)` returns a view over the existing list; if code inside the owner class subsequently modifies the backing list, that modification is immediately visible to whoever holds the unmodifiable reference (though the recipient cannot mutate it themselves). In contrast, returning `new ArrayList<>(list)` creates a distinct heap clone: changes made by the owner class after the snapshot will NOT affect the caller. For maximum security across concurrent or untrusted boundaries, defensive copies are preferred.",
+          "keyTakeaway": "Unmodifiable views prevent recipient mutation but reflect internal mutations; defensive copies fully isolate heap state.",
+          "keyPoints": [
+            "UnmodifiableList is a read-only view over the same backing data",
+            "Defensive copy allocates a new heap collection snapshot",
+            "Defensive copies shield against concurrent internal modifications"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les4-3",
+          "company": "Meta",
+          "role": "Senior Infrastructure Engineer",
+          "question": "Can you give a concrete example of a Liskov Substitution Principle violation in Java and how you would fix it?",
+          "answer": "The classic example is `Square extends Rectangle`. A `Rectangle` has independent `setWidth` and `setHeight` methods. If `Square` overrides `setWidth(w)` to also set height to `w`, any client code written against `Rectangle` that sets width to 5 and height to 10 will find the area is 100 instead of 50. The subclass violates the postcondition contract of the base class. The fix is to remove the inheritance relationship: make both implement a common `Shape` interface with `double getArea()`, or make `Square` an immutable shape with `int side`.",
+          "keyTakeaway": "If a subclass cannot honor the invariants and contracts of its parent methods, it must not inherit from it.",
+          "keyPoints": [
+            "Subtypes must satisfy all parent behavioral contracts",
+            "Altering invariants in subclass overrides breaks caller assumptions",
+            "Prefer shared interfaces or composition over false hierarchies"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les4-4",
+          "company": "Microsoft",
+          "role": "Software Engineer II",
+          "question": "What is Feature Envy, and why does it degrade long-term system maintainability?",
+          "answer": "Feature Envy occurs when a method in class A spends most of its execution querying the internal state of class B via getters to make decisions. It degrades maintainability because: 1) It violates encapsulation by exposing B's internal data structures, 2) Changes to B's schema force ripple changes into class A, and 3) It scatters business logic away from the data it operates on. We resolve it by applying 'Tell, Don't Ask': move the behavior directly onto class B.",
+          "keyTakeaway": "Data and the operations that mutate or query that data belong together in the same class.",
+          "keyPoints": [
+            "Feature Envy queries external getters instead of delegating behavior",
+            "Creates tight coupling between caller and callee fields",
+            "Resolved by Tell, Don't Ask"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les4-5",
+          "company": "Apple",
+          "role": "Senior Software Engineer",
+          "question": "Why is 'Shotgun Surgery' harder to detect than a 'God Class'?",
+          "answer": "A God Class is immediately obvious because it lives in a giant, monolithic file. In contrast, Shotgun Surgery is insidious: the codebase may look clean on the surface with many small files, but responsibilities are fractured. When a single business requirement changes (e.g. adding a new tax rule), a developer must find and edit 15 different small files. If they miss even one, the system enters an inconsistent state. The solution is to consolidate those scattered fragments into a cohesive module.",
+          "keyTakeaway": "Shotgun surgery spreads a single cohesive concern across many disparate classes.",
+          "keyPoints": [
+            "Opposite of Divergent Change (many changes to one class)",
+            "Single business rule change requires edits across many files",
+            "Fixed by grouping related logic into dedicated domain modules"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les4-6",
+          "company": "Netflix",
+          "role": "L5 Backend Engineer",
+          "question": "How do you detect and prevent circular dependencies in Java classes?",
+          "answer": "A circular dependency exists when Class A requires Class B, and Class B directly or indirectly requires Class A (e.g. via constructor parameters or mutual method calls). It causes StackOverflowError in serialization, complicates garbage collection, and makes independent unit testing impossible. We detect them through build tools (like ArchUnit or SonarQube) and eliminate them by: 1) Introducing an interface between them (Dependency Inversion), or 2) Extracting the shared concern into an independent third class C that both A and B consume.",
+          "keyTakeaway": "Break cyclical dependencies by introducing interfaces or extracting intermediate orchestrators.",
+          "keyPoints": [
+            "Cycles prevent independent compilation and mock testing",
+            "Resolved via Dependency Inversion Principle",
+            "Extract shared state into a mediator or separate entity"
+          ],
+          "companyTag": "Netflix"
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "qa-les4-1",
+          "company": "Google",
+          "role": "Staff Software Engineer",
+          "question": "How do you systematically identify that a class violates the Single Responsibility Principle (SRP) during a code review?",
+          "answer": "I look for three clear indicators: 1) Reasons to change: If a change in the database schema, a change in business tax rules, AND a change in the email formatting template all require modifying this same class, it has multiple responsibilities. 2) Cohesion analysis: If methods A and B only access fields 1 and 2, while methods C and D only access fields 3 and 4, the class can cleanly be split into two separate classes. 3) Class naming: If the class is named `...Manager`, `...Helper`, or `...Processor` and contains 40+ public methods, it is almost certainly a God Class that should be decomposed into cohesive domain entities and collaborating services.",
+          "keyTakeaway": "Count the axes of change and inspect field cohesion to detect SRP violations.",
+          "keyPoints": [
+            "Count independent reasons to change",
+            "Examine method-field cohesion clusters",
+            "Watch out for vague 'Manager/Processor' naming"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les4-2",
+          "company": "Amazon",
+          "role": "Principal Engineer",
+          "question": "What is the difference between returning an unmodifiable list and returning a defensive copy?",
+          "answer": "`Collections.unmodifiableList(list)` returns a view over the existing list; if code inside the owner class subsequently modifies the backing list, that modification is immediately visible to whoever holds the unmodifiable reference (though the recipient cannot mutate it themselves). In contrast, returning `new ArrayList<>(list)` creates a distinct heap clone: changes made by the owner class after the snapshot will NOT affect the caller. For maximum security across concurrent or untrusted boundaries, defensive copies are preferred.",
+          "keyTakeaway": "Unmodifiable views prevent recipient mutation but reflect internal mutations; defensive copies fully isolate heap state.",
+          "keyPoints": [
+            "UnmodifiableList is a read-only view over the same backing data",
+            "Defensive copy allocates a new heap collection snapshot",
+            "Defensive copies shield against concurrent internal modifications"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les4-3",
+          "company": "Meta",
+          "role": "Senior Infrastructure Engineer",
+          "question": "Can you give a concrete example of a Liskov Substitution Principle violation in Java and how you would fix it?",
+          "answer": "The classic example is `Square extends Rectangle`. A `Rectangle` has independent `setWidth` and `setHeight` methods. If `Square` overrides `setWidth(w)` to also set height to `w`, any client code written against `Rectangle` that sets width to 5 and height to 10 will find the area is 100 instead of 50. The subclass violates the postcondition contract of the base class. The fix is to remove the inheritance relationship: make both implement a common `Shape` interface with `double getArea()`, or make `Square` an immutable shape with `int side`.",
+          "keyTakeaway": "If a subclass cannot honor the invariants and contracts of its parent methods, it must not inherit from it.",
+          "keyPoints": [
+            "Subtypes must satisfy all parent behavioral contracts",
+            "Altering invariants in subclass overrides breaks caller assumptions",
+            "Prefer shared interfaces or composition over false hierarchies"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les4-4",
+          "company": "Microsoft",
+          "role": "Software Engineer II",
+          "question": "What is Feature Envy, and why does it degrade long-term system maintainability?",
+          "answer": "Feature Envy occurs when a method in class A spends most of its execution querying the internal state of class B via getters to make decisions. It degrades maintainability because: 1) It violates encapsulation by exposing B's internal data structures, 2) Changes to B's schema force ripple changes into class A, and 3) It scatters business logic away from the data it operates on. We resolve it by applying 'Tell, Don't Ask': move the behavior directly onto class B.",
+          "keyTakeaway": "Data and the operations that mutate or query that data belong together in the same class.",
+          "keyPoints": [
+            "Feature Envy queries external getters instead of delegating behavior",
+            "Creates tight coupling between caller and callee fields",
+            "Resolved by Tell, Don't Ask"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les4-5",
+          "company": "Apple",
+          "role": "Senior Software Engineer",
+          "question": "Why is 'Shotgun Surgery' harder to detect than a 'God Class'?",
+          "answer": "A God Class is immediately obvious because it lives in a giant, monolithic file. In contrast, Shotgun Surgery is insidious: the codebase may look clean on the surface with many small files, but responsibilities are fractured. When a single business requirement changes (e.g. adding a new tax rule), a developer must find and edit 15 different small files. If they miss even one, the system enters an inconsistent state. The solution is to consolidate those scattered fragments into a cohesive module.",
+          "keyTakeaway": "Shotgun surgery spreads a single cohesive concern across many disparate classes.",
+          "keyPoints": [
+            "Opposite of Divergent Change (many changes to one class)",
+            "Single business rule change requires edits across many files",
+            "Fixed by grouping related logic into dedicated domain modules"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les4-6",
+          "company": "Netflix",
+          "role": "L5 Backend Engineer",
+          "question": "How do you detect and prevent circular dependencies in Java classes?",
+          "answer": "A circular dependency exists when Class A requires Class B, and Class B directly or indirectly requires Class A (e.g. via constructor parameters or mutual method calls). It causes StackOverflowError in serialization, complicates garbage collection, and makes independent unit testing impossible. We detect them through build tools (like ArchUnit or SonarQube) and eliminate them by: 1) Introducing an interface between them (Dependency Inversion), or 2) Extracting the shared concern into an independent third class C that both A and B consume.",
+          "keyTakeaway": "Break cyclical dependencies by introducing interfaces or extracting intermediate orchestrators.",
+          "keyPoints": [
+            "Cycles prevent independent compilation and mock testing",
+            "Resolved via Dependency Inversion Principle",
+            "Extract shared state into a mediator or separate entity"
+          ],
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les4-checklist",
+      "type": "self_evaluation",
+      "title": "Module 11 Self-Evaluation: Code Audit Mastery",
+      "checklist": [
+        "I can identify God Classes and split them into cohesive entities and services.",
+        "I check all getter methods to ensure they do not leak mutable arrays or collections.",
+        "I know when and how to return Collections.unmodifiableList() or defensive clones.",
+        "I recognize Primitive Obsession and replace raw Strings/doubles with Value Objects.",
+        "I spot Feature Envy and apply Tell, Don't Ask to co-locate logic with data.",
+        "I detect Liskov Substitution Principle violations like UnsupportedOperationException in subclasses.",
+        "I distinguish between Shotgun Surgery and Divergent Change code smells.",
+        "I enforce constructor invariant validation to prevent partially initialized invalid objects.",
+        "I avoid hardcoding concrete dependencies in constructors, preferring dependency injection.",
+        "I can trace and eliminate circular dependencies between collaborating domain classes."
+      ],
+      "items": [
+        "I can identify God Classes and split them into cohesive entities and services.",
+        "I check all getter methods to ensure they do not leak mutable arrays or collections.",
+        "I know when and how to return Collections.unmodifiableList() or defensive clones.",
+        "I recognize Primitive Obsession and replace raw Strings/doubles with Value Objects.",
+        "I spot Feature Envy and apply Tell, Don't Ask to co-locate logic with data.",
+        "I detect Liskov Substitution Principle violations like UnsupportedOperationException in subclasses.",
+        "I distinguish between Shotgun Surgery and Divergent Change code smells.",
+        "I enforce constructor invariant validation to prevent partially initialized invalid objects.",
+        "I avoid hardcoding concrete dependencies in constructors, preferring dependency injection.",
+        "I can trace and eliminate circular dependencies between collaborating domain classes."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Finding OOP Design Problems",
+    "Analyze, predict, and trace code execution involving finding-oop-design-problems",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Finding OOP Design Problems principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les4-p1",
+      "lessonId": "java-oop-mod11-les4",
+      "orderIndex": 1,
+      "title": "Warmup: Plugging Encapsulation Collection Leak",
+      "difficulty": "easy",
+      "problemStatement": "In the provided `Roster` class, the getter `getCandidates()` returns the internal mutable `ArrayList<String>`. Refactor `getCandidates()` using `java.util.Collections.unmodifiableList` so external callers cannot mutate internal state.\nIn `main()`:\n1. Create a `Roster`, add `'Bob'`, `'Alice'`\n2. Print the list\n3. Attempting to modify the returned list should throw `UnsupportedOperationException`; catch it and print `'Caught tamper attempt'`.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Roster {\n    private List<String> candidates = new ArrayList<>();\n    public void addCandidate(String name) { candidates.add(name); }\n    \n    // TODO: Fix the encapsulation leak!\n    public List<String> getCandidates() {\n        return candidates;\n    }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        Roster r = new Roster();\n        r.addCandidate(\"Bob\");\n        r.addCandidate(\"Alice\");\n        System.out.println(\"Candidates: \" + r.getCandidates());\n\n        try {\n            r.getCandidates().add(\"Eve\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Caught tamper attempt\");\n        }\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Roster {\n    private List<String> candidates = new ArrayList<>();\n    public void addCandidate(String name) { candidates.add(name); }\n    \n    // TODO: Fix the encapsulation leak!\n    public List<String> getCandidates() {\n        return candidates;\n    }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        Roster r = new Roster();\n        r.addCandidate(\"Bob\");\n        r.addCandidate(\"Alice\");\n        System.out.println(\"Candidates: \" + r.getCandidates());\n\n        try {\n            r.getCandidates().add(\"Eve\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Caught tamper attempt\");\n        }\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Roster {\n    private List<String> candidates = new ArrayList<>();\n    public void addCandidate(String name) { candidates.add(name); }\n    \n    public List<String> getCandidates() {\n        return Collections.unmodifiableList(candidates);\n    }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        Roster r = new Roster();\n        r.addCandidate(\"Bob\");\n        r.addCandidate(\"Alice\");\n        System.out.println(\"Candidates: \" + r.getCandidates());\n\n        try {\n            r.getCandidates().add(\"Eve\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Caught tamper attempt\");\n        }\n    }\n}",
+      "expectedOutput": "Candidates: [Bob, Alice]\nCaught tamper attempt",
+      "hints": [
+        "Wrap candidates in `Collections.unmodifiableList(candidates)` in getCandidates().",
+        "Mutating an unmodifiable list throws UnsupportedOperationException."
+      ]
+    },
+    {
+      "id": "prob-les4-p2",
+      "lessonId": "java-oop-mod11-les4",
+      "orderIndex": 2,
+      "title": "Scratch: Modeling Value Objects to Cure Primitive Obsession",
+      "difficulty": "medium",
+      "problemStatement": "Write a clean Value Object and Domain class from scratch without starter code:\n1. Immutable class `EmailAddress`: private final `value` (String). Constructor throws `IllegalArgumentException(\"Invalid email\")` if value is null or does not contain `'@'`. Getter `getValue()`.\n2. Class `UserProfile`: private final `username` (String) and private `email` (`EmailAddress`). Constructor validates non-null username and email. Method `updateEmail(EmailAddress newEmail)`.\n3. In `Main`:\n   - Construct `new UserProfile(\"munaf085\", new EmailAddress(\"munaf@example.com\"))`\n   - Print `'User created: ' + profile.getUsername() + ' <' + profile.getEmail().getValue() + '>'`\n   - Try constructing `new EmailAddress(\"bademail\")` inside try-catch and print `'Validation blocked invalid email'` when IllegalArgumentException is caught.",
+      "solutionCode": "class EmailAddress {\n    private final String value;\n    public EmailAddress(String value) {\n        if (value == null || !value.contains(\"@\")) {\n            throw new IllegalArgumentException(\"Invalid email\");\n        }\n        this.value = value;\n    }\n    public String getValue() { return value; }\n}\n\nclass UserProfile {\n    private final String username;\n    private EmailAddress email;\n    public UserProfile(String username, EmailAddress email) {\n        if (username == null || email == null) throw new IllegalArgumentException(\"Null args\");\n        this.username = username;\n        this.email = email;\n    }\n    public String getUsername() { return username; }\n    public EmailAddress getEmail() { return email; }\n    public void updateEmail(EmailAddress newEmail) {\n        if (newEmail == null) throw new IllegalArgumentException(\"Null email\");\n        this.email = newEmail;\n    }\n}\n\npublic class ValueObjectDemo {\n    public static void main(String[] args) {\n        UserProfile profile = new UserProfile(\"munaf085\", new EmailAddress(\"munaf@example.com\"));\n        System.out.println(\"User created: \" + profile.getUsername() + \" <\" + profile.getEmail().getValue() + \">\");\n        try {\n            new EmailAddress(\"bademail\");\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Validation blocked invalid email\");\n        }\n    }\n}",
+      "expectedOutput": "User created: munaf085 <munaf@example.com>\nValidation blocked invalid email",
+      "hints": [
+        "Value objects validate their domain rules upon instantiation.",
+        "UserProfile relies on EmailAddress type safety rather than untrusted raw Strings."
+      ]
+    },
+    {
+      "id": "prob-les4-p3",
+      "lessonId": "java-oop-mod11-les4",
+      "orderIndex": 3,
+      "title": "Scratch: Refactoring Feature Envy to Tell Don't Ask",
+      "difficulty": "medium",
+      "problemStatement": "Build a clean order discount system eliminating Feature Envy:\n1. Class `Order`: private `subtotal` (double), private `itemCount` (int). Constructor initializes both.\n2. Add method `public double calculateDiscountedTotal(double discountRate)` directly to `Order`: if `itemCount >= 5`, apply `discountRate`; otherwise return `subtotal`.\n3. Do NOT create an external calculator reaching into getters.\n4. In `Main`:\n   - Create `order1 = new Order(200.0, 6)`\n   - Create `order2 = new Order(50.0, 2)`\n   - With discountRate 0.20 (20%), print:\n     `Order 1 Final: $` + order1.calculateDiscountedTotal(0.20)\n     `Order 2 Final: $` + order2.calculateDiscountedTotal(0.20)",
+      "solutionCode": "class Order {\n    private double subtotal;\n    private int itemCount;\n\n    public Order(double subtotal, int itemCount) {\n        this.subtotal = subtotal;\n        this.itemCount = itemCount;\n    }\n\n    // Tell, Don't Ask: calculation resides inside Order!\n    public double calculateDiscountedTotal(double discountRate) {\n        if (itemCount >= 5) {\n            return subtotal * (1.0 - discountRate);\n        }\n        return subtotal;\n    }\n}\n\npublic class TellDontAskDemo {\n    public static void main(String[] args) {\n        Order order1 = new Order(200.0, 6);\n        Order order2 = new Order(50.0, 2);\n        System.out.println(\"Order 1 Final: $\" + order1.calculateDiscountedTotal(0.20));\n        System.out.println(\"Order 2 Final: $\" + order2.calculateDiscountedTotal(0.20));\n    }\n}",
+      "expectedOutput": "Order 1 Final: $160.0\nOrder 2 Final: $50.0",
+      "hints": [
+        "200.0 * (1 - 0.20) = 160.0.",
+        "Order 2 has only 2 items (< 5), so no discount applies: 50.0."
+      ]
+    },
+    {
+      "id": "prob-les4-p4",
+      "lessonId": "java-oop-mod11-les4",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Fixing a Dangerous LSP Violation",
+      "difficulty": "hard",
+      "problemStatement": "In the provided buggy code, `ReadOnlyAccount` extends `BankAccount` and overrides `deposit()` to throw `UnsupportedOperationException`. This breaks code expecting any `BankAccount` to accept deposits!\nFix the design:\n1. Create a common interface or abstract class `Account` with `double getBalance()` and `String getAccountId()`.\n2. Interface `TransactableAccount extends Account` (or separate interface `Depositable`) with `void deposit(double amount)`.\n3. Make `StandardAccount` implement `Depositable`, and `AuditReadOnlyAccount` implement only `Account`.\n4. Ensure the output in `main()` runs cleanly without throwing exceptions.",
+      "starterCode": "abstract class AccountBase {\n    protected double balance;\n    public AccountBase(double b) { this.balance = b; }\n    public double getBalance() { return balance; }\n    // BUG: Forcing deposit on all subclasses causes LSP violation!\n    public abstract void deposit(double amount);\n}\n\nclass StandardAccount extends AccountBase {\n    public StandardAccount(double b) { super(b); }\n    @Override\n    public void deposit(double amount) { balance += amount; }\n}\n\nclass ReadOnlyAccount extends AccountBase {\n    public ReadOnlyAccount(double b) { super(b); }\n    @Override\n    public void deposit(double amount) {\n        // LSP VIOLATION: Subclass rejects parent contract!\n        throw new UnsupportedOperationException(\"Cannot deposit into read-only\");\n    }\n}\n\npublic class LSPBugDemo {\n    public static void main(String[] args) {\n        AccountBase acc = new ReadOnlyAccount(100.0);\n        acc.deposit(50.0); // Crashes with exception!\n    }\n}",
+      "initialCode": "abstract class AccountBase {\n    protected double balance;\n    public AccountBase(double b) { this.balance = b; }\n    public double getBalance() { return balance; }\n    // BUG: Forcing deposit on all subclasses causes LSP violation!\n    public abstract void deposit(double amount);\n}\n\nclass StandardAccount extends AccountBase {\n    public StandardAccount(double b) { super(b); }\n    @Override\n    public void deposit(double amount) { balance += amount; }\n}\n\nclass ReadOnlyAccount extends AccountBase {\n    public ReadOnlyAccount(double b) { super(b); }\n    @Override\n    public void deposit(double amount) {\n        // LSP VIOLATION: Subclass rejects parent contract!\n        throw new UnsupportedOperationException(\"Cannot deposit into read-only\");\n    }\n}\n\npublic class LSPBugDemo {\n    public static void main(String[] args) {\n        AccountBase acc = new ReadOnlyAccount(100.0);\n        acc.deposit(50.0); // Crashes with exception!\n    }\n}",
+      "solutionCode": "interface Account {\n    double getBalance();\n}\n\ninterface Depositable {\n    void deposit(double amount);\n}\n\nclass StandardAccount implements Account, Depositable {\n    private double balance;\n    public StandardAccount(double b) { this.balance = b; }\n    @Override\n    public double getBalance() { return balance; }\n    @Override\n    public void deposit(double amount) { balance += amount; }\n}\n\nclass ReadOnlyAccount implements Account {\n    private final double balance;\n    public ReadOnlyAccount(double b) { this.balance = b; }\n    @Override\n    public double getBalance() { return balance; }\n}\n\npublic class LSPBugDemo {\n    public static void main(String[] args) {\n        StandardAccount standard = new StandardAccount(100.0);\n        standard.deposit(50.0);\n        ReadOnlyAccount readOnly = new ReadOnlyAccount(200.0);\n\n        System.out.println(\"Standard Balance: $\" + standard.getBalance());\n        System.out.println(\"ReadOnly Balance: $\" + readOnly.getBalance());\n    }\n}",
+      "expectedOutput": "Standard Balance: $150.0\nReadOnly Balance: $200.0",
+      "hints": [
+        "Segregate interfaces: read-only accounts should not inherit mutating methods they cannot support.",
+        "StandardAccount implements Depositable; ReadOnlyAccount implements only Account."
+      ]
+    },
+    {
+      "id": "prob-les4-p5",
+      "lessonId": "java-oop-mod11-les4",
+      "orderIndex": 5,
+      "title": "Advanced: Complete Code Smell Remediation Engine",
+      "difficulty": "advanced",
+      "problemStatement": "Build a secure audited inventory manager from scratch demonstrating 3 smell remediations:\n1. Value Object `Sku`: immutable, validates non-null and starts with `'SKU-'`.\n2. Class `InventoryItem`: `Sku sku`, `name` (String), `quantity` (int). Method `boolean reduceStock(int count)` (returns false if count > quantity, otherwise decrements).\n3. Class `Warehouse`: private list of `InventoryItem`. Method `void addItem(InventoryItem item)` and `List<InventoryItem> getItems()` returning an unmodifiable list.\n4. In `Main`:\n   - Create `Warehouse`\n   - Add item: `new InventoryItem(new Sku(\"SKU-MON-01\"), \"4K Monitor\", 10)`\n   - Perform valid reduction: item.reduceStock(3) -> prints `'Reduced: true, remaining: 7'`\n   - Verify list immutability: call `warehouse.getItems().size()`, print `'Warehouse items: 1'`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Sku {\n    private final String code;\n    public Sku(String code) {\n        if (code == null || !code.startsWith(\"SKU-\")) {\n            throw new IllegalArgumentException(\"Invalid SKU format\");\n        }\n        this.code = code;\n    }\n    public String getCode() { return code; }\n}\n\nclass InventoryItem {\n    private final Sku sku;\n    private final String name;\n    private int quantity;\n\n    public InventoryItem(Sku sku, String name, int quantity) {\n        this.sku = sku;\n        this.name = name;\n        this.quantity = Math.max(0, quantity);\n    }\n\n    public boolean reduceStock(int count) {\n        if (count <= 0 || count > quantity) return false;\n        quantity -= count;\n        return true;\n    }\n\n    public Sku getSku() { return sku; }\n    public String getName() { return name; }\n    public int getQuantity() { return quantity; }\n}\n\nclass Warehouse {\n    private final List<InventoryItem> inventory = new ArrayList<>();\n    public void addItem(InventoryItem item) { inventory.add(item); }\n    public List<InventoryItem> getItems() {\n        return Collections.unmodifiableList(inventory);\n    }\n}\n\npublic class InventoryRemediationApp {\n    public static void main(String[] args) {\n        Warehouse warehouse = new Warehouse();\n        InventoryItem item = new InventoryItem(new Sku(\"SKU-MON-01\"), \"4K Monitor\", 10);\n        warehouse.addItem(item);\n\n        boolean reduced = item.reduceStock(3);\n        System.out.println(\"Reduced: \" + reduced + \", remaining: \" + item.getQuantity());\n        System.out.println(\"Warehouse items: \" + warehouse.getItems().size());\n    }\n}",
+      "expectedOutput": "Reduced: true, remaining: 7\nWarehouse items: 1",
+      "hints": [
+        "Sku protects against Primitive Obsession.",
+        "InventoryItem encapsulates stock mutations with invariants.",
+        "Warehouse uses Collections.unmodifiableList to prevent collection leakage."
+      ]
+    }
+  ]
+}

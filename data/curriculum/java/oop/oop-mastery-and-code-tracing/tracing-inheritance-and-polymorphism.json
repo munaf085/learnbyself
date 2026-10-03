@@ -1,0 +1,529 @@
+{
+  "id": "les-mast-3",
+  "slug": "tracing-inheritance-and-polymorphism",
+  "title": "Tracing Inheritance & Polymorphism",
+  "summary": "Predicting exact dynamic method dispatch and super calls across 3-tier hierarchies.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les3-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Railway Switching Yard",
+      "concept": "Dynamic Method Dispatch Across Inheritance Tiers",
+      "realWorldMetaphor": {
+        "scenario": "Imagine a transcontinental railway system with main trunk lines and specialized spur tracks. A generic dispatch order says: 'Route Freight Train #402 to Terminal'. As the train rolls forward, track switches read the train's actual physical axle configuration. Instead of parking on the generic siding, the train is automatically guided through intermediate switches directly into the specialized refrigerated container dock.",
+        "mapping": "In Java, calling an overridden method through a superclass reference variable sends the invocation through the virtual method table (vtable). The runtime engine inspects the actual object on the heap, bypassing the superclass implementation to execute the most specialized override defined on the concrete subclass.",
+        "takeaway": "Dynamic dispatch navigates the inheritance hierarchy at runtime, routing calls to the most specific override on the heap object."
+      }
+    },
+    {
+      "id": "act-les3-concept",
+      "type": "concept",
+      "title": "Virtual Method Dispatch and super.method() Execution",
+      "content": "### How Dynamic Dispatch Operates Internally\n\nEvery loaded class in the JVM maintains a **Virtual Method Table (vtable)** containing function pointers to its instance methods:\n\n```\n[Base vtable]         [Intermediate vtable]       [Leaf vtable]\nmethodA() -> Base.A   methodA() -> Base.A         methodA() -> Leaf.A (Overridden!)\nmethodB() -> Base.B   methodB() -> Inter.B        methodB() -> Inter.B\n```\n\n### The Method Resolution Algorithm\nWhen `ref.methodA()` is executed:\n1. **Compile Time**: The compiler verifies that `methodA()` exists on the declared reference type.\n2. **Runtime Execution**: The JVM dereferences `ref` to find the concrete object header in the heap.\n3. **vtable Lookup**: It reads the concrete object's class vtable and jumps to that specific memory address.\n\n### What About `super.methodA()`?\nUnlike normal method calls that use dynamic dispatch (`invokevirtual` bytecode), calls prefixed with `super.` use **static binding** (`invokespecial` bytecode) to bypass the current class's vtable entry and directly invoke the immediate superclass implementation."
+    },
+    {
+      "id": "act-les3-cw1",
+      "type": "code_walkthrough",
+      "title": "Tracing 3-Tier Dynamic Dispatch and super Chaining",
+      "codeSnippet": "class GrandParent {\n    public void greet() {\n        System.out.println(\"Greetings from GrandParent\");\n    }\n}\n\nclass ParentTier extends GrandParent {\n    @Override\n    public void greet() {\n        super.greet();\n        System.out.println(\"  -> and ParentTier\");\n    }\n}\n\nclass ChildTier extends ParentTier {\n    @Override\n    public void greet() {\n        super.greet();\n        System.out.println(\"    -> and ChildTier!\");\n    }\n}\n\npublic class DispatchTraceDemo {\n    public static void main(String[] args) {\n        // Superclass reference holding Leaf object\n        GrandParent ref = new ChildTier();\n\n        // Invocation routes to ChildTier.greet() dynamically\n        ref.greet();\n    }\n}",
+      "code": "class GrandParent {\n    public void greet() {\n        System.out.println(\"Greetings from GrandParent\");\n    }\n}\n\nclass ParentTier extends GrandParent {\n    @Override\n    public void greet() {\n        super.greet();\n        System.out.println(\"  -> and ParentTier\");\n    }\n}\n\nclass ChildTier extends ParentTier {\n    @Override\n    public void greet() {\n        super.greet();\n        System.out.println(\"    -> and ChildTier!\");\n    }\n}\n\npublic class DispatchTraceDemo {\n    public static void main(String[] args) {\n        // Superclass reference holding Leaf object\n        GrandParent ref = new ChildTier();\n\n        // Invocation routes to ChildTier.greet() dynamically\n        ref.greet();\n    }\n}",
+      "language": "java",
+      "explanation": "Traces how dynamic dispatch sends the call to ChildTier, which chains up through ParentTier and GrandParent via super.greet().",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`ref` has compile-time type `GrandParent`; `greet()` is valid."
+        },
+        {
+          "step": 2,
+          "description": "Runtime object is `ChildTier`; dynamic dispatch invokes `ChildTier.greet()`."
+        },
+        {
+          "step": 3,
+          "description": "`ChildTier.greet()` calls `super.greet()` -> `ParentTier.greet()`."
+        },
+        {
+          "step": 4,
+          "description": "`ParentTier.greet()` calls `super.greet()` -> `GrandParent.greet()`."
+        },
+        {
+          "step": 5,
+          "description": "Calls unwind in order, producing the cascaded console output."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-cw2",
+      "type": "code_walkthrough",
+      "title": "Method Dispatch with Overloading vs Overriding",
+      "codeSnippet": "class ShapeDrawer {\n    public void draw() { System.out.println(\"Generic shape\"); }\n    public void draw(int thickness) { System.out.println(\"Shape with thickness \" + thickness); }\n}\n\nclass CircleDrawer extends ShapeDrawer {\n    @Override\n    public void draw() { System.out.println(\"Circle: perfect curve\"); }\n    // Overload in subclass\n    public void draw(String color) { System.out.println(color + \" Circle\"); }\n}\n\npublic class OverloadOverrideTrace {\n    public static void main(String[] args) {\n        ShapeDrawer s = new CircleDrawer();\n        s.draw();       // Overridden: dynamic dispatch calls CircleDrawer\n        s.draw(5);      // Inherited overload: calls ShapeDrawer.draw(int)\n        // s.draw(\"Red\"); // COMPILE ERROR: ShapeDrawer does not declare draw(String)!\n    }\n}",
+      "code": "class ShapeDrawer {\n    public void draw() { System.out.println(\"Generic shape\"); }\n    public void draw(int thickness) { System.out.println(\"Shape with thickness \" + thickness); }\n}\n\nclass CircleDrawer extends ShapeDrawer {\n    @Override\n    public void draw() { System.out.println(\"Circle: perfect curve\"); }\n    // Overload in subclass\n    public void draw(String color) { System.out.println(color + \" Circle\"); }\n}\n\npublic class OverloadOverrideTrace {\n    public static void main(String[] args) {\n        ShapeDrawer s = new CircleDrawer();\n        s.draw();       // Overridden: dynamic dispatch calls CircleDrawer\n        s.draw(5);      // Inherited overload: calls ShapeDrawer.draw(int)\n        // s.draw(\"Red\"); // COMPILE ERROR: ShapeDrawer does not declare draw(String)!\n    }\n}",
+      "language": "java",
+      "explanation": "Contrasts overriding (dynamic dispatch) with overloading (static binding). Methods declared exclusively in the subclass cannot be called on the superclass reference.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`s.draw()` matches overridden signature and runs `CircleDrawer.draw()`."
+        },
+        {
+          "step": 2,
+          "description": "`s.draw(5)` matches inherited method on `ShapeDrawer`."
+        },
+        {
+          "step": 3,
+          "description": "`s.draw(\"Red\")` fails at compile time because `ShapeDrawer` lacks a string overload."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-mcq",
+      "type": "mcq",
+      "title": "Tracing Inheritance & Polymorphism Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Which bytecode instruction is used by the JVM for standard dynamic method dispatch on classes?",
+          "options": [
+            "invokevirtual",
+            "invokestatic",
+            "invokespecial",
+            "invokedynamic"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "`invokevirtual` performs dynamic dispatch on public/protected instance methods via the object's vtable."
+        },
+        {
+          "id": "q2",
+          "question": "Which bytecode instruction is used when calling `super.method()`?",
+          "options": [
+            "invokevirtual",
+            "invokespecial",
+            "invokestatic",
+            "invokeinterface"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`invokespecial` bypasses dynamic dispatch to invoke the direct superclass implementation statically."
+        },
+        {
+          "id": "q3",
+          "question": "Can private methods participate in dynamic method dispatch?",
+          "options": [
+            "Yes, if called through a getter",
+            "No, private methods are not inherited and use static binding (invokespecial)",
+            "Only in Java 17+",
+            "Only if marked with @Override"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Private methods are bound statically at compile time because they cannot be overridden by subclasses."
+        },
+        {
+          "id": "q4",
+          "question": "Given `class A { void m() { print(1); } } class B extends A { void m() { print(2); } } class C extends B {}`, what does `A a = new C(); a.m();` print?",
+          "options": [
+            "1",
+            "2",
+            "Nothing",
+            "Compile error"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`C` inherits `m()` from `B`. The heap object is `C`, so dynamic dispatch invokes `B.m()`, printing 2."
+        },
+        {
+          "id": "q5",
+          "question": "What is the Virtual Method Table (vtable)?",
+          "options": [
+            "A database table stored on disk",
+            "An internal array of pointers maintained by the JVM for each class to map method names to executable code addresses",
+            "A table of thread IDs",
+            "A garbage collection root"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The vtable enables fast O(1) dynamic method dispatch lookups at runtime."
+        },
+        {
+          "id": "q6",
+          "question": "What happens if a subclass declares a method with the same name as a superclass method, but different parameter types?",
+          "options": [
+            "It overrides the superclass method",
+            "It overloads the method",
+            "It causes a compilation error",
+            "It hides the superclass method"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Different parameter types constitute an overload, not an override."
+        },
+        {
+          "id": "q7",
+          "question": "Can `final` methods be overridden?",
+          "options": [
+            "Yes, by marking the subclass method final as well",
+            "No, the final keyword explicitly forbids overriding and enables JVM inlining",
+            "Only if the subclass is in the same package",
+            "Only in interfaces"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Final methods cannot be overridden, allowing JIT compilers to inline them directly."
+        },
+        {
+          "id": "q8",
+          "question": "If method `m()` in superclass returns `Number`, can the overriding method in the subclass return `Integer`?",
+          "options": [
+            "No, return types must match identically",
+            "Yes, this is a legal covariant return type in Java",
+            "Only if cast explicitly",
+            "Only if Number is an interface"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java supports covariant returns: an override may narrow the return type to a subtype."
+        },
+        {
+          "id": "q9",
+          "question": "What does `super.super.method()` do in Java?",
+          "options": [
+            "Calls the grandparent method directly",
+            "Causes a compilation error; Java syntax does not support chained super calls",
+            "Calls the root Object method",
+            "Calls the interface default method"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java strictly forbids `super.super`; you can only invoke your direct superclass implementation."
+        },
+        {
+          "id": "q10",
+          "question": "Why does polymorphism reduce cyclomatic complexity in software?",
+          "options": [
+            "It replaces complex switch and if-else ladders with clean polymorphic method calls",
+            "It makes all loops run in parallel",
+            "It reduces the number of variables to zero",
+            "It converts code to assembly"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Polymorphism encapsulates variant behavior inside classes, eliminating branching ladders."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-interview",
+      "type": "interview_qa",
+      "title": "Tracing Inheritance & Polymorphism Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i3-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Explain how the HotSpot JVM optimizes virtual method calls via Monomorphic Inlining.",
+          "answer": "When the JIT compiler profiles an `invokevirtual` call site and discovers that 99%+ of invocations dispatch to the exact same concrete class (Monomorphic Call Site), it eliminates the vtable lookup entirely. It inlines the method body directly into the caller, guarded by a lightweight class-check guard. If an unexpected second subtype arrives later (Bimorphic or Megamorphic), the JIT deoptimizes and falls back to vtable dispatch.",
+          "expectedAnswer": "HotSpot profiles call sites; for monomorphic sites, it inlines the method body directly, bypassing vtable lookup.",
+          "keyTakeaway": "Monomorphic inlining makes virtual calls as fast as direct static calls in hot loops.",
+          "keyPoints": [
+            "Monomorphic inlining makes virtual calls as fast as direct static calls in hot loops."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i3-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the difference between `invokevirtual` and `invokeinterface` in JVM bytecode?",
+          "answer": "`invokevirtual` uses fixed-offset indexing in the vtable because classes follow single inheritance (a method always occupies the same slot across subclasses). `invokeinterface` is more complex because multiple unrelated classes can implement the same interface at different vtable offsets, historically requiring searching an interface table (itable), though modern JVMs optimize this with inline caches.",
+          "expectedAnswer": "invokevirtual uses fixed vtable index offsets; invokeinterface uses itables and inline caches across unrelated classes.",
+          "keyTakeaway": "Interface dispatch uses itables because classes implement multiple interfaces at varying offsets.",
+          "keyPoints": [
+            "Interface dispatch uses itables because classes implement multiple interfaces at varying offsets."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i3-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can an overriding method have a more restrictive access modifier than the method in the superclass?",
+          "answer": "No. In Java, an overriding method cannot reduce visibility (e.g. overriding a `public` method as `protected` or `private` causes a compile-time error). This enforces the Liskov Substitution Principle: any caller holding a superclass reference must be permitted to call the public method without encountering an unexpected access violation.",
+          "expectedAnswer": "No, an override cannot reduce visibility (e.g. public to protected), which would violate LSP.",
+          "keyTakeaway": "Overriding methods can expand visibility (protected to public), but never reduce it.",
+          "keyPoints": [
+            "Overriding methods can expand visibility (protected to public), but never reduce it."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i3-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do checked exception declarations behave in overriding methods?",
+          "answer": "An overriding method cannot throw new or broader checked exceptions than those declared by the superclass method. It can throw fewer checked exceptions, narrower subclass exceptions, or no checked exceptions at all. Unchecked exceptions (`RuntimeException` and `Error`) are unrestricted.",
+          "expectedAnswer": "Overriding methods cannot declare new or broader checked exceptions than the superclass method.",
+          "keyTakeaway": "Overriding methods can narrow or eliminate checked exceptions, but never broaden them.",
+          "keyPoints": [
+            "Overriding methods can narrow or eliminate checked exceptions, but never broaden them."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i3-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why does Java forbid multiple class inheritance while allowing multiple interface inheritance?",
+          "answer": "Multiple class inheritance leads to the Diamond Problem regarding state: if Class A extends B and C, and both B and C inherit an `int count` field from A, which field does A hold? Multiple interface inheritance historically only inherited method contracts (no state). Java 8 introduced default methods with strict collision resolution rules, maintaining safety.",
+          "expectedAnswer": "To eliminate the state ambiguity of the Diamond Problem while permitting flexible behavioral subtyping.",
+          "keyTakeaway": "Single class inheritance avoids state collisions from multiple parents.",
+          "keyPoints": [
+            "Single class inheritance avoids state collisions from multiple parents."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i3-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the difference between static binding (early binding) and dynamic binding (late binding)?",
+          "answer": "Static binding resolves the target method at compile time based on the reference type (used for private, static, final methods, and constructors). Dynamic binding defers method resolution to runtime based on the actual object instance on the heap (used for virtual instance methods).",
+          "expectedAnswer": "Static binding occurs at compile time by reference type; dynamic binding occurs at runtime by heap object type.",
+          "keyTakeaway": "Static binding = compile time; Dynamic binding = runtime vtable dispatch.",
+          "keyPoints": [
+            "Static binding = compile time; Dynamic binding = runtime vtable dispatch."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i3-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Explain how the HotSpot JVM optimizes virtual method calls via Monomorphic Inlining.",
+          "answer": "When the JIT compiler profiles an `invokevirtual` call site and discovers that 99%+ of invocations dispatch to the exact same concrete class (Monomorphic Call Site), it eliminates the vtable lookup entirely. It inlines the method body directly into the caller, guarded by a lightweight class-check guard. If an unexpected second subtype arrives later (Bimorphic or Megamorphic), the JIT deoptimizes and falls back to vtable dispatch.",
+          "expectedAnswer": "HotSpot profiles call sites; for monomorphic sites, it inlines the method body directly, bypassing vtable lookup.",
+          "keyTakeaway": "Monomorphic inlining makes virtual calls as fast as direct static calls in hot loops.",
+          "keyPoints": [
+            "Monomorphic inlining makes virtual calls as fast as direct static calls in hot loops."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i3-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the difference between `invokevirtual` and `invokeinterface` in JVM bytecode?",
+          "answer": "`invokevirtual` uses fixed-offset indexing in the vtable because classes follow single inheritance (a method always occupies the same slot across subclasses). `invokeinterface` is more complex because multiple unrelated classes can implement the same interface at different vtable offsets, historically requiring searching an interface table (itable), though modern JVMs optimize this with inline caches.",
+          "expectedAnswer": "invokevirtual uses fixed vtable index offsets; invokeinterface uses itables and inline caches across unrelated classes.",
+          "keyTakeaway": "Interface dispatch uses itables because classes implement multiple interfaces at varying offsets.",
+          "keyPoints": [
+            "Interface dispatch uses itables because classes implement multiple interfaces at varying offsets."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i3-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can an overriding method have a more restrictive access modifier than the method in the superclass?",
+          "answer": "No. In Java, an overriding method cannot reduce visibility (e.g. overriding a `public` method as `protected` or `private` causes a compile-time error). This enforces the Liskov Substitution Principle: any caller holding a superclass reference must be permitted to call the public method without encountering an unexpected access violation.",
+          "expectedAnswer": "No, an override cannot reduce visibility (e.g. public to protected), which would violate LSP.",
+          "keyTakeaway": "Overriding methods can expand visibility (protected to public), but never reduce it.",
+          "keyPoints": [
+            "Overriding methods can expand visibility (protected to public), but never reduce it."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i3-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do checked exception declarations behave in overriding methods?",
+          "answer": "An overriding method cannot throw new or broader checked exceptions than those declared by the superclass method. It can throw fewer checked exceptions, narrower subclass exceptions, or no checked exceptions at all. Unchecked exceptions (`RuntimeException` and `Error`) are unrestricted.",
+          "expectedAnswer": "Overriding methods cannot declare new or broader checked exceptions than the superclass method.",
+          "keyTakeaway": "Overriding methods can narrow or eliminate checked exceptions, but never broaden them.",
+          "keyPoints": [
+            "Overriding methods can narrow or eliminate checked exceptions, but never broaden them."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i3-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why does Java forbid multiple class inheritance while allowing multiple interface inheritance?",
+          "answer": "Multiple class inheritance leads to the Diamond Problem regarding state: if Class A extends B and C, and both B and C inherit an `int count` field from A, which field does A hold? Multiple interface inheritance historically only inherited method contracts (no state). Java 8 introduced default methods with strict collision resolution rules, maintaining safety.",
+          "expectedAnswer": "To eliminate the state ambiguity of the Diamond Problem while permitting flexible behavioral subtyping.",
+          "keyTakeaway": "Single class inheritance avoids state collisions from multiple parents.",
+          "keyPoints": [
+            "Single class inheritance avoids state collisions from multiple parents."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i3-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the difference between static binding (early binding) and dynamic binding (late binding)?",
+          "answer": "Static binding resolves the target method at compile time based on the reference type (used for private, static, final methods, and constructors). Dynamic binding defers method resolution to runtime based on the actual object instance on the heap (used for virtual instance methods).",
+          "expectedAnswer": "Static binding occurs at compile time by reference type; dynamic binding occurs at runtime by heap object type.",
+          "keyTakeaway": "Static binding = compile time; Dynamic binding = runtime vtable dispatch.",
+          "keyPoints": [
+            "Static binding = compile time; Dynamic binding = runtime vtable dispatch."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les3-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand how the JVM uses the vtable to execute dynamic method dispatch.",
+        "I know the difference between `invokevirtual`, `invokeinterface`, and `invokespecial`.",
+        "I can trace multi-tier method calls across 3 or more inheritance generations.",
+        "I understand how `super.method()` uses static binding to invoke the immediate parent.",
+        "I know why private, static, and final methods bypass dynamic dispatch.",
+        "I understand covariant return types in method overriding.",
+        "I know the rules regarding access modifier visibility in overriding methods.",
+        "I know the rules regarding checked exception declarations in overrides.",
+        "I can distinguish method overloading (compile-time) from overriding (runtime).",
+        "I understand how HotSpot's monomorphic inlining optimizes virtual calls."
+      ],
+      "items": [
+        "I understand how the JVM uses the vtable to execute dynamic method dispatch.",
+        "I know the difference between `invokevirtual`, `invokeinterface`, and `invokespecial`.",
+        "I can trace multi-tier method calls across 3 or more inheritance generations.",
+        "I understand how `super.method()` uses static binding to invoke the immediate parent.",
+        "I know why private, static, and final methods bypass dynamic dispatch.",
+        "I understand covariant return types in method overriding.",
+        "I know the rules regarding access modifier visibility in overriding methods.",
+        "I know the rules regarding checked exception declarations in overrides.",
+        "I can distinguish method overloading (compile-time) from overriding (runtime).",
+        "I understand how HotSpot's monomorphic inlining optimizes virtual calls."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les3-p1",
+      "lessonId": "java-oop-mod11-les3",
+      "orderIndex": 1,
+      "title": "Warmup: Multi-Tier Log Formatter",
+      "difficulty": "easy",
+      "problemStatement": "Complete the 3-tier logger:\n1. Base class `SimpleLogger`: method `public String format(String msg) { return \"[LOG] \" + msg; }`.\n2. Subclass `TimestampLogger extends SimpleLogger`: overrides `format(String msg)` returning `\"[2026-10-03] \" + super.format(msg)`.\n3. Subclass `JsonLogger extends TimestampLogger`: overrides `format(String msg)` returning `\"{\\\"entry\\\": \\\"\" + super.format(msg) + \"\\\"}\"`.\nIn `main`, instantiate a `JsonLogger` through a `SimpleLogger` reference `logger`. Call `logger.format(\"Service started\")`.\nVerify the nested formatting output.",
+      "starterCode": "class SimpleLogger {\n    public String format(String msg) {\n        return \"[LOG] \" + msg;\n    }\n}\n\nclass TimestampLogger extends SimpleLogger {\n    // TODO: Override format(String msg) calling super.format(msg)\n}\n\nclass JsonLogger extends TimestampLogger {\n    // TODO: Override format(String msg) calling super.format(msg)\n}\n\npublic class LogTraceApp {\n    public static void main(String[] args) {\n        SimpleLogger logger = new JsonLogger();\n        System.out.println(logger.format(\"Service started\"));\n    }\n}",
+      "initialCode": "class SimpleLogger {\n    public String format(String msg) {\n        return \"[LOG] \" + msg;\n    }\n}\n\nclass TimestampLogger extends SimpleLogger {\n    // TODO: Override format(String msg) calling super.format(msg)\n}\n\nclass JsonLogger extends TimestampLogger {\n    // TODO: Override format(String msg) calling super.format(msg)\n}\n\npublic class LogTraceApp {\n    public static void main(String[] args) {\n        SimpleLogger logger = new JsonLogger();\n        System.out.println(logger.format(\"Service started\"));\n    }\n}",
+      "solutionCode": "class SimpleLogger {\n    public String format(String msg) {\n        return \"[LOG] \" + msg;\n    }\n}\n\nclass TimestampLogger extends SimpleLogger {\n    @Override\n    public String format(String msg) {\n        return \"[2026-10-03] \" + super.format(msg);\n    }\n}\n\nclass JsonLogger extends TimestampLogger {\n    @Override\n    public String format(String msg) {\n        return \"{\\\"entry\\\": \\\"\" + super.format(msg) + \"\\\"}\";\n    }\n}\n\npublic class LogTraceApp {\n    public static void main(String[] args) {\n        SimpleLogger logger = new JsonLogger();\n        System.out.println(logger.format(\"Service started\"));\n    }\n}",
+      "expectedOutput": "{\"entry\": \"[2026-10-03] [LOG] Service started\"}",
+      "hints": [
+        "In TimestampLogger: return `\"[2026-10-03] \" + super.format(msg);`.",
+        "In JsonLogger: wrap `super.format(msg)` inside JSON quotes."
+      ]
+    },
+    {
+      "id": "prob-les3-p2",
+      "lessonId": "java-oop-mod11-les3",
+      "orderIndex": 2,
+      "title": "Tax Calculation Strategy Dispatcher",
+      "difficulty": "medium",
+      "problemStatement": "Build a tax calculation dispatcher from scratch without starter code:\n1. Base class `TaxPolicy`: method `public double computeTax(double gross)` returning `gross * 0.10`.\n2. Subclass `StateTaxPolicy extends TaxPolicy`: overrides `computeTax(double gross)` returning `super.computeTax(gross) + (gross * 0.05)`.\n3. Subclass `LuxuryTaxPolicy extends StateTaxPolicy`: overrides `computeTax(double gross)` returning `super.computeTax(gross) + (gross * 0.08)`.\n4. In `Main`, create an array `TaxPolicy[] policies` containing:\n   - `new TaxPolicy()`\n   - `new StateTaxPolicy()`\n   - `new LuxuryTaxPolicy()`\n5. For each policy, calculate tax on `$1000.0` and print `'Tax: $' + p.computeTax(1000.0)`.\nVerify output is $100.0, $150.0, and $230.0.",
+      "solutionCode": "class TaxPolicy {\n    public double computeTax(double gross) {\n        return gross * 0.10;\n    }\n}\n\nclass StateTaxPolicy extends TaxPolicy {\n    @Override\n    public double computeTax(double gross) {\n        return super.computeTax(gross) + (gross * 0.05);\n    }\n}\n\nclass LuxuryTaxPolicy extends StateTaxPolicy {\n    @Override\n    public double computeTax(double gross) {\n        return super.computeTax(gross) + (gross * 0.08);\n    }\n}\n\npublic class TaxApp {\n    public static void main(String[] args) {\n        TaxPolicy[] policies = new TaxPolicy[] {\n            new TaxPolicy(),\n            new StateTaxPolicy(),\n            new LuxuryTaxPolicy()\n        };\n        for (TaxPolicy p : policies) {\n            System.out.println(\"Tax: $\" + p.computeTax(1000.0));\n        }\n    }\n}",
+      "expectedOutput": "Tax: $100.0\nTax: $150.0\nTax: $230.0",
+      "hints": [
+        "TaxPolicy: 1000 * 0.10 = 100.0.",
+        "StateTaxPolicy: 100.0 + 50.0 = 150.0.",
+        "LuxuryTaxPolicy: 150.0 + 80.0 = 230.0."
+      ]
+    },
+    {
+      "id": "prob-les3-p3",
+      "lessonId": "java-oop-mod11-les3",
+      "orderIndex": 3,
+      "title": "Covariant Return Factory Pipeline",
+      "difficulty": "medium",
+      "problemStatement": "Build a covariant return document factory from scratch without starter code:\n1. Base class `FileContent` with `public String getType() { return \"RAW\"; }`.\n2. Subclass `ImageContent extends FileContent`: overrides `getType() { return \"IMAGE\"; }`.\n3. Base class `FileProducer`: method `public FileContent create()` returning `new FileContent()`.\n4. Subclass `ImageProducer extends FileProducer`: overrides `create()` with covariant return type `public ImageContent create()` returning `new ImageContent()`.\n5. In `Main`:\n   - Create `FileProducer producer = new ImageProducer();`\n   - Call `FileContent content = producer.create();`\n   - Print `'Produced content type: ' + content.getType()`.\nVerify dynamic dispatch returns an `ImageContent` instance that prints `'IMAGE'`.",
+      "solutionCode": "class FileContent {\n    public String getType() { return \"RAW\"; }\n}\n\nclass ImageContent extends FileContent {\n    @Override\n    public String getType() { return \"IMAGE\"; }\n}\n\nclass FileProducer {\n    public FileContent create() {\n        return new FileContent();\n    }\n}\n\nclass ImageProducer extends FileProducer {\n    @Override\n    public ImageContent create() {\n        return new ImageContent();\n    }\n}\n\npublic class CovariantApp {\n    public static void main(String[] args) {\n        FileProducer producer = new ImageProducer();\n        FileContent content = producer.create();\n        System.out.println(\"Produced content type: \" + content.getType());\n    }\n}",
+      "expectedOutput": "Produced content type: IMAGE",
+      "hints": [
+        "ImageProducer.create() returns ImageContent (covariant override of FileContent).",
+        "Dynamic dispatch routes producer.create() to ImageProducer."
+      ]
+    },
+    {
+      "id": "prob-les3-p4",
+      "lessonId": "java-oop-mod11-les3",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Visibility Reduction in Override",
+      "difficulty": "hard",
+      "problemStatement": "The code below fails compilation because `AdminService` attempts to reduce the visibility of `execute()` from `public` to `protected`, violating the Liskov Substitution Principle. Fix the visibility modifier in `AdminService` so that the program compiles and outputs `'Executing privileged admin operation'`.",
+      "starterCode": "class BaseOperation {\n    public void execute() {\n        System.out.println(\"Executing base operation\");\n    }\n}\n\nclass AdminService extends BaseOperation {\n    // BUG: Cannot reduce the visibility of the inherited method from BaseOperation!\n    @Override\n    protected void execute() {\n        System.out.println(\"Executing privileged admin operation\");\n    }\n}\n\npublic class VisibilityBug {\n    public static void main(String[] args) {\n        BaseOperation op = new AdminService();\n        op.execute();\n    }\n}",
+      "initialCode": "class BaseOperation {\n    public void execute() {\n        System.out.println(\"Executing base operation\");\n    }\n}\n\nclass AdminService extends BaseOperation {\n    // BUG: Cannot reduce the visibility of the inherited method from BaseOperation!\n    @Override\n    protected void execute() {\n        System.out.println(\"Executing privileged admin operation\");\n    }\n}\n\npublic class VisibilityBug {\n    public static void main(String[] args) {\n        BaseOperation op = new AdminService();\n        op.execute();\n    }\n}",
+      "solutionCode": "class BaseOperation {\n    public void execute() {\n        System.out.println(\"Executing base operation\");\n    }\n}\n\nclass AdminService extends BaseOperation {\n    @Override\n    public void execute() {\n        System.out.println(\"Executing privileged admin operation\");\n    }\n}\n\npublic class VisibilityBug {\n    public static void main(String[] args) {\n        BaseOperation op = new AdminService();\n        op.execute();\n    }\n}",
+      "expectedOutput": "Executing privileged admin operation",
+      "hints": [
+        "Change `protected` to `public` in AdminService.execute().",
+        "Subclasses can never reduce the visibility of an inherited method."
+      ]
+    },
+    {
+      "id": "prob-les3-p5",
+      "lessonId": "java-oop-mod11-les3",
+      "orderIndex": 5,
+      "title": "Advanced: 4-Tier Auditable Pipeline Execution",
+      "difficulty": "advanced",
+      "problemStatement": "Build a 4-tier auditable data pipeline from scratch without starter code:\n1. Interface `PipelineStage`: method `String process(String input)`.\n2. Class `BaseStage implements PipelineStage`: `process(input)` returns `input.toLowerCase()`.\n3. Class `SanitizingStage extends BaseStage`: overrides `process(input)` returning `super.process(input).replaceAll(\"[^a-z0-9 ]\", \"\")`.\n4. Class `PrefixStage extends SanitizingStage`: field `prefix` (String). Constructor sets prefix. Overrides `process(input)` returning `prefix + \": \" + super.process(input)`.\n5. In `Main`:\n   - Create `PipelineStage stage = new PrefixStage(\"CLEAN_DATA\");`\n   - Process text `'*** Hello World #2026! ***'`\n   - Print `'Result: ' + stage.process(\"*** Hello World #2026! ***\")`.\nVerify the cascaded execution produces: `'Result: CLEAN_DATA:  hello world 2026 '`.",
+      "solutionCode": "interface PipelineStage {\n    String process(String input);\n}\n\nclass BaseStage implements PipelineStage {\n    @Override\n    public String process(String input) {\n        return input.toLowerCase();\n    }\n}\n\nclass SanitizingStage extends BaseStage {\n    @Override\n    public String process(String input) {\n        return super.process(input).replaceAll(\"[^a-z0-9 ]\", \"\");\n    }\n}\n\nclass PrefixStage extends SanitizingStage {\n    private String prefix;\n    public PrefixStage(String prefix) {\n        this.prefix = prefix;\n    }\n    @Override\n    public String process(String input) {\n        return prefix + \": \" + super.process(input);\n    }\n}\n\npublic class PipelineTraceApp {\n    public static void main(String[] args) {\n        PipelineStage stage = new PrefixStage(\"CLEAN_DATA\");\n        String result = stage.process(\"*** Hello World #2026! ***\");\n        System.out.println(\"Result: \" + result);\n    }\n}",
+      "expectedOutput": "Result: CLEAN_DATA:  hello world 2026 ",
+      "hints": [
+        "BaseStage lowercases the text.",
+        "SanitizingStage removes punctuation.",
+        "PrefixStage prepends the tag prefix."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Tracing Inheritance & Polymorphism",
+    "Analyze, predict, and trace code execution involving tracing-inheritance-and-polymorphism",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Tracing Inheritance & Polymorphism principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

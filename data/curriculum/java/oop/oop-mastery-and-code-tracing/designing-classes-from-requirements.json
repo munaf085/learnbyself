@@ -1,0 +1,516 @@
+{
+  "id": "les-mast-6",
+  "slug": "designing-classes-from-requirements",
+  "title": "Designing Classes from Requirements",
+  "summary": "Identify entities, state, behaviors, and relationships from business specification prompts.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les6-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Architect's Blueprint from Client Briefs",
+      "concept": "Deconstructing Business Specifications into Class Hierarchies",
+      "realWorldMetaphor": {
+        "scenario": "A homeowner tells an architect: 'I want a modern family home where kids can play, groceries can be unloaded quickly from the garage into the pantry, and guests can dine comfortably without seeing kitchen clutter.' The architect doesn't start pouring concrete or buying chandeliers. They underline the nouns (kids, groceries, garage, pantry, guests, dining room) and verbs (unload, dine, play). They design functional zones, draw traffic flow blueprints, and establish load-bearing boundaries before a single brick is laid.",
+        "mapping": "In software engineering, product managers hand you ambiguous user stories like 'Users can subscribe to monthly recurring boxes, receive discount coupons, and track delivery status.' A master OOP engineer extracts Nouns as candidate Domain Entities or Value Objects (`Subscription`, `Customer`, `Coupon`), Verbs as candidate Methods (`applyDiscount()`, `renew()`), and Constraints as Invariant rules. Designing this object graph on paper prevents costly rewrites in production.",
+        "takeaway": "Parse requirements systematically: nouns become entities, verbs become methods, and rules become invariant validations."
+      }
+    },
+    {
+      "id": "act-les6-concept",
+      "type": "concept",
+      "title": "The 4-Step Object-Oriented Domain Modeling Framework",
+      "content": "### Step 1: Grammatical Analysis (Nouns vs Verbs)\n- **Nouns** -> Candidate Classes or Fields (`Account`, `Transaction`, `InterestRate`).\n- **Verbs** -> Candidate Behaviors or Methods (`deposit`, `calculateInterest`, `notify`).\n- **Adjectives** -> State properties or Enums (`PENDING`, `APPROVED`, `GOLD_TIER`).\n\n### Step 2: Categorize Domain Concepts\n- **Domain Entities**: Objects with a unique identity and lifecycle that persists over time (`Customer(id: 'C-101')`). Two customers with the same name are still different customers.\n- **Value Objects**: Immutable objects defined solely by their attributes with no conceptual identity (`Money($50, USD)`, `Address`). Two $50 bills are completely interchangeable.\n- **Domain Services**: Stateless coordinators that perform operations spanning multiple entities (`PaymentGateway`, `TaxEngine`).\n\n### Step 3: Determine Relationship Multiplicity\n- **1-to-1**: `User` has one `UserProfile`.\n- **1-to-Many**: `Order` has many `OrderItems`.\n- **Many-to-Many**: `Student` registers for many `Courses`; `Course` enrolls many `Students`.\n\n### Step 4: Define Invariants & Encapsulation Boundaries\n- What states are strictly illegal? (e.g. `Order` cannot be finalized with 0 items; `Account` balance cannot drop below overdraft limit).\n- Establish Aggregate Roots that guard access to internal child objects."
+    },
+    {
+      "id": "act-les6-cw1",
+      "type": "code_walkthrough",
+      "title": "Modeling an Online Learning Platform Domain",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Value Object: Grade\nclass Grade {\n    private final int percentage;\n    public Grade(int percentage) {\n        if (percentage < 0 || percentage > 100) throw new IllegalArgumentException(\"Invalid grade\");\n        this.percentage = percentage;\n    }\n    public int getPercentage() { return percentage; }\n    public boolean isPassing() { return percentage >= 60; }\n}\n\n// 2. Domain Entity: Student\nclass Student {\n    private final String studentId;\n    private final String name;\n    public Student(String studentId, String name) {\n        this.studentId = studentId;\n        this.name = name;\n    }\n    public String getStudentId() { return studentId; }\n    public String getName() { return name; }\n}\n\n// 3. Aggregate Root: Course\nclass Course {\n    private final String courseCode;\n    private final String title;\n    private final List<Student> enrolledStudents = new ArrayList<>();\n\n    public Course(String courseCode, String title) {\n        this.courseCode = courseCode;\n        this.title = title;\n    }\n\n    public void enroll(Student student) {\n        if (student == null) throw new IllegalArgumentException(\"Student cannot be null\");\n        enrolledStudents.add(student);\n    }\n\n    public List<Student> getEnrolledStudents() {\n        return Collections.unmodifiableList(enrolledStudents);\n    }\n    public String getCourseCode() { return courseCode; }\n    public String getTitle() { return title; }\n}\n\npublic class CoursePlatformApp {\n    public static void main(String[] args) {\n        Course oopCourse = new Course(\"CS-201\", \"Advanced OOP Mastery\");\n        Student s1 = new Student(\"STU-01\", \"Munaf\");\n        Student s2 = new Student(\"STU-02\", \"Keerthana\");\n\n        oopCourse.enroll(s1);\n        oopCourse.enroll(s2);\n\n        System.out.println(\"Course: \" + oopCourse.getTitle());\n        System.out.println(\"Enrolled Count: \" + oopCourse.getEnrolledStudents().size());\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Value Object: Grade\nclass Grade {\n    private final int percentage;\n    public Grade(int percentage) {\n        if (percentage < 0 || percentage > 100) throw new IllegalArgumentException(\"Invalid grade\");\n        this.percentage = percentage;\n    }\n    public int getPercentage() { return percentage; }\n    public boolean isPassing() { return percentage >= 60; }\n}\n\n// 2. Domain Entity: Student\nclass Student {\n    private final String studentId;\n    private final String name;\n    public Student(String studentId, String name) {\n        this.studentId = studentId;\n        this.name = name;\n    }\n    public String getStudentId() { return studentId; }\n    public String getName() { return name; }\n}\n\n// 3. Aggregate Root: Course\nclass Course {\n    private final String courseCode;\n    private final String title;\n    private final List<Student> enrolledStudents = new ArrayList<>();\n\n    public Course(String courseCode, String title) {\n        this.courseCode = courseCode;\n        this.title = title;\n    }\n\n    public void enroll(Student student) {\n        if (student == null) throw new IllegalArgumentException(\"Student cannot be null\");\n        enrolledStudents.add(student);\n    }\n\n    public List<Student> getEnrolledStudents() {\n        return Collections.unmodifiableList(enrolledStudents);\n    }\n    public String getCourseCode() { return courseCode; }\n    public String getTitle() { return title; }\n}\n\npublic class CoursePlatformApp {\n    public static void main(String[] args) {\n        Course oopCourse = new Course(\"CS-201\", \"Advanced OOP Mastery\");\n        Student s1 = new Student(\"STU-01\", \"Munaf\");\n        Student s2 = new Student(\"STU-02\", \"Keerthana\");\n\n        oopCourse.enroll(s1);\n        oopCourse.enroll(s2);\n\n        System.out.println(\"Course: \" + oopCourse.getTitle());\n        System.out.println(\"Enrolled Count: \" + oopCourse.getEnrolledStudents().size());\n    }\n}",
+      "language": "java",
+      "explanation": "Translates domain requirements into Value Object (Grade), Entity (Student), and Aggregate Root (Course) with invariant protection.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Grade` encapsulates boundary validation (0-100) as an immutable value object."
+        },
+        {
+          "step": 2,
+          "description": "`Student` encapsulates unique student identity (`studentId`)."
+        },
+        {
+          "step": 3,
+          "description": "`Course` manages its student roster through `enroll()`, exposing only an unmodifiable list."
+        },
+        {
+          "step": 4,
+          "description": "Client code interacts through clear domain semantics."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-cw2",
+      "type": "code_walkthrough",
+      "title": "Flight Reservation Domain with Domain Service",
+      "codeSnippet": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Flight {\n    private final String flightNumber;\n    private int availableSeats;\n    public Flight(String flightNumber, int seats) {\n        this.flightNumber = flightNumber;\n        this.availableSeats = seats;\n    }\n    public boolean reserveSeat() {\n        if (availableSeats <= 0) return false;\n        availableSeats--;\n        return true;\n    }\n    public String getFlightNumber() { return flightNumber; }\n    public int getAvailableSeats() { return availableSeats; }\n}\n\nclass Passenger {\n    private final String passportNumber;\n    private final String fullName;\n    public Passenger(String passportNumber, String fullName) {\n        this.passportNumber = passportNumber;\n        this.fullName = fullName;\n    }\n    public String getPassportNumber() { return passportNumber; }\n    public String getFullName() { return fullName; }\n}\n\n// Domain Service orchestrating multi-entity coordination\nclass BookingCoordinator {\n    private final Map<String, String> ticketRegistry = new HashMap<>();\n\n    public String issueTicket(Passenger passenger, Flight flight) {\n        if (!flight.reserveSeat()) {\n            throw new IllegalStateException(\"Flight \" + flight.getFlightNumber() + \" is fully booked!\");\n        }\n        String ticketId = \"TKT-\" + flight.getFlightNumber() + \"-\" + passenger.getPassportNumber();\n        ticketRegistry.put(ticketId, passenger.getFullName());\n        return ticketId;\n    }\n\n    public int getTotalTickets() { return ticketRegistry.size(); }\n}\n\npublic class FlightBookingDemo {\n    public static void main(String[] args) {\n        Flight flight = new Flight(\"AI-101\", 1);\n        Passenger p1 = new Passenger(\"P99482\", \"Alice Smith\");\n        BookingCoordinator coordinator = new BookingCoordinator();\n\n        String ticket = coordinator.issueTicket(p1, flight);\n        System.out.println(\"Issued: \" + ticket + \" | Remaining seats: \" + flight.getAvailableSeats());\n    }\n}",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\nclass Flight {\n    private final String flightNumber;\n    private int availableSeats;\n    public Flight(String flightNumber, int seats) {\n        this.flightNumber = flightNumber;\n        this.availableSeats = seats;\n    }\n    public boolean reserveSeat() {\n        if (availableSeats <= 0) return false;\n        availableSeats--;\n        return true;\n    }\n    public String getFlightNumber() { return flightNumber; }\n    public int getAvailableSeats() { return availableSeats; }\n}\n\nclass Passenger {\n    private final String passportNumber;\n    private final String fullName;\n    public Passenger(String passportNumber, String fullName) {\n        this.passportNumber = passportNumber;\n        this.fullName = fullName;\n    }\n    public String getPassportNumber() { return passportNumber; }\n    public String getFullName() { return fullName; }\n}\n\n// Domain Service orchestrating multi-entity coordination\nclass BookingCoordinator {\n    private final Map<String, String> ticketRegistry = new HashMap<>();\n\n    public String issueTicket(Passenger passenger, Flight flight) {\n        if (!flight.reserveSeat()) {\n            throw new IllegalStateException(\"Flight \" + flight.getFlightNumber() + \" is fully booked!\");\n        }\n        String ticketId = \"TKT-\" + flight.getFlightNumber() + \"-\" + passenger.getPassportNumber();\n        ticketRegistry.put(ticketId, passenger.getFullName());\n        return ticketId;\n    }\n\n    public int getTotalTickets() { return ticketRegistry.size(); }\n}\n\npublic class FlightBookingDemo {\n    public static void main(String[] args) {\n        Flight flight = new Flight(\"AI-101\", 1);\n        Passenger p1 = new Passenger(\"P99482\", \"Alice Smith\");\n        BookingCoordinator coordinator = new BookingCoordinator();\n\n        String ticket = coordinator.issueTicket(p1, flight);\n        System.out.println(\"Issued: \" + ticket + \" | Remaining seats: \" + flight.getAvailableSeats());\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates domain service `BookingCoordinator` managing multi-entity workflows between `Flight` and `Passenger`.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Flight` models state and invariant (`reserveSeat()` decrements seat count safely)."
+        },
+        {
+          "step": 2,
+          "description": "`Passenger` models customer entity with passport identity."
+        },
+        {
+          "step": 3,
+          "description": "`BookingCoordinator` orchestrates the transaction and creates the ticket association."
+        },
+        {
+          "step": 4,
+          "description": "Invoking `issueTicket()` decrements seats to 0 and registers the ticket."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-quiz",
+      "type": "mcq",
+      "title": "Knowledge Assessment: Designing Classes from Requirements",
+      "questions": [
+        {
+          "id": "q-les6-1",
+          "question": "In domain-driven design, what distinguishes an Entity from a Value Object?",
+          "options": [
+            "An Entity is always abstract, while a Value Object is concrete",
+            "An Entity is defined by a distinct identity that persists across time, whereas a Value Object is defined solely by its attribute values and is immutable",
+            "A Value Object cannot have methods",
+            "An Entity cannot hold references to other classes"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Entities possess a unique identifier (e.g. userId, ssn), whereas Value Objects are defined purely by their state (e.g. Money($10), Coordinate(x, y))."
+        },
+        {
+          "id": "q-les6-2",
+          "question": "When performing grammatical analysis on a specification document, what do nouns typically map to?",
+          "options": [
+            "Methods and algorithms",
+            "Classes, fields, or domain entities",
+            "Package names",
+            "Unit test assertions"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Nouns (User, Order, Invoice) represent candidate classes and fields, while verbs represent candidate operations."
+        },
+        {
+          "id": "q-les6-3",
+          "question": "What is an 'Aggregate Root' in object-oriented architecture?",
+          "options": [
+            "The root java.lang.Object class",
+            "The primary entry-point entity of an object cluster that external callers must interact with to ensure all internal invariants are maintained",
+            "A database table with a foreign key",
+            "A static utility class"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "An Aggregate Root (like Order containing OrderItems) controls all access to its internal components so that internal invariants cannot be corrupted from the outside."
+        },
+        {
+          "id": "q-les6-4",
+          "question": "What is a CRC card used for during the design phase?",
+          "options": [
+            "Cyclic Redundancy Check for network packets",
+            "A lightweight brainstorming tool capturing Class name, Responsibilities, and Collaborators",
+            "Credit card authorization",
+            "Compiler bytecode verification"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "CRC (Class-Responsibility-Collaborator) cards help engineers rapidly model classes and their relationships on index cards before writing code."
+        },
+        {
+          "id": "q-les6-5",
+          "question": "Why should a domain service be stateless?",
+          "options": [
+            "Because stateful services violate the Java memory model",
+            "Stateless services can be safely reused across multiple concurrent threads and requests without race conditions",
+            "Java interfaces do not allow instance variables",
+            "It reduces the size of the compiled .class file"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Stateless domain services operate purely on arguments passed to their methods, making them thread-safe, scalable, and easy to test."
+        },
+        {
+          "id": "q-les6-6",
+          "question": "How should a Many-to-Many relationship (like Students and Courses) typically be represented in an OOP domain model?",
+          "options": [
+            "By putting every student and course in a single giant array",
+            "By having an association class (such as `Enrollment`) or bidirectional collection references managed through invariant-preserving methods",
+            "By using global static variables",
+            "Many-to-many relationships are impossible in Java"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "An association class (like Enrollment) holds metadata about the relationship (date, grade) and decouples both entities."
+        },
+        {
+          "id": "q-les6-7",
+          "question": "What is a 'Domain Invariant'?",
+          "options": [
+            "A rule or condition that must always remain true throughout the lifetime of a business entity (e.g. balance >= 0)",
+            "A variable that cannot be renamed in an IDE",
+            "A constant value stored in Java bytecode",
+            "A synchronized method in Java"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "A domain invariant is an absolute business truth that the class encapsulates and protects from violation."
+        },
+        {
+          "id": "q-les6-8",
+          "question": "If a requirement states: 'The system must support CreditCard, PayPal, and ApplePay', what design pattern should be prepared?",
+          "options": [
+            "Singleton Pattern",
+            "Strategy or Factory Pattern with a common PaymentMethod interface",
+            "Prototype Pattern",
+            "Flyweight Pattern"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The Strategy pattern decouples payment processing behind a unified interface, allowing interchangeable providers."
+        },
+        {
+          "id": "q-les6-9",
+          "question": "What is the primary danger of modeling everything as an Entity even when it has no unique identity?",
+          "options": [
+            "Compilers will refuse to compile the class",
+            "Unnecessary complexity, mutable state leakage, and difficulty with equality comparisons",
+            "Garbage collection is disabled",
+            "Java records cannot be used"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Overusing entities introduces mutable lifecycle overhead where simple, immutable value objects would provide safety and clarity."
+        },
+        {
+          "id": "q-les6-10",
+          "question": "In low-level system design interviews, what is the first step before writing any class code?",
+          "options": [
+            "Start typing the main method immediately",
+            "Clarify ambiguities, define functional requirements, list constraints, and identify key core entities",
+            "Write SQL CREATE TABLE queries",
+            "Build a GUI mockup"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Top engineers first clarify ambiguous requirements, define scope boundaries, and identify core domain entities before writing code."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-interview",
+      "type": "interview_qa",
+      "title": "FAANG Technical Interview: Object-Oriented System Design",
+      "questions": [
+        {
+          "id": "qa-les6-1",
+          "company": "Amazon",
+          "role": "Software Development Engineer II",
+          "question": "Design an Object-Oriented Parking Lot system. How do you identify the core classes and responsibilities?",
+          "answer": "I start with clarifying questions: types of vehicles (Motorcycle, Car, Truck), parking spots (Compact, Regular, Large), and fee structure. Then I extract core classes: 1) Value Objects: `ParkingSpotType`, `VehicleType`. 2) Domain Entities: `Vehicle` (license plate), `ParkingSpot` (spotNumber, type, isOccupied), `ParkingTicket` (ticketId, issuedTime, spot). 3) Aggregate/Service: `ParkingLot` containing `List<ParkingFloor>`, which contains `List<ParkingSpot>`. The `ParkingService` handles `assignSpot(Vehicle)` and `processPayment(ParkingTicket)`. This cleanly separates physical infrastructure from business payment logic.",
+          "keyTakeaway": "Structure complex physical systems into hierarchical aggregates and decoupled domain services.",
+          "keyPoints": [
+            "Decompose into Value Objects, Entities, and Aggregate Hierarchies",
+            "Separate physical spots from operational ticketing services",
+            "Guard capacity and spot-assignment invariants within the aggregate"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les6-2",
+          "company": "Google",
+          "role": "Senior Software Engineer",
+          "question": "How do you decide whether a concept should be modeled as an Entity or a Value Object in a distributed domain?",
+          "answer": "Ask: 'If two instances have identical attribute values, are they completely interchangeable?' If yes, it is a Value Object (e.g. `Money`, `GPSCoordinate`, `Color`). Value objects are made immutable and implement `equals`/`hashCode` based on field values. If the concept has a lifecycle, can change state over time, and must be tracked even if all attributes change, it is an Entity (e.g. `User`, `Order`, `Flight`). Entities have an explicit identifier (UUID) that defines their identity regardless of attribute mutations.",
+          "keyTakeaway": "Identity and mutability define Entities; attribute interchangeability defines Value Objects.",
+          "keyPoints": [
+            "Entities are tracked by persistent ID across state mutations",
+            "Value Objects are immutable and compared by value",
+            "Favor Value Objects wherever identity is not required"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les6-3",
+          "company": "Meta",
+          "role": "Production Engineer",
+          "question": "What is an Aggregate Root and why is it critical when multiple clients update data concurrently?",
+          "answer": "An Aggregate is a cluster of associated domain objects that we treat as a single unit for data changes. The Aggregate Root is the only member that outside objects are allowed to hold references to. For example, in an `Order` aggregate containing `OrderItem`s, clients cannot directly add or modify `OrderItem`s; they must invoke `order.addItem(product, qty)`. This ensures that aggregate invariants (such as total weight, max item limits, discount constraints) are verified centrally before any child state is altered.",
+          "keyTakeaway": "Aggregate Roots act as gatekeepers to protect invariant integrity across multi-object clusters.",
+          "keyPoints": [
+            "External callers only hold references to the root",
+            "Internal objects are modified strictly via root methods",
+            "Guarantees that cross-entity invariants are never bypassed"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les6-4",
+          "company": "Microsoft",
+          "role": "Principal Software Architect",
+          "question": "In a low-level design interview for an Elevator System, how do you handle scheduling algorithms without violating OCP?",
+          "answer": "I decouple the elevator hardware/state (`ElevatorCar`, `ElevatorDoor`, `Floor`) from the scheduling logic using the Strategy Pattern. I introduce interface `ElevatorSchedulingStrategy` with method `Floor selectNextTarget(List<ElevatorCar> fleet, Request request)`. Implementations can include `FcfSScheduling` (First-Come First-Served), `ScanScheduling` (Elevator Algorithm / LOOK), or `EnergySavingStrategy`. The `ElevatorController` holds a reference to the strategy interface, allowing algorithms to be swapped or configured without modifying elevator physics.",
+          "keyTakeaway": "Isolate state machines from algorithmic optimization using strategy interfaces.",
+          "keyPoints": [
+            "Separate elevator physics/state from scheduling decisions",
+            "Strategy interface permits swapping algorithms (LOOK, SCAN, FCFS)",
+            "ElevatorController orchestrates without tight coupling"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les6-5",
+          "company": "Apple",
+          "role": "Senior Software Engineer",
+          "question": "How do you avoid an Anemic Domain Model when translating requirements to classes?",
+          "answer": "An Anemic Domain Model is an anti-pattern where classes are mere bags of getters and setters without business logic, while procedural 'service' classes perform all the calculations. To prevent this, I apply Domain-Driven Design and 'Tell, Don't Ask': whenever a business calculation or state transition belongs naturally to an entity's data, I put the method directly on that entity (e.g. `order.cancel()`, `bankAccount.applyInterest()`). Services are reserved only for coordination across multiple distinct aggregates or external I/O.",
+          "keyTakeaway": "Co-locate business logic with data inside entities to avoid anemic models.",
+          "keyPoints": [
+            "Avoid classes that are just getters and setters",
+            "Place validation and state transitions inside the entity",
+            "Reserve services for multi-entity coordination and external I/O"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les6-6",
+          "company": "Netflix",
+          "role": "L5 Backend Engineer",
+          "question": "What questions do you ask during a 45-minute LLD interview to establish requirements boundaries?",
+          "answer": "I ask: 1) What is the core MVP scope for today vs nice-to-have extensions? 2) What are the concurrency and scale expectations (single-threaded simulation vs thread-safe multi-worker)? 3) What are the exact edge cases (e.g. what happens when capacity is full or balance is zero)? 4) Are there persistence requirements, or should we keep everything in-memory? 5) How should notifications or external integrations be handled? This immediately demonstrates senior product empathy and architectural precision.",
+          "keyTakeaway": "Clarify scope, scale, concurrency, and persistence upfront before writing architecture.",
+          "keyPoints": [
+            "Define MVP boundaries to avoid over-engineering",
+            "Confirm concurrency and thread-safety requirements",
+            "Establish invariant edge cases and failure modes"
+          ],
+          "companyTag": "Netflix"
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "qa-les6-1",
+          "company": "Amazon",
+          "role": "Software Development Engineer II",
+          "question": "Design an Object-Oriented Parking Lot system. How do you identify the core classes and responsibilities?",
+          "answer": "I start with clarifying questions: types of vehicles (Motorcycle, Car, Truck), parking spots (Compact, Regular, Large), and fee structure. Then I extract core classes: 1) Value Objects: `ParkingSpotType`, `VehicleType`. 2) Domain Entities: `Vehicle` (license plate), `ParkingSpot` (spotNumber, type, isOccupied), `ParkingTicket` (ticketId, issuedTime, spot). 3) Aggregate/Service: `ParkingLot` containing `List<ParkingFloor>`, which contains `List<ParkingSpot>`. The `ParkingService` handles `assignSpot(Vehicle)` and `processPayment(ParkingTicket)`. This cleanly separates physical infrastructure from business payment logic.",
+          "keyTakeaway": "Structure complex physical systems into hierarchical aggregates and decoupled domain services.",
+          "keyPoints": [
+            "Decompose into Value Objects, Entities, and Aggregate Hierarchies",
+            "Separate physical spots from operational ticketing services",
+            "Guard capacity and spot-assignment invariants within the aggregate"
+          ],
+          "companyTag": "Amazon"
+        },
+        {
+          "id": "qa-les6-2",
+          "company": "Google",
+          "role": "Senior Software Engineer",
+          "question": "How do you decide whether a concept should be modeled as an Entity or a Value Object in a distributed domain?",
+          "answer": "Ask: 'If two instances have identical attribute values, are they completely interchangeable?' If yes, it is a Value Object (e.g. `Money`, `GPSCoordinate`, `Color`). Value objects are made immutable and implement `equals`/`hashCode` based on field values. If the concept has a lifecycle, can change state over time, and must be tracked even if all attributes change, it is an Entity (e.g. `User`, `Order`, `Flight`). Entities have an explicit identifier (UUID) that defines their identity regardless of attribute mutations.",
+          "keyTakeaway": "Identity and mutability define Entities; attribute interchangeability defines Value Objects.",
+          "keyPoints": [
+            "Entities are tracked by persistent ID across state mutations",
+            "Value Objects are immutable and compared by value",
+            "Favor Value Objects wherever identity is not required"
+          ],
+          "companyTag": "Google"
+        },
+        {
+          "id": "qa-les6-3",
+          "company": "Meta",
+          "role": "Production Engineer",
+          "question": "What is an Aggregate Root and why is it critical when multiple clients update data concurrently?",
+          "answer": "An Aggregate is a cluster of associated domain objects that we treat as a single unit for data changes. The Aggregate Root is the only member that outside objects are allowed to hold references to. For example, in an `Order` aggregate containing `OrderItem`s, clients cannot directly add or modify `OrderItem`s; they must invoke `order.addItem(product, qty)`. This ensures that aggregate invariants (such as total weight, max item limits, discount constraints) are verified centrally before any child state is altered.",
+          "keyTakeaway": "Aggregate Roots act as gatekeepers to protect invariant integrity across multi-object clusters.",
+          "keyPoints": [
+            "External callers only hold references to the root",
+            "Internal objects are modified strictly via root methods",
+            "Guarantees that cross-entity invariants are never bypassed"
+          ],
+          "companyTag": "Meta"
+        },
+        {
+          "id": "qa-les6-4",
+          "company": "Microsoft",
+          "role": "Principal Software Architect",
+          "question": "In a low-level design interview for an Elevator System, how do you handle scheduling algorithms without violating OCP?",
+          "answer": "I decouple the elevator hardware/state (`ElevatorCar`, `ElevatorDoor`, `Floor`) from the scheduling logic using the Strategy Pattern. I introduce interface `ElevatorSchedulingStrategy` with method `Floor selectNextTarget(List<ElevatorCar> fleet, Request request)`. Implementations can include `FcfSScheduling` (First-Come First-Served), `ScanScheduling` (Elevator Algorithm / LOOK), or `EnergySavingStrategy`. The `ElevatorController` holds a reference to the strategy interface, allowing algorithms to be swapped or configured without modifying elevator physics.",
+          "keyTakeaway": "Isolate state machines from algorithmic optimization using strategy interfaces.",
+          "keyPoints": [
+            "Separate elevator physics/state from scheduling decisions",
+            "Strategy interface permits swapping algorithms (LOOK, SCAN, FCFS)",
+            "ElevatorController orchestrates without tight coupling"
+          ],
+          "companyTag": "Microsoft"
+        },
+        {
+          "id": "qa-les6-5",
+          "company": "Apple",
+          "role": "Senior Software Engineer",
+          "question": "How do you avoid an Anemic Domain Model when translating requirements to classes?",
+          "answer": "An Anemic Domain Model is an anti-pattern where classes are mere bags of getters and setters without business logic, while procedural 'service' classes perform all the calculations. To prevent this, I apply Domain-Driven Design and 'Tell, Don't Ask': whenever a business calculation or state transition belongs naturally to an entity's data, I put the method directly on that entity (e.g. `order.cancel()`, `bankAccount.applyInterest()`). Services are reserved only for coordination across multiple distinct aggregates or external I/O.",
+          "keyTakeaway": "Co-locate business logic with data inside entities to avoid anemic models.",
+          "keyPoints": [
+            "Avoid classes that are just getters and setters",
+            "Place validation and state transitions inside the entity",
+            "Reserve services for multi-entity coordination and external I/O"
+          ],
+          "companyTag": "Apple"
+        },
+        {
+          "id": "qa-les6-6",
+          "company": "Netflix",
+          "role": "L5 Backend Engineer",
+          "question": "What questions do you ask during a 45-minute LLD interview to establish requirements boundaries?",
+          "answer": "I ask: 1) What is the core MVP scope for today vs nice-to-have extensions? 2) What are the concurrency and scale expectations (single-threaded simulation vs thread-safe multi-worker)? 3) What are the exact edge cases (e.g. what happens when capacity is full or balance is zero)? 4) Are there persistence requirements, or should we keep everything in-memory? 5) How should notifications or external integrations be handled? This immediately demonstrates senior product empathy and architectural precision.",
+          "keyTakeaway": "Clarify scope, scale, concurrency, and persistence upfront before writing architecture.",
+          "keyPoints": [
+            "Define MVP boundaries to avoid over-engineering",
+            "Confirm concurrency and thread-safety requirements",
+            "Establish invariant edge cases and failure modes"
+          ],
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les6-checklist",
+      "type": "self_evaluation",
+      "title": "Module 11 Self-Evaluation: Designing Classes from Requirements",
+      "checklist": [
+        "I can perform grammatical analysis on user stories to identify candidate classes and methods.",
+        "I can differentiate between Domain Entities (identity-tracked) and Value Objects (immutable descriptors).",
+        "I establish Aggregate Roots to protect multi-entity cluster invariants.",
+        "I model 1-to-1, 1-to-many, and many-to-many associations cleanly in Java.",
+        "I avoid Anemic Domain Models by co-locating business calculations with data.",
+        "I identify domain invariants and validate them immediately upon object creation.",
+        "I design stateless domain services for multi-entity workflow orchestration.",
+        "I isolate algorithms behind Strategy interfaces to uphold the Open-Closed Principle.",
+        "I establish clear boundary contracts before writing low-level implementation code.",
+        "I can articulate low-level system design trade-offs during technical interviews."
+      ],
+      "items": [
+        "I can perform grammatical analysis on user stories to identify candidate classes and methods.",
+        "I can differentiate between Domain Entities (identity-tracked) and Value Objects (immutable descriptors).",
+        "I establish Aggregate Roots to protect multi-entity cluster invariants.",
+        "I model 1-to-1, 1-to-many, and many-to-many associations cleanly in Java.",
+        "I avoid Anemic Domain Models by co-locating business calculations with data.",
+        "I identify domain invariants and validate them immediately upon object creation.",
+        "I design stateless domain services for multi-entity workflow orchestration.",
+        "I isolate algorithms behind Strategy interfaces to uphold the Open-Closed Principle.",
+        "I establish clear boundary contracts before writing low-level implementation code.",
+        "I can articulate low-level system design trade-offs during technical interviews."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Designing Classes from Requirements",
+    "Analyze, predict, and trace code execution involving designing-classes-from-requirements",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Designing Classes from Requirements principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les6-p1",
+      "lessonId": "java-oop-mod11-les6",
+      "orderIndex": 1,
+      "title": "Warmup: Modeling Customer and Order Association",
+      "difficulty": "easy",
+      "problemStatement": "In the provided starter code, complete the `Order` class so it associates with a `Customer`:\n1. Private fields: `orderId` (String), `customer` (Customer), `totalAmount` (double).\n2. Constructor initializes all three.\n3. Method `printSummary()` prints:\n   `Order [orderId] for [customerName]: $[totalAmount]`\nIn `main()` test with `Customer(\"C-1\", \"Bob\")` and `Order(\"ORD-99\", customer, 149.50).",
+      "starterCode": "class Customer {\n    private String id;\n    private String name;\n    public Customer(String id, String name) { this.id = id; this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Order {\n    // TODO: Add fields, constructor, and printSummary()\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        Customer c = new Customer(\"C-1\", \"Bob\");\n        Order ord = new Order(\"ORD-99\", c, 149.50);\n        ord.printSummary();\n    }\n}",
+      "initialCode": "class Customer {\n    private String id;\n    private String name;\n    public Customer(String id, String name) { this.id = id; this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Order {\n    // TODO: Add fields, constructor, and printSummary()\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        Customer c = new Customer(\"C-1\", \"Bob\");\n        Order ord = new Order(\"ORD-99\", c, 149.50);\n        ord.printSummary();\n    }\n}",
+      "solutionCode": "class Customer {\n    private String id;\n    private String name;\n    public Customer(String id, String name) { this.id = id; this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Order {\n    private String orderId;\n    private Customer customer;\n    private double totalAmount;\n\n    public Order(String orderId, Customer customer, double totalAmount) {\n        this.orderId = orderId;\n        this.customer = customer;\n        this.totalAmount = totalAmount;\n    }\n\n    public void printSummary() {\n        System.out.println(\"Order \" + orderId + \" for \" + customer.getName() + \": $\" + totalAmount);\n    }\n}\n\npublic class Practice1 {\n    public static void main(String[] args) {\n        Customer c = new Customer(\"C-1\", \"Bob\");\n        Order ord = new Order(\"ORD-99\", c, 149.50);\n        ord.printSummary();\n    }\n}",
+      "expectedOutput": "Order ORD-99 for Bob: $149.5",
+      "hints": [
+        "Order holds a reference to Customer (association).",
+        "printSummary combines orderId, customer.getName(), and totalAmount."
+      ]
+    },
+    {
+      "id": "prob-les6-p2",
+      "lessonId": "java-oop-mod11-les6",
+      "orderIndex": 2,
+      "title": "Scratch: Designing a Doctor Appointment Domain",
+      "difficulty": "medium",
+      "problemStatement": "Design a hospital appointment scheduler from scratch without starter code:\n1. Value Object `TimeSlot`: private final `startTime` (String), private final `endTime` (String). Constructor and getters.\n2. Entity `Doctor`: private `id` (String), private `name` (String), private `specialty` (String). Getters.\n3. Entity `Appointment`: `id` (String), `Doctor` doctor, `patientName` (String), `TimeSlot` slot. Method `describe()` prints:\n   `Appointment [id] with Dr. [docName] ([specialty]) at [startTime]`\n4. In `Main`:\n   - Create Doctor `('DOC-1', 'Gregory House', 'Diagnostics')`\n   - Create TimeSlot `('09:00', '10:00')`\n   - Create Appointment `('APT-500', doctor, 'John Doe', slot)`\n   - Call `apt.describe()`.",
+      "solutionCode": "class TimeSlot {\n    private final String startTime;\n    private final String endTime;\n    public TimeSlot(String startTime, String endTime) {\n        this.startTime = startTime;\n        this.endTime = endTime;\n    }\n    public String getStartTime() { return startTime; }\n    public String getEndTime() { return endTime; }\n}\n\nclass Doctor {\n    private final String id;\n    private final String name;\n    private final String specialty;\n    public Doctor(String id, String name, String specialty) {\n        this.id = id;\n        this.name = name;\n        this.specialty = specialty;\n    }\n    public String getId() { return id; }\n    public String getName() { return name; }\n    public String getSpecialty() { return specialty; }\n}\n\nclass Appointment {\n    private final String id;\n    private final Doctor doctor;\n    private final String patientName;\n    private final TimeSlot slot;\n\n    public Appointment(String id, Doctor doctor, String patientName, TimeSlot slot) {\n        this.id = id;\n        this.doctor = doctor;\n        this.patientName = patientName;\n        this.slot = slot;\n    }\n\n    public void describe() {\n        System.out.println(\"Appointment \" + id + \" with Dr. \" + doctor.getName() + \" (\" + doctor.getSpecialty() + \") at \" + slot.getStartTime());\n    }\n}\n\npublic class AppointmentApp {\n    public static void main(String[] args) {\n        Doctor doc = new Doctor(\"DOC-1\", \"Gregory House\", \"Diagnostics\");\n        TimeSlot slot = new TimeSlot(\"09:00\", \"10:00\");\n        Appointment apt = new Appointment(\"APT-500\", doc, \"John Doe\", slot);\n        apt.describe();\n    }\n}",
+      "expectedOutput": "Appointment APT-500 with Dr. Gregory House (Diagnostics) at 09:00",
+      "hints": [
+        "TimeSlot is an immutable value object.",
+        "Appointment associates Doctor, patientName, and TimeSlot."
+      ]
+    },
+    {
+      "id": "prob-les6-p3",
+      "lessonId": "java-oop-mod11-les6",
+      "orderIndex": 3,
+      "title": "Scratch: Aggregate Root Bank Account with Ledger Entries",
+      "difficulty": "medium",
+      "problemStatement": "Build an Aggregate Root model from scratch without starter code:\n1. Value Object `LedgerEntry`: private final `type` (String: 'CREDIT' or 'DEBIT'), private final `amount` (double). Getters.\n2. Aggregate Root `BankAccount`: private final `accountNumber` (String), private double balance, private List<LedgerEntry> entries = new ArrayList<>().\n   - Method `deposit(double amount)`: adds amount to balance, records CREDIT ledger entry.\n   - Method `withdraw(double amount)`: if balance >= amount, deducts amount, records DEBIT ledger entry, returns true; else returns false.\n   - Method `int getEntryCount()`: returns entries.size().\n   - Getter `getBalance()`.\n3. In `Main`:\n   - Create account `new BankAccount(\"ACC-001\")`\n   - deposit(500.0)\n   - withdraw(200.0)\n   - withdraw(400.0) (fails due to insufficient funds)\n   - Print `'Final Balance: $' + acc.getBalance()` (300.0)\n   - Print `'Ledger Count: ' + acc.getEntryCount()` (2).",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass LedgerEntry {\n    private final String type;\n    private final double amount;\n    public LedgerEntry(String type, double amount) {\n        this.type = type;\n        this.amount = amount;\n    }\n    public String getType() { return type; }\n    public double getAmount() { return amount; }\n}\n\nclass BankAccount {\n    private final String accountNumber;\n    private double balance;\n    private final List<LedgerEntry> entries = new ArrayList<>();\n\n    public BankAccount(String accountNumber) {\n        this.accountNumber = accountNumber;\n        this.balance = 0.0;\n    }\n\n    public void deposit(double amount) {\n        if (amount <= 0) return;\n        balance += amount;\n        entries.add(new LedgerEntry(\"CREDIT\", amount));\n    }\n\n    public boolean withdraw(double amount) {\n        if (amount <= 0 || amount > balance) return false;\n        balance -= amount;\n        entries.add(new LedgerEntry(\"DEBIT\", amount));\n        return true;\n    }\n\n    public double getBalance() { return balance; }\n    public int getEntryCount() { return entries.size(); }\n    public String getAccountNumber() { return accountNumber; }\n}\n\npublic class BankAggregateApp {\n    public static void main(String[] args) {\n        BankAccount acc = new BankAccount(\"ACC-001\");\n        acc.deposit(500.0);\n        acc.withdraw(200.0);\n        acc.withdraw(400.0);\n\n        System.out.println(\"Final Balance: $\" + acc.getBalance());\n        System.out.println(\"Ledger Count: \" + acc.getEntryCount());\n    }\n}",
+      "expectedOutput": "Final Balance: $300.0\nLedger Count: 2",
+      "hints": [
+        "BankAccount acts as the Aggregate Root guarding the ledger entries.",
+        "Withdrawal of 400.0 fails because balance is only 300.0, so no ledger entry is created."
+      ]
+    },
+    {
+      "id": "prob-les6-p4",
+      "lessonId": "java-oop-mod11-les6",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Fixing Corrupted Shopping Cart Invariant",
+      "difficulty": "hard",
+      "problemStatement": "In the provided buggy code, `ShoppingCart` exposes its raw list, allowing an external caller to insert items with negative quantities and invalid prices!\nFix the design:\n1. Make `items` private.\n2. Provide method `addItem(Item item)` that validates `item.getPrice() > 0` and `item.getQuantity() > 0` before adding; if invalid, throw `IllegalArgumentException(\"Invalid item\")`.\n3. Provide `getItems()` returning `Collections.unmodifiableList(items)`.\n4. In `main()` catch the invalid item attempt and print `'Caught invalid item'`.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Item {\n    private String name;\n    private double price;\n    private int quantity;\n    public Item(String n, double p, int q) { this.name = n; this.price = p; this.quantity = q; }\n    public double getPrice() { return price; }\n    public int getQuantity() { return quantity; }\n}\n\nclass ShoppingCart {\n    // BUG: Public list allows external invariant corruption!\n    public List<Item> items = new ArrayList<>();\n    public double calculateTotal() {\n        double t = 0;\n        for (Item i : items) t += i.getPrice() * i.getQuantity();\n        return t;\n    }\n}\n\npublic class CartBugDemo {\n    public static void main(String[] args) {\n        ShoppingCart cart = new ShoppingCart();\n        // External code corrupts cart:\n        cart.items.add(new Item(\"Bad\", -50.0, -2));\n        System.out.println(\"Total: \" + cart.calculateTotal());\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Item {\n    private String name;\n    private double price;\n    private int quantity;\n    public Item(String n, double p, int q) { this.name = n; this.price = p; this.quantity = q; }\n    public double getPrice() { return price; }\n    public int getQuantity() { return quantity; }\n}\n\nclass ShoppingCart {\n    // BUG: Public list allows external invariant corruption!\n    public List<Item> items = new ArrayList<>();\n    public double calculateTotal() {\n        double t = 0;\n        for (Item i : items) t += i.getPrice() * i.getQuantity();\n        return t;\n    }\n}\n\npublic class CartBugDemo {\n    public static void main(String[] args) {\n        ShoppingCart cart = new ShoppingCart();\n        // External code corrupts cart:\n        cart.items.add(new Item(\"Bad\", -50.0, -2));\n        System.out.println(\"Total: \" + cart.calculateTotal());\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Item {\n    private String name;\n    private double price;\n    private int quantity;\n    public Item(String n, double p, int q) { this.name = n; this.price = p; this.quantity = q; }\n    public double getPrice() { return price; }\n    public int getQuantity() { return quantity; }\n}\n\nclass ShoppingCart {\n    private final List<Item> items = new ArrayList<>();\n\n    public void addItem(Item item) {\n        if (item == null || item.getPrice() <= 0 || item.getQuantity() <= 0) {\n            throw new IllegalArgumentException(\"Invalid item\");\n        }\n        items.add(item);\n    }\n\n    public List<Item> getItems() {\n        return Collections.unmodifiableList(items);\n    }\n\n    public double calculateTotal() {\n        double t = 0;\n        for (Item i : items) t += i.getPrice() * i.getQuantity();\n        return t;\n    }\n}\n\npublic class CartBugDemo {\n    public static void main(String[] args) {\n        ShoppingCart cart = new ShoppingCart();\n        try {\n            cart.addItem(new Item(\"Bad\", -50.0, -2));\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Caught invalid item\");\n        }\n        cart.addItem(new Item(\"Apple\", 2.0, 3));\n        System.out.println(\"Total: $\" + cart.calculateTotal());\n    }\n}",
+      "expectedOutput": "Caught invalid item\nTotal: $6.0",
+      "hints": [
+        "Encapsulate the items list privately.",
+        "Validate item price and quantity in addItem()."
+      ]
+    },
+    {
+      "id": "prob-les6-p5",
+      "lessonId": "java-oop-mod11-les6",
+      "orderIndex": 5,
+      "title": "Advanced: Complete Hotel Booking Domain System",
+      "difficulty": "advanced",
+      "problemStatement": "Design a complete hotel booking domain model from scratch:\n1. Value Object `RoomType`: Enum with `STANDARD(100.0)` and `DELUXE(200.0)`. Field `baseRate` (double) and getter.\n2. Entity `Room`: `roomNumber` (int), `RoomType` type, `isOccupied` (boolean). Methods `checkIn()` and `checkOut()`. Getters.\n3. Aggregate `Hotel`: `name` (String), private list of `Room`. Method `void addRoom(Room r)`.\n   - Method `Room findAvailableRoom(RoomType type)`: returns first room matching type where !isOccupied; returns null if none.\n4. In `Main`:\n   - Create Hotel `'Grand Palace'`\n   - Add Room 101 (STANDARD) and Room 201 (DELUXE)\n   - Find standard room, call `checkIn()`, print `'Booked Room: ' + room.getRoomNumber()`\n   - Find standard room again -> print `'Next Standard available: ' + (hotel.findAvailableRoom(RoomType.STANDARD) == null ? 'None' : 'Found')`",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nenum RoomType {\n    STANDARD(100.0),\n    DELUXE(200.0);\n    private final double baseRate;\n    RoomType(double baseRate) { this.baseRate = baseRate; }\n    public double getBaseRate() { return baseRate; }\n}\n\nclass Room {\n    private final int roomNumber;\n    private final RoomType type;\n    private boolean isOccupied;\n\n    public Room(int roomNumber, RoomType type) {\n        this.roomNumber = roomNumber;\n        this.type = type;\n        this.isOccupied = false;\n    }\n\n    public boolean checkIn() {\n        if (isOccupied) return false;\n        isOccupied = true;\n        return true;\n    }\n\n    public void checkOut() { isOccupied = false; }\n    public int getRoomNumber() { return roomNumber; }\n    public RoomType getType() { return type; }\n    public boolean isOccupied() { return isOccupied; }\n}\n\nclass Hotel {\n    private final String name;\n    private final List<Room> rooms = new ArrayList<>();\n    public Hotel(String name) { this.name = name; }\n    public void addRoom(Room r) { rooms.add(r); }\n\n    public Room findAvailableRoom(RoomType type) {\n        for (Room r : rooms) {\n            if (r.getType() == type && !r.isOccupied()) {\n                return r;\n            }\n        }\n        return null;\n    }\n}\n\npublic class HotelApp {\n    public static void main(String[] args) {\n        Hotel hotel = new Hotel(\"Grand Palace\");\n        Room r101 = new Room(101, RoomType.STANDARD);\n        Room r201 = new Room(201, RoomType.DELUXE);\n        hotel.addRoom(r101);\n        hotel.addRoom(r201);\n\n        Room booked = hotel.findAvailableRoom(RoomType.STANDARD);\n        booked.checkIn();\n        System.out.println(\"Booked Room: \" + booked.getRoomNumber());\n\n        Room nextStandard = hotel.findAvailableRoom(RoomType.STANDARD);\n        System.out.println(\"Next Standard available: \" + (nextStandard == null ? \"None\" : \"Found\"));\n    }\n}",
+      "expectedOutput": "Booked Room: 101\nNext Standard available: None",
+      "hints": [
+        "RoomType enum captures room category and pricing.",
+        "Room encapsulates occupancy state.",
+        "Hotel aggregate queries and coordinates room availability."
+      ]
+    }
+  ]
+}

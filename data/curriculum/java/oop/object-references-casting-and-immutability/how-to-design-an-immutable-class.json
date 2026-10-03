@@ -1,0 +1,519 @@
+{
+  "id": "les-cast-8",
+  "slug": "how-to-design-an-immutable-class",
+  "title": "How to Design an Immutable Class",
+  "summary": "The 5 rules: final class, private final fields, no setters, defensive copy in constructor and getters.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 8,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les8-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Museum Display Case",
+      "concept": "The 5 Rules of Immutability and Defensive Copying",
+      "realWorldMetaphor": {
+        "scenario": "A museum displays a priceless ancient manuscript inside a locked, sealed, bulletproof glass case. When you visit the museum, the curator does not open the case and hand you the original parchment to write notes on; they hand you a laminated photocopy (defensive copy). If you spill coffee on your photocopy, the ancient manuscript inside the vault remains pristine and completely unharmed.",
+        "mapping": "In Java, making an object immutable is not just about writing `final` on fields. If one of your fields is a mutable object (like a `Date`, `int[]`, or `List`), simply returning that reference from a getter allows the caller to mutate your internal state! You must make defensive copies when receiving mutable objects in constructors AND when returning them from getters.",
+        "takeaway": "Bulletproof immutability requires 5 rules, including defensive copying of any internal mutable objects."
+      }
+    },
+    {
+      "id": "act-les8-concept",
+      "type": "concept",
+      "title": "The 5 Cardinal Rules of Bulletproof Immutability",
+      "content": "### The 5 Rules (Joshua Bloch, Effective Java Item 17)\n\nTo make a class truly immutable, you must adhere to all 5 principles:\n\n1. **Do not provide mutator methods**: No `setX()` or state-modifying operations.\n2. **Prevent class extension**: Declare the class `final` (or make constructors `private` with static factories). If a class can be subclassed, a malicious child could override methods and introduce mutable state.\n3. **Make all fields `private` and `final`**: Enforces encapsulation and ensures the Java Memory Model's initialization safety guarantee.\n4. **Defensive copying in constructors**: If the constructor receives a mutable object (e.g. `List`, `Date`, array), **do not** store the caller's reference directly! Clone or copy it:\n   ```java\n   this.tags = new ArrayList<>(tags); // Defensive copy!\n   ```\n5. **Defensive copying in accessors**: Never return direct references to internal mutable fields. Return an unmodifiable view or a fresh copy:\n   ```java\n   public List<String> getTags() {\n       return Collections.unmodifiableList(tags); // Caller cannot modify!\n   }\n   ```\n\n### Modern Java Alternative: Records (Java 14+)\nFor pure data carriers, Java 14 introduced `record`:\n```java\npublic record User(String id, String email) {}\n```\nRecords are automatically `final`, have `private final` fields, generate canonical constructors, accessors, `equals()`, `hashCode()`, and `toString()`."
+    },
+    {
+      "id": "act-les8-cw1",
+      "type": "code_walkthrough",
+      "title": "The Mutable Reference Leak and the Defensive Copy Fix",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// BULLETPROOF IMMUTABLE CLASS\npublic final class ImmutableUserProfile {\n    private final String username;\n    private final List<String> roles;\n\n    public ImmutableUserProfile(String username, List<String> roles) {\n        this.username = username;\n        // RULE 4: Defensive copy on construction\n        this.roles = (roles != null) ? new ArrayList<>(roles) : new ArrayList<>();\n    }\n\n    public String getUsername() { return username; }\n\n    // RULE 5: Defensive copy or unmodifiable view on access\n    public List<String> getRoles() {\n        return Collections.unmodifiableList(roles);\n    }\n}\n\npublic class LeakDemo {\n    public static void main(String[] args) {\n        List<String> mutableRoles = new ArrayList<>();\n        mutableRoles.add(\"USER\");\n\n        ImmutableUserProfile profile = new ImmutableUserProfile(\"alice\", mutableRoles);\n\n        // Attempt 1: Modifying external list doesn't corrupt profile!\n        mutableRoles.add(\"ADMIN\"); // Outside modification\n        System.out.println(\"Profile roles: \" + profile.getRoles()); // Still only [USER]!\n\n        // Attempt 2: Modifying returned list throws UnsupportedOperationException!\n        try {\n            profile.getRoles().add(\"SUPER_ADMIN\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Caught expected rejection: Cannot modify unmodifiable list!\");\n        }\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// BULLETPROOF IMMUTABLE CLASS\npublic final class ImmutableUserProfile {\n    private final String username;\n    private final List<String> roles;\n\n    public ImmutableUserProfile(String username, List<String> roles) {\n        this.username = username;\n        // RULE 4: Defensive copy on construction\n        this.roles = (roles != null) ? new ArrayList<>(roles) : new ArrayList<>();\n    }\n\n    public String getUsername() { return username; }\n\n    // RULE 5: Defensive copy or unmodifiable view on access\n    public List<String> getRoles() {\n        return Collections.unmodifiableList(roles);\n    }\n}\n\npublic class LeakDemo {\n    public static void main(String[] args) {\n        List<String> mutableRoles = new ArrayList<>();\n        mutableRoles.add(\"USER\");\n\n        ImmutableUserProfile profile = new ImmutableUserProfile(\"alice\", mutableRoles);\n\n        // Attempt 1: Modifying external list doesn't corrupt profile!\n        mutableRoles.add(\"ADMIN\"); // Outside modification\n        System.out.println(\"Profile roles: \" + profile.getRoles()); // Still only [USER]!\n\n        // Attempt 2: Modifying returned list throws UnsupportedOperationException!\n        try {\n            profile.getRoles().add(\"SUPER_ADMIN\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Caught expected rejection: Cannot modify unmodifiable list!\");\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates why both constructor defensive copies (shielding against external list mutation) and accessor unmodifiable wrappers (shielding against caller mutation) are essential.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`new ArrayList<>(roles)` creates an isolated internal copy in the constructor."
+        },
+        {
+          "step": 2,
+          "description": "Modifying `mutableRoles` after construction has zero effect on the internal list."
+        },
+        {
+          "step": 3,
+          "description": "`Collections.unmodifiableList(roles)` prevents callers from invoking `.add()` or `.remove()` on the returned list."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-cw2",
+      "type": "code_walkthrough",
+      "title": "Java 14+ Record as an Immutable Data Carrier",
+      "codeSnippet": "import java.util.List;\n\n// Modern Java Record: inherently final with private final components\npublic record ImmutableAuditRecord(String eventId, String actor, List<String> tags) {\n    // Compact constructor for validation and defensive copying\n    public ImmutableAuditRecord {\n        if (eventId == null || actor == null) {\n            throw new IllegalArgumentException(\"Identifiers cannot be null\");\n        }\n        // Defensive copy for mutable collections\n        tags = (tags != null) ? List.copyOf(tags) : List.of();\n    }\n}\n\npublic class RecordDemo {\n    public static void main(String[] args) {\n        ImmutableAuditRecord rec1 = new ImmutableAuditRecord(\"evt-101\", \"admin\", List.of(\"security\", \"audit\"));\n        System.out.println(\"Record toString: \" + rec1);\n        System.out.println(\"Actor:           \" + rec1.actor());\n        System.out.println(\"Tags:            \" + rec1.tags());\n    }\n}",
+      "code": "import java.util.List;\n\n// Modern Java Record: inherently final with private final components\npublic record ImmutableAuditRecord(String eventId, String actor, List<String> tags) {\n    // Compact constructor for validation and defensive copying\n    public ImmutableAuditRecord {\n        if (eventId == null || actor == null) {\n            throw new IllegalArgumentException(\"Identifiers cannot be null\");\n        }\n        // Defensive copy for mutable collections\n        tags = (tags != null) ? List.copyOf(tags) : List.of();\n    }\n}\n\npublic class RecordDemo {\n    public static void main(String[] args) {\n        ImmutableAuditRecord rec1 = new ImmutableAuditRecord(\"evt-101\", \"admin\", List.of(\"security\", \"audit\"));\n        System.out.println(\"Record toString: \" + rec1);\n        System.out.println(\"Actor:           \" + rec1.actor());\n        System.out.println(\"Tags:            \" + rec1.tags());\n    }\n}",
+      "language": "java",
+      "explanation": "Java records simplify immutable data structures. Compact constructors validate state and perform defensive copying via List.copyOf() in just a few lines.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`record ImmutableAuditRecord` automatically generates final fields, accessors, and equals/hashCode."
+        },
+        {
+          "step": 2,
+          "description": "The compact constructor validates non-null parameters."
+        },
+        {
+          "step": 3,
+          "description": "`List.copyOf(tags)` creates an unmodifiable, defensively copied list."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-mcq",
+      "type": "mcq",
+      "title": "Designing Immutable Classes Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the primary danger of leaving an immutable class non-final?",
+          "options": [
+            "It will consume twice as much heap memory",
+            "A malicious subclass could extend it, override methods, and introduce mutable fields",
+            "It will not compile in Java 17",
+            "It disables garbage collection"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "If a class is not final, a subclass can override accessors to read from mutable subclass fields, breaking immutability guarantees."
+        },
+        {
+          "id": "q2",
+          "question": "If an immutable class contains a `private final int[] scores;` field, what must the constructor do?",
+          "options": [
+            "Assign `this.scores = scores;` directly",
+            "Clone or copy the array: `this.scores = scores.clone();`",
+            "Sort the array",
+            "Cast it to Object[]"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Arrays in Java are always mutable. Storing the caller's array directly allows the caller to mutate array elements from the outside."
+        },
+        {
+          "id": "q3",
+          "question": "What should the getter for `int[] scores` return?",
+          "options": [
+            "`this.scores` directly",
+            "`this.scores.clone()` to prevent callers from modifying the internal array",
+            "`null`",
+            "`scores[0]`"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Returning a clone prevents the caller from altering the internal array elements."
+        },
+        {
+          "id": "q4",
+          "question": "Which method in `Collections` creates a read-only wrapper around a list?",
+          "options": [
+            "Collections.freezeList()",
+            "Collections.unmodifiableList()",
+            "Collections.makeImmutable()",
+            "Collections.lockList()"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`Collections.unmodifiableList(list)` returns an unmodifiable view that throws UnsupportedOperationException on mutation attempts."
+        },
+        {
+          "id": "q5",
+          "question": "Which keyword prevents fields from being reassigned after construction?",
+          "options": [
+            "static",
+            "volatile",
+            "final",
+            "transient"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "The `final` keyword ensures a field can only be assigned once during construction."
+        },
+        {
+          "id": "q6",
+          "question": "What happens if a caller calls `.add()` on a list returned by `List.copyOf()` or `Collections.unmodifiableList()`?",
+          "options": [
+            "The element is added silently",
+            "UnsupportedOperationException is thrown at runtime",
+            "NullPointerException is thrown",
+            "The JVM exits"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Unmodifiable collections throw an unchecked `UnsupportedOperationException` on any mutation."
+        },
+        {
+          "id": "q7",
+          "question": "Can an immutable class have private constructors?",
+          "options": [
+            "No, immutable classes must have public constructors",
+            "Yes, combined with public static factory methods, private constructors prevent subclassing without marking the class final",
+            "Only in abstract classes",
+            "Only if it has no fields"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Private constructors prevent external subclassing and provide control over instance creation via static factories."
+        },
+        {
+          "id": "q8",
+          "question": "Which Java feature introduced in Java 14 provides built-in immutable data classes?",
+          "options": [
+            "Modules",
+            "Records",
+            "Enums",
+            "Sealed Interfaces"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Records (`public record Point(int x, int y) {}`) are transparent, shallowly immutable data carriers."
+        },
+        {
+          "id": "q9",
+          "question": "Why is `final` alone insufficient to guarantee immutability?",
+          "options": [
+            "Because final fields can be changed via simple assignment",
+            "Because a final reference can point to a mutable object whose internal fields can still be changed",
+            "Because final fields are deleted during garbage collection",
+            "Because final is ignored in multi-threaded programs"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`final` only makes the reference variable un-reassignable; it does not protect the object on the heap from internal mutation."
+        },
+        {
+          "id": "q10",
+          "question": "In a compact record constructor, what is omitted compared to a standard constructor?",
+          "options": [
+            "The parameter list",
+            "The return type",
+            "The body of the constructor",
+            "The class name"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Compact constructors omit the argument list entirely (`public Point { ... }`), automatically assigning components at the end."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-interview",
+      "type": "interview_qa",
+      "title": "Designing Immutable Classes Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i8-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Enumerate the 5 rules for designing an immutable class in Java.",
+          "answer": "1) Don't provide any mutator methods (no setters). 2) Ensure the class cannot be extended (mark class `final` or use private constructors). 3) Make all fields `final`. 4) Make all fields `private`. 5) Ensure exclusive access to any mutable components by making defensive copies in constructors and returning defensive copies or unmodifiable views in getters.",
+          "expectedAnswer": "No setters, final class, private final fields, defensive copying in constructors, and defensive copying in getters.",
+          "keyTakeaway": "The 5 rules from Effective Java guarantee complete state immutability.",
+          "keyPoints": [
+            "The 5 rules from Effective Java guarantee complete state immutability."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i8-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the Time-Of-Check to Time-Of-Use (TOCTOU) vulnerability, and why must defensive copies be made BEFORE parameter validation?",
+          "answer": "If a constructor validates a mutable argument before copying it, another thread could modify the object between the validation check and the copy operation, bypassing validation. By making the defensive copy first (`this.data = input.clone()`) and then validating `this.data`, you ensure that the validated state is the exact state stored.",
+          "expectedAnswer": "Defensive copies must be made before validation to prevent other threads from modifying the object during validation (TOCTOU attack).",
+          "keyTakeaway": "Copy first, then validate the copy to defeat TOCTOU race conditions.",
+          "keyPoints": [
+            "Copy first, then validate the copy to defeat TOCTOU race conditions."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i8-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Why should you avoid using `.clone()` on non-final classes when performing defensive copies?",
+          "answer": "Because `.clone()` can be overridden by an untrusted subclass! If a caller passes a malicious subclass of `Date` or `ArrayList`, calling `date.clone()` might invoke the attacker's overridden method, returning a compromised object or leaking a reference. You should use copy constructors (`new Date(d.getTime())`) or static copy factories (`List.copyOf()`).",
+          "expectedAnswer": "Subclasses can override clone() maliciously. Use copy constructors or static copy methods instead of clone() for parameters.",
+          "keyTakeaway": "Never use clone() on non-final class parameters during defensive copying.",
+          "keyPoints": [
+            "Never use clone() on non-final class parameters during defensive copying."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i8-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do Java Records differ from traditional immutable classes?",
+          "answer": "Records provide concise syntax for immutable data carriers. The compiler automatically creates a `final` class with `private final` fields, canonical constructor, accessors (named `x()`, not `getX()`), `equals()`, `hashCode()`, and `toString()`. However, records only provide shallow immutability by default; if a record component is a mutable list, developers must still use a compact constructor to make defensive copies.",
+          "expectedAnswer": "Records eliminate boilerplate for shallowly immutable classes. Defensive copies are still required for mutable components.",
+          "keyTakeaway": "Records provide shallow immutability; defensive copying is still needed for mutable components.",
+          "keyPoints": [
+            "Records provide shallow immutability; defensive copying is still needed for mutable components."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i8-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can an immutable class cache expensive computations in non-final fields?",
+          "answer": "Yes. This is called 'lazy initialization'. A classic example is `String.hashCode()`. The `hash` field is not final; it defaults to 0 and is computed on first invocation of `hashCode()`. Because strings are immutable, recalculating the hash code will always yield the exact same integer, making the cache completely safe even across threads.",
+          "expectedAnswer": "Yes, lazy caching of invariant values (like String.hashCode) is acceptable because the observable value never changes.",
+          "keyTakeaway": "Lazy caching of deterministic values does not violate immutability.",
+          "keyPoints": [
+            "Lazy caching of deterministic values does not violate immutability."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i8-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the difference between `Collections.unmodifiableList(list)` and `List.copyOf(list)`?",
+          "answer": "`Collections.unmodifiableList(list)` returns a view wrapper around the original list. If the original list is modified by someone holding a reference to it, the view reflects those changes! `List.copyOf(list)` (introduced in Java 10) creates an independent, truly unmodifiable copy that is completely detached from the original list.",
+          "expectedAnswer": "unmodifiableList is a view that reflects underlying mutations. List.copyOf creates an independent, fully detached immutable copy.",
+          "keyTakeaway": "Prefer List.copyOf() for true defensive isolation.",
+          "keyPoints": [
+            "Prefer List.copyOf() for true defensive isolation."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i8-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Enumerate the 5 rules for designing an immutable class in Java.",
+          "answer": "1) Don't provide any mutator methods (no setters). 2) Ensure the class cannot be extended (mark class `final` or use private constructors). 3) Make all fields `final`. 4) Make all fields `private`. 5) Ensure exclusive access to any mutable components by making defensive copies in constructors and returning defensive copies or unmodifiable views in getters.",
+          "expectedAnswer": "No setters, final class, private final fields, defensive copying in constructors, and defensive copying in getters.",
+          "keyTakeaway": "The 5 rules from Effective Java guarantee complete state immutability.",
+          "keyPoints": [
+            "The 5 rules from Effective Java guarantee complete state immutability."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i8-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the Time-Of-Check to Time-Of-Use (TOCTOU) vulnerability, and why must defensive copies be made BEFORE parameter validation?",
+          "answer": "If a constructor validates a mutable argument before copying it, another thread could modify the object between the validation check and the copy operation, bypassing validation. By making the defensive copy first (`this.data = input.clone()`) and then validating `this.data`, you ensure that the validated state is the exact state stored.",
+          "expectedAnswer": "Defensive copies must be made before validation to prevent other threads from modifying the object during validation (TOCTOU attack).",
+          "keyTakeaway": "Copy first, then validate the copy to defeat TOCTOU race conditions.",
+          "keyPoints": [
+            "Copy first, then validate the copy to defeat TOCTOU race conditions."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i8-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Why should you avoid using `.clone()` on non-final classes when performing defensive copies?",
+          "answer": "Because `.clone()` can be overridden by an untrusted subclass! If a caller passes a malicious subclass of `Date` or `ArrayList`, calling `date.clone()` might invoke the attacker's overridden method, returning a compromised object or leaking a reference. You should use copy constructors (`new Date(d.getTime())`) or static copy factories (`List.copyOf()`).",
+          "expectedAnswer": "Subclasses can override clone() maliciously. Use copy constructors or static copy methods instead of clone() for parameters.",
+          "keyTakeaway": "Never use clone() on non-final class parameters during defensive copying.",
+          "keyPoints": [
+            "Never use clone() on non-final class parameters during defensive copying."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i8-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do Java Records differ from traditional immutable classes?",
+          "answer": "Records provide concise syntax for immutable data carriers. The compiler automatically creates a `final` class with `private final` fields, canonical constructor, accessors (named `x()`, not `getX()`), `equals()`, `hashCode()`, and `toString()`. However, records only provide shallow immutability by default; if a record component is a mutable list, developers must still use a compact constructor to make defensive copies.",
+          "expectedAnswer": "Records eliminate boilerplate for shallowly immutable classes. Defensive copies are still required for mutable components.",
+          "keyTakeaway": "Records provide shallow immutability; defensive copying is still needed for mutable components.",
+          "keyPoints": [
+            "Records provide shallow immutability; defensive copying is still needed for mutable components."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i8-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can an immutable class cache expensive computations in non-final fields?",
+          "answer": "Yes. This is called 'lazy initialization'. A classic example is `String.hashCode()`. The `hash` field is not final; it defaults to 0 and is computed on first invocation of `hashCode()`. Because strings are immutable, recalculating the hash code will always yield the exact same integer, making the cache completely safe even across threads.",
+          "expectedAnswer": "Yes, lazy caching of invariant values (like String.hashCode) is acceptable because the observable value never changes.",
+          "keyTakeaway": "Lazy caching of deterministic values does not violate immutability.",
+          "keyPoints": [
+            "Lazy caching of deterministic values does not violate immutability."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i8-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the difference between `Collections.unmodifiableList(list)` and `List.copyOf(list)`?",
+          "answer": "`Collections.unmodifiableList(list)` returns a view wrapper around the original list. If the original list is modified by someone holding a reference to it, the view reflects those changes! `List.copyOf(list)` (introduced in Java 10) creates an independent, truly unmodifiable copy that is completely detached from the original list.",
+          "expectedAnswer": "unmodifiableList is a view that reflects underlying mutations. List.copyOf creates an independent, fully detached immutable copy.",
+          "keyTakeaway": "Prefer List.copyOf() for true defensive isolation.",
+          "keyPoints": [
+            "Prefer List.copyOf() for true defensive isolation."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les8-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know all 5 cardinal rules of bulletproof immutability by heart.",
+        "I understand why the class must be declared `final` or use private constructors.",
+        "I know why all fields must be `private` and `final`.",
+        "I understand the necessity of defensive copies in constructors for mutable arguments.",
+        "I understand the necessity of defensive copies or unmodifiable wrappers in accessors.",
+        "I know the difference between `Collections.unmodifiableList()` and `List.copyOf()`.",
+        "I understand the TOCTOU vulnerability and why to copy before validating.",
+        "I can write modern immutable classes using Java records.",
+        "I know how to implement compact constructors in records for defensive copying.",
+        "I understand how lazy caching of immutable computations (like hash codes) works."
+      ],
+      "items": [
+        "I know all 5 cardinal rules of bulletproof immutability by heart.",
+        "I understand why the class must be declared `final` or use private constructors.",
+        "I know why all fields must be `private` and `final`.",
+        "I understand the necessity of defensive copies in constructors for mutable arguments.",
+        "I understand the necessity of defensive copies or unmodifiable wrappers in accessors.",
+        "I know the difference between `Collections.unmodifiableList()` and `List.copyOf()`.",
+        "I understand the TOCTOU vulnerability and why to copy before validating.",
+        "I can write modern immutable classes using Java records.",
+        "I know how to implement compact constructors in records for defensive copying.",
+        "I understand how lazy caching of immutable computations (like hash codes) works."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les8-p1",
+      "lessonId": "java-oop-mod10-les8",
+      "orderIndex": 1,
+      "title": "Warmup: Immutable Student Transcript",
+      "difficulty": "easy",
+      "problemStatement": "Complete the immutable `Transcript` class:\n1. Make class `Transcript` final.\n2. Fields `private final String studentName` and `private final int[] grades`.\n3. Constructor: defensiveness copy `this.grades = grades.clone()`.\n4. Getter `getGrades()`: returns a defensive clone `return grades.clone()`.\n5. In `main`, test that modifying the caller's array does not affect the transcript's internal array.",
+      "starterCode": "import java.util.Arrays;\n\npublic final class Transcript {\n    private final String studentName;\n    private final int[] grades;\n\n    public Transcript(String name, int[] grades) {\n        this.studentName = name;\n        // TODO: Defensive copy\n        this.grades = grades;\n    }\n    public String getStudentName() { return studentName; }\n    public int[] getGrades() {\n        // TODO: Defensive copy\n        return grades;\n    }\n\n    public static void main(String[] args) {\n        int[] original = new int[]{90, 85, 95};\n        Transcript t = new Transcript(\"Alice\", original);\n        original[0] = 0; // Malicious external edit\n        System.out.println(\"Transcript grade 0: \" + t.getGrades()[0]);\n    }\n}",
+      "initialCode": "import java.util.Arrays;\n\npublic final class Transcript {\n    private final String studentName;\n    private final int[] grades;\n\n    public Transcript(String name, int[] grades) {\n        this.studentName = name;\n        // TODO: Defensive copy\n        this.grades = grades;\n    }\n    public String getStudentName() { return studentName; }\n    public int[] getGrades() {\n        // TODO: Defensive copy\n        return grades;\n    }\n\n    public static void main(String[] args) {\n        int[] original = new int[]{90, 85, 95};\n        Transcript t = new Transcript(\"Alice\", original);\n        original[0] = 0; // Malicious external edit\n        System.out.println(\"Transcript grade 0: \" + t.getGrades()[0]);\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\npublic final class Transcript {\n    private final String studentName;\n    private final int[] grades;\n\n    public Transcript(String name, int[] grades) {\n        this.studentName = name;\n        this.grades = (grades != null) ? grades.clone() : new int[0];\n    }\n    public String getStudentName() { return studentName; }\n    public int[] getGrades() {\n        return grades.clone();\n    }\n\n    public static void main(String[] args) {\n        int[] original = new int[]{90, 85, 95};\n        Transcript t = new Transcript(\"Alice\", original);\n        original[0] = 0;\n        System.out.println(\"Transcript grade 0: \" + t.getGrades()[0]);\n    }\n}",
+      "expectedOutput": "Transcript grade 0: 90",
+      "hints": [
+        "Use grades.clone() in both constructor and getGrades().",
+        "original[0] = 0 will not affect the cloned internal array."
+      ]
+    },
+    {
+      "id": "prob-les8-p2",
+      "lessonId": "java-oop-mod10-les8",
+      "orderIndex": 2,
+      "title": "Immutable Shopping Cart Snapshot",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable cart snapshot from scratch without starter code:\n1. Make class `CartSnapshot` final.\n2. Fields `private final String customerId` and `private final List<String> items`.\n3. Constructor `CartSnapshot(String customerId, List<String> items)`: performs defensive copying via `new ArrayList<>(items)`.\n4. Getters `getCustomerId()` and `getItems()`: `getItems()` returns `Collections.unmodifiableList(items)`.\n5. Method `public CartSnapshot withAddedItem(String newItem)`: returns a new `CartSnapshot` with `newItem` added to a copy of the existing items.\n6. In `Main`:\n   - Create a mutable list `items = [\"Book\", \"Pen\"]`\n   - Create `snap1 = new CartSnapshot(\"cust-1\", items)`\n   - Mutate original list: `items.add(\"Notebook\")`\n   - Create `snap2 = snap1.withAddedItem(\"Ruler\")`\n   - Print `snap1.getItems()` and `snap2.getItems()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nfinal class CartSnapshot {\n    private final String customerId;\n    private final List<String> items;\n\n    public CartSnapshot(String customerId, List<String> items) {\n        this.customerId = customerId;\n        this.items = (items != null) ? new ArrayList<>(items) : new ArrayList<>();\n    }\n    public String getCustomerId() { return customerId; }\n    public List<String> getItems() {\n        return Collections.unmodifiableList(items);\n    }\n    public CartSnapshot withAddedItem(String newItem) {\n        List<String> nextItems = new ArrayList<>(this.items);\n        nextItems.add(newItem);\n        return new CartSnapshot(this.customerId, nextItems);\n    }\n}\n\npublic class CartApp {\n    public static void main(String[] args) {\n        List<String> items = new ArrayList<>();\n        items.add(\"Book\");\n        items.add(\"Pen\");\n\n        CartSnapshot snap1 = new CartSnapshot(\"cust-1\", items);\n        items.add(\"Notebook\");\n\n        CartSnapshot snap2 = snap1.withAddedItem(\"Ruler\");\n        System.out.println(\"snap1 items: \" + snap1.getItems());\n        System.out.println(\"snap2 items: \" + snap2.getItems());\n    }\n}",
+      "expectedOutput": "snap1 items: [Book, Pen]\nsnap2 items: [Book, Pen, Ruler]",
+      "hints": [
+        "new ArrayList<>(items) isolates snap1 from external items.add(\"Notebook\").",
+        "withAddedItem() returns a new instance containing [Book, Pen, Ruler]."
+      ]
+    },
+    {
+      "id": "prob-les8-p3",
+      "lessonId": "java-oop-mod10-les8",
+      "orderIndex": 3,
+      "title": "Immutable Security Policy Engine",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable security policy validator from scratch without starter code:\n1. Make class `SecurityPolicy` final.\n2. Fields `private final String policyName`, `private final int minPasswordLength`, and `private final boolean requireMfa`.\n3. Constructor `SecurityPolicy(String policyName, int minLen, boolean mfa)`: validates `minLen >= 8` (throw IllegalArgumentException if less).\n4. Getters for all fields.\n5. Method `public boolean checkPassword(String pwd)`: returns `pwd != null && pwd.length() >= minPasswordLength`.\n6. In `Main`, instantiate `SecurityPolicy policy = new SecurityPolicy(\"EnterpriseStandard\", 12, true);`.\n7. Test `policy.checkPassword(\"weak\")` and `policy.checkPassword(\"SuperSecretPassword2026\")`.\n8. Print results: `'weak: ' + result1`, `'strong: ' + result2`.",
+      "solutionCode": "final class SecurityPolicy {\n    private final String policyName;\n    private final int minPasswordLength;\n    private final boolean requireMfa;\n\n    public SecurityPolicy(String policyName, int minPasswordLength, boolean requireMfa) {\n        if (minPasswordLength < 8) {\n            throw new IllegalArgumentException(\"Password length must be at least 8\");\n        }\n        this.policyName = policyName;\n        this.minPasswordLength = minPasswordLength;\n        this.requireMfa = requireMfa;\n    }\n\n    public String getPolicyName() { return policyName; }\n    public int getMinPasswordLength() { return minPasswordLength; }\n    public boolean isRequireMfa() { return requireMfa; }\n\n    public boolean checkPassword(String pwd) {\n        return pwd != null && pwd.length() >= minPasswordLength;\n    }\n}\n\npublic class SecurityApp {\n    public static void main(String[] args) {\n        SecurityPolicy policy = new SecurityPolicy(\"EnterpriseStandard\", 12, true);\n        System.out.println(\"weak: \" + policy.checkPassword(\"weak\"));\n        System.out.println(\"strong: \" + policy.checkPassword(\"SuperSecretPassword2026\"));\n    }\n}",
+      "expectedOutput": "weak: false\nstrong: true",
+      "hints": [
+        "\"weak\".length() is 4 < 12 -> false.",
+        "\"SuperSecretPassword2026\".length() is 23 >= 12 -> true."
+      ]
+    },
+    {
+      "id": "prob-les8-p4",
+      "lessonId": "java-oop-mod10-les8",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Leaking Internal Map Reference",
+      "difficulty": "hard",
+      "problemStatement": "The following `Configuration` class attempts to be immutable, but its `getSettings()` method leaks its internal HashMap directly, allowing callers to insert unauthorized settings and corrupting the configuration! Fix the class by returning an unmodifiable view via `Collections.unmodifiableMap` and performing a defensive copy in the constructor.",
+      "starterCode": "import java.util.HashMap;\nimport java.util.Map;\n\npublic final class Configuration {\n    private final Map<String, String> settings;\n\n    public Configuration(Map<String, String> settings) {\n        // BUG: Direct reference assignment!\n        this.settings = settings;\n    }\n\n    public Map<String, String> getSettings() {\n        // BUG: Leaking internal map directly!\n        return settings;\n    }\n\n    public static void main(String[] args) {\n        Map<String, String> map = new HashMap<>();\n        map.put(\"env\", \"PROD\");\n        Configuration cfg = new Configuration(map);\n\n        map.put(\"malicious\", \"hacked\"); // External mutation\n        System.out.println(\"Settings count: \" + cfg.getSettings().size()); // Should be 1!\n    }\n}",
+      "initialCode": "import java.util.HashMap;\nimport java.util.Map;\n\npublic final class Configuration {\n    private final Map<String, String> settings;\n\n    public Configuration(Map<String, String> settings) {\n        // BUG: Direct reference assignment!\n        this.settings = settings;\n    }\n\n    public Map<String, String> getSettings() {\n        // BUG: Leaking internal map directly!\n        return settings;\n    }\n\n    public static void main(String[] args) {\n        Map<String, String> map = new HashMap<>();\n        map.put(\"env\", \"PROD\");\n        Configuration cfg = new Configuration(map);\n\n        map.put(\"malicious\", \"hacked\"); // External mutation\n        System.out.println(\"Settings count: \" + cfg.getSettings().size()); // Should be 1!\n    }\n}",
+      "solutionCode": "import java.util.Collections;\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic final class Configuration {\n    private final Map<String, String> settings;\n\n    public Configuration(Map<String, String> settings) {\n        this.settings = (settings != null) ? new HashMap<>(settings) : new HashMap<>();\n    }\n\n    public Map<String, String> getSettings() {\n        return Collections.unmodifiableMap(settings);\n    }\n\n    public static void main(String[] args) {\n        Map<String, String> map = new HashMap<>();\n        map.put(\"env\", \"PROD\");\n        Configuration cfg = new Configuration(map);\n\n        map.put(\"malicious\", \"hacked\");\n        System.out.println(\"Settings count: \" + cfg.getSettings().size());\n    }\n}",
+      "expectedOutput": "Settings count: 1",
+      "hints": [
+        "In constructor: `new HashMap<>(settings)`.",
+        "In getSettings(): `Collections.unmodifiableMap(settings)`."
+      ]
+    },
+    {
+      "id": "prob-les8-p5",
+      "lessonId": "java-oop-mod10-les8",
+      "orderIndex": 5,
+      "title": "Advanced: Java Record with Compact Defensive Constructor",
+      "difficulty": "advanced",
+      "problemStatement": "Build an immutable audit event record using modern Java features from scratch without starter code:\n1. Declare `public record AuditLog(String traceId, String user, List<String> actions)`.\n2. In the compact constructor `public AuditLog`:\n   - Check `traceId != null && user != null` (throw IllegalArgumentException if null)\n   - Perform defensive copy: `actions = (actions != null) ? List.copyOf(actions) : List.of();`\n3. Method `public boolean containsAction(String act)` returning `actions.contains(act)`.\n4. In `Main`:\n   - Create a mutable ArrayList `rawActions = [\"LOGIN\", \"VIEW_DASHBOARD\"]`\n   - Instantiate `AuditLog log = new AuditLog(\"tr-999\", \"alice\", rawActions);`\n   - Mutate `rawActions.add(\"DELETE_DATABASE\")`\n   - Print `'Log trace: ' + log.traceId()`\n   - Print `'Contains DELETE_DATABASE: ' + log.containsAction(\"DELETE_DATABASE\")`\n   - Print `'Total actions: ' + log.actions().size()`\nVerify that the record was defensively isolated and contains 2 actions.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic record AuditLog(String traceId, String user, List<String> actions) {\n    public AuditLog {\n        if (traceId == null || user == null) {\n            throw new IllegalArgumentException(\"traceId and user cannot be null\");\n        }\n        actions = (actions != null) ? List.copyOf(actions) : List.of();\n    }\n\n    public boolean containsAction(String act) {\n        return actions.contains(act);\n    }\n\n    public static void main(String[] args) {\n        List<String> rawActions = new ArrayList<>();\n        rawActions.add(\"LOGIN\");\n        rawActions.add(\"VIEW_DASHBOARD\");\n\n        AuditLog log = new AuditLog(\"tr-999\", \"alice\", rawActions);\n        rawActions.add(\"DELETE_DATABASE\");\n\n        System.out.println(\"Log trace: \" + log.traceId());\n        System.out.println(\"Contains DELETE_DATABASE: \" + log.containsAction(\"DELETE_DATABASE\"));\n        System.out.println(\"Total actions: \" + log.actions().size());\n    }\n}",
+      "expectedOutput": "Log trace: tr-999\nContains DELETE_DATABASE: false\nTotal actions: 2",
+      "hints": [
+        "List.copyOf(actions) takes an independent immutable snapshot.",
+        "Notice that calling rawActions.add() afterwards does not mutate log.actions()."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of How to Design an Immutable Class",
+    "Analyze, predict, and trace code execution involving how-to-design-an-immutable-class",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in How to Design an Immutable Class principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

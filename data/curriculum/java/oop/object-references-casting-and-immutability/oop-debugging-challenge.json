@@ -1,0 +1,524 @@
+{
+  "id": "les-cast-10",
+  "slug": "oop-debugging-challenge",
+  "title": "OOP Debugging Challenge",
+  "summary": "Hunt down tricky runtime polymorphic bugs, NullPointerExceptions, and state mutation errors.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 30,
+  "orderIndex": 10,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "isChallenge": true,
+  "activities": [
+    {
+      "id": "act-les10-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Air Crash Telemetry Investigation",
+      "concept": "Systematic OOP Debugging Protocol",
+      "realWorldMetaphor": {
+        "scenario": "When an aircraft deviates unexpectedly from its glide slope during an automated landing, the crash investigation team doesn't make random guesses. They pull the digital flight data recorder ('black box'), syncing the pilot input commands (reference types) with the actual wing hydraulic control surfaces (runtime heap objects) second by second until they locate the exact sensor inversion that caused the anomaly.",
+        "mapping": "In complex OOP applications, bugs rarely manifest as simple syntax errors. They appear as ClassCastExceptions in polymorphic queues, field hiding anomalies returning default 0s, or mutable reference leaks mutating customer balances behind the scenes. Systematic debugging requires inspecting object references on the stack against heap instances and vtables.",
+        "takeaway": "Effective OOP debugging requires separating compile-time reference expectations from runtime heap realities."
+      }
+    },
+    {
+      "id": "act-les10-concept",
+      "type": "concept",
+      "title": "The 5 Deadliest OOP Runtime Bugs",
+      "content": "### The Diagnostic Checklist\n\nWhen debugging complex object-oriented Java systems, check these 5 high-frequency failure points:\n\n1. **Unguarded Downcasting (`ClassCastException`)**:\n   - *Symptoms*: Code works with `Dog` instances in testing, but crashes in production when an unexpected `Cat` arrives in an `Animal` collection.\n   - *Cure*: Pattern matching `if (obj instanceof Subtype sub)` or polymorphic dispatch.\n\n2. **Field Hiding Traps**:\n   - *Symptoms*: A getter method returns updated data, but direct field access (or reflection) returns `null` or `0`.\n   - *Cure*: Mark all fields `private`. Eliminate duplicate variable names in subclass hierarchies.\n\n3. **Mutable Reference Leaks in Immutable Classes**:\n   - *Symptoms*: A supposedly immutable configuration or token has its values altered mysteriously by background threads.\n   - *Cure*: Defensive copies in constructors AND unmodifiable wrappers in accessors.\n\n4. **Calling Overridable Methods in Constructors**:\n   - *Symptoms*: A subclass overridden method executes before the subclass constructor has initialized its fields, reading uninitialized zeros or triggering `NullPointerException`.\n   - *Cure*: Never invoke `public` or `protected` non-final methods from constructors.\n\n5. **Array Covariance Corruption (`ArrayStoreException`)**:\n   - *Symptoms*: Passing `Integer[]` as `Object[]` compiles cleanly, but storing a `String` crashes the JVM at runtime.\n   - *Cure*: Use generic collections (`List<Integer>`) instead of raw arrays."
+    },
+    {
+      "id": "act-les10-cw1",
+      "type": "code_walkthrough",
+      "title": "Anatomy of the Constructor Override Initialization Trap",
+      "codeSnippet": "class BaseDevice {\n    public BaseDevice() {\n        System.out.println(\"1. BaseDevice constructor starting\");\n        // DANGEROUS ANTI-PATTERN: Calling overridable method from constructor!\n        initHardware();\n    }\n    public void initHardware() {\n        System.out.println(\"   Base hardware default init\");\n    }\n}\n\nclass SmartSensor extends BaseDevice {\n    // Subclass field initialized inline\n    private String sensorId = \"SENS-999\";\n\n    @Override\n    public void initHardware() {\n        // DANGER: When called from BaseDevice constructor, sensorId is STILL NULL!\n        System.out.println(\"   SmartSensor initializing: \" + sensorId.toLowerCase());\n    }\n}\n\npublic class ConstructorTrapDemo {\n    public static void main(String[] args) {\n        // Watch the crash:\n        try {\n            SmartSensor s = new SmartSensor();\n        } catch (NullPointerException e) {\n            System.out.println(\"CRASHED! sensorId was null during super() constructor call!\");\n        }\n    }\n}",
+      "code": "class BaseDevice {\n    public BaseDevice() {\n        System.out.println(\"1. BaseDevice constructor starting\");\n        // DANGEROUS ANTI-PATTERN: Calling overridable method from constructor!\n        initHardware();\n    }\n    public void initHardware() {\n        System.out.println(\"   Base hardware default init\");\n    }\n}\n\nclass SmartSensor extends BaseDevice {\n    // Subclass field initialized inline\n    private String sensorId = \"SENS-999\";\n\n    @Override\n    public void initHardware() {\n        // DANGER: When called from BaseDevice constructor, sensorId is STILL NULL!\n        System.out.println(\"   SmartSensor initializing: \" + sensorId.toLowerCase());\n    }\n}\n\npublic class ConstructorTrapDemo {\n    public static void main(String[] args) {\n        // Watch the crash:\n        try {\n            SmartSensor s = new SmartSensor();\n        } catch (NullPointerException e) {\n            System.out.println(\"CRASHED! sensorId was null during super() constructor call!\");\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates why calling overridable methods inside constructors is catastrophic in Java: the superclass constructor invokes the subclass override before subclass fields are initialized, causing NPE.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`new SmartSensor()` begins by executing `BaseDevice()` superclass constructor."
+        },
+        {
+          "step": 2,
+          "description": "`BaseDevice()` invokes `initHardware()`."
+        },
+        {
+          "step": 3,
+          "description": "Because of dynamic dispatch, `SmartSensor.initHardware()` is called."
+        },
+        {
+          "step": 4,
+          "description": "At this point in time, `sensorId` has NOT yet been initialized (it is `null`). `sensorId.toLowerCase()` throws NullPointerException!"
+        }
+      ]
+    },
+    {
+      "id": "act-les10-cw2",
+      "type": "code_walkthrough",
+      "title": "The Refactored Robust Fix",
+      "codeSnippet": "class SafeBaseDevice {\n    public SafeBaseDevice() {\n        System.out.println(\"1. Base constructor safely initialized without virtual calls\");\n    }\n    // Explicit lifecycle method called AFTER full object construction\n    public void initialize() {\n        onInitialize();\n    }\n    protected void onInitialize() {\n        System.out.println(\"   Base device initialized\");\n    }\n}\n\nclass SafeSmartSensor extends SafeBaseDevice {\n    private String sensorId;\n\n    public SafeSmartSensor(String sensorId) {\n        super(); // Super runs cleanly first\n        this.sensorId = sensorId; // Field fully initialized\n    }\n\n    @Override\n    protected void onInitialize() {\n        System.out.println(\"   Sensor initialized with ID: \" + sensorId.toLowerCase());\n    }\n}\n\npublic class SafeInitializationDemo {\n    public static void main(String[] args) {\n        SafeSmartSensor sensor = new SafeSmartSensor(\"SENS-999\");\n        sensor.initialize(); // Called after construction is 100% complete\n    }\n}",
+      "code": "class SafeBaseDevice {\n    public SafeBaseDevice() {\n        System.out.println(\"1. Base constructor safely initialized without virtual calls\");\n    }\n    // Explicit lifecycle method called AFTER full object construction\n    public void initialize() {\n        onInitialize();\n    }\n    protected void onInitialize() {\n        System.out.println(\"   Base device initialized\");\n    }\n}\n\nclass SafeSmartSensor extends SafeBaseDevice {\n    private String sensorId;\n\n    public SafeSmartSensor(String sensorId) {\n        super(); // Super runs cleanly first\n        this.sensorId = sensorId; // Field fully initialized\n    }\n\n    @Override\n    protected void onInitialize() {\n        System.out.println(\"   Sensor initialized with ID: \" + sensorId.toLowerCase());\n    }\n}\n\npublic class SafeInitializationDemo {\n    public static void main(String[] args) {\n        SafeSmartSensor sensor = new SafeSmartSensor(\"SENS-999\");\n        sensor.initialize(); // Called after construction is 100% complete\n    }\n}",
+      "language": "java",
+      "explanation": "Separating construction from initialization ensures that all instance fields are assigned before any polymorphic overrides run.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SafeBaseDevice` constructor avoids calling any overridable methods."
+        },
+        {
+          "step": 2,
+          "description": "`SafeSmartSensor` constructor sets `sensorId` completely."
+        },
+        {
+          "step": 3,
+          "description": "`sensor.initialize()` runs polymorphically with fully initialized state."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-mcq",
+      "type": "mcq",
+      "title": "OOP Debugging Challenge Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Why is calling an overridable method from a constructor considered a dangerous anti-pattern?",
+          "options": [
+            "It causes a stack overflow error immediately",
+            "The subclass override will execute before the subclass constructor has initialized its own fields, reading null/default values",
+            "It prevents the JVM from creating heap objects",
+            "It turns all fields into static variables"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "In Java, superclass constructors execute before subclass field initializers. Invoking an override during super() runs against uninitialized fields."
+        },
+        {
+          "id": "q2",
+          "question": "What is the result if a subclass constructor throws an exception?",
+          "options": [
+            "The object is partially constructed and remains accessible via garbage collector roots",
+            "The constructor fails, the object reference is not returned, and the half-constructed object is eligible for garbage collection",
+            "All superclasses remain active in memory forever",
+            "The JVM halts immediately"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "If a constructor throws an exception, no reference is returned to the caller; the abandoned object will be collected by the GC."
+        },
+        {
+          "id": "q3",
+          "question": "When debugging a ClassCastException, what tool is most effective to inspect the actual runtime type?",
+          "options": [
+            "System.exit()",
+            "System.out.println(obj.getClass().getName()) or a debugger heap inspector",
+            "Integer.parseInt()",
+            "Recompiling with -O3"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Calling `getClass().getName()` prints the true underlying concrete class instantiated in heap memory."
+        },
+        {
+          "id": "q4",
+          "question": "How can you detect if an object has leaked a mutable internal list?",
+          "options": [
+            "Check if the class implements Serializable",
+            "Mutate the list returned by the getter and check if the object's internal representation changed",
+            "Check the bytecode size",
+            "Check if fields are static"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "If modifying the returned collection alters the object's internal state, a reference leak exists."
+        },
+        {
+          "id": "q5",
+          "question": "What happens if a class declares `public int count = 10;` and its subclass declares `public int count = 20;`, and you write `Base b = new Sub(); System.out.println(b.count);`?",
+          "options": [
+            "Prints 20",
+            "Prints 10 (field hiding resolves by reference type)",
+            "Compile error: ambiguous field",
+            "Prints 0"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Field resolution is static and determined by the declared reference type (`Base`), which holds 10."
+        },
+        {
+          "id": "q6",
+          "question": "What tool in modern IDEs helps identify field hiding and mutable reference leaks automatically?",
+          "options": [
+            "Hex editor",
+            "Static analysis linters (SonarQube, ErrorProne, SpotBugs, IntelliJ Inspections)",
+            "Disk defragmenter",
+            "Network packet capture"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Static analysis linters flag field hiding and leaked mutable references during build time."
+        },
+        {
+          "id": "q7",
+          "question": "If an object is placed in a HashSet and then one of its fields used in hashCode() is modified, what occurs?",
+          "options": [
+            "The HashSet updates the bucket automatically",
+            "The object remains in the old bucket and set.contains(obj) returns false",
+            "The HashSet throws a ConcurrentModificationException",
+            "The JVM raises an OutOfMemoryError"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The hash table looks for the object in the new hash bucket and fails to find it, turning it into a ghost."
+        },
+        {
+          "id": "q8",
+          "question": "What is the best way to prevent calling overridable methods in constructors?",
+          "options": [
+            "Make the helper methods private or final",
+            "Make all methods public",
+            "Avoid using classes",
+            "Use only default visibility"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "`private` or `final` methods cannot be overridden by subclasses, making them safe to call from constructors."
+        },
+        {
+          "id": "q9",
+          "question": "What is the symptom of an accidental method overload instead of override?",
+          "options": [
+            "The compiler refuses to build the code",
+            "Dynamic dispatch fails to invoke the subclass method when called through a superclass reference",
+            "ClassCastException is thrown at runtime",
+            "The method becomes static"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "If parameter types differ slightly, the subclass merely overloaded the method; calls through the superclass invoke the parent method."
+        },
+        {
+          "id": "q10",
+          "question": "How does `@Override` prevent accidental method overloading bugs?",
+          "options": [
+            "It converts the method into a final method",
+            "It forces the compiler to verify that the method actually matches a superclass method signature, causing a compile error if it does not",
+            "It bypasses the virtual method table",
+            "It makes the method thread-safe"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The `@Override` annotation turns a silent overloading bug into an immediate compile-time error."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-interview",
+      "type": "interview_qa",
+      "title": "OOP Debugging Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i10-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Describe a scenario where calling an overridable method in a constructor caused a production incident.",
+          "answer": "A base class `AbstractCacheService` called `initCache()` in its constructor. A concrete subclass `RedisCacheService` had an inline field `private JedisPool pool = new JedisPool();`. When `new RedisCacheService()` was called, the base constructor invoked `initCache()`, which attempted to connect using `pool`. Because subclass field initializers hadn't executed yet, `pool` was `null`, throwing an unexpected `NullPointerException` during application startup.",
+          "expectedAnswer": "Superclass constructor calls overridable method before subclass fields are initialized, causing NullPointerException on uninitialized fields.",
+          "keyTakeaway": "Never call overridable methods from constructors.",
+          "keyPoints": [
+            "Never call overridable methods from constructors."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i10-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you debug an intermittent `NullPointerException` occurring in an asynchronous event pipeline?",
+          "answer": "1) Check for race conditions where shared mutable objects are being modified concurrently without volatile or synchronization barriers. 2) Inspect constructor reference publication to verify that the `this` reference did not escape before the constructor completed. 3) Replace shared mutable state with immutable event DTOs (e.g. Java records) to guarantee thread safety.",
+          "expectedAnswer": "Check for concurrent race conditions, constructor reference escaping, and replace mutable state with immutable records.",
+          "keyTakeaway": "Replace shared mutable pipeline state with immutable records to eliminate asynchronous NPEs.",
+          "keyPoints": [
+            "Replace shared mutable pipeline state with immutable records to eliminate asynchronous NPEs."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i10-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is 'this escaping' during construction, and why is it dangerous?",
+          "answer": "'This escaping' occurs when a constructor passes `this` to another thread or registers `this` as an event listener before the constructor finishes executing. The receiving thread can then observe the object in a partially initialized, inconsistent state, leading to subtle race conditions and corrupted data.",
+          "expectedAnswer": "'This escaping' exposes a partially constructed object to other threads, violating initialization safety.",
+          "keyTakeaway": "Never let 'this' escape during construction.",
+          "keyPoints": [
+            "Never let 'this' escape during construction."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i10-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do you detect and fix accidental method overloading bugs in large legacy codebases?",
+          "answer": "1) Enforce the compiler flag `-Xlint:overrides` to warn on missing `@Override` annotations. 2) Use static analysis tools (e.g. ErrorProne or SpotBugs) to catch mismatched parameter types. 3) Systematically annotate all intended overrides with `@Override`, turning subtle signature drift into explicit compiler errors.",
+          "expectedAnswer": "Enforce @Override annotations and static analysis tools like ErrorProne to catch signature mismatches.",
+          "keyTakeaway": "Always use @Override to catch accidental overloading at compile time.",
+          "keyPoints": [
+            "Always use @Override to catch accidental overloading at compile time."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i10-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What steps do you take when a `ClassCastException` is reported in production logs?",
+          "answer": "1) Identify the exact line of code and the source and target types from the stack trace. 2) Trace where the object was instantiated and entered the pipeline. 3) Determine why an unexpected subtype arrived (e.g. a deserialization error or unvalidated generic collection cast). 4) Replace the unsafe cast with pattern matching `if (obj instanceof ExpectedType t)` or refactor the pipeline to use strongly-typed generics.",
+          "expectedAnswer": "Analyze stack trace for source/target types, locate where object originated, and replace blind cast with pattern matching or generics.",
+          "keyTakeaway": "Replace blind downcasts with pattern matching and strong typing.",
+          "keyPoints": [
+            "Replace blind downcasts with pattern matching and strong typing."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i10-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why is defensive copying necessary even if a class is internal to an engineering team?",
+          "answer": "Because software systems evolve. Even within a team, another engineer might reuse a list or modify an array after passing it to an entity, inadvertently creating action-at-a-distance bugs. Defensive copying establishes a rigid boundary that prevents subtle bugs regardless of how the calling code changes in the future.",
+          "expectedAnswer": "Defensive copying guarantees robust encapsulation and protects against accidental future developer modifications.",
+          "keyTakeaway": "Defensive copying protects systems from future changes and maintenance regressions.",
+          "keyPoints": [
+            "Defensive copying protects systems from future changes and maintenance regressions."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i10-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Describe a scenario where calling an overridable method in a constructor caused a production incident.",
+          "answer": "A base class `AbstractCacheService` called `initCache()` in its constructor. A concrete subclass `RedisCacheService` had an inline field `private JedisPool pool = new JedisPool();`. When `new RedisCacheService()` was called, the base constructor invoked `initCache()`, which attempted to connect using `pool`. Because subclass field initializers hadn't executed yet, `pool` was `null`, throwing an unexpected `NullPointerException` during application startup.",
+          "expectedAnswer": "Superclass constructor calls overridable method before subclass fields are initialized, causing NullPointerException on uninitialized fields.",
+          "keyTakeaway": "Never call overridable methods from constructors.",
+          "keyPoints": [
+            "Never call overridable methods from constructors."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i10-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you debug an intermittent `NullPointerException` occurring in an asynchronous event pipeline?",
+          "answer": "1) Check for race conditions where shared mutable objects are being modified concurrently without volatile or synchronization barriers. 2) Inspect constructor reference publication to verify that the `this` reference did not escape before the constructor completed. 3) Replace shared mutable state with immutable event DTOs (e.g. Java records) to guarantee thread safety.",
+          "expectedAnswer": "Check for concurrent race conditions, constructor reference escaping, and replace mutable state with immutable records.",
+          "keyTakeaway": "Replace shared mutable pipeline state with immutable records to eliminate asynchronous NPEs.",
+          "keyPoints": [
+            "Replace shared mutable pipeline state with immutable records to eliminate asynchronous NPEs."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i10-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is 'this escaping' during construction, and why is it dangerous?",
+          "answer": "'This escaping' occurs when a constructor passes `this` to another thread or registers `this` as an event listener before the constructor finishes executing. The receiving thread can then observe the object in a partially initialized, inconsistent state, leading to subtle race conditions and corrupted data.",
+          "expectedAnswer": "'This escaping' exposes a partially constructed object to other threads, violating initialization safety.",
+          "keyTakeaway": "Never let 'this' escape during construction.",
+          "keyPoints": [
+            "Never let 'this' escape during construction."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i10-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do you detect and fix accidental method overloading bugs in large legacy codebases?",
+          "answer": "1) Enforce the compiler flag `-Xlint:overrides` to warn on missing `@Override` annotations. 2) Use static analysis tools (e.g. ErrorProne or SpotBugs) to catch mismatched parameter types. 3) Systematically annotate all intended overrides with `@Override`, turning subtle signature drift into explicit compiler errors.",
+          "expectedAnswer": "Enforce @Override annotations and static analysis tools like ErrorProne to catch signature mismatches.",
+          "keyTakeaway": "Always use @Override to catch accidental overloading at compile time.",
+          "keyPoints": [
+            "Always use @Override to catch accidental overloading at compile time."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i10-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What steps do you take when a `ClassCastException` is reported in production logs?",
+          "answer": "1) Identify the exact line of code and the source and target types from the stack trace. 2) Trace where the object was instantiated and entered the pipeline. 3) Determine why an unexpected subtype arrived (e.g. a deserialization error or unvalidated generic collection cast). 4) Replace the unsafe cast with pattern matching `if (obj instanceof ExpectedType t)` or refactor the pipeline to use strongly-typed generics.",
+          "expectedAnswer": "Analyze stack trace for source/target types, locate where object originated, and replace blind cast with pattern matching or generics.",
+          "keyTakeaway": "Replace blind downcasts with pattern matching and strong typing.",
+          "keyPoints": [
+            "Replace blind downcasts with pattern matching and strong typing."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i10-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why is defensive copying necessary even if a class is internal to an engineering team?",
+          "answer": "Because software systems evolve. Even within a team, another engineer might reuse a list or modify an array after passing it to an entity, inadvertently creating action-at-a-distance bugs. Defensive copying establishes a rigid boundary that prevents subtle bugs regardless of how the calling code changes in the future.",
+          "expectedAnswer": "Defensive copying guarantees robust encapsulation and protects against accidental future developer modifications.",
+          "keyTakeaway": "Defensive copying protects systems from future changes and maintenance regressions.",
+          "keyPoints": [
+            "Defensive copying protects systems from future changes and maintenance regressions."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les10-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can diagnose and eliminate ClassCastExceptions using pattern matching.",
+        "I know why calling overridable methods inside constructors causes NullPointerExceptions.",
+        "I understand how 'this escaping' during construction violates thread safety.",
+        "I can spot field hiding bugs when variables resolve to superclass defaults.",
+        "I know how to test for mutable reference leaks in supposedly immutable classes.",
+        "I understand why modifying fields of hash table keys creates ghost objects.",
+        "I always use @Override to avoid accidental signature overloading bugs.",
+        "I can identify array covariance corruption causing ArrayStoreException.",
+        "I understand how static analysis tools detect OOP design flaws before deployment.",
+        "I can systematically refactor fragile, bug-ridden OOP code into clean, robust architecture."
+      ],
+      "items": [
+        "I can diagnose and eliminate ClassCastExceptions using pattern matching.",
+        "I know why calling overridable methods inside constructors causes NullPointerExceptions.",
+        "I understand how 'this escaping' during construction violates thread safety.",
+        "I can spot field hiding bugs when variables resolve to superclass defaults.",
+        "I know how to test for mutable reference leaks in supposedly immutable classes.",
+        "I understand why modifying fields of hash table keys creates ghost objects.",
+        "I always use @Override to avoid accidental signature overloading bugs.",
+        "I can identify array covariance corruption causing ArrayStoreException.",
+        "I understand how static analysis tools detect OOP design flaws before deployment.",
+        "I can systematically refactor fragile, bug-ridden OOP code into clean, robust architecture."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les10-p1",
+      "lessonId": "java-oop-mod10-les10",
+      "orderIndex": 1,
+      "title": "Warmup: Debugging Overridden Constructor Bug",
+      "difficulty": "easy",
+      "problemStatement": "The code below fails with a `NullPointerException` because the base class constructor calls the overridable method `setup()`, which attempts to format `configCode` before the subclass has initialized it. Fix the bug by making `setup()` private in `BaseService` or by calling it explicitly after construction, ensuring the program prints `'Configured: PROD-101'`.",
+      "starterCode": "class BaseService {\n    public BaseService() {\n        // BUG: Calling overridable method in constructor!\n        setup();\n    }\n    public void setup() {\n        System.out.println(\"Base setup\");\n    }\n}\n\nclass MicroService extends BaseService {\n    private String configCode = \"PROD-101\";\n    @Override\n    public void setup() {\n        System.out.println(\"Configured: \" + configCode.toUpperCase());\n    }\n}\n\npublic class ConstructorBugApp {\n    public static void main(String[] args) {\n        MicroService ms = new MicroService();\n    }\n}",
+      "initialCode": "class BaseService {\n    public BaseService() {\n        // BUG: Calling overridable method in constructor!\n        setup();\n    }\n    public void setup() {\n        System.out.println(\"Base setup\");\n    }\n}\n\nclass MicroService extends BaseService {\n    private String configCode = \"PROD-101\";\n    @Override\n    public void setup() {\n        System.out.println(\"Configured: \" + configCode.toUpperCase());\n    }\n}\n\npublic class ConstructorBugApp {\n    public static void main(String[] args) {\n        MicroService ms = new MicroService();\n    }\n}",
+      "solutionCode": "class BaseService {\n    public BaseService() {\n        // Constructor does not call virtual methods\n    }\n    public void setup() {\n        System.out.println(\"Base setup\");\n    }\n}\n\nclass MicroService extends BaseService {\n    private String configCode = \"PROD-101\";\n    @Override\n    public void setup() {\n        System.out.println(\"Configured: \" + configCode.toUpperCase());\n    }\n}\n\npublic class ConstructorBugApp {\n    public static void main(String[] args) {\n        MicroService ms = new MicroService();\n        ms.setup(); // Called safely after construction completes\n    }\n}",
+      "expectedOutput": "Configured: PROD-101",
+      "hints": [
+        "Remove setup() from the BaseService constructor.",
+        "Call ms.setup() in main after the object is completely constructed."
+      ]
+    },
+    {
+      "id": "prob-les10-p2",
+      "lessonId": "java-oop-mod10-les10",
+      "orderIndex": 2,
+      "title": "Debug Hidden Field Configuration Leak",
+      "difficulty": "medium",
+      "problemStatement": "Fix the configuration loader from scratch without starter code:\n1. Base class `DbConfig` with `protected int maxPoolSize = 10`.\n2. Subclass `HighThroughputConfig extends DbConfig` that accidentally redeclared `protected int maxPoolSize = 50`, causing `DbConfig.getMaxPoolSize()` to return 10 instead of 50.\n3. Implement proper encapsulation: make `maxPoolSize` private in `DbConfig`, take it in the constructor `DbConfig(int size)`, provide getter `getMaxPoolSize()`, and have `HighThroughputConfig` pass 50 to `super(50)`.\n4. In `Main`, create `DbConfig cfg = new HighThroughputConfig();`.\n5. Print `'Max Pool: ' + cfg.getMaxPoolSize()` (should print `'Max Pool: 50'`).",
+      "solutionCode": "class DbConfig {\n    private int maxPoolSize;\n    public DbConfig(int maxPoolSize) {\n        this.maxPoolSize = maxPoolSize;\n    }\n    public int getMaxPoolSize() { return maxPoolSize; }\n}\n\nclass HighThroughputConfig extends DbConfig {\n    public HighThroughputConfig() {\n        super(50);\n    }\n}\n\npublic class ConfigFixApp {\n    public static void main(String[] args) {\n        DbConfig cfg = new HighThroughputConfig();\n        System.out.println(\"Max Pool: \" + cfg.getMaxPoolSize());\n    }\n}",
+      "expectedOutput": "Max Pool: 50",
+      "hints": [
+        "Avoid declaring maxPoolSize in the subclass.",
+        "Pass 50 to super(50) in HighThroughputConfig."
+      ]
+    },
+    {
+      "id": "prob-les10-p3",
+      "lessonId": "java-oop-mod10-les10",
+      "orderIndex": 3,
+      "title": "Debug Leaked Mutable Collection in Immutable Class",
+      "difficulty": "medium",
+      "problemStatement": "Design and debug an immutable `SecurityToken` from scratch without starter code:\n1. Class `SecurityToken` marked final.\n2. Fields: `private final String tokenId` and `private final List<String> permissions`.\n3. Constructor `SecurityToken(String tokenId, List<String> permissions)`: must perform a defensive copy using `List.copyOf` or `new ArrayList<>(permissions)`.\n4. Getter `getPermissions()`: must return `Collections.unmodifiableList(permissions)`.\n5. In `Main`:\n   - Create a mutable list `perms = [\"READ\", \"WRITE\"]`\n   - Instantiate `SecurityToken token = new SecurityToken(\"tok-100\", perms);`\n   - Mutate original list: `perms.add(\"ADMIN_DELETE\")`\n   - Print `'Token permissions count: ' + token.getPermissions().size()` (must be 2)\n   - Verify modifying returned list throws an exception, catching it and printing `'Immutable protection verified'`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nfinal class SecurityToken {\n    private final String tokenId;\n    private final List<String> permissions;\n\n    public SecurityToken(String tokenId, List<String> permissions) {\n        this.tokenId = tokenId;\n        this.permissions = (permissions != null) ? new ArrayList<>(permissions) : new ArrayList<>();\n    }\n    public String getTokenId() { return tokenId; }\n    public List<String> getPermissions() {\n        return Collections.unmodifiableList(permissions);\n    }\n}\n\npublic class TokenApp {\n    public static void main(String[] args) {\n        List<String> perms = new ArrayList<>();\n        perms.add(\"READ\");\n        perms.add(\"WRITE\");\n\n        SecurityToken token = new SecurityToken(\"tok-100\", perms);\n        perms.add(\"ADMIN_DELETE\");\n\n        System.out.println(\"Token permissions count: \" + token.getPermissions().size());\n\n        try {\n            token.getPermissions().add(\"HACK\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Immutable protection verified\");\n        }\n    }\n}",
+      "expectedOutput": "Token permissions count: 2\nImmutable protection verified",
+      "hints": [
+        "Defensive copy in constructor protects from `perms.add(\"ADMIN_DELETE\")`.",
+        "Unmodifiable list in getter throws UnsupportedOperationException when `.add(\"HACK\")` is called."
+      ]
+    },
+    {
+      "id": "prob-les10-p4",
+      "lessonId": "java-oop-mod10-les10",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accidental Overloading Mismatch",
+      "difficulty": "hard",
+      "problemStatement": "A developer intended to override `equals(Object o)` in `Product`, but accidentally declared `public boolean equals(Product p)`. Because of this signature mismatch, `HashSet` and polymorphic collections invoke `Object.equals(Object)`, treating two products with identical IDs as different objects! Fix the code by properly annotating `@Override` and matching the exact `Object` signature so that `p1.equals(p2)` returns `true` and the output is `'Equal products: true'`.",
+      "starterCode": "class Product {\n    private int id;\n    public Product(int id) { this.id = id; }\n\n    // BUG: Accidental overload! Signature does not match Object.equals(Object)!\n    public boolean equals(Product p) {\n        if (p == null) return false;\n        return this.id == p.id;\n    }\n}\n\npublic class OverloadBug {\n    public static void main(String[] args) {\n        Object p1 = new Product(101);\n        Object p2 = new Product(101);\n\n        // Invoked through Object reference: calls Object.equals(Object) which checks reference identity!\n        System.out.println(\"Equal products: \" + p1.equals(p2));\n    }\n}",
+      "initialCode": "class Product {\n    private int id;\n    public Product(int id) { this.id = id; }\n\n    // BUG: Accidental overload! Signature does not match Object.equals(Object)!\n    public boolean equals(Product p) {\n        if (p == null) return false;\n        return this.id == p.id;\n    }\n}\n\npublic class OverloadBug {\n    public static void main(String[] args) {\n        Object p1 = new Product(101);\n        Object p2 = new Product(101);\n\n        // Invoked through Object reference: calls Object.equals(Object) which checks reference identity!\n        System.out.println(\"Equal products: \" + p1.equals(p2));\n    }\n}",
+      "solutionCode": "class Product {\n    private int id;\n    public Product(int id) { this.id = id; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj instanceof Product p) {\n            return this.id == p.id;\n        }\n        return false;\n    }\n\n    @Override\n    public int hashCode() {\n        return Integer.hashCode(id);\n    }\n}\n\npublic class OverloadBug {\n    public static void main(String[] args) {\n        Object p1 = new Product(101);\n        Object p2 = new Product(101);\n\n        System.out.println(\"Equal products: \" + p1.equals(p2));\n    }\n}",
+      "expectedOutput": "Equal products: true",
+      "hints": [
+        "Change parameter type from `Product p` to `Object obj`.",
+        "Use pattern matching `if (obj instanceof Product p)`."
+      ]
+    },
+    {
+      "id": "prob-les10-p5",
+      "lessonId": "java-oop-mod10-les10",
+      "orderIndex": 5,
+      "title": "Advanced: Diagnostic Black Box Telemetry Pipeline",
+      "difficulty": "advanced",
+      "problemStatement": "Build a multi-fault diagnostic telemetry parser from scratch without starter code:\n1. Interface `TelemetryPacket` with `long getTimestamp()` and `String getPacketType()`.\n2. Class `GpsPacket implements TelemetryPacket`: fields `timestamp` (long), `latitude` (double), `longitude` (double). Implements interface methods (`getPacketType()` returns `\"GPS\"`). Methods `getLatitude()`, `getLongitude()`.\n3. Class `EnginePacket implements TelemetryPacket`: fields `timestamp` (long), `rpm` (int), `temp` (double). Implements interface methods (`getPacketType()` returns `\"ENGINE\"`). Methods `getRpm()`, `getTemp()`.\n4. Class `TelemetryAuditor` with static method `public static void audit(TelemetryPacket[] packets)`:\n   - Loops over packets safely (skips null packets)\n   - Uses pattern matching for `instanceof`:\n     - If `GpsPacket g`: prints `'[GPS @ ' + g.getTimestamp() + '] Lat: ' + g.getLatitude() + ', Lon: ' + g.getLongitude()`\n     - If `EnginePacket e`: prints `'[ENGINE @ ' + e.getTimestamp() + '] RPM: ' + e.getRpm() + ', Temp: ' + e.getTemp() + 'C'`\n5. In `Main`, test with an array containing:\n   - `new GpsPacket(1000L, 37.7749, -122.4194)`\n   - `new EnginePacket(1050L, 3200, 88.5)`\n   - `null`\nVerify that all packets are parsed safely without ClassCastException or NullPointerException.",
+      "solutionCode": "interface TelemetryPacket {\n    long getTimestamp();\n    String getPacketType();\n}\n\nclass GpsPacket implements TelemetryPacket {\n    private long timestamp;\n    private double latitude, longitude;\n    public GpsPacket(long timestamp, double lat, double lon) {\n        this.timestamp = timestamp;\n        this.latitude = lat;\n        this.longitude = lon;\n    }\n    @Override public long getTimestamp() { return timestamp; }\n    @Override public String getPacketType() { return \"GPS\"; }\n    public double getLatitude() { return latitude; }\n    public double getLongitude() { return longitude; }\n}\n\nclass EnginePacket implements TelemetryPacket {\n    private long timestamp;\n    private int rpm;\n    private double temp;\n    public EnginePacket(long timestamp, int rpm, double temp) {\n        this.timestamp = timestamp;\n        this.rpm = rpm;\n        this.temp = temp;\n    }\n    @Override public long getTimestamp() { return timestamp; }\n    @Override public String getPacketType() { return \"ENGINE\"; }\n    public int getRpm() { return rpm; }\n    public double getTemp() { return temp; }\n}\n\nclass TelemetryAuditor {\n    public static void audit(TelemetryPacket[] packets) {\n        for (TelemetryPacket p : packets) {\n            if (p instanceof GpsPacket g) {\n                System.out.println(\"[GPS @ \" + g.getTimestamp() + \"] Lat: \" + g.getLatitude() + \", Lon: \" + g.getLongitude());\n            } else if (p instanceof EnginePacket e) {\n                System.out.println(\"[ENGINE @ \" + e.getTimestamp() + \"] RPM: \" + e.getRpm() + \", Temp: \" + e.getTemp() + \"C\");\n            }\n        }\n    }\n}\n\npublic class TelemetryApp {\n    public static void main(String[] args) {\n        TelemetryPacket[] packets = new TelemetryPacket[] {\n            new GpsPacket(1000L, 37.7749, -122.4194),\n            new EnginePacket(1050L, 3200, 88.5),\n            null\n        };\n        TelemetryAuditor.audit(packets);\n    }\n}",
+      "expectedOutput": "[GPS @ 1000] Lat: 37.7749, Lon: -122.4194\n[ENGINE @ 1050] RPM: 3200, Temp: 88.5C",
+      "hints": [
+        "Pattern matching automatically handles `null` packets by evaluating to false.",
+        "Safe downcasting prints GPS coordinates and Engine telemetry accurately."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of OOP Debugging Challenge",
+    "Analyze, predict, and trace code execution involving oop-debugging-challenge",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in OOP Debugging Challenge principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

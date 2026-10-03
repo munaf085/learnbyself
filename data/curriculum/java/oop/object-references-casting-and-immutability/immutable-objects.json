@@ -1,0 +1,523 @@
+{
+  "id": "les-cast-7",
+  "slug": "immutable-objects",
+  "title": "Immutable Objects",
+  "summary": "Why objects whose state never changes prevent thread bugs and mutation errors.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les7-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Minted Gold Coin",
+      "concept": "Immutable Objects (Fixed State from Creation to Destruction)",
+      "realWorldMetaphor": {
+        "scenario": "Consider a minted 1-ounce gold coin stamped with the year 2026 and its denomination. You cannot edit the stamp or alter the coin's intrinsic metal density after it leaves the mint. If you want a 2-ounce coin, the mint doesn't stretch your existing coin; it melts fresh bullion and mints an entirely new 2-ounce coin. You can safely pass that coin to 50 strangers, knowing that not a single one can secretly change the year or purity stamped on it.",
+        "mapping": "In software, an immutable object's internal state cannot be modified once its constructor finishes executing. When an operation needs to change a value (like `String.toUpperCase()` or `BigDecimal.add()`), it doesn't modify the existing object; it instantiates and returns a brand-new immutable object. Any thread can read the object simultaneously with zero locks.",
+        "takeaway": "Immutable objects guarantee predictable behavior because their state can never be altered after construction."
+      }
+    },
+    {
+      "id": "act-les7-concept",
+      "type": "concept",
+      "title": "The Power of Immutability in Modern Software",
+      "content": "### What is an Immutable Object?\n\nAn **immutable object** is an instance whose observable state remains strictly constant throughout its entire lifetime, from the moment its constructor completes until it is garbage collected.\n\n### The 4 Massive Advantages of Immutability\n1. **Zero-Lock Concurrency Safety**: Because immutable objects cannot be modified, multiple threads can access them concurrently without synchronization, eliminating race conditions, deadlocks, and memory visibility bugs.\n2. **Safe Hash Map / Set Keys**: If an object is used as a key in a `HashMap` or element in a `HashSet`, its `hashCode()` must remain invariant. Mutating an object inside a hash table loses the object (turning it into a ghost). Immutable objects are inherently safe hash keys.\n3. **Failure Atomicity**: An immutable object is never left in an inconsistent half-mutated state if an exception occurs during an operation. Either a new object is created, or the operation throws.\n4. **No Defensive Copying Needed**: You can freely share references to immutable objects across services, APIs, and threads without cloning them.\n\n### Java Standard Library Examples\n- `java.lang.String`\n- All primitive wrappers: `Integer`, `Double`, `Boolean`, `Long`, etc.\n- `java.time.LocalDate`, `LocalTime`, `Instant`\n- `java.math.BigDecimal`, `BigInteger`"
+    },
+    {
+      "id": "act-les7-cw1",
+      "type": "code_walkthrough",
+      "title": "Action-at-a-Distance Bug vs Immutable Protection",
+      "codeSnippet": "// MUTABLE ANTI-PATTERN: Dangerous shared state\nclass MutablePoint {\n    public int x, y;\n    public MutablePoint(int x, int y) { this.x = x; this.y = y; }\n}\n\n// IMMUTABLE PATTERN: Safe and reliable\nfinal class ImmutablePoint {\n    private final int x;\n    private final int y;\n    public ImmutablePoint(int x, int y) { this.x = x; this.y = y; }\n    public int getX() { return x; }\n    public int getY() { return y; }\n\n    // Transformation returns a NEW instance\n    public ImmutablePoint translate(int dx, int dy) {\n        return new ImmutablePoint(this.x + dx, this.y + dy);\n    }\n}\n\npublic class ImmutabilityDemo {\n    public static void main(String[] args) {\n        // 1. Mutable bug: modifying p1 inadvertently corrupts p2\n        MutablePoint mp1 = new MutablePoint(10, 20);\n        MutablePoint mp2 = mp1; // Shared reference\n        mp2.x = 999; // Corrupts mp1!\n        System.out.println(\"Mutable mp1.x: \" + mp1.x); // 999 (Bug!)\n\n        // 2. Immutable safety: original never mutates\n        ImmutablePoint ip1 = new ImmutablePoint(10, 20);\n        ImmutablePoint ip2 = ip1.translate(5, 5);\n        System.out.println(\"Immutable ip1.x: \" + ip1.getX()); // Still 10!\n        System.out.println(\"Immutable ip2.x: \" + ip2.getX()); // 15\n    }\n}",
+      "code": "// MUTABLE ANTI-PATTERN: Dangerous shared state\nclass MutablePoint {\n    public int x, y;\n    public MutablePoint(int x, int y) { this.x = x; this.y = y; }\n}\n\n// IMMUTABLE PATTERN: Safe and reliable\nfinal class ImmutablePoint {\n    private final int x;\n    private final int y;\n    public ImmutablePoint(int x, int y) { this.x = x; this.y = y; }\n    public int getX() { return x; }\n    public int getY() { return y; }\n\n    // Transformation returns a NEW instance\n    public ImmutablePoint translate(int dx, int dy) {\n        return new ImmutablePoint(this.x + dx, this.y + dy);\n    }\n}\n\npublic class ImmutabilityDemo {\n    public static void main(String[] args) {\n        // 1. Mutable bug: modifying p1 inadvertently corrupts p2\n        MutablePoint mp1 = new MutablePoint(10, 20);\n        MutablePoint mp2 = mp1; // Shared reference\n        mp2.x = 999; // Corrupts mp1!\n        System.out.println(\"Mutable mp1.x: \" + mp1.x); // 999 (Bug!)\n\n        // 2. Immutable safety: original never mutates\n        ImmutablePoint ip1 = new ImmutablePoint(10, 20);\n        ImmutablePoint ip2 = ip1.translate(5, 5);\n        System.out.println(\"Immutable ip1.x: \" + ip1.getX()); // Still 10!\n        System.out.println(\"Immutable ip2.x: \" + ip2.getX()); // 15\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates how mutable references cause accidental corruption when shared (action-at-a-distance). ImmutablePoint prevents this by returning new instances on modifications.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`MutablePoint` allows direct field modification; updating `mp2` modifies `mp1`'s state."
+        },
+        {
+          "step": 2,
+          "description": "`ImmutablePoint` declares fields `private final` with no setters."
+        },
+        {
+          "step": 3,
+          "description": "`translate()` creates and returns a brand-new `ImmutablePoint`."
+        },
+        {
+          "step": 4,
+          "description": "`ip1` remains 10, completely unaffected by the translation."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-cw2",
+      "type": "code_walkthrough",
+      "title": "String and BigDecimal: Standard Library Immutability",
+      "codeSnippet": "import java.math.BigDecimal;\n\npublic class StandardLibraryImmutabilityDemo {\n    public static void main(String[] args) {\n        // 1. String immutability\n        String greeting = \"Hello\";\n        greeting.concat(\" World\"); // Return value ignored!\n        System.out.println(\"greeting after concat: \" + greeting); // Still \"Hello\"!\n\n        String fullGreeting = greeting.concat(\" World\");\n        System.out.println(\"fullGreeting:           \" + fullGreeting); // \"Hello World\"\n\n        // 2. BigDecimal immutability\n        BigDecimal price = new BigDecimal(\"19.99\");\n        BigDecimal tax = new BigDecimal(\"1.60\");\n        price.add(tax); // Does NOT mutate price!\n        System.out.println(\"price after add:       $\" + price); // Still $19.99!\n\n        BigDecimal total = price.add(tax);\n        System.out.println(\"total:                 $\" + total); // $21.59\n    }\n}",
+      "code": "import java.math.BigDecimal;\n\npublic class StandardLibraryImmutabilityDemo {\n    public static void main(String[] args) {\n        // 1. String immutability\n        String greeting = \"Hello\";\n        greeting.concat(\" World\"); // Return value ignored!\n        System.out.println(\"greeting after concat: \" + greeting); // Still \"Hello\"!\n\n        String fullGreeting = greeting.concat(\" World\");\n        System.out.println(\"fullGreeting:           \" + fullGreeting); // \"Hello World\"\n\n        // 2. BigDecimal immutability\n        BigDecimal price = new BigDecimal(\"19.99\");\n        BigDecimal tax = new BigDecimal(\"1.60\");\n        price.add(tax); // Does NOT mutate price!\n        System.out.println(\"price after add:       $\" + price); // Still $19.99!\n\n        BigDecimal total = price.add(tax);\n        System.out.println(\"total:                 $\" + total); // $21.59\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates the common junior developer trap: forgetting that methods on immutable objects like String and BigDecimal return new instances rather than mutating the caller.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`greeting.concat(\" World\")` generates a new string in heap memory; `greeting` is unchanged."
+        },
+        {
+          "step": 2,
+          "description": "Assigning to `fullGreeting` captures the newly created string."
+        },
+        {
+          "step": 3,
+          "description": "`price.add(tax)` returns a new `BigDecimal`; `price` remains strictly 19.99."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-mcq",
+      "type": "mcq",
+      "title": "Immutable Objects Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is an immutable object in Java?",
+          "options": [
+            "An object whose fields are all static",
+            "An object whose state cannot be changed after it is constructed",
+            "An object that cannot be garbage collected",
+            "An object that does not implement any interfaces"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "An immutable object has fixed, unalterable state throughout its entire lifecycle."
+        },
+        {
+          "id": "q2",
+          "question": "Which of the following classes in the Java Standard Library is immutable?",
+          "options": [
+            "java.lang.StringBuilder",
+            "java.util.ArrayList",
+            "java.lang.String",
+            "java.util.Date"
+          ],
+          "correctOptionIndex": 2,
+          "correctAnswer": 2,
+          "explanation": "java.lang.String is completely immutable. StringBuilder, ArrayList, and Date are mutable."
+        },
+        {
+          "id": "q3",
+          "question": "What happens if you call `str.toUpperCase()` on a String `str = \"abc\"` without capturing the return value?",
+          "options": [
+            "`str` becomes \"ABC\"",
+            "`str` remains \"abc\" and the newly created uppercase string is discarded",
+            "A NullPointerException is thrown",
+            "The JVM raises a compilation error"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Because String is immutable, `toUpperCase()` returns a new String instance without modifying `str`."
+        },
+        {
+          "id": "q4",
+          "question": "Why are immutable objects automatically thread-safe?",
+          "options": [
+            "Because the JVM synchronizes every method implicitly",
+            "Because their state never changes, so multiple threads can read them concurrently without race conditions",
+            "Because they can only run on a single CPU thread",
+            "Because they are stored in the thread's local stack frame"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Race conditions occur when one thread modifies state while another reads it. If state is constant, no race condition is possible."
+        },
+        {
+          "id": "q5",
+          "question": "What happens if a mutable object used as a key in a `HashMap` has its fields modified?",
+          "options": [
+            "The HashMap re-indexes it automatically",
+            "The object's hashCode changes, making it unfindable in the bucket ('ghost object')",
+            "The HashMap throws an ImmediateKeyMutationException",
+            "The key is removed from the map"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Modifying fields that contribute to `hashCode()` changes the lookup bucket, corrupting map invariants."
+        },
+        {
+          "id": "q6",
+          "question": "What is the primary potential drawback of immutable objects?",
+          "options": [
+            "They cannot be passed to methods",
+            "High frequency of object allocations can increase garbage collection pressure if not optimized",
+            "They cannot be serialized",
+            "They cannot use generics"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Creating a new object for every intermediate state change can allocate many short-lived objects."
+        },
+        {
+          "id": "q7",
+          "question": "Which package introduced comprehensive immutable date and time classes in Java 8?",
+          "options": [
+            "java.util",
+            "java.time (e.g. LocalDate, Instant)",
+            "java.sql",
+            "java.io"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`java.time` replaced the legacy mutable `java.util.Date` and `Calendar` with immutable classes."
+        },
+        {
+          "id": "q8",
+          "question": "What is 'failure atomicity' in immutable objects?",
+          "options": [
+            "If a method fails with an exception, the original object remains in its valid, unmodified state",
+            "Atomic variables are required for all fields",
+            "The JVM shuts down if any field is null",
+            "Garbage collection happens atomically"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Because the original object is never touched, an operation that fails leaves the original in a pristine state."
+        },
+        {
+          "id": "q9",
+          "question": "Can an immutable object be safely cached and shared globally as a constant?",
+          "options": [
+            "No, caching requires mutable objects",
+            "Yes, because its state can never be corrupted by any consumer",
+            "Only if it is marked transient",
+            "Only if the heap is under 1 GB"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Immutable objects are ideal for caching and sharing (e.g. `Boolean.TRUE`, `BigInteger.ZERO`)."
+        },
+        {
+          "id": "q10",
+          "question": "If `BigDecimal a = new BigDecimal(\"10\"); a.add(new BigDecimal(\"5\"));`, what is `a`?",
+          "options": [
+            "15",
+            "10",
+            "0",
+            "5"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`BigDecimal` is immutable; `add()` returns a new BigDecimal of 15, leaving `a` as 10."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-interview",
+      "type": "interview_qa",
+      "title": "Immutable Objects Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i7-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What are the primary architectural benefits of immutability in distributed or high-throughput systems?",
+          "answer": "In distributed or multi-threaded architectures, immutable objects provide: 1) Seamless concurrency without synchronization overhead or locks, 2) Safe caching and reuse without defensive copying, 3) Complete elimination of side-effect bugs across services (temporal coupling), and 4) Safe use as messages in event-driven systems (Kafka, Akka).",
+          "expectedAnswer": "Thread-safety without locks, safe caching without defensive copies, and zero side-effects across concurrent services.",
+          "keyTakeaway": "Immutability simplifies concurrency and eliminates side effects.",
+          "keyPoints": [
+            "Immutability simplifies concurrency and eliminates side effects."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i7-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why is `String` immutable in Java? Provide at least 3 reasons.",
+          "answer": "1) **String Pool (Flyweight Pattern)**: Immutability allows sharing string literals across the entire JVM without one client altering text seen by others. 2) **Security**: Strings carry sensitive data (passwords, URLs, network sockets); mutability would allow malicious threads to alter connection targets after security validation. 3) **Thread-Safety**: Strings can be shared across threads with zero synchronization. 4) **Hash Caching**: String caches its `hashCode()` in a private field on first compute, making hash lookups lightning fast.",
+          "expectedAnswer": "String pool caching, security of network/file connections, thread safety, and hashcode caching.",
+          "keyTakeaway": "String immutability is vital for security, pooling, and hash table performance.",
+          "keyPoints": [
+            "String immutability is vital for security, pooling, and hash table performance."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i7-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How does the Java Memory Model (JMM) guarantee safe publication of `final` fields?",
+          "answer": "Under the JMM, `final` fields receive special initialization safety guarantees. Any thread that reads a reference to an object whose constructor has completed is guaranteed to observe the properly initialized values of its `final` fields, without requiring synchronization or `volatile` barriers.",
+          "expectedAnswer": "The JMM guarantees that once a constructor finishes, all final fields are visible to all threads without synchronization.",
+          "keyTakeaway": "Final fields are safely published across threads by the JMM.",
+          "keyPoints": [
+            "Final fields are safely published across threads by the JMM."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i7-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between a shallow immutable object and a deeply immutable object?",
+          "answer": "A shallow immutable object has `final` reference fields that cannot be reassigned to point to different objects, but the referenced objects themselves might be mutable (e.g. a `final List<User>` where users can still be added). A deeply immutable object guarantees that its entire object graph is immutable; no referenced object anywhere in its hierarchy can have its state altered.",
+          "expectedAnswer": "Shallow immutability means reference pointers cannot change. Deep immutability means the entire object graph cannot change.",
+          "keyTakeaway": "Deep immutability requires that all referenced child objects are also immutable.",
+          "keyPoints": [
+            "Deep immutability requires that all referenced child objects are also immutable."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i7-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "When might you choose a mutable object over an immutable object?",
+          "answer": "When an entity requires thousands of frequent, micro-modifications in a performance-critical loop where allocating new objects would overwhelm the garbage collector. A classic example is `StringBuilder` vs `String`, or game loop physics matrices.",
+          "expectedAnswer": "Choose mutability for high-frequency modifications in performance-critical loops to avoid GC pressure.",
+          "keyTakeaway": "Use mutable builders (like StringBuilder) for intensive transformations.",
+          "keyPoints": [
+            "Use mutable builders (like StringBuilder) for intensive transformations."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i7-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the Flyweight design pattern, and how does it relate to immutability?",
+          "answer": "The Flyweight pattern minimizes memory usage by sharing common immutable objects rather than creating duplicates. In Java, `Integer.valueOf(int)` caches values from -128 to 127, and `String.intern()` caches literals. This pattern is only possible because the objects are immutable and cannot be corrupted by consumers.",
+          "expectedAnswer": "Flyweight shares common instances to save memory; it strictly depends on immutability for safety.",
+          "keyTakeaway": "Flyweight caching is safe only when the shared objects are immutable.",
+          "keyPoints": [
+            "Flyweight caching is safe only when the shared objects are immutable."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i7-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What are the primary architectural benefits of immutability in distributed or high-throughput systems?",
+          "answer": "In distributed or multi-threaded architectures, immutable objects provide: 1) Seamless concurrency without synchronization overhead or locks, 2) Safe caching and reuse without defensive copying, 3) Complete elimination of side-effect bugs across services (temporal coupling), and 4) Safe use as messages in event-driven systems (Kafka, Akka).",
+          "expectedAnswer": "Thread-safety without locks, safe caching without defensive copies, and zero side-effects across concurrent services.",
+          "keyTakeaway": "Immutability simplifies concurrency and eliminates side effects.",
+          "keyPoints": [
+            "Immutability simplifies concurrency and eliminates side effects."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i7-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why is `String` immutable in Java? Provide at least 3 reasons.",
+          "answer": "1) **String Pool (Flyweight Pattern)**: Immutability allows sharing string literals across the entire JVM without one client altering text seen by others. 2) **Security**: Strings carry sensitive data (passwords, URLs, network sockets); mutability would allow malicious threads to alter connection targets after security validation. 3) **Thread-Safety**: Strings can be shared across threads with zero synchronization. 4) **Hash Caching**: String caches its `hashCode()` in a private field on first compute, making hash lookups lightning fast.",
+          "expectedAnswer": "String pool caching, security of network/file connections, thread safety, and hashcode caching.",
+          "keyTakeaway": "String immutability is vital for security, pooling, and hash table performance.",
+          "keyPoints": [
+            "String immutability is vital for security, pooling, and hash table performance."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i7-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How does the Java Memory Model (JMM) guarantee safe publication of `final` fields?",
+          "answer": "Under the JMM, `final` fields receive special initialization safety guarantees. Any thread that reads a reference to an object whose constructor has completed is guaranteed to observe the properly initialized values of its `final` fields, without requiring synchronization or `volatile` barriers.",
+          "expectedAnswer": "The JMM guarantees that once a constructor finishes, all final fields are visible to all threads without synchronization.",
+          "keyTakeaway": "Final fields are safely published across threads by the JMM.",
+          "keyPoints": [
+            "Final fields are safely published across threads by the JMM."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i7-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between a shallow immutable object and a deeply immutable object?",
+          "answer": "A shallow immutable object has `final` reference fields that cannot be reassigned to point to different objects, but the referenced objects themselves might be mutable (e.g. a `final List<User>` where users can still be added). A deeply immutable object guarantees that its entire object graph is immutable; no referenced object anywhere in its hierarchy can have its state altered.",
+          "expectedAnswer": "Shallow immutability means reference pointers cannot change. Deep immutability means the entire object graph cannot change.",
+          "keyTakeaway": "Deep immutability requires that all referenced child objects are also immutable.",
+          "keyPoints": [
+            "Deep immutability requires that all referenced child objects are also immutable."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i7-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "When might you choose a mutable object over an immutable object?",
+          "answer": "When an entity requires thousands of frequent, micro-modifications in a performance-critical loop where allocating new objects would overwhelm the garbage collector. A classic example is `StringBuilder` vs `String`, or game loop physics matrices.",
+          "expectedAnswer": "Choose mutability for high-frequency modifications in performance-critical loops to avoid GC pressure.",
+          "keyTakeaway": "Use mutable builders (like StringBuilder) for intensive transformations.",
+          "keyPoints": [
+            "Use mutable builders (like StringBuilder) for intensive transformations."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i7-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the Flyweight design pattern, and how does it relate to immutability?",
+          "answer": "The Flyweight pattern minimizes memory usage by sharing common immutable objects rather than creating duplicates. In Java, `Integer.valueOf(int)` caches values from -128 to 127, and `String.intern()` caches literals. This pattern is only possible because the objects are immutable and cannot be corrupted by consumers.",
+          "expectedAnswer": "Flyweight shares common instances to save memory; it strictly depends on immutability for safety.",
+          "keyTakeaway": "Flyweight caching is safe only when the shared objects are immutable.",
+          "keyPoints": [
+            "Flyweight caching is safe only when the shared objects are immutable."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les7-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can define what an immutable object is in precise technical terms.",
+        "I understand why immutable objects are naturally thread-safe without locks.",
+        "I know why immutable objects make safe keys in HashMaps and HashSets.",
+        "I understand why methods on immutable classes return new instances rather than mutating state.",
+        "I can cite standard library immutable classes (String, LocalDate, BigDecimal, Integer).",
+        "I understand the difference between shallow and deep immutability.",
+        "I know how the Java Memory Model provides initialization safety for final fields.",
+        "I recognize when high allocation rates warrant a mutable companion class (like StringBuilder).",
+        "I understand how the Flyweight pattern leverages immutability for object caching.",
+        "I can explain why String was designed as immutable in Java."
+      ],
+      "items": [
+        "I can define what an immutable object is in precise technical terms.",
+        "I understand why immutable objects are naturally thread-safe without locks.",
+        "I know why immutable objects make safe keys in HashMaps and HashSets.",
+        "I understand why methods on immutable classes return new instances rather than mutating state.",
+        "I can cite standard library immutable classes (String, LocalDate, BigDecimal, Integer).",
+        "I understand the difference between shallow and deep immutability.",
+        "I know how the Java Memory Model provides initialization safety for final fields.",
+        "I recognize when high allocation rates warrant a mutable companion class (like StringBuilder).",
+        "I understand how the Flyweight pattern leverages immutability for object caching.",
+        "I can explain why String was designed as immutable in Java."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les7-p1",
+      "lessonId": "java-oop-mod10-les7",
+      "orderIndex": 1,
+      "title": "Warmup: Immutable Complex Number",
+      "difficulty": "easy",
+      "problemStatement": "Complete the immutable `ComplexNumber` class:\n1. Fields `private final double real` and `private final double imag`.\n2. Constructor `public ComplexNumber(double real, double imag)`.\n3. Method `public ComplexNumber add(ComplexNumber other)` returning a NEW `ComplexNumber` whose real is `this.real + other.real` and imag is `this.imag + other.imag`.\n4. Getters `getReal()` and `getImag()`.\nIn `main`, instantiate `c1 = (2.0, 3.0)` and `c2 = (4.0, 1.0)`. Call `c3 = c1.add(c2)`. Verify `c1` remains `2.0 + 3.0i` while `c3` is `6.0 + 4.0i`.",
+      "starterCode": "final class ComplexNumber {\n    private final double real;\n    private final double imag;\n\n    public ComplexNumber(double real, double imag) {\n        this.real = real;\n        this.imag = imag;\n    }\n    public double getReal() { return real; }\n    public double getImag() { return imag; }\n\n    // TODO: Implement add(ComplexNumber other) returning a new ComplexNumber\n}\n\npublic class ComplexApp {\n    public static void main(String[] args) {\n        ComplexNumber c1 = new ComplexNumber(2.0, 3.0);\n        ComplexNumber c2 = new ComplexNumber(4.0, 1.0);\n        // TODO: Call c1.add(c2) and print c1 and c3\n    }\n}",
+      "initialCode": "final class ComplexNumber {\n    private final double real;\n    private final double imag;\n\n    public ComplexNumber(double real, double imag) {\n        this.real = real;\n        this.imag = imag;\n    }\n    public double getReal() { return real; }\n    public double getImag() { return imag; }\n\n    // TODO: Implement add(ComplexNumber other) returning a new ComplexNumber\n}\n\npublic class ComplexApp {\n    public static void main(String[] args) {\n        ComplexNumber c1 = new ComplexNumber(2.0, 3.0);\n        ComplexNumber c2 = new ComplexNumber(4.0, 1.0);\n        // TODO: Call c1.add(c2) and print c1 and c3\n    }\n}",
+      "solutionCode": "final class ComplexNumber {\n    private final double real;\n    private final double imag;\n\n    public ComplexNumber(double real, double imag) {\n        this.real = real;\n        this.imag = imag;\n    }\n    public double getReal() { return real; }\n    public double getImag() { return imag; }\n\n    public ComplexNumber add(ComplexNumber other) {\n        return new ComplexNumber(this.real + other.real, this.imag + other.imag);\n    }\n}\n\npublic class ComplexApp {\n    public static void main(String[] args) {\n        ComplexNumber c1 = new ComplexNumber(2.0, 3.0);\n        ComplexNumber c2 = new ComplexNumber(4.0, 1.0);\n        ComplexNumber c3 = c1.add(c2);\n\n        System.out.println(\"c1: \" + c1.getReal() + \" + \" + c1.getImag() + \"i\");\n        System.out.println(\"c3: \" + c3.getReal() + \" + \" + c3.getImag() + \"i\");\n    }\n}",
+      "expectedOutput": "c1: 2.0 + 3.0i\nc3: 6.0 + 4.0i",
+      "hints": [
+        "add() must instantiate a new ComplexNumber with summed real and imag parts.",
+        "Notice c1 is not modified."
+      ]
+    },
+    {
+      "id": "prob-les7-p2",
+      "lessonId": "java-oop-mod10-les7",
+      "orderIndex": 2,
+      "title": "Immutable Currency Exchange Converter",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable `Money` value object from scratch without starter code:\n1. Make class `Money` final.\n2. Fields `private final double amount` and `private final String currency`.\n3. Constructor `Money(double amount, String currency)`: validates that `amount >= 0` (throw IllegalArgumentException if negative).\n4. Getters `getAmount()` and `getCurrency()`.\n5. Method `public Money convert(double exchangeRate, String newCurrency)` that returns a new `Money` object with `amount * exchangeRate` and `newCurrency`.\n6. In `Main`, create `Money usd = new Money(100.0, \"USD\");`.\n7. Convert to EUR with rate `0.92`: `Money eur = usd.convert(0.92, \"EUR\");`.\n8. Print `'USD: $' + usd.getAmount() + ' ' + usd.getCurrency()` and `'EUR: ' + eur.getAmount() + ' ' + eur.getCurrency()`.",
+      "solutionCode": "final class Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        if (amount < 0) {\n            throw new IllegalArgumentException(\"Amount cannot be negative\");\n        }\n        this.amount = amount;\n        this.currency = currency;\n    }\n    public double getAmount() { return amount; }\n    public String getCurrency() { return currency; }\n\n    public Money convert(double exchangeRate, String newCurrency) {\n        return new Money(this.amount * exchangeRate, newCurrency);\n    }\n}\n\npublic class CurrencyApp {\n    public static void main(String[] args) {\n        Money usd = new Money(100.0, \"USD\");\n        Money eur = usd.convert(0.92, \"EUR\");\n\n        System.out.println(\"USD: $\" + usd.getAmount() + \" \" + usd.getCurrency());\n        System.out.println(\"EUR: \" + eur.getAmount() + \" \" + eur.getCurrency());\n    }\n}",
+      "expectedOutput": "USD: $100.0 USD\nEUR: 92.0 EUR",
+      "hints": [
+        "Class is marked final; fields are private final.",
+        "convert() returns a new Money instance without altering the original usd instance."
+      ]
+    },
+    {
+      "id": "prob-les7-p3",
+      "lessonId": "java-oop-mod10-les7",
+      "orderIndex": 3,
+      "title": "Immutable RGB Color Blender",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable Color class from scratch without starter code:\n1. Class `ImmutableColor` marked final.\n2. Fields `private final int r, g, b`.\n3. Constructor `(int r, int g, int b)`: validates all values are between 0 and 255.\n4. Method `public ImmutableColor blend(ImmutableColor other)`:\n   Returns a new `ImmutableColor` with each component being the integer average: `(r + other.r) / 2`.\n5. Method `public String toHex()` returning formatted hex string: `String.format(\"#%02X%02X%02X\", r, g, b)`.\n6. In `Main`, create `ImmutableColor red = new ImmutableColor(255, 0, 0);` and `ImmutableColor blue = new ImmutableColor(0, 0, 255);`.\n7. Blend them into `purple = red.blend(blue);`.\n8. Print `'Red: ' + red.toHex()`, `'Blue: ' + blue.toHex()`, and `'Purple: ' + purple.toHex()`.",
+      "solutionCode": "final class ImmutableColor {\n    private final int r, g, b;\n\n    public ImmutableColor(int r, int g, int b) {\n        if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {\n            throw new IllegalArgumentException(\"Color components must be 0-255\");\n        }\n        this.r = r;\n        this.g = g;\n        this.b = b;\n    }\n\n    public ImmutableColor blend(ImmutableColor other) {\n        return new ImmutableColor(\n            (this.r + other.r) / 2,\n            (this.g + other.g) / 2,\n            (this.b + other.b) / 2\n        );\n    }\n\n    public String toHex() {\n        return String.format(\"#%02X%02X%02X\", r, g, b);\n    }\n}\n\npublic class ColorApp {\n    public static void main(String[] args) {\n        ImmutableColor red = new ImmutableColor(255, 0, 0);\n        ImmutableColor blue = new ImmutableColor(0, 0, 255);\n        ImmutableColor purple = red.blend(blue);\n\n        System.out.println(\"Red: \" + red.toHex());\n        System.out.println(\"Blue: \" + blue.toHex());\n        System.out.println(\"Purple: \" + purple.toHex());\n    }\n}",
+      "expectedOutput": "Red: #FF0000\nBlue: #0000FF\nPurple: #7F007F",
+      "hints": [
+        "(255 + 0) / 2 = 127, which in hex is 7F.",
+        "Notice red and blue are completely unchanged after blending."
+      ]
+    },
+    {
+      "id": "prob-les7-p4",
+      "lessonId": "java-oop-mod10-les7",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accidental In-Place Mutation",
+      "difficulty": "hard",
+      "problemStatement": "A junior engineer attempted to make `ImmutableCounter` immutable, but accidentally retained a mutable increment method that updates its internal field in-place, violating immutability. Fix the class so that `increment()` returns a new `ImmutableCounter(this.count + 1)` and `this.count` is `final`, ensuring that `c1` stays at 0 while `c2` becomes 1.",
+      "starterCode": "class ImmutableCounter {\n    // BUG: Field is not final and method mutates in-place!\n    private int count;\n    public ImmutableCounter(int count) { this.count = count; }\n    public int getCount() { return count; }\n\n    public void increment() {\n        this.count++;\n    }\n}\n\npublic class CounterBug {\n    public static void main(String[] args) {\n        ImmutableCounter c1 = new ImmutableCounter(0);\n        c1.increment();\n        // Expected: c1 should remain 0, and c2 should be 1!\n        System.out.println(\"c1: \" + c1.getCount());\n    }\n}",
+      "initialCode": "class ImmutableCounter {\n    // BUG: Field is not final and method mutates in-place!\n    private int count;\n    public ImmutableCounter(int count) { this.count = count; }\n    public int getCount() { return count; }\n\n    public void increment() {\n        this.count++;\n    }\n}\n\npublic class CounterBug {\n    public static void main(String[] args) {\n        ImmutableCounter c1 = new ImmutableCounter(0);\n        c1.increment();\n        // Expected: c1 should remain 0, and c2 should be 1!\n        System.out.println(\"c1: \" + c1.getCount());\n    }\n}",
+      "solutionCode": "final class ImmutableCounter {\n    private final int count;\n    public ImmutableCounter(int count) { this.count = count; }\n    public int getCount() { return count; }\n\n    public ImmutableCounter increment() {\n        return new ImmutableCounter(this.count + 1);\n    }\n}\n\npublic class CounterBug {\n    public static void main(String[] args) {\n        ImmutableCounter c1 = new ImmutableCounter(0);\n        ImmutableCounter c2 = c1.increment();\n        System.out.println(\"c1: \" + c1.getCount());\n        System.out.println(\"c2: \" + c2.getCount());\n    }\n}",
+      "expectedOutput": "c1: 0\nc2: 1",
+      "hints": [
+        "Make the class final and field `private final int count;`.",
+        "Change increment() to return `new ImmutableCounter(this.count + 1)`."
+      ]
+    },
+    {
+      "id": "prob-les7-p5",
+      "lessonId": "java-oop-mod10-les7",
+      "orderIndex": 5,
+      "title": "Advanced: Immutable String Builder Pipeline",
+      "difficulty": "advanced",
+      "problemStatement": "Build an immutable fluent query builder from scratch without starter code:\n1. Make class `SqlQuery` final.\n2. Fields `private final String selectClause` and `private final String fromClause` and `private final String whereClause`.\n3. Constructor `SqlQuery(String select, String from, String where)`.\n4. Static factory method `public static SqlQuery fromTable(String table)` returning `new SqlQuery(\"*\", table, \"\")`.\n5. Method `public SqlQuery select(String columns)` returning new `SqlQuery(columns, this.fromClause, this.whereClause)`.\n6. Method `public SqlQuery where(String condition)` returning new `SqlQuery(this.selectClause, this.fromClause, condition)`.\n7. Method `public String build()` returning:\n   `\"SELECT \" + selectClause + \" FROM \" + fromClause + (whereClause.isEmpty() ? \"\" : \" WHERE \" + whereClause)`.\n8. In `Main`:\n   - Create `baseQuery = SqlQuery.fromTable(\"users\");`\n   - Create `activeUsers = baseQuery.where(\"status = 'ACTIVE'\");`\n   - Create `userEmails = activeUsers.select(\"id, email\");`\n   - Print `baseQuery.build()`\n   - Print `activeUsers.build()`\n   - Print `userEmails.build()`\nVerify that all intermediate queries remain pristine.",
+      "solutionCode": "final class SqlQuery {\n    private final String selectClause;\n    private final String fromClause;\n    private final String whereClause;\n\n    public SqlQuery(String selectClause, String fromClause, String whereClause) {\n        this.selectClause = selectClause;\n        this.fromClause = fromClause;\n        this.whereClause = whereClause;\n    }\n\n    public static SqlQuery fromTable(String table) {\n        return new SqlQuery(\"*\", table, \"\");\n    }\n\n    public SqlQuery select(String columns) {\n        return new SqlQuery(columns, this.fromClause, this.whereClause);\n    }\n\n    public SqlQuery where(String condition) {\n        return new SqlQuery(this.selectClause, this.fromClause, condition);\n    }\n\n    public String build() {\n        return \"SELECT \" + selectClause + \" FROM \" + fromClause +\n            (whereClause.isEmpty() ? \"\" : \" WHERE \" + whereClause);\n    }\n}\n\npublic class QueryApp {\n    public static void main(String[] args) {\n        SqlQuery baseQuery = SqlQuery.fromTable(\"users\");\n        SqlQuery activeUsers = baseQuery.where(\"status = 'ACTIVE'\");\n        SqlQuery userEmails = activeUsers.select(\"id, email\");\n\n        System.out.println(baseQuery.build());\n        System.out.println(activeUsers.build());\n        System.out.println(userEmails.build());\n    }\n}",
+      "expectedOutput": "SELECT * FROM users\nSELECT * FROM users WHERE status = 'ACTIVE'\nSELECT id, email FROM users WHERE status = 'ACTIVE'",
+      "hints": [
+        "Each fluent method returns a brand-new SqlQuery.",
+        "baseQuery is never modified when activeUsers or userEmails are derived."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Immutable Objects",
+    "Analyze, predict, and trace code execution involving immutable-objects",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Immutable Objects principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

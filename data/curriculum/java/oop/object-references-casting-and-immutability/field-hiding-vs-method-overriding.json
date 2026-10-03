@@ -1,0 +1,523 @@
+{
+  "id": "les-cast-6",
+  "slug": "field-hiding-vs-method-overriding",
+  "title": "Field Hiding vs Method Overriding",
+  "summary": "Why fields are NOT polymorphic and are resolved based on the reference type.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "moduleSlug": "object-references-casting-and-immutability",
+  "activities": [
+    {
+      "id": "act-les6-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Name Badge vs The Spoken Greeting",
+      "concept": "Field Hiding (Static Reference Label) vs Method Overriding (Dynamic Action)",
+      "realWorldMetaphor": {
+        "scenario": "Imagine a hospital where an intern wears a generic 'Staff Member' name badge pinned to their coat (field). When you look at their badge, it reads 'Staff Member'. But when you ask them to speak ('How do you diagnose this symptom?'), they answer with the detailed, specialized knowledge of an expert Resident Physician (method). The badge didn't magically change into a dynamic screen; the badge is static print, but their voice is living dynamic behavior!",
+        "mapping": "In Java, fields are like printed badges: they are resolved at compile time based strictly on the declared reference type. Methods are like living voices: they are resolved dynamically at runtime based on the actual object type in the heap. If a child class declares a field with the same name as a parent class, it hides the parent field rather than overriding it.",
+        "takeaway": "Fields are NOT polymorphic in Java. Accessing a field resolves to the reference type's variable; invoking an overridden method dispatches to the heap object's implementation."
+      }
+    },
+    {
+      "id": "act-les6-concept",
+      "type": "concept",
+      "title": "The Mechanics of Field Hiding",
+      "content": "### Why Are Fields Not Polymorphic?\n\nIn Java, **polymorphism applies exclusively to non-private, non-static instance methods**. Fields are **statically bound at compile time**.\n\nWhen a subclass declares a field with the exact same name as an inherited field from its superclass:\n- It does **NOT** override the field.\n- It **hides** the superclass field.\n- The heap object actually contains **BOTH** fields in memory simultaneously!\n\n### Which Field Is Accessed?\n```java\nclass Parent {\n    public String name = \"ParentName\";\n}\nclass Child extends Parent {\n    public String name = \"ChildName\"; // Hides Parent.name!\n}\n\nParent p = new Child();\nSystem.out.println(p.name); // Prints \"ParentName\"! (Resolved by Reference Type!)\nChild c = (Child) p;\nSystem.out.println(c.name); // Prints \"ChildName\"! (Resolved by Child Reference!)\n```\n\n### The OOP Best Practice: Encapsulation Prevents Field Hiding\nBecause field hiding causes immense confusion and subtle bugs, the universal Java rule is:\n> **Always mark fields `private`. Expose state exclusively through getter methods.**\n\nGetter methods **are** polymorphic and override cleanly, ensuring consistent, predictable behavior across all references."
+    },
+    {
+      "id": "act-les6-cw1",
+      "type": "code_walkthrough",
+      "title": "Direct Comparison: Field Hiding vs Method Overriding",
+      "codeSnippet": "class SuperHero {\n    public String identity = \"Secret Identity\"; // Field\n\n    public String getVoice() {                 // Method\n        return \"Normal human voice\";\n    }\n}\n\nclass SpiderMan extends SuperHero {\n    public String identity = \"Peter Parker\";    // Hides SuperHero.identity!\n\n    @Override\n    public String getVoice() {                  // Overrides getVoice()\n        return \"Friendly neighborhood Spider-Man!\";\n    }\n}\n\npublic class FieldHidingDemo {\n    public static void main(String[] args) {\n        // Reference type: SuperHero, Actual object: SpiderMan\n        SuperHero hero = new SpiderMan();\n\n        // 1. Field is resolved by Reference Type (SuperHero) -> \"Secret Identity\"\n        System.out.println(\"Field access: \" + hero.identity);\n\n        // 2. Method is resolved by Runtime Object (SpiderMan) -> \"Friendly neighborhood...\"\n        System.out.println(\"Method call:  \" + hero.getVoice());\n    }\n}",
+      "code": "class SuperHero {\n    public String identity = \"Secret Identity\"; // Field\n\n    public String getVoice() {                 // Method\n        return \"Normal human voice\";\n    }\n}\n\nclass SpiderMan extends SuperHero {\n    public String identity = \"Peter Parker\";    // Hides SuperHero.identity!\n\n    @Override\n    public String getVoice() {                  // Overrides getVoice()\n        return \"Friendly neighborhood Spider-Man!\";\n    }\n}\n\npublic class FieldHidingDemo {\n    public static void main(String[] args) {\n        // Reference type: SuperHero, Actual object: SpiderMan\n        SuperHero hero = new SpiderMan();\n\n        // 1. Field is resolved by Reference Type (SuperHero) -> \"Secret Identity\"\n        System.out.println(\"Field access: \" + hero.identity);\n\n        // 2. Method is resolved by Runtime Object (SpiderMan) -> \"Friendly neighborhood...\"\n        System.out.println(\"Method call:  \" + hero.getVoice());\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates the fundamental divergence: hero.identity accesses SuperHero's field because fields lack dynamic dispatch. But hero.getVoice() dispatches to SpiderMan's override.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SuperHero` defines a public field `identity` and method `getVoice()`."
+        },
+        {
+          "step": 2,
+          "description": "`SpiderMan` declares its own `identity` field (hiding the parent's) and overrides `getVoice()`."
+        },
+        {
+          "step": 3,
+          "description": "`hero.identity` looks at the reference type `SuperHero` at compile time and prints `'Secret Identity'`."
+        },
+        {
+          "step": 4,
+          "description": "`hero.getVoice()` uses dynamic dispatch at runtime and calls `SpiderMan.getVoice()`."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-cw2",
+      "type": "code_walkthrough",
+      "title": "Accessing Hidden Fields and the Encapsulation Fix",
+      "codeSnippet": "class BaseConfig {\n    protected int timeout = 30; // Hidden field\n    public int getTimeout() { return timeout; }\n}\n\nclass CustomConfig extends BaseConfig {\n    protected int timeout = 60; // Hides BaseConfig.timeout\n\n    @Override\n    public int getTimeout() { return timeout; }\n\n    public void printBothTimeouts() {\n        System.out.println(\"Child timeout:  \" + timeout);       // 60\n        System.out.println(\"Parent timeout: \" + super.timeout); // 30 (Accessed via super!)\n    }\n}\n\npublic class HiddenFieldAccessDemo {\n    public static void main(String[] args) {\n        CustomConfig cfg = new CustomConfig();\n        cfg.printBothTimeouts();\n\n        BaseConfig baseRef = cfg;\n        // Through getters, behavior is always consistent and polymorphic!\n        System.out.println(\"Polymorphic getter: \" + baseRef.getTimeout()); // 60\n    }\n}",
+      "code": "class BaseConfig {\n    protected int timeout = 30; // Hidden field\n    public int getTimeout() { return timeout; }\n}\n\nclass CustomConfig extends BaseConfig {\n    protected int timeout = 60; // Hides BaseConfig.timeout\n\n    @Override\n    public int getTimeout() { return timeout; }\n\n    public void printBothTimeouts() {\n        System.out.println(\"Child timeout:  \" + timeout);       // 60\n        System.out.println(\"Parent timeout: \" + super.timeout); // 30 (Accessed via super!)\n    }\n}\n\npublic class HiddenFieldAccessDemo {\n    public static void main(String[] args) {\n        CustomConfig cfg = new CustomConfig();\n        cfg.printBothTimeouts();\n\n        BaseConfig baseRef = cfg;\n        // Through getters, behavior is always consistent and polymorphic!\n        System.out.println(\"Polymorphic getter: \" + baseRef.getTimeout()); // 60\n    }\n}",
+      "language": "java",
+      "explanation": "Shows that super.fieldName accesses the hidden parent field. Wrapping state behind polymorphic getters prevents callers from being confused by reference-type field resolution.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Both `timeout` fields coexist in heap memory inside the `CustomConfig` instance."
+        },
+        {
+          "step": 2,
+          "description": "`super.timeout` directly references the hidden parent field."
+        },
+        {
+          "step": 3,
+          "description": "Using `getTimeout()` polymorphic getter ensures external callers always obtain the intended subclass value."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-mcq",
+      "type": "mcq",
+      "title": "Field Hiding vs Method Overriding Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Can fields be overridden in Java?",
+          "options": [
+            "Yes, by marking them with @Override",
+            "No, fields are never overridden; declaring a field with the same name in a subclass hides the parent field",
+            "Only if they are declared public static final",
+            "Only in abstract classes"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Fields in Java cannot be overridden; polymorphism applies strictly to instance methods. Re-declaring a field hides it."
+        },
+        {
+          "id": "q2",
+          "question": "Given `class A { int x = 1; } class B extends A { int x = 2; }`, what does `A a = new B(); System.out.println(a.x);` print?",
+          "options": [
+            "1",
+            "2",
+            "0",
+            "Compile error"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "Because `a` has reference type `A`, `a.x` resolves statically at compile time to `A.x` (1)."
+        },
+        {
+          "id": "q3",
+          "question": "Given the same classes, what does `((B) a).x` print?",
+          "options": [
+            "1",
+            "2",
+            "0",
+            "ClassCastException"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Casting `a` to `B` changes the reference type to `B`, so the compiler resolves `x` to `B.x` (2)."
+        },
+        {
+          "id": "q4",
+          "question": "How can code inside a subclass access a hidden field defined in its direct superclass?",
+          "options": [
+            "this.field",
+            "super.field",
+            "Subclass.field",
+            "It is completely inaccessible and deleted"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The `super` keyword refers to the superclass member, bypassing the subclass's hiding definition."
+        },
+        {
+          "id": "q5",
+          "question": "How does the JVM store hidden fields in heap memory?",
+          "options": [
+            "It discards the superclass field to save memory",
+            "Both fields exist simultaneously in the object's heap layout",
+            "It merges them into a hash map",
+            "It creates two separate objects in the heap"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "A subclass instance reserves memory offsets for all superclass fields as well as its own fields."
+        },
+        {
+          "id": "q6",
+          "question": "What is the recommended OOP practice to completely avoid field hiding bugs?",
+          "options": [
+            "Make all fields public",
+            "Encapsulate state by marking fields private and using polymorphic getters/setters",
+            "Avoid subclassing entirely",
+            "Use only primitive fields"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Private fields are never visible to subclasses and cannot be accidentally accessed through a parent reference."
+        },
+        {
+          "id": "q7",
+          "question": "Do static fields experience overriding or hiding?",
+          "options": [
+            "They are overridden dynamically",
+            "They are hidden (shadowed) by static fields in subclasses",
+            "Static fields cannot have the same name in subclasses",
+            "They throw a DuplicateFieldException at compile time"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Static members belong to classes and are hidden, never overridden."
+        },
+        {
+          "id": "q8",
+          "question": "If `class Child extends Parent` declares no fields, but overrides `int getX() { return 99; }`, what does `Parent p = new Child(); p.getX();` return?",
+          "options": [
+            "Parent's x value",
+            "99 (via dynamic method dispatch)",
+            "0",
+            "Throws NullPointerException"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Method calls are dispatched dynamically to the actual object type in the heap."
+        },
+        {
+          "id": "q9",
+          "question": "Can you put `@Override` on a field declaration?",
+          "options": [
+            "Yes, to indicate field overriding",
+            "No, @Override is only legal on method declarations and causes a compile error on fields",
+            "Only if the field is protected",
+            "Only in Java 21"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "The `@Override` annotation can only target methods (`ElementType.METHOD`); placing it on a field fails compilation."
+        },
+        {
+          "id": "q10",
+          "question": "Why do interviewers ask about field hiding?",
+          "options": [
+            "To test if candidates understand the fundamental difference between static compile-time binding and dynamic runtime dispatch",
+            "Because field hiding is recommended in modern enterprise architecture",
+            "To check if candidates know how to disable garbage collection",
+            "Because it is required to implement the Singleton pattern"
+          ],
+          "correctOptionIndex": 0,
+          "correctAnswer": 0,
+          "explanation": "It tests whether a candidate truly understands how reference types and vtables differ during execution."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-interview",
+      "type": "interview_qa",
+      "title": "Field Hiding vs Method Overriding Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i6-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Explain the difference between field hiding and method overriding in Java.",
+          "answer": "Field hiding occurs when a subclass declares a field with the same name as a field in its superclass. Field access is resolved at compile time using static binding based on the declared reference type. Method overriding occurs when a subclass provides a specific implementation for an instance method defined in its superclass. Method invocation is resolved at runtime using dynamic method dispatch based on the actual object type on the heap.",
+          "expectedAnswer": "Fields are resolved at compile time by reference type (hiding); methods are dispatched at runtime by actual object type (overriding).",
+          "keyTakeaway": "Fields = static compile-time resolution; Methods = dynamic runtime dispatch.",
+          "keyPoints": [
+            "Fields = static compile-time resolution; Methods = dynamic runtime dispatch."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i6-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Does a subclass object contain both the parent field and the child field in heap memory?",
+          "answer": "Yes. When a subclass hides a superclass field, the JVM allocates memory for both fields in the heap instance. The superclass field can be accessed using `super.fieldName` or by casting the reference to the superclass type `((Parent) child).fieldName`.",
+          "expectedAnswer": "Yes, both fields exist in the heap object. The parent field is accessible via super or casting.",
+          "keyTakeaway": "Both fields coexist in memory; casting chooses which field offset the compiler reads.",
+          "keyPoints": [
+            "Both fields coexist in memory; casting chooses which field offset the compiler reads."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i6-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between hiding, shadowing, and obscuring in Java?",
+          "answer": "Hiding refers to a subclass field or static method having the same name as a superclass member. Shadowing occurs when a local variable or method parameter has the same name as an instance field within the same class (resolved via `this.field`). Obscuring occurs when a variable, type, or package share the same name in the same scope, resolved by JLS precedence rules.",
+          "expectedAnswer": "Hiding is across super/sub classes; Shadowing is local variable vs field; Obscuring is across namespace scopes.",
+          "keyTakeaway": "Hiding = inheritance hierarchy; Shadowing = local variable over field.",
+          "keyPoints": [
+            "Hiding = inheritance hierarchy; Shadowing = local variable over field."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i6-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why does Joshua Bloch advise in Effective Java that fields should never be public?",
+          "answer": "Public fields violate encapsulation, prevent invariant enforcement, and expose callers to field hiding traps. If a field is public, client code couples directly to its storage. Wrapping fields with private visibility and public getters ensures that all client access is polymorphic and future changes to internal representation don't break consumers.",
+          "expectedAnswer": "Public fields break encapsulation and bypass polymorphism. Private fields with getters ensure polymorphic access.",
+          "keyTakeaway": "Encapsulation prevents field hiding bugs and maintains polymorphic consistency.",
+          "keyPoints": [
+            "Encapsulation prevents field hiding bugs and maintains polymorphic consistency."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i6-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can a subclass change the type of a hidden field?",
+          "answer": "Yes. Because field hiding does not participate in method signature contracts or subtyping rules, a subclass can declare a hidden field with a completely different data type (e.g. `Parent` has `int id;`, `Child` has `String id;`). This compiles cleanly but increases cognitive confusion, further demonstrating why field hiding is an anti-pattern.",
+          "expectedAnswer": "Yes, a hidden field can have any type, even completely unrelated to the parent field's type.",
+          "keyTakeaway": "Hidden fields can change types freely because they are completely separate fields.",
+          "keyPoints": [
+            "Hidden fields can change types freely because they are completely separate fields."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i6-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do static methods behave when re-declared in a subclass?",
+          "answer": "Static methods behave like fields: they are hidden (method hiding), not overridden. Invoking a static method through a reference variable resolves based on the reference type at compile time. However, calling static methods through reference variables is considered bad practice; they should always be called using class names (e.g. `MyClass.doWork()`).",
+          "expectedAnswer": "Static methods are hidden, not overridden. They resolve via static binding to the reference type.",
+          "keyTakeaway": "Static methods undergo hiding, never polymorphic overriding.",
+          "keyPoints": [
+            "Static methods undergo hiding, never polymorphic overriding."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i6-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Explain the difference between field hiding and method overriding in Java.",
+          "answer": "Field hiding occurs when a subclass declares a field with the same name as a field in its superclass. Field access is resolved at compile time using static binding based on the declared reference type. Method overriding occurs when a subclass provides a specific implementation for an instance method defined in its superclass. Method invocation is resolved at runtime using dynamic method dispatch based on the actual object type on the heap.",
+          "expectedAnswer": "Fields are resolved at compile time by reference type (hiding); methods are dispatched at runtime by actual object type (overriding).",
+          "keyTakeaway": "Fields = static compile-time resolution; Methods = dynamic runtime dispatch.",
+          "keyPoints": [
+            "Fields = static compile-time resolution; Methods = dynamic runtime dispatch."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i6-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Does a subclass object contain both the parent field and the child field in heap memory?",
+          "answer": "Yes. When a subclass hides a superclass field, the JVM allocates memory for both fields in the heap instance. The superclass field can be accessed using `super.fieldName` or by casting the reference to the superclass type `((Parent) child).fieldName`.",
+          "expectedAnswer": "Yes, both fields exist in the heap object. The parent field is accessible via super or casting.",
+          "keyTakeaway": "Both fields coexist in memory; casting chooses which field offset the compiler reads.",
+          "keyPoints": [
+            "Both fields coexist in memory; casting chooses which field offset the compiler reads."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i6-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between hiding, shadowing, and obscuring in Java?",
+          "answer": "Hiding refers to a subclass field or static method having the same name as a superclass member. Shadowing occurs when a local variable or method parameter has the same name as an instance field within the same class (resolved via `this.field`). Obscuring occurs when a variable, type, or package share the same name in the same scope, resolved by JLS precedence rules.",
+          "expectedAnswer": "Hiding is across super/sub classes; Shadowing is local variable vs field; Obscuring is across namespace scopes.",
+          "keyTakeaway": "Hiding = inheritance hierarchy; Shadowing = local variable over field.",
+          "keyPoints": [
+            "Hiding = inheritance hierarchy; Shadowing = local variable over field."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i6-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why does Joshua Bloch advise in Effective Java that fields should never be public?",
+          "answer": "Public fields violate encapsulation, prevent invariant enforcement, and expose callers to field hiding traps. If a field is public, client code couples directly to its storage. Wrapping fields with private visibility and public getters ensures that all client access is polymorphic and future changes to internal representation don't break consumers.",
+          "expectedAnswer": "Public fields break encapsulation and bypass polymorphism. Private fields with getters ensure polymorphic access.",
+          "keyTakeaway": "Encapsulation prevents field hiding bugs and maintains polymorphic consistency.",
+          "keyPoints": [
+            "Encapsulation prevents field hiding bugs and maintains polymorphic consistency."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i6-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can a subclass change the type of a hidden field?",
+          "answer": "Yes. Because field hiding does not participate in method signature contracts or subtyping rules, a subclass can declare a hidden field with a completely different data type (e.g. `Parent` has `int id;`, `Child` has `String id;`). This compiles cleanly but increases cognitive confusion, further demonstrating why field hiding is an anti-pattern.",
+          "expectedAnswer": "Yes, a hidden field can have any type, even completely unrelated to the parent field's type.",
+          "keyTakeaway": "Hidden fields can change types freely because they are completely separate fields.",
+          "keyPoints": [
+            "Hidden fields can change types freely because they are completely separate fields."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i6-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do static methods behave when re-declared in a subclass?",
+          "answer": "Static methods behave like fields: they are hidden (method hiding), not overridden. Invoking a static method through a reference variable resolves based on the reference type at compile time. However, calling static methods through reference variables is considered bad practice; they should always be called using class names (e.g. `MyClass.doWork()`).",
+          "expectedAnswer": "Static methods are hidden, not overridden. They resolve via static binding to the reference type.",
+          "keyTakeaway": "Static methods undergo hiding, never polymorphic overriding.",
+          "keyPoints": [
+            "Static methods undergo hiding, never polymorphic overriding."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les6-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand that fields are resolved at compile time based on the declared reference type.",
+        "I understand that instance methods are dispatched at runtime based on the actual object type.",
+        "I know why fields cannot be overridden in Java.",
+        "I understand that hidden fields coexist simultaneously in heap memory.",
+        "I can access a hidden superclass field using `super.fieldName` or casting `((Parent) child).fieldName`.",
+        "I know that placing `@Override` on a field causes a compile-time error.",
+        "I can explain why field hiding is considered an anti-pattern in object-oriented software.",
+        "I know the difference between hiding (hierarchy) and shadowing (local scope).",
+        "I understand how static method hiding mimics field hiding.",
+        "I consistently mark instance variables private and use getters to enforce polymorphic behavior."
+      ],
+      "items": [
+        "I understand that fields are resolved at compile time based on the declared reference type.",
+        "I understand that instance methods are dispatched at runtime based on the actual object type.",
+        "I know why fields cannot be overridden in Java.",
+        "I understand that hidden fields coexist simultaneously in heap memory.",
+        "I can access a hidden superclass field using `super.fieldName` or casting `((Parent) child).fieldName`.",
+        "I know that placing `@Override` on a field causes a compile-time error.",
+        "I can explain why field hiding is considered an anti-pattern in object-oriented software.",
+        "I know the difference between hiding (hierarchy) and shadowing (local scope).",
+        "I understand how static method hiding mimics field hiding.",
+        "I consistently mark instance variables private and use getters to enforce polymorphic behavior."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les6-p1",
+      "lessonId": "java-oop-mod10-les6",
+      "orderIndex": 1,
+      "title": "Warmup: Field vs Method Output Prediction",
+      "difficulty": "easy",
+      "problemStatement": "Analyze and complete the price calculator:\n1. Base class `Item` with `public double price = 100.0` and `public double getPrice() { return price; }`.\n2. Subclass `DiscountedItem extends Item` with `public double price = 80.0` and overriding `getPrice() { return price; }`.\n3. In `main`, instantiate a `DiscountedItem` through an `Item` reference `item`.\n4. Print `item.price` (direct field access) and `item.getPrice()` (method call).\nVerify that direct field access prints `100.0` while the method call prints `80.0`.",
+      "starterCode": "class Item {\n    public double price = 100.0;\n    public double getPrice() { return price; }\n}\n\nclass DiscountedItem extends Item {\n    public double price = 80.0; // Hides Item.price\n    @Override\n    public double getPrice() { return price; }\n}\n\npublic class PricingApp {\n    public static void main(String[] args) {\n        // TODO: Declare Item item = new DiscountedItem();\n        // TODO: Print item.price and item.getPrice()\n    }\n}",
+      "initialCode": "class Item {\n    public double price = 100.0;\n    public double getPrice() { return price; }\n}\n\nclass DiscountedItem extends Item {\n    public double price = 80.0; // Hides Item.price\n    @Override\n    public double getPrice() { return price; }\n}\n\npublic class PricingApp {\n    public static void main(String[] args) {\n        // TODO: Declare Item item = new DiscountedItem();\n        // TODO: Print item.price and item.getPrice()\n    }\n}",
+      "solutionCode": "class Item {\n    public double price = 100.0;\n    public double getPrice() { return price; }\n}\n\nclass DiscountedItem extends Item {\n    public double price = 80.0;\n    @Override\n    public double getPrice() { return price; }\n}\n\npublic class PricingApp {\n    public static void main(String[] args) {\n        Item item = new DiscountedItem();\n        System.out.println(\"Field price: \" + item.price);\n        System.out.println(\"Method price: \" + item.getPrice());\n    }\n}",
+      "expectedOutput": "Field price: 100.0\nMethod price: 80.0",
+      "hints": [
+        "item.price uses the Item reference type (100.0).",
+        "item.getPrice() uses dynamic dispatch to DiscountedItem (80.0)."
+      ]
+    },
+    {
+      "id": "prob-les6-p2",
+      "lessonId": "java-oop-mod10-les6",
+      "orderIndex": 2,
+      "title": "Accessing Both Fields via Super and Cast",
+      "difficulty": "medium",
+      "problemStatement": "Build a multi-level sensor reader from scratch without starter code:\n1. Base class `Sensor` with `public int sampleRate = 10`.\n2. Subclass `HighPrecisionSensor extends Sensor` with `public int sampleRate = 100`.\n3. In `HighPrecisionSensor`, implement `public void printBothRates()` that prints:\n   `'Subclass rate: ' + sampleRate`\n   `'Superclass rate: ' + super.sampleRate`\n4. In `Main`, instantiate `HighPrecisionSensor s = new HighPrecisionSensor();` and call `s.printBothRates()`.\n5. Then create `Sensor baseRef = s;` and print `'Access through base reference: ' + baseRef.sampleRate`.\n6. Finally, downcast `((HighPrecisionSensor) baseRef).sampleRate` and print `'Access through cast reference: ' + ((HighPrecisionSensor) baseRef).sampleRate`.",
+      "solutionCode": "class Sensor {\n    public int sampleRate = 10;\n}\n\nclass HighPrecisionSensor extends Sensor {\n    public int sampleRate = 100;\n\n    public void printBothRates() {\n        System.out.println(\"Subclass rate: \" + sampleRate);\n        System.out.println(\"Superclass rate: \" + super.sampleRate);\n    }\n}\n\npublic class SensorApp {\n    public static void main(String[] args) {\n        HighPrecisionSensor s = new HighPrecisionSensor();\n        s.printBothRates();\n\n        Sensor baseRef = s;\n        System.out.println(\"Access through base reference: \" + baseRef.sampleRate);\n        System.out.println(\"Access through cast reference: \" + ((HighPrecisionSensor) baseRef).sampleRate);\n    }\n}",
+      "expectedOutput": "Subclass rate: 100\nSuperclass rate: 10\nAccess through base reference: 10\nAccess through cast reference: 100",
+      "hints": [
+        "Use super.sampleRate inside the subclass to read the parent field.",
+        "Casting the reference selects which field the compiler accesses."
+      ]
+    },
+    {
+      "id": "prob-les6-p3",
+      "lessonId": "java-oop-mod10-les6",
+      "orderIndex": 3,
+      "title": "Refactoring Field Hiding to Polymorphic Getters",
+      "difficulty": "medium",
+      "problemStatement": "Refactor a buggy field-hiding design into clean encapsulated OOP code from scratch without starter code:\n1. Create class `Account` with private field `accountType` (String). Constructor sets `accountType`. Provide public getter `getAccountType()`.\n2. Create subclass `VIPAccount extends Account`. Constructor takes no args and passes `\"VIP\"` to `super(\"VIP\")`.\n3. Create subclass `StandardAccount extends Account`. Constructor takes no args and passes `\"Standard\"` to `super(\"Standard\")`.\n4. In `Main`, create an array `Account[] accounts` holding a `new VIPAccount()` and a `new StandardAccount()`.\n5. Iterate through `accounts` calling `acc.getAccountType()`. Print `'Account Type: ' + acc.getAccountType()`.\nVerify that encapsulating the field behind getters eliminates field hiding and outputs VIP and Standard cleanly.",
+      "solutionCode": "class Account {\n    private String accountType;\n    public Account(String accountType) {\n        this.accountType = accountType;\n    }\n    public String getAccountType() { return accountType; }\n}\n\nclass VIPAccount extends Account {\n    public VIPAccount() {\n        super(\"VIP\");\n    }\n}\n\nclass StandardAccount extends Account {\n    public StandardAccount() {\n        super(\"Standard\");\n    }\n}\n\npublic class CleanAccountApp {\n    public static void main(String[] args) {\n        Account[] accounts = new Account[] {\n            new VIPAccount(),\n            new StandardAccount()\n        };\n        for (Account acc : accounts) {\n            System.out.println(\"Account Type: \" + acc.getAccountType());\n        }\n    }\n}",
+      "expectedOutput": "Account Type: VIP\nAccount Type: Standard",
+      "hints": [
+        "Store the type in the superclass's private field initialized via super(type).",
+        "Subclasses don't declare any fields with the same name, eliminating hiding completely."
+      ]
+    },
+    {
+      "id": "prob-les6-p4",
+      "lessonId": "java-oop-mod10-les6",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accidental Field Hiding in Config Hierarchy",
+      "difficulty": "hard",
+      "problemStatement": "The code below attempts to set a port in `ServerConfig` and read it back, but because `SecureServerConfig` inadvertently re-declares `public int port`, the base class method reads the uninitialized default `0` from the parent field! Fix the bug by eliminating the duplicate field in `SecureServerConfig` so that the constructor initializes the single inherited field properly and prints `'Port: 8443'`.",
+      "starterCode": "class ServerConfig {\n    public int port;\n    public ServerConfig(int p) { this.port = p; }\n    public int getPort() { return port; }\n}\n\nclass SecureServerConfig extends ServerConfig {\n    // BUG: Accidental field hiding! Shadows ServerConfig.port!\n    public int port;\n    public SecureServerConfig(int p) {\n        super(p);\n        // this.port remains 0!\n    }\n}\n\npublic class ConfigBug {\n    public static void main(String[] args) {\n        ServerConfig cfg = new SecureServerConfig(8443);\n        System.out.println(\"Port: \" + cfg.getPort());\n    }\n}",
+      "initialCode": "class ServerConfig {\n    public int port;\n    public ServerConfig(int p) { this.port = p; }\n    public int getPort() { return port; }\n}\n\nclass SecureServerConfig extends ServerConfig {\n    // BUG: Accidental field hiding! Shadows ServerConfig.port!\n    public int port;\n    public SecureServerConfig(int p) {\n        super(p);\n        // this.port remains 0!\n    }\n}\n\npublic class ConfigBug {\n    public static void main(String[] args) {\n        ServerConfig cfg = new SecureServerConfig(8443);\n        System.out.println(\"Port: \" + cfg.getPort());\n    }\n}",
+      "solutionCode": "class ServerConfig {\n    private int port;\n    public ServerConfig(int p) { this.port = p; }\n    public int getPort() { return port; }\n}\n\nclass SecureServerConfig extends ServerConfig {\n    public SecureServerConfig(int p) {\n        super(p);\n    }\n}\n\npublic class ConfigBug {\n    public static void main(String[] args) {\n        ServerConfig cfg = new SecureServerConfig(8443);\n        System.out.println(\"Port: \" + cfg.getPort());\n    }\n}",
+      "expectedOutput": "Port: 8443",
+      "hints": [
+        "Remove the redundant `public int port;` from SecureServerConfig.",
+        "Let super(p) initialize the parent's field directly."
+      ]
+    },
+    {
+      "id": "prob-les6-p5",
+      "lessonId": "java-oop-mod10-les6",
+      "orderIndex": 5,
+      "title": "Advanced: 3-Tier Multi-Level Hiding Hierarchy",
+      "difficulty": "advanced",
+      "problemStatement": "Build a 3-tier hierarchy to observe field hiding across three generations from scratch without starter code:\n1. Class `LevelA` with `public String label = \"A\"`.\n2. Class `LevelB extends LevelA` with `public String label = \"B\"`.\n3. Class `LevelC extends LevelB` with `public String label = \"C\"`.\n4. In `Main`, create an instance of `LevelC`: `LevelC c = new LevelC();`.\n5. Create references:\n   `LevelB b = c;`\n   `LevelA a = c;`\n6. Print:\n   `'From C ref: ' + c.label`\n   `'From B ref: ' + b.label`\n   `'From A ref: ' + a.label`\nVerify that even though all three references point to the EXACT same object in heap memory, each reads its own declared generation's field.",
+      "solutionCode": "class LevelA {\n    public String label = \"A\";\n}\n\nclass LevelB extends LevelA {\n    public String label = \"B\";\n}\n\nclass LevelC extends LevelB {\n    public String label = \"C\";\n}\n\npublic class MultiLevelHidingApp {\n    public static void main(String[] args) {\n        LevelC c = new LevelC();\n        LevelB b = c;\n        LevelA a = c;\n\n        System.out.println(\"From C ref: \" + c.label);\n        System.out.println(\"From B ref: \" + b.label);\n        System.out.println(\"From A ref: \" + a.label);\n    }\n}",
+      "expectedOutput": "From C ref: C\nFrom B ref: B\nFrom A ref: A",
+      "hints": [
+        "Assign the same LevelC object to LevelB and LevelA references.",
+        "Field resolution strictly follows the reference variable's compile-time type."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Field Hiding vs Method Overriding",
+    "Analyze, predict, and trace code execution involving field-hiding-vs-method-overriding",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Field Hiding vs Method Overriding principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}

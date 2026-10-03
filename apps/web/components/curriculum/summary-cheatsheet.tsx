@@ -3643,6 +3643,841 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
         </Card>
       )}
 
+      {/* Module 10: Object References, Casting & Immutability */}
+
+      {/* Lesson 1: reference-type-vs-actual-object-type */}
+      {(slug === 'reference-type-vs-actual-object-type') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Reference Type vs Actual Object Type Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Reference Type (The Contract)</th>
+                  <th className="p-2.5 rounded-r-lg">Actual Object Type (The Heap)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">When Decided</td>
+                  <td className="p-2.5 text-slate-600">Compile-time (static analysis by javac)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Runtime (when new Subclass() runs on the heap)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Member Visibility</td>
+                  <td className="p-2.5 text-slate-600">Determines which methods &amp; fields can be called</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Has no effect on visibility; only defines instance bytecode</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Method Dispatch</td>
+                  <td className="p-2.5 text-slate-600">Verified during compilation</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">JVM dynamically dispatches overridden version at runtime</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Field Access</td>
+                  <td className="p-2.5 text-slate-600">Bound statically to reference type (field hiding)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Never dynamically dispatched</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: instanceof-operator */}
+      {(slug === 'instanceof-operator') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              instanceof Operator &amp; Pattern Matching Cheatsheet
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Expression</th>
+                  <th className="p-2.5">Evaluation Result</th>
+                  <th className="p-2.5 rounded-r-lg">Rule &amp; Mechanics</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">null instanceof Type</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Always false</td>
+                  <td className="p-2.5 text-slate-600">Guaranteed never to throw NullPointerException</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">obj instanceof Superclass</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">true if IS-A</td>
+                  <td className="p-2.5 text-slate-600">Returns true for direct class, superclasses, and interfaces</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">obj instanceof Subclass s</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Pattern Match (Java 16+)</td>
+                  <td className="p-2.5 text-slate-600">Checks type &amp; extracts scope-bound variable s without manual cast</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">Unrelated types check</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Compile Error</td>
+                  <td className="p-2.5 text-slate-600">javac rejects instanceof if types are in mutually exclusive trees</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: upcasting-revisited */}
+      {(slug === 'upcasting-revisited') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Upcasting (Widening Reference Conversion) Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Behavior</th>
+                  <th className="p-2.5 rounded-r-lg">Architectural Benefit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Syntax</td>
+                  <td className="p-2.5 text-slate-600 font-mono">Animal a = new Dog();</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Implicit &amp; 100% safe at compile time; no cast needed</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Heap State</td>
+                  <td className="p-2.5 text-slate-600">Object remains completely unchanged</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Zero heap reallocation or memory duplication</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Collections</td>
+                  <td className="p-2.5 text-slate-600 font-mono">List&lt;Shape&gt; shapes</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Enables heterogeneous polymorphic data collections</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: downcasting */}
+      {(slug === 'downcasting') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Downcasting &amp; ClassCastException Defense Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Scenario</th>
+                  <th className="p-2.5">Code Example</th>
+                  <th className="p-2.5 rounded-r-lg">Runtime Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Safe Guarded Cast</td>
+                  <td className="p-2.5 text-slate-600 font-mono">if (a instanceof Dog) &#123; Dog d = (Dog) a; &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Succeeds cleanly; unlocks Dog-specific methods</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">Blind Sibling Cast</td>
+                  <td className="p-2.5 text-slate-600 font-mono">Animal a = new Cat(); Dog d = (Dog) a;</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Throws ClassCastException at runtime!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">Blind Parent Cast</td>
+                  <td className="p-2.5 text-slate-600 font-mono">Animal a = new Animal(); Dog d = (Dog) a;</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Throws ClassCastException (Parent is not Child!)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: safe-type-checking */}
+      {(slug === 'safe-type-checking') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Safe Type Checking Evolution: Java 7 to Java 21
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Technique</th>
+                  <th className="p-2.5">Pattern</th>
+                  <th className="p-2.5 rounded-r-lg">Evaluation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-700">Java 7/8 Cast</td>
+                  <td className="p-2.5 text-slate-600 font-mono">if (o instanceof String) &#123; String s = (String) o; &#125;</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Repetitive boilerplate; risk of casting wrong variable</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Java 16 Pattern</td>
+                  <td className="p-2.5 text-slate-600 font-mono">if (o instanceof String s) &#123; s.length(); &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Concise; s is automatically bound and type-safe</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Java 21 Switch</td>
+                  <td className="p-2.5 text-slate-600 font-mono">switch(o) &#123; case Integer i -&gt; ... case String s -&gt; ... &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Exhaustive pattern matching across sealed hierarchies</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: field-hiding-vs-method-overriding */}
+      {(slug === 'field-hiding-vs-method-overriding') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertCircle className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Field Hiding vs Method Overriding Binding Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Member Type</th>
+                  <th className="p-2.5">Binding Mechanism</th>
+                  <th className="p-2.5 rounded-r-lg">Parent ref = new Child(); Behavior</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">Instance Fields</td>
+                  <td className="p-2.5 text-slate-600 font-medium">Static Binding (Field Hiding)</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Accesses Parent field value! Never polymorphic.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Instance Methods</td>
+                  <td className="p-2.5 text-slate-600 font-medium">Dynamic Method Dispatch</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Executes Child overridden implementation!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Static Methods</td>
+                  <td className="p-2.5 text-slate-600 font-medium">Static Binding (Method Hiding)</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Invokes Parent static method based on reference type.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: immutable-objects */}
+      {(slug === 'immutable-objects') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Lock className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Immutability Invariants &amp; Architectural Benefits
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Mutable Object</th>
+                  <th className="p-2.5 rounded-r-lg">Immutable Object</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Thread Safety</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Requires synchronization / locks</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">100% thread-safe by design with zero lock overhead</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Map Keys</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Dangerous: mutated fields corrupt hashCode lookup</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Safe: hash code never changes after insertion</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">State Mutation</td>
+                  <td className="p-2.5 text-slate-600 font-mono">obj.setX(val);</td>
+                  <td className="p-2.5 text-indigo-700 font-medium font-mono">newObj = obj.withX(val);</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: how-to-design-an-immutable-class */}
+      {(slug === 'how-to-design-an-immutable-class') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Lock className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 5 Pillars of Designing Immutable Classes
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Pillar</th>
+                  <th className="p-2.5">Rule</th>
+                  <th className="p-2.5 rounded-r-lg">Failure Mode Prevented</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">1. Final Class</td>
+                  <td className="p-2.5 text-slate-600 font-mono">public final class User &#123; ... &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Prevents malicious subclass overriding getters with mutable state</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">2. Private Final Fields</td>
+                  <td className="p-2.5 text-slate-600 font-mono">private final List&lt;String&gt; tags;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Guarantees memory visibility and prevents reassignment</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">3. No Mutators</td>
+                  <td className="p-2.5 text-slate-600">Zero setter methods</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Object state cannot change after constructor completes</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">4. Defensive Copy In</td>
+                  <td className="p-2.5 text-slate-600 font-mono">this.tags = new ArrayList&lt;&gt;(tags);</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Stops caller from mutating the passed collection reference</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">5. Defensive Copy Out</td>
+                  <td className="p-2.5 text-slate-600 font-mono">return Collections.unmodifiableList(tags);</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Stops caller from modifying the internal collection via getter</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: nested-classes-introduction */}
+      {(slug === 'nested-classes-introduction') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Java Nested Classes Classification Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Nested Class Type</th>
+                  <th className="p-2.5">Outer Instance Reference</th>
+                  <th className="p-2.5 rounded-r-lg">Primary Use Case</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">static class Nested</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">NO (Zero hidden reference)</td>
+                  <td className="p-2.5 text-slate-600">Builders, helper nodes (Map.Entry), value records</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700 font-mono">class Inner</td>
+                  <td className="p-2.5 text-rose-700 font-medium">YES (Holds Outer.this pointer)</td>
+                  <td className="p-2.5 text-slate-600">Iterators, event listeners requiring outer instance state</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700 font-mono">Local / Anonymous</td>
+                  <td className="p-2.5 text-slate-600">Captures effectively final local variables</td>
+                  <td className="p-2.5 text-slate-600">One-off callbacks, quick Runnables or Comparators</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 10: oop-debugging-challenge */}
+      {(slug === 'oop-debugging-challenge') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-rose-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              OOP Debugging Triage: Symptom, Cause &amp; Remediation
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Symptom</th>
+                  <th className="p-2.5">Root Cause</th>
+                  <th className="p-2.5 rounded-r-lg">Remediation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700 font-mono">ClassCastException</td>
+                  <td className="p-2.5 text-slate-600">Blind downcast without verifying heap type</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Guard with instanceof or pattern matching</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700 font-mono">NullPointerException in constructor</td>
+                  <td className="p-2.5 text-slate-600">Superclass constructor calls overridable method before child fields initialize</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Never call overridable methods inside constructors</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">HashMap cannot find existing key</td>
+                  <td className="p-2.5 text-slate-600">Key object mutated its fields after insertion; bucket mismatch</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Use immutable classes (like String/UUID) as Map keys</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Module 11: OOP Mastery & Final Build */}
+
+      {/* Lesson 1: reading-an-unfamiliar-oop-program */}
+      {(slug === 'reading-an-unfamiliar-oop-program') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 5-Step Codebase Reading &amp; Triage Protocol
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Step</th>
+                  <th className="p-2.5">Focus Area</th>
+                  <th className="p-2.5 rounded-r-lg">Mental Model &amp; Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">1. Entry Points</td>
+                  <td className="p-2.5 text-slate-600 font-mono">main() / Controllers</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Identify composition root, dependency bootstrap, and trigger requests</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">2. Nouns vs Verbs</td>
+                  <td className="p-2.5 text-slate-600">Entities vs Services</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Categorize: Nouns hold domain state; Verbs orchestrate workflows</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">3. Relationship Map</td>
+                  <td className="p-2.5 text-slate-600">Has-A vs Is-A</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Scan extends/implements hierarchies and instance field composition</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">4. Happy-Path Trace</td>
+                  <td className="p-2.5 text-slate-600">End-to-End Workflow</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Follow one primary business action from input to database/output</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">5. Object Graph</td>
+                  <td className="p-2.5 text-slate-600">Heap State Visualization</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Sketch references in memory to trace ownership and lifecycles</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: tracing-object-creation-and-constructors */}
+      {(slug === 'tracing-object-creation-and-constructors') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 5 Phases of JVM Object Instantiation Order
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Phase</th>
+                  <th className="p-2.5">Execution Step</th>
+                  <th className="p-2.5 rounded-r-lg">Exact Order</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">1. Static Phase</td>
+                  <td className="p-2.5 text-slate-600">Class Loading (runs ONCE)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Superclass static blocks -&gt; Subclass static blocks</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">2. Heap Allocation</td>
+                  <td className="p-2.5 text-slate-600">Memory zeroing</td>
+                  <td className="p-2.5 text-slate-600 font-mono">0, 0.0, false, null initialized across all fields</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">3. super() Chain</td>
+                  <td className="p-2.5 text-slate-600">Constructor delegation</td>
+                  <td className="p-2.5 text-slate-600 font-mono">Chains all the way up to java.lang.Object constructor</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">4. Parent Instance</td>
+                  <td className="p-2.5 text-slate-600">Superclass instance init</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Parent instance initializers -&gt; Parent constructor body</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">5. Child Instance</td>
+                  <td className="p-2.5 text-slate-600">Subclass instance init</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Child instance initializers -&gt; Child constructor body</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: tracing-inheritance-and-polymorphism */}
+      {(slug === 'tracing-inheritance-and-polymorphism') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Dynamic Method Dispatch vs super Calls Across 3-Tiers
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Invocation Syntax</th>
+                  <th className="p-2.5">Resolution Target</th>
+                  <th className="p-2.5 rounded-r-lg">Bytecode Instruction</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">ref.method()</td>
+                  <td className="p-2.5 text-slate-600 font-medium">Bottom-most overridden version on actual heap class</td>
+                  <td className="p-2.5 text-emerald-700 font-mono">invokevirtual (Dynamic Dispatch via vtable)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700 font-mono">super.method()</td>
+                  <td className="p-2.5 text-slate-600 font-medium">Direct parent class implementation; bypasses child overrides</td>
+                  <td className="p-2.5 text-purple-700 font-mono">invokespecial (Static Resolution)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700 font-mono">Class.staticMethod()</td>
+                  <td className="p-2.5 text-slate-600 font-medium">Bound directly to named class at compile time</td>
+                  <td className="p-2.5 text-amber-700 font-mono">invokestatic (Static Resolution)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: finding-oop-design-problems */}
+      {(slug === 'finding-oop-design-problems') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 6 Fatal OOP Code Smells &amp; Quick Diagnosis
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Code Smell</th>
+                  <th className="p-2.5">Tell-Tale Symptom</th>
+                  <th className="p-2.5 rounded-r-lg">Refactoring Fix</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">God Class (Blob)</td>
+                  <td className="p-2.5 text-slate-600">1,000+ line class managing UI, DB, calculations, and logs</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Extract cohesive collaborator classes (SRP)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">Encapsulation Leak</td>
+                  <td className="p-2.5 text-slate-600 font-mono">public List&lt;T&gt; getItems() &#123; return this.items; &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Return Collections.unmodifiableList or defensive copy</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Primitive Obsession</td>
+                  <td className="p-2.5 text-slate-600 font-mono">String email, double amount, String zipCode</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Model immutable Value Objects (Email, Money, ZipCode)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Feature Envy</td>
+                  <td className="p-2.5 text-slate-600 font-mono">order.getCustomer().getAddress().calculateTax()</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Apply Tell, Don&#39;t Ask; move method to data owner</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: fixing-broken-oop-code */}
+      {(slug === 'fixing-broken-oop-code') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Procedural to Polymorphic Refactoring Playbook
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Target Anti-Pattern</th>
+                  <th className="p-2.5">Procedural Structure</th>
+                  <th className="p-2.5 rounded-r-lg">Polymorphic Refactoring</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">Switch Ladder Smell</td>
+                  <td className="p-2.5 text-slate-600 font-mono">switch(typeCode) &#123; case 1: ... &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Introduce Strategy/State interface with polymorphic classes</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Hardcoded Coupling</td>
+                  <td className="p-2.5 text-slate-600 font-mono">private Repo repo = new SqlRepo();</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Constructor Injection: pass interface dependency</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Sentinel Returns</td>
+                  <td className="p-2.5 text-slate-600 font-mono">return -1; or return null;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Throw domain exceptions or return Optional&lt;T&gt;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: designing-classes-from-requirements */}
+      {(slug === 'designing-classes-from-requirements') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Domain Modeling Matrix: Entity vs Value Object vs Service
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept</th>
+                  <th className="p-2.5">Key Characteristics</th>
+                  <th className="p-2.5 rounded-r-lg">Real-World Examples</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Domain Entity</td>
+                  <td className="p-2.5 text-slate-600">Tracked by unique identity across lifecycle; mutable state</td>
+                  <td className="p-2.5 text-slate-800 font-medium">Customer (customerId), Order (orderId), Flight</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Value Object</td>
+                  <td className="p-2.5 text-slate-600">No identity; defined solely by attributes; strictly immutable</td>
+                  <td className="p-2.5 text-slate-800 font-medium">Money ($100 USD), GPSCoordinate, TimeSlot</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Aggregate Root</td>
+                  <td className="p-2.5 text-slate-600">Gatekeeper entity protecting cluster invariants</td>
+                  <td className="p-2.5 text-slate-800 font-medium">Order guarding OrderItems; Department guarding Staff</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Domain Service</td>
+                  <td className="p-2.5 text-slate-600">Stateless coordinator for multi-entity workflows</td>
+                  <td className="p-2.5 text-slate-800 font-medium">PaymentGateway, TaxEngine, BookingCoordinator</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: choosing-inheritance-vs-composition */}
+      {(slug === 'choosing-inheritance-vs-composition') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 5 Architectural Tests: Extends vs Composes
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Architectural Test</th>
+                  <th className="p-2.5">Evaluation</th>
+                  <th className="p-2.5 rounded-r-lg">Recommended Choice</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Strict IS-A (LSP)</td>
+                  <td className="p-2.5 text-slate-600">Is Child completely substitutable without throwing exceptions?</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">If YES: Inheritance. If NO: Composition.</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Runtime Swappability</td>
+                  <td className="p-2.5 text-slate-600">Does behavior or role need to change dynamically at runtime?</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">COMPOSITION (Strategy / Role Pattern)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Fragile Base Class</td>
+                  <td className="p-2.5 text-slate-600">Does subclass rely on internal call details of superclass?</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">COMPOSITION (Decorator / Delegation)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Multiple Variations</td>
+                  <td className="p-2.5 text-slate-600">Will inheritance cause NxM combinatorial class explosion?</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">COMPOSITION (Bridge Pattern)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: building-a-multi-class-application */}
+      {(slug === 'building-a-multi-class-application') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Universal 4-Layer Architecture &amp; Composition Root
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Layer</th>
+                  <th className="p-2.5">Responsibilities</th>
+                  <th className="p-2.5 rounded-r-lg">Allowed Inward Dependencies</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Presentation / CLI</td>
+                  <td className="p-2.5 text-slate-600">Parses input, renders output, handles terminal UI</td>
+                  <td className="p-2.5 text-slate-600">Calls Application Services</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Service Layer</td>
+                  <td className="p-2.5 text-slate-600">Coordinates workflows, orchestrates transactions, emits events</td>
+                  <td className="p-2.5 text-slate-600">Calls Domain Entities &amp; Repository Interfaces</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Domain Layer</td>
+                  <td className="p-2.5 text-slate-600">Pure business entities, value objects, domain invariants</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">ZERO dependencies on DB, UI, or frameworks!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Repository Layer</td>
+                  <td className="p-2.5 text-slate-600">Implements data access interfaces (In-Memory, SQL)</td>
+                  <td className="p-2.5 text-slate-600">Stores &amp; retrieves Domain Entities</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: employee-management-payroll-capstone */}
+      {(slug === 'employee-management-payroll-capstone') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Capstone: Enterprise Payroll System Architecture Blueprint
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Component</th>
+                  <th className="p-2.5">Pattern &amp; Role</th>
+                  <th className="p-2.5 rounded-r-lg">SOLID Invariant Enforced</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700 font-mono">Payable</td>
+                  <td className="p-2.5 text-slate-600">Capability Interface</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Interface Segregation: Decouples payment from employee taxonomy</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">Employee Hierarchy</td>
+                  <td className="p-2.5 text-slate-600">Polymorphic Specializations (Salaried, Hourly, Commission)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Liskov Substitution &amp; Open-Closed: new compensation rules add zero regressions</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700 font-mono">Department</td>
+                  <td className="p-2.5 text-slate-600">Aggregate Root</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Encapsulation: guards department budget and staff roster invariants</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700 font-mono">TaxStrategy</td>
+                  <td className="p-2.5 text-slate-600">Strategy Pattern</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Dependency Inversion: PayrollEngine depends on abstract tax rules</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">PaySlip</td>
+                  <td className="p-2.5 text-slate-600">Immutable Value Object</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Audit Integrity: historical pay calculations are tamper-proof and thread-safe</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+
 
 
       {/* Lesson: java-and-jvm */}

@@ -1,0 +1,531 @@
+{
+  "id": "les-mast-2",
+  "slug": "tracing-object-creation-and-constructors",
+  "title": "Tracing Object Creation & Constructors",
+  "summary": "Tracking heap memory allocations, reference assignments, and constructor chaining.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "moduleSlug": "oop-mastery-and-code-tracing",
+  "activities": [
+    {
+      "id": "act-les2-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Layered Skyscraper Construction",
+      "concept": "Object Creation Lifecycle and Constructor Chaining",
+      "realWorldMetaphor": {
+        "scenario": "You cannot install penthouse crystal chandeliers while the foundation concrete is still wet. Construction proceeds in an unalterable, strict mechanical sequence: 1) City zoning and soil survey (Class Loading & Static Blocks), 2) Pouring the bedrock foundation (Superclass Constructor), 3) Erecting the steel superstructure (Subclass Initializers), and 4) Final custom interior finishing (Subclass Constructor Body).",
+        "mapping": "In the Java Virtual Machine, instantiating an object follows a rigid 5-phase initialization order. When you type `new SubClass()`, the JVM loads classes, zeroes out heap memory, invokes the `Object` root constructor, chains down superclass constructors, runs instance variable initializers, and finally executes the subclass constructor body.",
+        "takeaway": "Constructors and initializers execute in a strictly defined top-down order from superclass to subclass."
+      }
+    },
+    {
+      "id": "act-les2-concept",
+      "type": "concept",
+      "title": "The Exact JVM Initialization Sequence",
+      "content": "### The 5 Phases of Object Instantiation\n\nWhen `new Subclass()` is executed for the first time, the JVM strictly executes these steps:\n\n```\n[1. Static Phase] (Executed ONCE when class is loaded)\n  └── Superclass static fields & static blocks (top-down)\n  └── Subclass static fields & static blocks\n\n[2. Memory Allocation]\n  └── Allocates heap space and zeroes all instance fields (0, 0.0, false, null)\n\n[3. Constructor Chaining to Super]\n  └── Subclass constructor invokes super() (implicitly or explicitly)\n  └── Repeats up the hierarchy until java.lang.Object constructor finishes\n\n[4. Instance Initializers & Field Initialization]\n  └── Superclass instance fields & blocks run (top-down)\n  └── Superclass constructor body executes\n  └── Subclass instance fields & blocks run (top-down)\n\n[5. Subclass Constructor Body]\n  └── Remaining statements in subclass constructor execute\n```\n\n### The Rule of `this()` and `super()`\n- If you write `this(...)`, it delegates to an overloaded constructor in the same class.\n- If you write `super(...)`, it invokes the parent constructor.\n- If you write neither, the compiler **implicitly inserts `super();`** as the first statement.\n- `this()` or `super()` **must be the very first statement** in a constructor!"
+    },
+    {
+      "id": "act-les2-cw1",
+      "type": "code_walkthrough",
+      "title": "Predicting the Exact Output of Constructor Chaining",
+      "codeSnippet": "class ParentClass {\n    static {\n        System.out.println(\"1. Parent Static Block\");\n    }\n    {\n        System.out.println(\"3. Parent Instance Block\");\n    }\n    public ParentClass() {\n        System.out.println(\"4. Parent Constructor\");\n    }\n}\n\nclass ChildClass extends ParentClass {\n    static {\n        System.out.println(\"2. Child Static Block\");\n    }\n    {\n        System.out.println(\"5. Child Instance Block\");\n    }\n    public ChildClass() {\n        super(); // Implicit or explicit\n        System.out.println(\"6. Child Constructor\");\n    }\n}\n\npublic class InitializationOrderDemo {\n    public static void main(String[] args) {\n        System.out.println(\">> Allocating ChildClass <<\");\n        new ChildClass();\n    }\n}",
+      "code": "class ParentClass {\n    static {\n        System.out.println(\"1. Parent Static Block\");\n    }\n    {\n        System.out.println(\"3. Parent Instance Block\");\n    }\n    public ParentClass() {\n        System.out.println(\"4. Parent Constructor\");\n    }\n}\n\nclass ChildClass extends ParentClass {\n    static {\n        System.out.println(\"2. Child Static Block\");\n    }\n    {\n        System.out.println(\"5. Child Instance Block\");\n    }\n    public ChildClass() {\n        super(); // Implicit or explicit\n        System.out.println(\"6. Child Constructor\");\n    }\n}\n\npublic class InitializationOrderDemo {\n    public static void main(String[] args) {\n        System.out.println(\">> Allocating ChildClass <<\");\n        new ChildClass();\n    }\n}",
+      "language": "java",
+      "explanation": "Traces the complete sequence: static blocks run first when classes are loaded, followed by parent instance block, parent constructor, child instance block, and child constructor.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`ChildClass` loading triggers `ParentClass` loading; `Parent Static Block` runs."
+        },
+        {
+          "step": 2,
+          "description": "`Child Static Block` runs."
+        },
+        {
+          "step": 3,
+          "description": "`new ChildClass()` triggers `super()`; `Parent Instance Block` runs before `Parent Constructor`."
+        },
+        {
+          "step": 4,
+          "description": "`Parent Constructor` finishes; execution returns to `ChildClass`."
+        },
+        {
+          "step": 5,
+          "description": "`Child Instance Block` runs."
+        },
+        {
+          "step": 6,
+          "description": "`Child Constructor` body finishes."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-cw2",
+      "type": "code_walkthrough",
+      "title": "Multiple Instances and Static Invariance",
+      "codeSnippet": "class CounterBox {\n    private static int instanceCount = 0; // Static field\n    private int boxId;                    // Instance field\n\n    static {\n        System.out.println(\"Static block: loaded once\");\n    }\n\n    public CounterBox() {\n        instanceCount++;\n        this.boxId = instanceCount;\n        System.out.println(\"Box #\" + boxId + \" created. Total: \" + instanceCount);\n    }\n}\n\npublic class MultipleInstanceDemo {\n    public static void main(String[] args) {\n        new CounterBox();\n        new CounterBox();\n        new CounterBox();\n    }\n}",
+      "code": "class CounterBox {\n    private static int instanceCount = 0; // Static field\n    private int boxId;                    // Instance field\n\n    static {\n        System.out.println(\"Static block: loaded once\");\n    }\n\n    public CounterBox() {\n        instanceCount++;\n        this.boxId = instanceCount;\n        System.out.println(\"Box #\" + boxId + \" created. Total: \" + instanceCount);\n    }\n}\n\npublic class MultipleInstanceDemo {\n    public static void main(String[] args) {\n        new CounterBox();\n        new CounterBox();\n        new CounterBox();\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates that static blocks execute only once per ClassLoader lifetime, while instance constructors run for each individual 'new' invocation.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Class is loaded on first access; static block prints once."
+        },
+        {
+          "step": 2,
+          "description": "First instance increments `instanceCount` to 1 and assigns `boxId = 1`."
+        },
+        {
+          "step": 3,
+          "description": "Second and third instances increment to 2 and 3 without re-running the static block."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-mcq",
+      "type": "mcq",
+      "title": "Tracing Object Creation Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "In what order do static blocks execute when instantiating a subclass for the first time?",
+          "options": [
+            "Subclass static block first, then Superclass static block",
+            "Superclass static block first, then Subclass static block",
+            "Static blocks run after constructors",
+            "Static blocks run in random order"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Before a subclass can be loaded, its superclass must be loaded. Superclass static blocks execute first."
+        },
+        {
+          "id": "q2",
+          "question": "What happens if a developer writes neither `this()` nor `super()` in a constructor?",
+          "options": [
+            "The compiler refuses to compile the code",
+            "The compiler automatically inserts `super();` with no arguments as the first statement",
+            "The object is not created",
+            "The superclass constructor is completely skipped"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java guarantees constructor chaining by implicitly inserting `super();` if omitted."
+        },
+        {
+          "id": "q3",
+          "question": "Can `this()` and `super()` both be called in the same constructor?",
+          "options": [
+            "Yes, as long as both are in the first three lines",
+            "No, either `this()` or `super()` can be called, but not both, because both must be the first statement",
+            "Yes, in abstract classes only",
+            "Only if generics are used"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java requires the call to be the first statement, making it syntactically impossible to have both in one constructor."
+        },
+        {
+          "id": "q4",
+          "question": "When does an instance initialization block `{ ... }` run?",
+          "options": [
+            "When the class is loaded into memory",
+            "Immediately after the super() constructor call finishes, but before the constructor body executes",
+            "After the entire constructor finishes",
+            "Only when garbage collection occurs"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Instance initializers run after `super()` returns, right before the current constructor's body executes."
+        },
+        {
+          "id": "q5",
+          "question": "If `Parent` only defines `public Parent(int x)` (no zero-arg constructor), what MUST `Child` do in its constructor?",
+          "options": [
+            "Declare `Parent` as an interface",
+            "Explicitly call `super(x)` with an integer argument as the first statement",
+            "Make all its fields static",
+            "Nothing, the compiler creates a default Parent() constructor"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Because Parent lacks a default zero-arg constructor, `super()` cannot be inserted implicitly; `super(x)` must be written explicitly."
+        },
+        {
+          "id": "q6",
+          "question": "How many times does a static block execute if 1,000 instances of a class are created?",
+          "options": [
+            "1,000 times",
+            "Exactly once",
+            "Twice",
+            "Zero times"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Static blocks execute exactly once when the class is initially loaded by the JVM ClassLoader."
+        },
+        {
+          "id": "q7",
+          "question": "What are the default values assigned to object instance fields during the zero-initialization phase?",
+          "options": [
+            "Random heap values",
+            "0 for numerics, false for booleans, null for reference types",
+            "All fields default to -1",
+            "Fields remain undefined until assigned"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Java zeroes out all allocated heap memory: numeric primitives to 0/0.0, booleans to false, references to null."
+        },
+        {
+          "id": "q8",
+          "question": "Given `class A { A() { System.out.print(\"A\"); } } class B extends A { B() { System.out.print(\"B\"); } }`, what does `new B()` print?",
+          "options": [
+            "B",
+            "AB",
+            "BA",
+            "A"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "`B` implicitly calls `super()` which executes `A`'s constructor (printing 'A'), then `B`'s constructor prints 'B'."
+        },
+        {
+          "id": "q9",
+          "question": "Can a constructor be declared `static` or `final`?",
+          "options": [
+            "Yes, both are common in enterprise code",
+            "No, constructors cannot be static, final, abstract, or synchronized",
+            "Constructors can be final but not static",
+            "Constructors can be static but not final"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Constructors are not inherited, so `final` is meaningless; they operate on `this`, so `static` is illegal."
+        },
+        {
+          "id": "q10",
+          "question": "What is the primary danger of invoking an overridable method inside a constructor?",
+          "options": [
+            "It crashes the compiler",
+            "Subclass fields may not yet be initialized when the overridden method executes, leading to NullPointerExceptions or corrupt state",
+            "It turns the method private",
+            "It duplicates the instance on the stack"
+          ],
+          "correctOptionIndex": 1,
+          "correctAnswer": 1,
+          "explanation": "Superclass constructor runs before subclass field initializers, so the subclass method runs on uninitialized state."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-interview",
+      "type": "interview_qa",
+      "title": "Tracing Object Creation Interview Questions",
+      "interviewQA": [
+        {
+          "id": "i2-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Walk through the exact initialization sequence when a class with a superclass and static blocks is instantiated.",
+          "answer": "1) Superclass static initializers and static fields (in order). 2) Subclass static initializers and static fields. 3) Memory allocation on the heap (zeroed to null, 0, false). 4) Superclass constructor execution (which triggers superclass instance initializers/fields first, then constructor body). 5) Subclass instance initializers and field assignments. 6) Subclass constructor body.",
+          "expectedAnswer": "Static super -> static sub -> instance super -> super constructor -> instance sub -> sub constructor.",
+          "keyTakeaway": "Statics top-down, then instance fields and constructors top-down.",
+          "keyPoints": [
+            "Statics top-down, then instance fields and constructors top-down."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i2-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does Java forbid using instance variables or `this` in the argument expression of a `super(...)` call?",
+          "answer": "Because before `super()` completes, the superclass foundation has not yet been constructed, and the object's instance state does not legally exist yet. Java strictly enforces that `super()` must establish the parent state before any child instance state can be referenced.",
+          "expectedAnswer": "The superclass must be constructed before the child instance state legally exists; this is not yet valid.",
+          "keyTakeaway": "You cannot access instance members before super() establishes the parent foundation.",
+          "keyPoints": [
+            "You cannot access instance members before super() establishes the parent foundation."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i2-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between an instance initialization block and a constructor?",
+          "answer": "Instance initialization blocks `{ ... }` run for every constructor and are physically inlined by the compiler into the beginning of every constructor right after `super()`. They are useful for sharing initialization code across multiple constructors or initializing anonymous inner classes (which cannot declare constructors).",
+          "expectedAnswer": "Instance blocks are inlined by the compiler after super() into every constructor, enabling shared initialization.",
+          "keyTakeaway": "Instance initializers are inlined into every constructor after super().",
+          "keyPoints": [
+            "Instance initializers are inlined into every constructor after super()."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i2-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is constructor chaining, and how does `this()` differ from `super()`?",
+          "answer": "Constructor chaining is the mechanism where one constructor invokes another. `this(...)` invokes an overloaded constructor within the same class, allowing default parameters and reducing duplication. `super(...)` invokes a constructor in the direct superclass to initialize inherited state. Both must appear as the first statement.",
+          "expectedAnswer": "this() calls an overloaded constructor in the same class; super() calls the parent constructor.",
+          "keyTakeaway": "this() chains horizontally within the class; super() chains vertically up the hierarchy.",
+          "keyPoints": [
+            "this() chains horizontally within the class; super() chains vertically up the hierarchy."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i2-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can a class be initialized without calling any constructor?",
+          "answer": "Yes, through: 1) Java Object Deserialization (`readObject()` creates objects by allocating memory and assigning fields directly from the stream, invoking only the first non-serializable superclass constructor), 2) Object cloning via `Object.clone()`, and 3) Low-level JVM utilities like `sun.misc.Unsafe.allocateInstance()`.",
+          "expectedAnswer": "Yes: Deserialization, clone(), and sun.misc.Unsafe can allocate objects without running class constructors.",
+          "keyTakeaway": "Deserialization and cloning bypass standard constructor execution.",
+          "keyPoints": [
+            "Deserialization and cloning bypass standard constructor execution."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i2-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does the JVM prevent infinite constructor loops when using `this()`?",
+          "answer": "The Java compiler detects cyclic constructor invocations at compile time (e.g. constructor A calls B, and B calls A) and halts with a compile-time error: `recursive constructor invocation`.",
+          "expectedAnswer": "The compiler performs static cycle detection and flags recursive constructor invocations with a compile error.",
+          "keyTakeaway": "Cyclic constructor invocations are rejected at compile time.",
+          "keyPoints": [
+            "Cyclic constructor invocations are rejected at compile time."
+          ],
+          "company": "Netflix"
+        }
+      ],
+      "questions": [
+        {
+          "id": "i2-1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Walk through the exact initialization sequence when a class with a superclass and static blocks is instantiated.",
+          "answer": "1) Superclass static initializers and static fields (in order). 2) Subclass static initializers and static fields. 3) Memory allocation on the heap (zeroed to null, 0, false). 4) Superclass constructor execution (which triggers superclass instance initializers/fields first, then constructor body). 5) Subclass instance initializers and field assignments. 6) Subclass constructor body.",
+          "expectedAnswer": "Static super -> static sub -> instance super -> super constructor -> instance sub -> sub constructor.",
+          "keyTakeaway": "Statics top-down, then instance fields and constructors top-down.",
+          "keyPoints": [
+            "Statics top-down, then instance fields and constructors top-down."
+          ],
+          "company": "Google"
+        },
+        {
+          "id": "i2-2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does Java forbid using instance variables or `this` in the argument expression of a `super(...)` call?",
+          "answer": "Because before `super()` completes, the superclass foundation has not yet been constructed, and the object's instance state does not legally exist yet. Java strictly enforces that `super()` must establish the parent state before any child instance state can be referenced.",
+          "expectedAnswer": "The superclass must be constructed before the child instance state legally exists; this is not yet valid.",
+          "keyTakeaway": "You cannot access instance members before super() establishes the parent foundation.",
+          "keyPoints": [
+            "You cannot access instance members before super() establishes the parent foundation."
+          ],
+          "company": "Amazon"
+        },
+        {
+          "id": "i2-3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between an instance initialization block and a constructor?",
+          "answer": "Instance initialization blocks `{ ... }` run for every constructor and are physically inlined by the compiler into the beginning of every constructor right after `super()`. They are useful for sharing initialization code across multiple constructors or initializing anonymous inner classes (which cannot declare constructors).",
+          "expectedAnswer": "Instance blocks are inlined by the compiler after super() into every constructor, enabling shared initialization.",
+          "keyTakeaway": "Instance initializers are inlined into every constructor after super().",
+          "keyPoints": [
+            "Instance initializers are inlined into every constructor after super()."
+          ],
+          "company": "Microsoft"
+        },
+        {
+          "id": "i2-4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is constructor chaining, and how does `this()` differ from `super()`?",
+          "answer": "Constructor chaining is the mechanism where one constructor invokes another. `this(...)` invokes an overloaded constructor within the same class, allowing default parameters and reducing duplication. `super(...)` invokes a constructor in the direct superclass to initialize inherited state. Both must appear as the first statement.",
+          "expectedAnswer": "this() calls an overloaded constructor in the same class; super() calls the parent constructor.",
+          "keyTakeaway": "this() chains horizontally within the class; super() chains vertically up the hierarchy.",
+          "keyPoints": [
+            "this() chains horizontally within the class; super() chains vertically up the hierarchy."
+          ],
+          "company": "Meta"
+        },
+        {
+          "id": "i2-5",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can a class be initialized without calling any constructor?",
+          "answer": "Yes, through: 1) Java Object Deserialization (`readObject()` creates objects by allocating memory and assigning fields directly from the stream, invoking only the first non-serializable superclass constructor), 2) Object cloning via `Object.clone()`, and 3) Low-level JVM utilities like `sun.misc.Unsafe.allocateInstance()`.",
+          "expectedAnswer": "Yes: Deserialization, clone(), and sun.misc.Unsafe can allocate objects without running class constructors.",
+          "keyTakeaway": "Deserialization and cloning bypass standard constructor execution.",
+          "keyPoints": [
+            "Deserialization and cloning bypass standard constructor execution."
+          ],
+          "company": "Apple"
+        },
+        {
+          "id": "i2-6",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does the JVM prevent infinite constructor loops when using `this()`?",
+          "answer": "The Java compiler detects cyclic constructor invocations at compile time (e.g. constructor A calls B, and B calls A) and halts with a compile-time error: `recursive constructor invocation`.",
+          "expectedAnswer": "The compiler performs static cycle detection and flags recursive constructor invocations with a compile error.",
+          "keyTakeaway": "Cyclic constructor invocations are rejected at compile time.",
+          "keyPoints": [
+            "Cyclic constructor invocations are rejected at compile time."
+          ],
+          "company": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-les2-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can trace the 5 phases of JVM object creation without looking at notes.",
+        "I know the exact order of static blocks vs instance blocks vs constructors.",
+        "I understand how the compiler implicitly inserts `super();` if omitted.",
+        "I know why `this()` or `super()` must be the very first statement in a constructor.",
+        "I understand zero-initialization of heap memory (0, false, null).",
+        "I know why calling overridable methods in constructors causes subtle bugs.",
+        "I can trace constructor chaining across 3-tier inheritance hierarchies.",
+        "I know that static blocks execute only once per class loading.",
+        "I understand how constructor chaining with `this(...)` eliminates duplication.",
+        "I can predict the exact console output of complex multi-class initialization programs."
+      ],
+      "items": [
+        "I can trace the 5 phases of JVM object creation without looking at notes.",
+        "I know the exact order of static blocks vs instance blocks vs constructors.",
+        "I understand how the compiler implicitly inserts `super();` if omitted.",
+        "I know why `this()` or `super()` must be the very first statement in a constructor.",
+        "I understand zero-initialization of heap memory (0, false, null).",
+        "I know why calling overridable methods in constructors causes subtle bugs.",
+        "I can trace constructor chaining across 3-tier inheritance hierarchies.",
+        "I know that static blocks execute only once per class loading.",
+        "I understand how constructor chaining with `this(...)` eliminates duplication.",
+        "I can predict the exact console output of complex multi-class initialization programs."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les2-p1",
+      "lessonId": "java-oop-mod11-les2",
+      "orderIndex": 1,
+      "title": "Warmup: Predictable Constructor Chaining",
+      "difficulty": "easy",
+      "problemStatement": "Complete the 2-tier constructor hierarchy:\n1. Base class `Hardware` with constructor `Hardware(String model)` printing `'Hardware initialized: ' + model`.\n2. Subclass `CpuChip extends Hardware`: constructor `CpuChip(String model, int cores)` calls `super(model)` and then prints `'CPU cores: ' + cores`.\nIn `main`, instantiate `new CpuChip(\"Intel i9\", 16)`.\nObserve that the base constructor prints before the subclass constructor.",
+      "starterCode": "class Hardware {\n    public Hardware(String model) {\n        System.out.println(\"Hardware initialized: \" + model);\n    }\n}\n\nclass CpuChip extends Hardware {\n    // TODO: Constructor CpuChip(String model, int cores) chaining to super(model)\n}\n\npublic class ConstructorApp {\n    public static void main(String[] args) {\n        new CpuChip(\"Intel i9\", 16);\n    }\n}",
+      "initialCode": "class Hardware {\n    public Hardware(String model) {\n        System.out.println(\"Hardware initialized: \" + model);\n    }\n}\n\nclass CpuChip extends Hardware {\n    // TODO: Constructor CpuChip(String model, int cores) chaining to super(model)\n}\n\npublic class ConstructorApp {\n    public static void main(String[] args) {\n        new CpuChip(\"Intel i9\", 16);\n    }\n}",
+      "solutionCode": "class Hardware {\n    public Hardware(String model) {\n        System.out.println(\"Hardware initialized: \" + model);\n    }\n}\n\nclass CpuChip extends Hardware {\n    public CpuChip(String model, int cores) {\n        super(model);\n        System.out.println(\"CPU cores: \" + cores);\n    }\n}\n\npublic class ConstructorApp {\n    public static void main(String[] args) {\n        new CpuChip(\"Intel i9\", 16);\n    }\n}",
+      "expectedOutput": "Hardware initialized: Intel i9\nCPU cores: 16",
+      "hints": [
+        "Call `super(model);` as the first line of the CpuChip constructor.",
+        "Then print the core count."
+      ]
+    },
+    {
+      "id": "prob-les2-p2",
+      "lessonId": "java-oop-mod11-les2",
+      "orderIndex": 2,
+      "title": "3-Tier Initialization Order Simulation",
+      "difficulty": "medium",
+      "problemStatement": "Build a 3-tier initialization sequence simulator from scratch without starter code:\n1. Class `Tier1`: instance block prints `'Tier1 block'`. Constructor prints `'Tier1 constructor'`.\n2. Class `Tier2 extends Tier1`: instance block prints `'Tier2 block'`. Constructor prints `'Tier2 constructor'`.\n3. Class `Tier3 extends Tier2`: instance block prints `'Tier3 block'`. Constructor prints `'Tier3 constructor'`.\n4. In `Main`, instantiate `new Tier3();`.\nVerify the exact top-down alternating execution order.",
+      "solutionCode": "class Tier1 {\n    {\n        System.out.println(\"Tier1 block\");\n    }\n    public Tier1() {\n        System.out.println(\"Tier1 constructor\");\n    }\n}\n\nclass Tier2 extends Tier1 {\n    {\n        System.out.println(\"Tier2 block\");\n    }\n    public Tier2() {\n        System.out.println(\"Tier2 constructor\");\n    }\n}\n\nclass Tier3 extends Tier2 {\n    {\n        System.out.println(\"Tier3 block\");\n    }\n    public Tier3() {\n        System.out.println(\"Tier3 constructor\");\n    }\n}\n\npublic class TierApp {\n    public static void main(String[] args) {\n        new Tier3();\n    }\n}",
+      "expectedOutput": "Tier1 block\nTier1 constructor\nTier2 block\nTier2 constructor\nTier3 block\nTier3 constructor",
+      "hints": [
+        "Constructors chain implicitly via super().",
+        "Each class's instance block runs immediately before its constructor body."
+      ]
+    },
+    {
+      "id": "prob-les2-p3",
+      "lessonId": "java-oop-mod11-les2",
+      "orderIndex": 3,
+      "title": "Horizontal Constructor Chaining via this()",
+      "difficulty": "medium",
+      "problemStatement": "Build an entity with horizontal constructor chaining from scratch without starter code:\n1. Class `NetworkPacket`:\n   - Fields `source` (String), `destination` (String), `port` (int), and `payloadSize` (int).\n   - Constructor 1: `NetworkPacket(String src, String dest)` -> calls `this(src, dest, 80, 512)`.\n   - Constructor 2: `NetworkPacket(String src, String dest, int port)` -> calls `this(src, dest, port, 512)`.\n   - Master Constructor: `NetworkPacket(String src, String dest, int port, int size)` sets all fields.\n2. Method `public String describe()` printing:\n   `src + ' -> ' + dest + ':' + port + ' (' + size + ' bytes)'`.\n3. In `Main`:\n   - Instantiate `p1 = new NetworkPacket(\"10.0.0.1\", \"10.0.0.2\");`\n   - Instantiate `p2 = new NetworkPacket(\"10.0.0.1\", \"10.0.0.3\", 443);`\n   - Print `p1.describe()` and `p2.describe()`.",
+      "solutionCode": "class NetworkPacket {\n    private String source;\n    private String destination;\n    private int port;\n    private int payloadSize;\n\n    public NetworkPacket(String src, String dest) {\n        this(src, dest, 80, 512);\n    }\n\n    public NetworkPacket(String src, String dest, int port) {\n        this(src, dest, port, 512);\n    }\n\n    public NetworkPacket(String src, String dest, int port, int size) {\n        this.source = src;\n        this.destination = dest;\n        this.port = port;\n        this.payloadSize = size;\n    }\n\n    public String describe() {\n        return source + \" -> \" + destination + \":\" + port + \" (\" + payloadSize + \" bytes)\";\n    }\n}\n\npublic class PacketApp {\n    public static void main(String[] args) {\n        NetworkPacket p1 = new NetworkPacket(\"10.0.0.1\", \"10.0.0.2\");\n        NetworkPacket p2 = new NetworkPacket(\"10.0.0.1\", \"10.0.0.3\", 443);\n        System.out.println(p1.describe());\n        System.out.println(p2.describe());\n    }\n}",
+      "expectedOutput": "10.0.0.1 -> 10.0.0.2:80 (512 bytes)\n10.0.0.1 -> 10.0.0.3:443 (512 bytes)",
+      "hints": [
+        "Chain constructors using `this(...)` as the first statement.",
+        "Default port is 80, default payload size is 512."
+      ]
+    },
+    {
+      "id": "prob-les2-p4",
+      "lessonId": "java-oop-mod11-les2",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Missing super() Parameter Chaining",
+      "difficulty": "hard",
+      "problemStatement": "The code below fails compilation because `SuperUser` does not call `super(username)` explicitly, and `User` has no zero-argument constructor. Fix the compiler error by properly chaining `super(username)` in `SuperUser`, printing `'SuperUser created: root with access level 99'`.",
+      "starterCode": "class User {\n    protected String username;\n    public User(String username) {\n        this.username = username;\n    }\n}\n\nclass SuperUser extends User {\n    private int accessLevel;\n    // BUG: Compiler tries to insert implicit super() which does not exist!\n    public SuperUser(String name, int level) {\n        this.accessLevel = level;\n    }\n    public void display() {\n        System.out.println(\"SuperUser created: \" + username + \" with access level \" + accessLevel);\n    }\n}\n\npublic class UserChainingBug {\n    public static void main(String[] args) {\n        SuperUser su = new SuperUser(\"root\", 99);\n        su.display();\n    }\n}",
+      "initialCode": "class User {\n    protected String username;\n    public User(String username) {\n        this.username = username;\n    }\n}\n\nclass SuperUser extends User {\n    private int accessLevel;\n    // BUG: Compiler tries to insert implicit super() which does not exist!\n    public SuperUser(String name, int level) {\n        this.accessLevel = level;\n    }\n    public void display() {\n        System.out.println(\"SuperUser created: \" + username + \" with access level \" + accessLevel);\n    }\n}\n\npublic class UserChainingBug {\n    public static void main(String[] args) {\n        SuperUser su = new SuperUser(\"root\", 99);\n        su.display();\n    }\n}",
+      "solutionCode": "class User {\n    protected String username;\n    public User(String username) {\n        this.username = username;\n    }\n}\n\nclass SuperUser extends User {\n    private int accessLevel;\n    public SuperUser(String name, int level) {\n        super(name); // Explicit super call satisfies User constructor\n        this.accessLevel = level;\n    }\n    public void display() {\n        System.out.println(\"SuperUser created: \" + username + \" with access level \" + accessLevel);\n    }\n}\n\npublic class UserChainingBug {\n    public static void main(String[] args) {\n        SuperUser su = new SuperUser(\"root\", 99);\n        su.display();\n    }\n}",
+      "expectedOutput": "SuperUser created: root with access level 99",
+      "hints": [
+        "Insert `super(name);` as the first line of the SuperUser constructor.",
+        "This provides the required argument to User's constructor."
+      ]
+    },
+    {
+      "id": "prob-les2-p5",
+      "lessonId": "java-oop-mod11-les2",
+      "orderIndex": 5,
+      "title": "Advanced: Complex Static & Instance Lifecycle Monitor",
+      "difficulty": "advanced",
+      "problemStatement": "Build a lifecycle monitor verifying static and instance execution counts from scratch without starter code:\n1. Class `LifecycleEntity`:\n   - `public static int staticCount = 0`\n   - `public int instanceCount = 0`\n   - Static initializer: increments `staticCount` by 10\n   - Instance initializer: increments `instanceCount` by 1 and increments `staticCount` by 1\n   - Constructor: increments `instanceCount` by 5\n2. In `Main`:\n   - Create two instances: `LifecycleEntity e1 = new LifecycleEntity();` and `LifecycleEntity e2 = new LifecycleEntity();`\n   - Print `'Total staticCount: ' + LifecycleEntity.staticCount`\n   - Print `'e1 instanceCount: ' + e1.instanceCount`\n   - Print `'e2 instanceCount: ' + e2.instanceCount`\nVerify that staticCount is 12 (10 initial + 1 for each of 2 instances) and each instanceCount is 6 (1 block + 5 constructor).",
+      "solutionCode": "class LifecycleEntity {\n    public static int staticCount = 0;\n    public int instanceCount = 0;\n\n    static {\n        staticCount += 10;\n    }\n\n    {\n        instanceCount += 1;\n        staticCount += 1;\n    }\n\n    public LifecycleEntity() {\n        instanceCount += 5;\n    }\n}\n\npublic class LifecycleApp {\n    public static void main(String[] args) {\n        LifecycleEntity e1 = new LifecycleEntity();\n        LifecycleEntity e2 = new LifecycleEntity();\n\n        System.out.println(\"Total staticCount: \" + LifecycleEntity.staticCount);\n        System.out.println(\"e1 instanceCount: \" + e1.instanceCount);\n        System.out.println(\"e2 instanceCount: \" + e2.instanceCount);\n    }\n}",
+      "expectedOutput": "Total staticCount: 12\ne1 instanceCount: 6\ne2 instanceCount: 6",
+      "hints": [
+        "Static block executes once (+10).",
+        "Instance block (+1 static, +1 instance) and constructor (+5 instance) execute for both e1 and e2."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "languageSlug": "java",
+  "prerequisites": [],
+  "learningObjectives": [
+    "Master core concepts and mental models of Tracing Object Creation & Constructors",
+    "Analyze, predict, and trace code execution involving tracing-object-creation-and-constructors",
+    "Design and implement production-ready solutions avoiding common pitfalls"
+  ],
+  "expectedOutcomes": [
+    "Deep fluency in Tracing Object Creation & Constructors principles and edge cases",
+    "Ability to pass FAANG technical interview questions on this topic",
+    "Confidence in building robust, unshakeable object-oriented architectures"
+  ]
+}
