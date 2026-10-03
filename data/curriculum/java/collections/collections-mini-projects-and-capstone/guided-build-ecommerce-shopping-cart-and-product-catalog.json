@@ -1,0 +1,729 @@
+{
+  "id": "les-col-proj-3-cart-catalog",
+  "slug": "guided-build-ecommerce-shopping-cart-and-product-catalog",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-mini-projects-and-capstone",
+  "languageSlug": "java",
+  "title": "Guided Build: E-Commerce Cart & Catalog",
+  "summary": "Develop a robust shopping cart engine using HashMap for quantity counts, LinkedHashSet for display order, and Comparator sorting by price and rating.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "orderIndex": 3,
+  "prerequisites": [
+    "guided-build-university-course-ranker-and-waiting-list"
+  ],
+  "subtopics": [
+    "Cart item aggregation with Maps",
+    "Multi-field catalog sorting",
+    "Inventory validation",
+    "Order summary generation"
+  ],
+  "learningObjectives": [
+    "Aggregate cart quantities in O(1) time using Map.merge()",
+    "Implement browsing history recency via LinkedHashSet remove-then-add mechanics",
+    "Build fluent multi-criteria Comparator pipelines for catalog discovery",
+    "Execute atomic inventory verification and deduction during checkout"
+  ],
+  "expectedOutcomes": [
+    "Design production-ready retail cart and catalog engines in Java",
+    "Eliminate floating-point currency bugs through integer-cent modeling",
+    "Publish a verified e-commerce backend portfolio project to GitHub"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "mp-col-cart-catalog",
+    "slug": "guided-build-ecommerce-shopping-cart-and-product-catalog",
+    "title": "Guided Build: E-Commerce Cart & Catalog",
+    "projectBrief": {
+      "whatAreWeBuilding": "An enterprise E-Commerce Shopping Cart & Product Catalog engine synthesizing HashMaps for item quantity aggregation, LinkedHashSets for browse history order, and fluent Comparator chains for multi-criteria catalog sorting.",
+      "problemItSolves": "E-Commerce checkout flows must guarantee precise inventory deduction, duplicate-free item aggregation, fast price/rating sorting, and auditable order summaries without concurrency overselling or floating-point currency drift.",
+      "finishedAppDescription": "A robust shopping terminal where users can search product catalogs sorted by price, rating, or popularity, add items with quantity aggregation in an in-memory cart, view recently browsed products in exact chronological order, apply promotional coupons, and execute atomic checkouts with inventory verification.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "Map<ProductID, Integer> item quantity aggregation and compute() methods",
+        "LinkedHashSet for preserving duplicate-free browsing history",
+        "Fluent Comparator chains (comparingDouble, thenComparing, reversed)",
+        "Inventory validation and atomic checkout state mutations",
+        "BigDecimal / cent-based integer arithmetic for financial accuracy",
+        "Defensive collection views and unmodifiable receipts"
+      ],
+      "motivatingQuote": "Modern retail runs on Collections: Map aggregation, Set deduplication, and Comparator ranking power billion-dollar checkouts."
+    },
+    "realWorldScenario": {
+      "headline": "Black Friday Retail Shopping Cart & Inventory Engine",
+      "story": "During seasonal flash sales, an online electronics store handles thousands of concurrent cart updates. Shoppers sort thousands of SKUs by discount, rating, and price. When a customer adds items, the cart aggregates quantities, checks stock limits in real-time, displays their recent browsing trail, and generates an immutable order receipt upon checkout.",
+      "context": "Retail systems cannot tolerate inventory discrepancies: cart additions must validate available stock, item quantities must aggregate cleanly, and checkout must deduct inventory atomically."
+    },
+    "requirements": {
+      "functional": [
+        "Define Product with id, name, category, priceCents, rating, and stockQuantity.",
+        "Implement Catalog with List<Product> supporting sorting by: PRICE_ASC, PRICE_DESC, RATING_DESC, and NAME_ASC using Comparator chains.",
+        "Implement ShoppingCart with Map<String, Integer> aggregating product IDs to quantities.",
+        "Maintain BrowsingHistory using LinkedHashSet<Product> keeping the last N recently viewed products in order.",
+        "Support addItem(productId, qty) with real-time stock checks; update existing item quantities atomically via Map.merge().",
+        "Support checkout() validating that all cart quantities <= current stock, deducting stock atomically, and returning an OrderReceipt.",
+        "Provide an interactive terminal shopping experience with catalog filtering, cart review, and receipt generation."
+      ],
+      "technicalConstraints": [
+        "Prices must be modeled in integer cents to prevent floating-point rounding errors.",
+        "Catalog sorting must use stable TimSort algorithms.",
+        "Cart queries and quantity updates must execute in O(1) average time.",
+        "Checkout must throw InsufficientStockException if any item exceeds available inventory."
+      ],
+      "userDecisions": [
+        "Choose between throwing exceptions on out-of-stock cart additions vs clamping to maximum available stock.",
+        "Decide whether browsing history has a fixed maximum size (evicting oldest) or grows indefinitely."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Product data: ID, title, category, price in cents, rating (0.0-5.0), initial stock.",
+        "User cart actions: add item, update quantity, remove item, apply coupon, checkout."
+      ],
+      "outputsRequired": [
+        "Sorted product lists matching selected SortCriteria.",
+        "Itemized cart invoice showing subtotal, discounts, tax, and grand total.",
+        "Immutable OrderReceipt with unique transaction ID and timestamp."
+      ],
+      "variablesNeeded": [
+        "private final Map<String, Product> inventory: Fast SKU lookup.",
+        "private final Map<String, Integer> cart: Product ID to quantity map.",
+        "private final LinkedHashSet<Product> browsingHistory: Chronological viewed items."
+      ],
+      "conditionalLogic": [
+        "Validate quantity > 0 and stockQuantity >= requestedQuantity.",
+        "Check if cart is empty before permitting checkout.",
+        "Validate discount coupons against cart subtotal minimums."
+      ],
+      "loopStructures": [
+        "For-each loop computing cart subtotal: sum of (product.priceCents * quantity).",
+        "For-each loop deducting inventory stock upon checkout confirmation."
+      ],
+      "recommendedMethods": [
+        "public void addToCart(String productId, int quantity)",
+        "public void removeFromCart(String productId)",
+        "public List<Product> getCatalogSorted(Comparator<Product> comparator)",
+        "public OrderReceipt checkout()",
+        "public void recordView(Product product)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Product Catalog & Fluent Comparator Sorting",
+        "objective": "Model the Product entity and build flexible Comparator sorting pipelines.",
+        "tasks": [
+          "Create Product class with immutable fields and mutable stockQuantity.",
+          "Build pre-defined comparators for Price Ascending, Price Descending, Rating Descending, and Composite (Rating desc then Price asc).",
+          "Implement Catalog class returning sorted product snapshots using Collections.sort."
+        ],
+        "acceptanceCriteria": [
+          "Catalog sorting does not alter the original master inventory list.",
+          "Composite sorting cleanly orders products with identical ratings by price."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Shopping Cart Aggregation & Stock Validation",
+        "objective": "Build ShoppingCart utilizing Map.merge for quantity tallies and stock boundaries.",
+        "tasks": [
+          "Implement addToCart(productId, quantity) using Map.merge(id, qty, Integer::sum).",
+          "Validate requested quantity against inventory.getStockQuantity().",
+          "Implement updateQuantity(productId, newQty) and removeItem(productId)."
+        ],
+        "acceptanceCriteria": [
+          "Adding product A twice with quantities 2 and 3 aggregates to 5 in O(1) time.",
+          "Adding more units than available stock throws InsufficientStockException."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Browsing History & Atomic Checkout Engine",
+        "objective": "Implement LinkedHashSet browse history and transactional checkout logic.",
+        "tasks": [
+          "Maintain LinkedHashSet<Product> for recently viewed items, re-inserting viewed items to refresh recency.",
+          "Implement checkout() verifying all cart items against live stock, deducting stock, and clearing cart.",
+          "Generate an immutable OrderReceipt containing line items and financial totals."
+        ],
+        "acceptanceCriteria": [
+          "Viewing an item moves it to the end of the LinkedHashSet history.",
+          "Successful checkout decrements inventory stock and returns receipt; failure leaves stock intact."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Terminal Shopping Experience & GitHub Publication",
+        "objective": "Create an interactive CLI terminal store with catalog browsing and GitHub documentation.",
+        "tasks": [
+          "Build menu-driven CLI for browsing catalog, sorting, adding to cart, and checking out.",
+          "Add formatted invoice output with ASCII alignment.",
+          "Create complete README.md and push repository to GitHub."
+        ],
+        "acceptanceCriteria": [
+          "Terminal demo completes end-to-end purchasing workflow without errors.",
+          "Git repository initialized with clean commits and documentation."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why should prices be stored in integer cents (e.g. 1999 for $19.99) rather than double?",
+        "mentorInsight": "Floating-point numbers (double/float) cannot represent decimal fractions like 0.1 exactly due to binary IEEE 754 representation, leading to rounding errors (e.g. 0.1 + 0.2 = 0.30000000000000004). Storing integer cents guarantees exact financial arithmetic."
+      },
+      {
+        "question": "How does LinkedHashSet preserve chronological browsing history when an item is viewed a second time?",
+        "mentorInsight": "If an item is already present in a LinkedHashSet, calling add() does nothing and does NOT change its position. To refresh recency, you must first call remove(item) and then add(item), moving it to the end of the iteration order!"
+      },
+      {
+        "question": "Why use Map.merge() over containsKey() + put() for cart aggregation?",
+        "mentorInsight": "Map.merge(key, qty, Integer::sum) performs the lookup, null check, and addition in a single hash operation, making code cleaner and twice as fast as separate contains/get/put calls."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Map.merge Quantity Aggregation",
+        "step": 1,
+        "hint": "Use cart.merge(productId, quantity, Integer::sum).",
+        "level1Conceptual": "Map.merge inserts the quantity if key is absent, or combines old and new values using the provided BiFunction.",
+        "level2Implementation": "Pass productId, quantity to add, and Integer::sum as the remapping function.",
+        "level3JavaSyntax": "cart.merge(productId, quantity, Integer::sum);"
+      },
+      {
+        "topic": "Refreshing LinkedHashSet Order",
+        "step": 2,
+        "hint": "Remove before adding to move to the end.",
+        "level1Conceptual": "LinkedHashSet only updates insertion order for new elements. To update an existing element, delete it first.",
+        "level2Implementation": "Call history.remove(product) followed by history.add(product).",
+        "level3JavaSyntax": "history.remove(product);\nhistory.add(product);"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Add 2 of Product A, then add 3 of Product A; verify cart holds quantity 5.",
+        "Sort catalog by Rating Descending; verify highest-rated items appear first."
+      ],
+      "boundaryCases": [
+        "Attempt to add exact available stock; succeeds and reduces stock to 0 upon checkout.",
+        "Single-item cart checkout; verify receipt totals match item price."
+      ],
+      "invalidInputCases": [
+        "Add product with quantity 0 or negative; throws IllegalArgumentException.",
+        "Add more units than available stock; throws InsufficientStockException."
+      ],
+      "edgeCases": [
+        "View products [A, B, A]; verify browsing history is ordered [B, A].",
+        "Attempt checkout on empty cart; throws IllegalStateException."
+      ]
+    },
+    "debuggingGuide": [
+      "Browsing history not updating order on re-view: Remember to call history.remove(item) before history.add(item)!",
+      "Cart totals off by fractional pennies: Ensure all prices are in integer cents and formatted by dividing by 100.0 only at display time.",
+      "Concurrent modification during catalog sort: Ensure you sort a copy of the catalog list, not the master inventory collection."
+    ],
+    "projectPolish": [
+      "Add a formatted ASCII receipt invoice with itemized line items, subtotal, 8% tax, and grand total.",
+      "Implement discount coupon codes (e.g. 'SAVE10' for 10% off) with validation logic."
+    ],
+    "gitHubReady": {
+      "repoName": "ecommerce-shopping-cart-catalog",
+      "readmeTemplate": "# E-Commerce Shopping Cart & Product Catalog\n\nA robust e-commerce terminal engine built in Java synthesizing `HashMap` for quantity aggregation, `LinkedHashSet` for browsing history recency, and fluent `Comparator` chains for catalog filtering.\n\n## Features\n- O(1) cart item aggregation using `Map.merge`\n- Chronological browsing history using `LinkedHashSet`\n- Multi-criteria catalog sorting (Price, Rating, Name) using fluent Comparators\n- Integer cent financial modeling eliminating floating-point rounding errors\n- Atomic checkout with inventory stock verification and receipts\n\n## How to Run\n```bash\njavac ECommerceStoreDemo.java\njava ECommerceStoreDemo\n```\n",
+      "suggestedReadme": "# E-Commerce Shopping Cart & Product Catalog\n\nA robust e-commerce terminal engine built in Java synthesizing `HashMap` for quantity aggregation, `LinkedHashSet` for browsing history recency, and fluent `Comparator` chains for catalog filtering.\n\n## Features\n- O(1) cart item aggregation using `Map.merge`\n- Chronological browsing history using `LinkedHashSet`\n- Multi-criteria catalog sorting (Price, Rating, Name) using fluent Comparators\n- Integer cent financial modeling eliminating floating-point rounding errors\n- Atomic checkout with inventory stock verification and receipts\n\n## How to Run\n```bash\njavac ECommerceStoreDemo.java\njava ECommerceStoreDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement e-commerce cart, catalog comparator, and checkout engine\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/ecommerce-shopping-cart-catalog.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Product modeled with ID, name, category, priceCents, rating, and stock",
+      "Catalog multi-criteria sorting implemented via fluent Comparator chains",
+      "ShoppingCart aggregation implemented using Map.merge() in O(1)",
+      "BrowsingHistory recency implemented using LinkedHashSet remove-then-add",
+      "Atomic checkout validating inventory and deducting stock",
+      "Formatted ASCII invoice receipt with tax and discounts",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered an e-commerce shopping cart and product catalog engine applying Java Collections principles to retail workflows.",
+      "I used Map.merge for high-performance O(1) item aggregation and LinkedHashSet to maintain chronological browsing recency.",
+      "I eliminated financial calculation inaccuracies by modeling currency in integer cents rather than floating-point doubles."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Fantastic Build! E-Commerce Engine Complete!",
+      "celebrationMessage": "Congratulations on completing the E-Commerce Shopping Cart & Product Catalog project. You demonstrated mastery of Map aggregations, LinkedHashSet ordering, and fluent Comparator pipelines!",
+      "congratulations": "Congratulations on completing the E-Commerce Shopping Cart & Product Catalog project. You demonstrated mastery of Map aggregations, LinkedHashSet ordering, and fluent Comparator pipelines!",
+      "skillsDemonstrated": [
+        "Map Quantity Aggregation with Map.merge",
+        "LinkedHashSet Recency Management",
+        "Fluent Comparator Multi-Field Sorting",
+        "Atomic Checkout & Inventory Validation",
+        "Integer Cent Financial Architecture"
+      ],
+      "resumeBullets": [
+        "Engineered an in-memory e-commerce retail engine in Java utilizing Map.merge for O(1) cart aggregation and LinkedHashSet for recency tracking.",
+        "Implemented multi-criteria catalog sorting via fluent Comparator chains and atomic inventory deduction with zero rounding error."
+      ],
+      "nextStepAction": "Commit your project to GitHub and proceed to Guided Build 4: Generic Rule Engine & Filter Pipeline!",
+      "nextSteps": [
+        "Push your repository to GitHub using the provided commands.",
+        "Add the project to your resume under E-Commerce Backend Systems.",
+        "Proceed to Guided Build 4: Generic Rule Engine & Filter Pipeline."
+      ]
+    },
+    "scaffoldingCode": "// E-Commerce Shopping Cart & Product Catalog\n// Starter Scaffolding Template\n\nimport java.util.*;\n\npublic class ECommerceStoreDemo {\n\n    public static class Product {\n        final String id;\n        final String name;\n        final long priceCents;\n        final double rating;\n        int stockQuantity;\n\n        public Product(String id, String name, long priceCents, double rating, int stock) {\n            this.id = id;\n            this.name = name;\n            this.priceCents = priceCents;\n            this.rating = rating;\n            this.stockQuantity = stock;\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== E-Commerce Shopping Cart Engine ===\");\n    }\n}",
+    "sampleConsoleRun": "=== E-Commerce Retail Store Demo ===\n[CATALOG] Master products loaded: 4 SKUs\n\n--- Catalog Sorted by Rating Descending, Price Ascending ---\n1. SKU-101: Wireless Noise-Cancelling Headphones - $199.99 (Rating: 4.8, Stock: 15)\n2. SKU-104: Mechanical Gaming Keyboard - $89.99 (Rating: 4.8, Stock: 25)\n3. SKU-102: Ultra-Wide 4K Monitor - $499.99 (Rating: 4.6, Stock: 8)\n4. SKU-103: USB-C Fast Charger 65W - $24.99 (Rating: 4.3, Stock: 50)\n\n[CART] Added 2x SKU-101 (Headphones)\n[CART] Added 1x SKU-101 (Headphones) -> Aggregated quantity: 3\n[CART] Added 1x SKU-103 (USB-C Charger)\n\n--- Browsing History (Most Recent Last) ---\n1. Ultra-Wide 4K Monitor\n2. USB-C Fast Charger 65W\n3. Wireless Noise-Cancelling Headphones\n\n[CHECKOUT] Processing atomic inventory validation...\n\u2713 Inventory verified. Deducting stock...\n\n================ INVOICE RECEIPT ================\nItem: Wireless Noise-Cancelling Headphones x3  $599.97\nItem: USB-C Fast Charger 65W x1               $24.99\n-------------------------------------------------\nSubtotal:                                     $624.96\nTax (8.0%):                                    $49.99\nGrand Total:                                  $674.95\nStatus: PAID | Remaining Stock SKU-101: 12 units\n================================================="
+  },
+  "miniProject": {
+    "id": "mp-col-cart-catalog",
+    "slug": "guided-build-ecommerce-shopping-cart-and-product-catalog",
+    "title": "Guided Build: E-Commerce Cart & Catalog",
+    "projectBrief": {
+      "whatAreWeBuilding": "An enterprise E-Commerce Shopping Cart & Product Catalog engine synthesizing HashMaps for item quantity aggregation, LinkedHashSets for browse history order, and fluent Comparator chains for multi-criteria catalog sorting.",
+      "problemItSolves": "E-Commerce checkout flows must guarantee precise inventory deduction, duplicate-free item aggregation, fast price/rating sorting, and auditable order summaries without concurrency overselling or floating-point currency drift.",
+      "finishedAppDescription": "A robust shopping terminal where users can search product catalogs sorted by price, rating, or popularity, add items with quantity aggregation in an in-memory cart, view recently browsed products in exact chronological order, apply promotional coupons, and execute atomic checkouts with inventory verification.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "Map<ProductID, Integer> item quantity aggregation and compute() methods",
+        "LinkedHashSet for preserving duplicate-free browsing history",
+        "Fluent Comparator chains (comparingDouble, thenComparing, reversed)",
+        "Inventory validation and atomic checkout state mutations",
+        "BigDecimal / cent-based integer arithmetic for financial accuracy",
+        "Defensive collection views and unmodifiable receipts"
+      ],
+      "motivatingQuote": "Modern retail runs on Collections: Map aggregation, Set deduplication, and Comparator ranking power billion-dollar checkouts."
+    },
+    "realWorldScenario": {
+      "headline": "Black Friday Retail Shopping Cart & Inventory Engine",
+      "story": "During seasonal flash sales, an online electronics store handles thousands of concurrent cart updates. Shoppers sort thousands of SKUs by discount, rating, and price. When a customer adds items, the cart aggregates quantities, checks stock limits in real-time, displays their recent browsing trail, and generates an immutable order receipt upon checkout.",
+      "context": "Retail systems cannot tolerate inventory discrepancies: cart additions must validate available stock, item quantities must aggregate cleanly, and checkout must deduct inventory atomically."
+    },
+    "requirements": {
+      "functional": [
+        "Define Product with id, name, category, priceCents, rating, and stockQuantity.",
+        "Implement Catalog with List<Product> supporting sorting by: PRICE_ASC, PRICE_DESC, RATING_DESC, and NAME_ASC using Comparator chains.",
+        "Implement ShoppingCart with Map<String, Integer> aggregating product IDs to quantities.",
+        "Maintain BrowsingHistory using LinkedHashSet<Product> keeping the last N recently viewed products in order.",
+        "Support addItem(productId, qty) with real-time stock checks; update existing item quantities atomically via Map.merge().",
+        "Support checkout() validating that all cart quantities <= current stock, deducting stock atomically, and returning an OrderReceipt.",
+        "Provide an interactive terminal shopping experience with catalog filtering, cart review, and receipt generation."
+      ],
+      "technicalConstraints": [
+        "Prices must be modeled in integer cents to prevent floating-point rounding errors.",
+        "Catalog sorting must use stable TimSort algorithms.",
+        "Cart queries and quantity updates must execute in O(1) average time.",
+        "Checkout must throw InsufficientStockException if any item exceeds available inventory."
+      ],
+      "userDecisions": [
+        "Choose between throwing exceptions on out-of-stock cart additions vs clamping to maximum available stock.",
+        "Decide whether browsing history has a fixed maximum size (evicting oldest) or grows indefinitely."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Product data: ID, title, category, price in cents, rating (0.0-5.0), initial stock.",
+        "User cart actions: add item, update quantity, remove item, apply coupon, checkout."
+      ],
+      "outputsRequired": [
+        "Sorted product lists matching selected SortCriteria.",
+        "Itemized cart invoice showing subtotal, discounts, tax, and grand total.",
+        "Immutable OrderReceipt with unique transaction ID and timestamp."
+      ],
+      "variablesNeeded": [
+        "private final Map<String, Product> inventory: Fast SKU lookup.",
+        "private final Map<String, Integer> cart: Product ID to quantity map.",
+        "private final LinkedHashSet<Product> browsingHistory: Chronological viewed items."
+      ],
+      "conditionalLogic": [
+        "Validate quantity > 0 and stockQuantity >= requestedQuantity.",
+        "Check if cart is empty before permitting checkout.",
+        "Validate discount coupons against cart subtotal minimums."
+      ],
+      "loopStructures": [
+        "For-each loop computing cart subtotal: sum of (product.priceCents * quantity).",
+        "For-each loop deducting inventory stock upon checkout confirmation."
+      ],
+      "recommendedMethods": [
+        "public void addToCart(String productId, int quantity)",
+        "public void removeFromCart(String productId)",
+        "public List<Product> getCatalogSorted(Comparator<Product> comparator)",
+        "public OrderReceipt checkout()",
+        "public void recordView(Product product)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Product Catalog & Fluent Comparator Sorting",
+        "objective": "Model the Product entity and build flexible Comparator sorting pipelines.",
+        "tasks": [
+          "Create Product class with immutable fields and mutable stockQuantity.",
+          "Build pre-defined comparators for Price Ascending, Price Descending, Rating Descending, and Composite (Rating desc then Price asc).",
+          "Implement Catalog class returning sorted product snapshots using Collections.sort."
+        ],
+        "acceptanceCriteria": [
+          "Catalog sorting does not alter the original master inventory list.",
+          "Composite sorting cleanly orders products with identical ratings by price."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Shopping Cart Aggregation & Stock Validation",
+        "objective": "Build ShoppingCart utilizing Map.merge for quantity tallies and stock boundaries.",
+        "tasks": [
+          "Implement addToCart(productId, quantity) using Map.merge(id, qty, Integer::sum).",
+          "Validate requested quantity against inventory.getStockQuantity().",
+          "Implement updateQuantity(productId, newQty) and removeItem(productId)."
+        ],
+        "acceptanceCriteria": [
+          "Adding product A twice with quantities 2 and 3 aggregates to 5 in O(1) time.",
+          "Adding more units than available stock throws InsufficientStockException."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Browsing History & Atomic Checkout Engine",
+        "objective": "Implement LinkedHashSet browse history and transactional checkout logic.",
+        "tasks": [
+          "Maintain LinkedHashSet<Product> for recently viewed items, re-inserting viewed items to refresh recency.",
+          "Implement checkout() verifying all cart items against live stock, deducting stock, and clearing cart.",
+          "Generate an immutable OrderReceipt containing line items and financial totals."
+        ],
+        "acceptanceCriteria": [
+          "Viewing an item moves it to the end of the LinkedHashSet history.",
+          "Successful checkout decrements inventory stock and returns receipt; failure leaves stock intact."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Terminal Shopping Experience & GitHub Publication",
+        "objective": "Create an interactive CLI terminal store with catalog browsing and GitHub documentation.",
+        "tasks": [
+          "Build menu-driven CLI for browsing catalog, sorting, adding to cart, and checking out.",
+          "Add formatted invoice output with ASCII alignment.",
+          "Create complete README.md and push repository to GitHub."
+        ],
+        "acceptanceCriteria": [
+          "Terminal demo completes end-to-end purchasing workflow without errors.",
+          "Git repository initialized with clean commits and documentation."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why should prices be stored in integer cents (e.g. 1999 for $19.99) rather than double?",
+        "mentorInsight": "Floating-point numbers (double/float) cannot represent decimal fractions like 0.1 exactly due to binary IEEE 754 representation, leading to rounding errors (e.g. 0.1 + 0.2 = 0.30000000000000004). Storing integer cents guarantees exact financial arithmetic."
+      },
+      {
+        "question": "How does LinkedHashSet preserve chronological browsing history when an item is viewed a second time?",
+        "mentorInsight": "If an item is already present in a LinkedHashSet, calling add() does nothing and does NOT change its position. To refresh recency, you must first call remove(item) and then add(item), moving it to the end of the iteration order!"
+      },
+      {
+        "question": "Why use Map.merge() over containsKey() + put() for cart aggregation?",
+        "mentorInsight": "Map.merge(key, qty, Integer::sum) performs the lookup, null check, and addition in a single hash operation, making code cleaner and twice as fast as separate contains/get/put calls."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Map.merge Quantity Aggregation",
+        "step": 1,
+        "hint": "Use cart.merge(productId, quantity, Integer::sum).",
+        "level1Conceptual": "Map.merge inserts the quantity if key is absent, or combines old and new values using the provided BiFunction.",
+        "level2Implementation": "Pass productId, quantity to add, and Integer::sum as the remapping function.",
+        "level3JavaSyntax": "cart.merge(productId, quantity, Integer::sum);"
+      },
+      {
+        "topic": "Refreshing LinkedHashSet Order",
+        "step": 2,
+        "hint": "Remove before adding to move to the end.",
+        "level1Conceptual": "LinkedHashSet only updates insertion order for new elements. To update an existing element, delete it first.",
+        "level2Implementation": "Call history.remove(product) followed by history.add(product).",
+        "level3JavaSyntax": "history.remove(product);\nhistory.add(product);"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Add 2 of Product A, then add 3 of Product A; verify cart holds quantity 5.",
+        "Sort catalog by Rating Descending; verify highest-rated items appear first."
+      ],
+      "boundaryCases": [
+        "Attempt to add exact available stock; succeeds and reduces stock to 0 upon checkout.",
+        "Single-item cart checkout; verify receipt totals match item price."
+      ],
+      "invalidInputCases": [
+        "Add product with quantity 0 or negative; throws IllegalArgumentException.",
+        "Add more units than available stock; throws InsufficientStockException."
+      ],
+      "edgeCases": [
+        "View products [A, B, A]; verify browsing history is ordered [B, A].",
+        "Attempt checkout on empty cart; throws IllegalStateException."
+      ]
+    },
+    "debuggingGuide": [
+      "Browsing history not updating order on re-view: Remember to call history.remove(item) before history.add(item)!",
+      "Cart totals off by fractional pennies: Ensure all prices are in integer cents and formatted by dividing by 100.0 only at display time.",
+      "Concurrent modification during catalog sort: Ensure you sort a copy of the catalog list, not the master inventory collection."
+    ],
+    "projectPolish": [
+      "Add a formatted ASCII receipt invoice with itemized line items, subtotal, 8% tax, and grand total.",
+      "Implement discount coupon codes (e.g. 'SAVE10' for 10% off) with validation logic."
+    ],
+    "gitHubReady": {
+      "repoName": "ecommerce-shopping-cart-catalog",
+      "readmeTemplate": "# E-Commerce Shopping Cart & Product Catalog\n\nA robust e-commerce terminal engine built in Java synthesizing `HashMap` for quantity aggregation, `LinkedHashSet` for browsing history recency, and fluent `Comparator` chains for catalog filtering.\n\n## Features\n- O(1) cart item aggregation using `Map.merge`\n- Chronological browsing history using `LinkedHashSet`\n- Multi-criteria catalog sorting (Price, Rating, Name) using fluent Comparators\n- Integer cent financial modeling eliminating floating-point rounding errors\n- Atomic checkout with inventory stock verification and receipts\n\n## How to Run\n```bash\njavac ECommerceStoreDemo.java\njava ECommerceStoreDemo\n```\n",
+      "suggestedReadme": "# E-Commerce Shopping Cart & Product Catalog\n\nA robust e-commerce terminal engine built in Java synthesizing `HashMap` for quantity aggregation, `LinkedHashSet` for browsing history recency, and fluent `Comparator` chains for catalog filtering.\n\n## Features\n- O(1) cart item aggregation using `Map.merge`\n- Chronological browsing history using `LinkedHashSet`\n- Multi-criteria catalog sorting (Price, Rating, Name) using fluent Comparators\n- Integer cent financial modeling eliminating floating-point rounding errors\n- Atomic checkout with inventory stock verification and receipts\n\n## How to Run\n```bash\njavac ECommerceStoreDemo.java\njava ECommerceStoreDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement e-commerce cart, catalog comparator, and checkout engine\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/ecommerce-shopping-cart-catalog.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Product modeled with ID, name, category, priceCents, rating, and stock",
+      "Catalog multi-criteria sorting implemented via fluent Comparator chains",
+      "ShoppingCart aggregation implemented using Map.merge() in O(1)",
+      "BrowsingHistory recency implemented using LinkedHashSet remove-then-add",
+      "Atomic checkout validating inventory and deducting stock",
+      "Formatted ASCII invoice receipt with tax and discounts",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered an e-commerce shopping cart and product catalog engine applying Java Collections principles to retail workflows.",
+      "I used Map.merge for high-performance O(1) item aggregation and LinkedHashSet to maintain chronological browsing recency.",
+      "I eliminated financial calculation inaccuracies by modeling currency in integer cents rather than floating-point doubles."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Fantastic Build! E-Commerce Engine Complete!",
+      "celebrationMessage": "Congratulations on completing the E-Commerce Shopping Cart & Product Catalog project. You demonstrated mastery of Map aggregations, LinkedHashSet ordering, and fluent Comparator pipelines!",
+      "congratulations": "Congratulations on completing the E-Commerce Shopping Cart & Product Catalog project. You demonstrated mastery of Map aggregations, LinkedHashSet ordering, and fluent Comparator pipelines!",
+      "skillsDemonstrated": [
+        "Map Quantity Aggregation with Map.merge",
+        "LinkedHashSet Recency Management",
+        "Fluent Comparator Multi-Field Sorting",
+        "Atomic Checkout & Inventory Validation",
+        "Integer Cent Financial Architecture"
+      ],
+      "resumeBullets": [
+        "Engineered an in-memory e-commerce retail engine in Java utilizing Map.merge for O(1) cart aggregation and LinkedHashSet for recency tracking.",
+        "Implemented multi-criteria catalog sorting via fluent Comparator chains and atomic inventory deduction with zero rounding error."
+      ],
+      "nextStepAction": "Commit your project to GitHub and proceed to Guided Build 4: Generic Rule Engine & Filter Pipeline!",
+      "nextSteps": [
+        "Push your repository to GitHub using the provided commands.",
+        "Add the project to your resume under E-Commerce Backend Systems.",
+        "Proceed to Guided Build 4: Generic Rule Engine & Filter Pipeline."
+      ]
+    },
+    "scaffoldingCode": "// E-Commerce Shopping Cart & Product Catalog\n// Starter Scaffolding Template\n\nimport java.util.*;\n\npublic class ECommerceStoreDemo {\n\n    public static class Product {\n        final String id;\n        final String name;\n        final long priceCents;\n        final double rating;\n        int stockQuantity;\n\n        public Product(String id, String name, long priceCents, double rating, int stock) {\n            this.id = id;\n            this.name = name;\n            this.priceCents = priceCents;\n            this.rating = rating;\n            this.stockQuantity = stock;\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== E-Commerce Shopping Cart Engine ===\");\n    }\n}",
+    "sampleConsoleRun": "=== E-Commerce Retail Store Demo ===\n[CATALOG] Master products loaded: 4 SKUs\n\n--- Catalog Sorted by Rating Descending, Price Ascending ---\n1. SKU-101: Wireless Noise-Cancelling Headphones - $199.99 (Rating: 4.8, Stock: 15)\n2. SKU-104: Mechanical Gaming Keyboard - $89.99 (Rating: 4.8, Stock: 25)\n3. SKU-102: Ultra-Wide 4K Monitor - $499.99 (Rating: 4.6, Stock: 8)\n4. SKU-103: USB-C Fast Charger 65W - $24.99 (Rating: 4.3, Stock: 50)\n\n[CART] Added 2x SKU-101 (Headphones)\n[CART] Added 1x SKU-101 (Headphones) -> Aggregated quantity: 3\n[CART] Added 1x SKU-103 (USB-C Charger)\n\n--- Browsing History (Most Recent Last) ---\n1. Ultra-Wide 4K Monitor\n2. USB-C Fast Charger 65W\n3. Wireless Noise-Cancelling Headphones\n\n[CHECKOUT] Processing atomic inventory validation...\n\u2713 Inventory verified. Deducting stock...\n\n================ INVOICE RECEIPT ================\nItem: Wireless Noise-Cancelling Headphones x3  $599.97\nItem: USB-C Fast Charger 65W x1               $24.99\n-------------------------------------------------\nSubtotal:                                     $624.96\nTax (8.0%):                                    $49.99\nGrand Total:                                  $674.95\nStatus: PAID | Remaining Stock SKU-101: 12 units\n================================================="
+  },
+  "activities": [
+    {
+      "id": "act-guided-build-ecommerce-shopping-cart-and-product-catalog-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Supermarket Tally Sheet & Display Aisle",
+      "description": "How retail systems combine fast tallying, recency memory, and multi-tier categorization.",
+      "content": "Imagine shopping in a modern supermarket. In the grocery aisle, products are arranged on shelves categorized by price, brand rating, and specials (Catalog Comparator sorting).\n\nAs you place items into your shopping cart, you don't keep 5 separate cartons of milk scattered in random corners; you tally 'Milk x 5' on a clip-board (Map quantity aggregation). If you reconsider and pick an item you viewed earlier, you move it to the front of your cart (LinkedHashSet recency).\n\nAt the checkout counter, the cashier scans the tally sheet, confirms the warehouse has all items in stock, prints an itemized receipt, and deducts the inventory in a single atomic transaction. Java Collections model this exact flow."
+    },
+    {
+      "id": "act-guided-build-ecommerce-shopping-cart-and-product-catalog-concept",
+      "type": "concept",
+      "title": "Architecture of E-Commerce Cart & Catalog Engine",
+      "description": "Technical analysis of Map aggregation, LinkedHashSet ordering, and fluent Comparator sorting.",
+      "content": "### Formal Computer Science Definition\nAn e-commerce retail engine is a composite state machine coordinating an associative tally map (`Map<ID, Integer>`), a recency-ordered doubly-linked set (`LinkedHashSet<T>`), and an orderable catalog projection sorted via multi-tiered total preorder relations (`Comparator<T>`).\n\n### Architectural Map & Data Flow\n\n```\n                                ECommerceStoreEngine\n                                         |\n     +-----------------------------------+-----------------------------------+\n     |                                   |                                   |\nCatalog (List<Product>)         ShoppingCart (Map<ID, Integer>)     BrowsingHistory (LinkedHashSet)\n- Multi-criteria Comparators    - O(1) Map.merge(id, qty, sum)      - Insertion-ordered set\n- Price / Rating / Name         - Validates stock before addition   - remove(p) + add(p) refreshes recency\n     |                                   |\n     +-----------------------------------+ \n                                         |\n                                [Checkout Event]\n                                1. Verify all quantities <= stock\n                                2. Deduct stock atomically\n                                3. Emit immutable OrderReceipt\n```\n\n### Key Implementation Rules\n1. **Integer Cent Financials**: Never use `double` or `float` for prices. Always store prices in integer cents (`long priceCents = 1999L`).\n2. **`Map.merge` Idiom**: `cart.merge(id, qty, Integer::sum)` combines null checks, key creation, and arithmetic in one hash probe.\n3. **`LinkedHashSet` Recency**: Calling `add()` on an existing element is a no-op! You must `remove(item)` first, then `add(item)` to relocate it to the MRU position."
+    },
+    {
+      "id": "act-guided-build-ecommerce-shopping-cart-and-product-catalog-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Complete Executable Cart & Catalog Engine",
+      "description": "Full runnable code showing catalog sorting, Map.merge aggregation, recency tracking, and atomic checkout.",
+      "content": "```java\nimport java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport java.util.HashMap;\nimport java.util.LinkedHashSet;\nimport java.util.List;\nimport java.util.Map;\n\npublic class ECommerceDemo {\n\n    public static class Product {\n        final String id;\n        final String name;\n        final long priceCents;\n        final double rating;\n        int stockQuantity;\n\n        public Product(String id, String name, long priceCents, double rating, int stock) {\n            this.id = id;\n            this.name = name;\n            this.priceCents = priceCents;\n            this.rating = rating;\n            this.stockQuantity = stock;\n        }\n\n        @Override\n        public String toString() {\n            return name + \" ($\" + (priceCents / 100.0) + \", \u2605\" + rating + \")\";\n        }\n    }\n\n    public static class Store {\n        final Map<String, Product> inventory = new HashMap<>();\n        final Map<String, Integer> cart = new HashMap<>();\n        final LinkedHashSet<Product> browsingHistory = new LinkedHashSet<>();\n\n        public void addProduct(Product p) {\n            inventory.put(p.id, p);\n        }\n\n        public void recordView(Product p) {\n            browsingHistory.remove(p);\n            browsingHistory.add(p);\n        }\n\n        public void addToCart(String productId, int quantity) {\n            Product p = inventory.get(productId);\n            if (p == null) throw new IllegalArgumentException(\"Product not found\");\n            if (quantity <= 0) throw new IllegalArgumentException(\"Quantity must be positive\");\n\n            int currentInCart = cart.getOrDefault(productId, 0);\n            if (currentInCart + quantity > p.stockQuantity) {\n                throw new IllegalStateException(\"Insufficient stock for \" + p.name);\n            }\n            cart.merge(productId, quantity, Integer::sum);\n            System.out.println(\"[CART] Added \" + quantity + \"x \" + p.name);\n        }\n\n        public List<Product> getCatalogSortedByRatingThenPrice() {\n            List<Product> list = new ArrayList<>(inventory.values());\n            Comparator<Product> comp = Comparator\n                .comparingDouble((Product p) -> p.rating).reversed()\n                .thenComparingLong(p -> p.priceCents);\n            Collections.sort(list, comp);\n            return list;\n        }\n\n        public long checkout() {\n            if (cart.isEmpty()) throw new IllegalStateException(\"Cart is empty\");\n            long totalCents = 0;\n\n            // Deduct stock\n            for (Map.Entry<String, Integer> entry : cart.entrySet()) {\n                Product p = inventory.get(entry.getKey());\n                int qty = entry.getValue();\n                p.stockQuantity -= qty;\n                totalCents += (p.priceCents * qty);\n            }\n            cart.clear();\n            return totalCents;\n        }\n    }\n\n    public static void main(String[] args) {\n        Store store = new Store();\n        Product p1 = new Product(\"P1\", \"Headphones\", 19999, 4.8, 10);\n        Product p2 = new Product(\"P2\", \"Keyboard\", 8999, 4.8, 20);\n        Product p3 = new Product(\"P3\", \"Monitor\", 49999, 4.5, 5);\n\n        store.addProduct(p1);\n        store.addProduct(p2);\n        store.addProduct(p3);\n\n        System.out.println(\"Catalog sorted: \" + store.getCatalogSortedByRatingThenPrice());\n\n        store.recordView(p1);\n        store.recordView(p3);\n        store.recordView(p1); // Re-view p1\n        System.out.println(\"Browsing history: \" + store.browsingHistory);\n\n        store.addToCart(\"P1\", 2);\n        store.addToCart(\"P1\", 1); // Merge -> 3\n        store.addToCart(\"P2\", 1);\n\n        long totalCents = store.checkout();\n        System.out.println(\"Checkout complete! Total: $\" + (totalCents / 100.0));\n        System.out.println(\"Remaining P1 stock: \" + p1.stockQuantity);\n    }\n}\n```\n\n```text\nCatalog sorted: [Keyboard ($89.99, \u26054.8), Headphones ($199.99, \u26054.8), Monitor ($499.99, \u26054.5)]\nBrowsing history: [Monitor ($499.99, \u26054.5), Headphones ($199.99, \u26054.8)]\n[CART] Added 2x Headphones\n[CART] Added 1x Headphones\n[CART] Added 1x Keyboard\nCheckout complete! Total: $689.96\nRemaining P1 stock: 7\n```"
+    },
+    {
+      "id": "act-guided-build-ecommerce-shopping-cart-and-product-catalog-mcq",
+      "type": "mcq",
+      "title": "E-Commerce Architecture Assessment",
+      "description": "Evaluate understanding of cart aggregation, LinkedHashSet ordering, and financial modeling.",
+      "questions": [
+        {
+          "question": "What is the primary benefit of using cart.merge(id, qty, Integer::sum) over cart.put(id, cart.getOrDefault(id, 0) + qty)?",
+          "options": [
+            "It serializes the cart over JSON automatically",
+            "It performs the lookup, null check, and accumulation in a single hash probe, improving performance and readability",
+            "It prevents concurrent thread modifications without locking",
+            "It automatically rounds decimal quantities"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Map.merge executes in a single bucket lookup rather than two separate operations (get and put), minimizing hash table probes and eliminating boilerplate."
+        },
+        {
+          "question": "Why is LinkedHashSet used for browsing history instead of standard HashSet or ArrayList?",
+          "options": [
+            "LinkedHashSet sorts items alphabetically",
+            "LinkedHashSet prevents duplicates (unlike ArrayList) while preserving insertion/recency order (unlike HashSet)",
+            "LinkedHashSet uses less memory than HashSet",
+            "LinkedHashSet supports binary search"
+          ],
+          "correctAnswer": 1,
+          "explanation": "HashSet has no ordering guarantees; ArrayList allows duplicate entries. LinkedHashSet combines hash lookup for duplicate prevention with a doubly-linked list for chronological ordering."
+        },
+        {
+          "question": "Why should prices always be modeled as integer cents (e.g., long priceCents) instead of double in retail engines?",
+          "options": [
+            "long integers execute faster on 32-bit CPUs",
+            "Floating-point numbers produce binary rounding errors (e.g., 0.1 + 0.2 != 0.3) that lead to financial discrepancies",
+            "The Java Collections Framework does not support double in Maps",
+            "Java records require integer types"
+          ],
+          "correctAnswer": 1,
+          "explanation": "IEEE 754 floating-point arithmetic introduces rounding drift in base-10 financial operations. Storing currency in integer cents ensures exact arithmetic."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-ecommerce-shopping-cart-and-product-catalog-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Architect Retail System Design Interview Questions",
+      "description": "Staff-level design problems on cart concurrency, flash sale inventory, and database synchronization.",
+      "questions": [
+        {
+          "question": "How do you prevent inventory overselling when 5,000 customers try to purchase the last 10 units of an item simultaneously?",
+          "answer": "To prevent overselling:\n1. Use an atomic counter (AtomicInteger or Redis DECR / SQL 'UPDATE items SET stock = stock - 1 WHERE stock >= 1') at reservation time rather than checkout completion time.\n2. When adding to cart, grant a temporary reservation holding the stock for a bounded window (e.g. 10 minutes).\n3. If checkout is completed within the window, the reservation transitions to committed; if the TTL expires, the stock is automatically returned to the inventory pool."
+        },
+        {
+          "question": "How do you design a scalable shopping cart that survives application server restarts without querying the database on every item add?",
+          "answer": "1. Store active cart state in a distributed in-memory cache (Redis Hash: HINCRBY cart:userId productId qty).\n2. Read and modify the cart in Redis with sub-millisecond latency.\n3. Emit an asynchronous event to a message queue (Kafka) to persist cart state to PostgreSQL lazily.\n4. If the app server crashes, the user's cart is instantly retrieved from Redis upon reconnect."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-ecommerce-shopping-cart-and-product-catalog-self-eval",
+      "type": "self_evaluation",
+      "title": "E-Commerce Cart & Catalog Mastery Checklist",
+      "description": "Verify your readiness to build high-scale retail collection architectures.",
+      "items": [
+        "I know how to aggregate key counts using Map.merge(key, delta, Integer::sum).",
+        "I know how to refresh recency in a LinkedHashSet using remove(item) followed by add(item).",
+        "I know how to chain Comparators using comparingDouble, thenComparing, and reversed.",
+        "I model currency in integer cents to avoid floating-point rounding errors.",
+        "I can implement atomic checkout verification and inventory deduction."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-guided-build-ecommerce-shopping-cart-and-product-catalog-1",
+      "title": "Cart Quantity Aggregator via Map.merge",
+      "difficulty": "easy",
+      "problemStatement": "Implement `void addItemsToCart(Map<String, Integer> cart, String productId, int quantity)` that uses `cart.merge()` to aggregate quantities cleanly. If quantity <= 0, throw `IllegalArgumentException`.",
+      "starterCode": "import java.util.Map;\n\npublic class CartAggregator {\n    public static void addItemsToCart(Map<String, Integer> cart, String productId, int quantity) {\n        // TODO: Use cart.merge\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class CartAggregator {\n    public static void addItemsToCart(Map<String, Integer> cart, String productId, int quantity) {\n        if (cart == null || productId == null || quantity <= 0) {\n            throw new IllegalArgumentException(\"Invalid arguments\");\n        }\n        cart.merge(productId, quantity, Integer::sum);\n    }\n}",
+      "expectedOutput": "Aggregates to 5",
+      "testCases": [
+        {
+          "input": "cart empty, add P1 x 2, add P1 x 3 -> cart.get(P1)",
+          "expectedOutput": "5"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-ecommerce-shopping-cart-and-product-catalog-2",
+      "title": "Browsing History Recency Refresher",
+      "difficulty": "medium",
+      "problemStatement": "Implement `void recordProductView(LinkedHashSet<String> history, String productId)` that moves `productId` to the end (most recent position) of `history`, removing prior occurrences if present.",
+      "starterCode": "import java.util.LinkedHashSet;\n\npublic class HistoryTracker {\n    public static void recordProductView(LinkedHashSet<String> history, String productId) {\n        // TODO: Refresh recency\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashSet;\n\npublic class HistoryTracker {\n    public static void recordProductView(LinkedHashSet<String> history, String productId) {\n        if (history != null && productId != null) {\n            history.remove(productId);\n            history.add(productId);\n        }\n    }\n}",
+      "expectedOutput": "[P2, P1]",
+      "testCases": [
+        {
+          "input": "history has [P1, P2], record view P1",
+          "expectedOutput": "[P2, P1]"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-ecommerce-shopping-cart-and-product-catalog-3",
+      "title": "Multi-Criteria Catalog Sorter",
+      "difficulty": "medium",
+      "problemStatement": "Implement `Comparator<Item> getItemComparator()` for `Item(String name, long priceCents, double rating)` that orders items by `rating` descending, then by `priceCents` ascending, then by `name` ascending.",
+      "starterCode": "import java.util.Comparator;\n\npublic class ItemSortFactory {\n    public record Item(String name, long priceCents, double rating) {}\n\n    public static Comparator<Item> getItemComparator() {\n        // TODO: Return composite comparator\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Comparator;\n\npublic class ItemSortFactory {\n    public record Item(String name, long priceCents, double rating) {}\n\n    public static Comparator<Item> getItemComparator() {\n        return Comparator\n            .comparingDouble((Item i) -> i.rating).reversed()\n            .thenComparingLong(i -> i.priceCents)\n            .thenComparing(i -> i.name);\n    }\n}",
+      "expectedOutput": "Highest rating first, lowest price tie-breaker",
+      "testCases": [
+        {
+          "input": "Item A (4.8, 5000), Item B (4.8, 3000)",
+          "expectedOutput": "Item B comes before Item A"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-ecommerce-shopping-cart-and-product-catalog-4",
+      "title": "Cart Subtotal Cent Calculator",
+      "difficulty": "easy",
+      "problemStatement": "Implement `long calculateSubtotal(Map<String, Integer> cart, Map<String, Long> priceMap)` that iterates over the cart and calculates the total cost in cents (sum of price * quantity). If cart is empty, return 0.",
+      "starterCode": "import java.util.Map;\n\npublic class SubtotalCalculator {\n    public static long calculateSubtotal(Map<String, Integer> cart, Map<String, Long> priceMap) {\n        // TODO\n        return 0L;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class SubtotalCalculator {\n    public static long calculateSubtotal(Map<String, Integer> cart, Map<String, Long> priceMap) {\n        if (cart == null || priceMap == null) return 0L;\n        long total = 0;\n        for (Map.Entry<String, Integer> entry : cart.entrySet()) {\n            Long price = priceMap.get(entry.getKey());\n            if (price != null && entry.getValue() != null) {\n                total += price * entry.getValue();\n            }\n        }\n        return total;\n    }\n}",
+      "expectedOutput": "5000",
+      "testCases": [
+        {
+          "input": "cart = {P1=2}, priceMap = {P1=2500}",
+          "expectedOutput": "5000"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-ecommerce-shopping-cart-and-product-catalog-5",
+      "title": "Atomic Inventory Deductor",
+      "difficulty": "medium",
+      "problemStatement": "Implement `boolean tryDeductInventory(Map<String, Integer> stock, Map<String, Integer> cart)` that validates whether all items in `cart` have sufficient stock in `stock`. If all are available, deduct all and return `true`. If any item has insufficient stock, deduct NOTHING and return `false`.",
+      "starterCode": "import java.util.Map;\n\npublic class AtomicInventoryDeductor {\n    public static boolean tryDeductInventory(Map<String, Integer> stock, Map<String, Integer> cart) {\n        // TODO: All-or-nothing stock deduction\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class AtomicInventoryDeductor {\n    public static boolean tryDeductInventory(Map<String, Integer> stock, Map<String, Integer> cart) {\n        if (stock == null || cart == null) return false;\n        // Step 1: Validation phase\n        for (Map.Entry<String, Integer> entry : cart.entrySet()) {\n            int available = stock.getOrDefault(entry.getKey(), 0);\n            if (available < entry.getValue()) {\n                return false; // Insufficient stock, abort without mutation\n            }\n        }\n        // Step 2: Mutation phase\n        for (Map.Entry<String, Integer> entry : cart.entrySet()) {\n            stock.put(entry.getKey(), stock.get(entry.getKey()) - entry.getValue());\n        }\n        return true;\n    }\n}",
+      "expectedOutput": "true, stock deducted",
+      "testCases": [
+        {
+          "input": "stock = {P1=10}, cart = {P1=3}",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "stock = {P1=2}, cart = {P1=5}",
+          "expectedOutput": "false"
+        }
+      ]
+    }
+  ]
+}

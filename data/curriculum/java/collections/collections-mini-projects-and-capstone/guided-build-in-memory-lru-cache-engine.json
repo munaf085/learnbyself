@@ -1,0 +1,734 @@
+{
+  "id": "les-col-proj-1-lru-cache",
+  "slug": "guided-build-in-memory-lru-cache-engine",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-mini-projects-and-capstone",
+  "languageSlug": "java",
+  "title": "Guided Build: In-Memory LRU Cache Engine",
+  "summary": "Build an enterprise-grade In-Memory LRU Cache using LinkedHashMap access-order, maximum size eviction, hit/miss metrics, and TTL expiration.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "orderIndex": 1,
+  "prerequisites": [
+    "modern-unmodifiable-and-immutable-collections",
+    "the-java-collections-decision-tree"
+  ],
+  "subtopics": [
+    "LRU eviction policy",
+    "LinkedHashMap access-order mode",
+    "Hit/miss telemetry",
+    "Unit testing cache eviction"
+  ],
+  "learningObjectives": [
+    "Implement a bounded cache using LinkedHashMap with accessOrder=true and removeEldestEntry",
+    "Integrate per-entry TTL timestamps for lazy expiration eviction",
+    "Instrument cache telemetry with atomic hit, miss, and eviction counters",
+    "Safeguard internal access-order pointer updates with thread-safe synchronization"
+  ],
+  "expectedOutcomes": [
+    "Build a production-ready, bounded LRU cache engine with telemetry and TTL support",
+    "Prevent heap exhaustion and memory leaks in low-latency backend microservices",
+    "Deploy a verified GitHub portfolio repository with automated test cases"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "mp-col-lru-cache",
+    "slug": "guided-build-in-memory-lru-cache-engine",
+    "title": "Guided Build: In-Memory LRU Cache Engine",
+    "projectBrief": {
+      "whatAreWeBuilding": "A production-grade, thread-safe In-Memory Least-Recently-Used (LRU) Cache engine supporting fixed-capacity automatic eviction, time-to-live (TTL) expiration, hit/miss telemetry, and clean terminal monitoring.",
+      "problemItSolves": "Database queries and external API calls are expensive in latency and compute. High-throughput backend systems require an intermediate memory cache to serve hot keys in sub-millisecond time while automatically bounding memory consumption through LRU eviction.",
+      "finishedAppDescription": "An interactive terminal and programmatic cache engine built on LinkedHashMap with accessOrder=true. It features generic key-value storage, automatic eviction of eldest entries when capacity is exceeded, per-key TTL expiration checks, telemetry metrics (hit ratio, eviction count, latency stats), and a multi-threaded demo driver.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "LinkedHashMap access-order mode and removeEldestEntry override",
+        "Generic type parameters <K, V> with bounded constraints",
+        "Atomic state management using AtomicLong and volatile telemetry",
+        "Thread synchronization with ReadWriteLock or synchronized wrappers",
+        "Defensive copying and Optional<V> return semantics",
+        "Time measurement using System.currentTimeMillis() for TTL"
+      ],
+      "motivatingQuote": "Caches are the heart of low-latency systems; mastering LRU mechanics transforms good engineers into high-throughput systems architects."
+    },
+    "realWorldScenario": {
+      "headline": "FinTech High-Frequency Market Data & Token Cache",
+      "story": "At an algorithmic trading platform, real-time FX currency pairs and authentication session tokens are accessed millions of times per minute. Storing everything indefinitely would cause OutOfMemoryErrors, while querying Postgres on every tick causes latency spikes. Your engineering lead tasked you with implementing a rock-solid, bounded In-Memory LRU Cache with telemetry and eviction auditing.",
+      "context": "Enterprise caches must operate deterministically: when capacity hits maximum, the least-recently accessed entry must be evicted in O(1) time without blocking concurrent readers."
+    },
+    "requirements": {
+      "functional": [
+        "Implement generic LruCache<K, V> extending LinkedHashMap<K, V> configured with initial capacity, load factor 0.75f, and accessOrder = true.",
+        "Override removeEldestEntry(Map.Entry<K, V> eldest) to trigger automatic eviction when size exceeds the configured maxCapacity.",
+        "Support time-to-live (TTL) expiration by storing TimestampedValue<V> and evicting expired entries lazily on get() or explicitly on audit.",
+        "Track telemetry metrics: totalRequests, cacheHits, cacheMisses, evictionCount, and compute hitRatio() as a formatted percentage.",
+        "Implement put(K key, V value), Optional<V> get(K key), boolean remove(K key), void clear(), and CacheStats getStats().",
+        "Provide an interactive terminal dashboard displaying live cache contents, access history, and real-time hit/miss metrics."
+      ],
+      "technicalConstraints": [
+        "All lookups (get) and insertions (put) must execute in amortized O(1) time complexity.",
+        "Storage must be strictly bounded; under zero circumstances may cache size exceed maxCapacity.",
+        "Null keys and null values must be rejected with NullPointerException or IllegalArgumentException.",
+        "Must compile cleanly with zero warnings under OpenJDK 21 LTS."
+      ],
+      "userDecisions": [
+        "Choose between coarse-grained synchronization (Collections.synchronizedMap) or fine-grained ReentrantReadWriteLock.",
+        "Select passive lazy TTL eviction on get() vs active periodic background cleaner thread."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Configuration parameters: maxCapacity (int > 0) and defaultTtlMillis (long >= 0).",
+        "Runtime method inputs: key (K), value (V), and optional custom TTL per entry."
+      ],
+      "outputsRequired": [
+        "Optional<V> values returned from get() queries.",
+        "CacheStats telemetry snapshot (hits, misses, hitRatio, size, evictions).",
+        "Console visualization of ordered entries from least to most recently used."
+      ],
+      "variablesNeeded": [
+        "private final int maxCapacity: Maximum permissible elements before eviction.",
+        "private final long defaultTtlMillis: Default lifespan before expiration.",
+        "private final AtomicLong hits, misses, evictions: Thread-safe telemetry counters.",
+        "private final ReentrantReadWriteLock lock: Read/write lock protecting access-order list."
+      ],
+      "conditionalLogic": [
+        "Check if entry timestamp + ttlMillis < currentTimeMillis(); if expired, remove and treat as cache miss.",
+        "Check if size() > maxCapacity inside removeEldestEntry; increment eviction counter.",
+        "Validate key != null and value != null on all entry points."
+      ],
+      "loopStructures": [
+        "Iterate through entrySet() during cleanExpired() sweeps or stats dumping.",
+        "While loop in CLI simulation driver generating randomized access patterns."
+      ],
+      "recommendedMethods": [
+        "public synchronized Optional<V> get(K key)",
+        "public synchronized void put(K key, V value)",
+        "public synchronized void put(K key, V value, long ttlMillis)",
+        "public synchronized int cleanExpired()",
+        "public CacheStats getStats()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Core LRU Data Structure & Bounded Eviction",
+        "objective": "Subclass LinkedHashMap with accessOrder=true and implement automatic capacity eviction via removeEldestEntry.",
+        "tasks": [
+          "Create LruCache<K, V> constructor invoking super(capacity, 0.75f, true).",
+          "Override removeEldestEntry to enforce size() > maxCapacity and record eviction events.",
+          "Verify that accessing an existing key moves it to the tail of the iteration order."
+        ],
+        "acceptanceCriteria": [
+          "Inserting N + 1 elements into a cache of capacity N evicts the least recently accessed key.",
+          "Accessing key K via get() preserves K while evicting the previously least-recently accessed key on next put."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Time-To-Live (TTL) Expiration Wrapper",
+        "objective": "Encapsulate cached values with creation timestamps and validate expiration on retrieval.",
+        "tasks": [
+          "Create internal CacheEntry<V>(V value, long createdAt, long ttlMillis).",
+          "Implement boolean isExpired() comparing System.currentTimeMillis() against expiration threshold.",
+          "In get(K key), if entry is expired, delete it, increment miss counter, and return Optional.empty()."
+        ],
+        "acceptanceCriteria": [
+          "Entries queried before TTL expiration return Optional.of(value).",
+          "Entries queried after TTL expiration return Optional.empty() and are pruned from storage."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Telemetry & Performance Instrumentation",
+        "objective": "Instrument the cache with atomic counters to measure hits, misses, evictions, and hit ratio.",
+        "tasks": [
+          "Add atomic counters for hits, misses, and evictions.",
+          "Create immutable CacheStats record exposing hitCount, missCount, evictionCount, and hitRatio percentage.",
+          "Provide a pretty-print formatted summary method for CLI diagnostics."
+        ],
+        "acceptanceCriteria": [
+          "Hit ratio mathematically equals hits / (hits + misses) * 100.",
+          "Stats reflect exact counts across concurrent or sequential operations."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Interactive Terminal Studio & Concurrency Driver",
+        "objective": "Build a command-line interface demonstrating live cache operations, eviction inspection, and stress testing.",
+        "tasks": [
+          "Implement a menu-driven CLI allowing users to put, get, view stats, and simulate traffic bursts.",
+          "Add a multi-threaded stress test simulating 10 concurrent reader/writer threads.",
+          "Print visual representation of cache memory state showing access recency."
+        ],
+        "acceptanceCriteria": [
+          "CLI executes without exceptions under rapid input sequences.",
+          "Multi-threaded test finishes with consistent telemetry metrics and no data corruption."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why does standard HashMap fail as an LRU cache, and how does LinkedHashMap solve it with O(1) complexity?",
+        "mentorInsight": "HashMap has no concept of element ordering; finding the least-recently used key would require scanning every entry in O(N) time. LinkedHashMap maintains a hidden doubly-linked list through all hash buckets. With accessOrder=true, every get() or put() unlinks the accessed node and splices it to the tail in O(1) time."
+      },
+      {
+        "question": "What happens if get() is called on an expired entry? Should it return null or Optional.empty()?",
+        "mentorInsight": "Returning Optional.empty() forces calling code to handle cache misses explicitly without risking NullPointerException, adhering to modern clean API design."
+      },
+      {
+        "question": "Why is Collections.synchronizedMap() or explicit synchronization needed around an access-order LinkedHashMap even for read-only get() calls?",
+        "mentorInsight": "In access-order mode, get() is structurally a WRITE operation! It modifies the internal doubly-linked list pointers to reorder nodes. Multiple concurrent get() calls without synchronization will corrupt pointers and trigger infinite loops."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Configuring LinkedHashMap Access Order",
+        "step": 1,
+        "hint": "Use the 3-argument super constructor: super(capacity, 0.75f, true).",
+        "level1Conceptual": "The third boolean parameter 'accessOrder' defaults to false (insertion order). Setting it to true changes ordering to last-accessed.",
+        "level2Implementation": "Pass initialCapacity, 0.75f load factor, and true for accessOrder in the constructor.",
+        "level3JavaSyntax": "public LruCache(int maxCapacity) {\n    super(maxCapacity, 0.75f, true);\n    this.maxCapacity = maxCapacity;\n}"
+      },
+      {
+        "topic": "Eviction Callback Mechanics",
+        "step": 2,
+        "hint": "Override removeEldestEntry to return true when size() > maxCapacity.",
+        "level1Conceptual": "LinkedHashMap calls removeEldestEntry after every put() or putAll(). If it returns true, the eldest node (head of linked list) is removed automatically.",
+        "level2Implementation": "Check if size() > maxCapacity; increment your eviction counter and return the boolean.",
+        "level3JavaSyntax": "@Override\nprotected boolean removeEldestEntry(Map.Entry<K, CacheEntry<V>> eldest) {\n    boolean shouldEvict = size() > maxCapacity;\n    if (shouldEvict) {\n        evictionCount.incrementAndGet();\n    }\n    return shouldEvict;\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Put 3 items into capacity 3 cache; retrieve all 3 successfully with 100% hit ratio.",
+        "Put 4th item into capacity 3 cache; verify oldest item is evicted and 4th item is present."
+      ],
+      "boundaryCases": [
+        "Capacity = 1: each new insertion immediately evicts the preceding item.",
+        "Max capacity reached, access head item, insert new item; verify second-oldest item is evicted instead of accessed item."
+      ],
+      "invalidInputCases": [
+        "Attempt to put null key or null value; verify IllegalArgumentException is thrown.",
+        "Instantiate cache with capacity <= 0; verify IllegalArgumentException."
+      ],
+      "edgeCases": [
+        "Entry with TTL of 10ms; sleep 20ms and get(); verify cache miss and lazy eviction.",
+        "Rapid repeated gets on the same key; verify hit count increments without re-eviction."
+      ]
+    },
+    "debuggingGuide": [
+      "ConcurrentModificationException during get(): Ensure all get() and put() calls are synchronized. Access-order get() mutates internal linked list pointers!",
+      "Eldest entry not evicting: Check that your constructor passed 'true' for accessOrder and that removeEldestEntry compares size() > maxCapacity.",
+      "Infinite loops or CPU spikes: Usually caused by unsynchronized access-order get() calls creating circular pointer references in the doubly-linked list."
+    ],
+    "projectPolish": [
+      "Add a formatted ASCII box telemetry dashboard showing cache occupancy, hit ratio bar, and memory stats.",
+      "Implement a bulk putAll() and an exportSnapshot() method returning an unmodifiable Map."
+    ],
+    "gitHubReady": {
+      "repoName": "in-memory-lru-cache-engine",
+      "readmeTemplate": "# In-Memory LRU Cache Engine\n\nA high-performance, bounded In-Memory Least-Recently-Used (LRU) Cache built in Java with TTL expiration and atomic telemetry.\n\n## Features\n- O(1) reads and writes using access-order `LinkedHashMap`\n- Strict bounded capacity with automated eldest entry eviction\n- Per-entry Time-To-Live (TTL) expiration support\n- Real-time telemetry: hit/miss ratio, eviction counters, latency metrics\n- Thread-safe design for concurrent systems\n\n## How to Run\n```bash\njavac LruCacheEngineDemo.java\njava LruCacheEngineDemo\n```\n",
+      "suggestedReadme": "# In-Memory LRU Cache Engine\n\nA high-performance, bounded In-Memory Least-Recently-Used (LRU) Cache built in Java with TTL expiration and atomic telemetry.\n\n## Features\n- O(1) reads and writes using access-order `LinkedHashMap`\n- Strict bounded capacity with automated eldest entry eviction\n- Per-entry Time-To-Live (TTL) expiration support\n- Real-time telemetry: hit/miss ratio, eviction counters, latency metrics\n- Thread-safe design for concurrent systems\n\n## How to Run\n```bash\njavac LruCacheEngineDemo.java\njava LruCacheEngineDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement in-memory LRU cache engine with TTL and telemetry\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/in-memory-lru-cache-engine.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "LruCache<K, V> extends LinkedHashMap with accessOrder=true",
+      "Automatic capacity eviction verified via removeEldestEntry override",
+      "Per-entry TTL expiration implemented with lazy and active sweep options",
+      "Atomic telemetry tracking hits, misses, and hit ratio percentage",
+      "Thread-safe synchronization guarding access-order pointer updates",
+      "Clean terminal CLI driver and multi-threaded verification test",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I built a bounded In-Memory LRU Cache leveraging Java's LinkedHashMap in access-order mode to deliver guaranteed O(1) lookups and evictions.",
+      "I implemented defensive TTL expiration and atomic telemetry counters to measure cache efficiency in high-throughput workloads.",
+      "I addressed critical concurrency pitfalls, ensuring that access-order read operations are synchronized to protect the internal doubly-linked list pointers."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Outstanding Work! You Built an Enterprise LRU Cache!",
+      "celebrationMessage": "Congratulations on completing the In-Memory LRU Cache Engine. You mastered access-order hashing, automatic eviction policies, and low-latency cache architectures!",
+      "congratulations": "Congratulations on completing the In-Memory LRU Cache Engine. You mastered access-order hashing, automatic eviction policies, and low-latency cache architectures!",
+      "skillsDemonstrated": [
+        "Advanced LinkedHashMap Access-Order Mechanics",
+        "Automatic Bounded Cache Eviction",
+        "Time-To-Live (TTL) Lifecycle Management",
+        "Atomic Telemetry & Hit-Ratio Analytics",
+        "Concurrency Synchronization & Pointer Defense"
+      ],
+      "resumeBullets": [
+        "Architected a thread-safe, bounded In-Memory LRU Cache in Java using access-order LinkedHashMap achieving sub-millisecond O(1) operations.",
+        "Engineered per-entry TTL expiration, atomic telemetry instrumentation, and automated eviction policies to prevent heap exhaustion."
+      ],
+      "nextStepAction": "Push your repository to GitHub and proceed to Guided Build 2: Course Ranker & Waiting List!",
+      "nextSteps": [
+        "Push your repository to GitHub using the provided commands.",
+        "Add the project to your resume under Java Systems Engineering.",
+        "Continue to Project 2: University Course Ranker & Waiting List."
+      ]
+    },
+    "scaffoldingCode": "// In-Memory LRU Cache Engine\n// Starter Scaffolding Template\n\nimport java.util.LinkedHashMap;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class LruCacheEngineDemo {\n\n    public static class LruCache<K, V> extends LinkedHashMap<K, V> {\n        private final int maxCapacity;\n        private final AtomicLong hits = new AtomicLong();\n        private final AtomicLong misses = new AtomicLong();\n        private final AtomicLong evictions = new AtomicLong();\n\n        public LruCache(int maxCapacity) {\n            super(maxCapacity, 0.75f, true);\n            this.maxCapacity = maxCapacity;\n        }\n\n        @Override\n        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n            boolean shouldEvict = size() > maxCapacity;\n            if (shouldEvict) {\n                evictions.incrementAndGet();\n            }\n            return shouldEvict;\n        }\n\n        public synchronized Optional<V> getOptional(K key) {\n            V val = super.get(key);\n            if (val != null) {\n                hits.incrementAndGet();\n                return Optional.of(val);\n            } else {\n                misses.incrementAndGet();\n                return Optional.empty();\n            }\n        }\n\n        public synchronized void putValue(K key, V value) {\n            if (key == null || value == null) {\n                throw new IllegalArgumentException(\"Key and value cannot be null\");\n            }\n            super.put(key, value);\n        }\n\n        public double getHitRatio() {\n            long h = hits.get();\n            long total = h + misses.get();\n            return total == 0 ? 0.0 : ((double) h / total) * 100.0;\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== In-Memory LRU Cache Engine ===\");\n        LruCache<String, String> cache = new LruCache<>(3);\n        cache.putValue(\"k1\", \"v1\");\n        cache.putValue(\"k2\", \"v2\");\n        cache.putValue(\"k3\", \"v3\");\n        System.out.println(\"Cache size: \" + cache.size());\n    }\n}",
+    "sampleConsoleRun": "=== In-Memory LRU Cache Engine ===\nCache initialized with maxCapacity = 3\n[PUT] k1 -> Session_101\n[PUT] k2 -> Session_102\n[PUT] k3 -> Session_103\n[GET] k1 -> Hit! Value = Session_101 (Promoted to MRU)\n[PUT] k4 -> Session_104 (Evicting least recently used: k2)\n[GET] k2 -> Miss! (Evicted)\n--- Telemetry Report ---\nCache Size: 3 / 3\nTotal Requests: 2\nHits: 1 | Misses: 1\nHit Ratio: 50.0%\nEvictions: 1\n\u2713 Verification Complete: Zero memory leaks detected."
+  },
+  "miniProject": {
+    "id": "mp-col-lru-cache",
+    "slug": "guided-build-in-memory-lru-cache-engine",
+    "title": "Guided Build: In-Memory LRU Cache Engine",
+    "projectBrief": {
+      "whatAreWeBuilding": "A production-grade, thread-safe In-Memory Least-Recently-Used (LRU) Cache engine supporting fixed-capacity automatic eviction, time-to-live (TTL) expiration, hit/miss telemetry, and clean terminal monitoring.",
+      "problemItSolves": "Database queries and external API calls are expensive in latency and compute. High-throughput backend systems require an intermediate memory cache to serve hot keys in sub-millisecond time while automatically bounding memory consumption through LRU eviction.",
+      "finishedAppDescription": "An interactive terminal and programmatic cache engine built on LinkedHashMap with accessOrder=true. It features generic key-value storage, automatic eviction of eldest entries when capacity is exceeded, per-key TTL expiration checks, telemetry metrics (hit ratio, eviction count, latency stats), and a multi-threaded demo driver.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "LinkedHashMap access-order mode and removeEldestEntry override",
+        "Generic type parameters <K, V> with bounded constraints",
+        "Atomic state management using AtomicLong and volatile telemetry",
+        "Thread synchronization with ReadWriteLock or synchronized wrappers",
+        "Defensive copying and Optional<V> return semantics",
+        "Time measurement using System.currentTimeMillis() for TTL"
+      ],
+      "motivatingQuote": "Caches are the heart of low-latency systems; mastering LRU mechanics transforms good engineers into high-throughput systems architects."
+    },
+    "realWorldScenario": {
+      "headline": "FinTech High-Frequency Market Data & Token Cache",
+      "story": "At an algorithmic trading platform, real-time FX currency pairs and authentication session tokens are accessed millions of times per minute. Storing everything indefinitely would cause OutOfMemoryErrors, while querying Postgres on every tick causes latency spikes. Your engineering lead tasked you with implementing a rock-solid, bounded In-Memory LRU Cache with telemetry and eviction auditing.",
+      "context": "Enterprise caches must operate deterministically: when capacity hits maximum, the least-recently accessed entry must be evicted in O(1) time without blocking concurrent readers."
+    },
+    "requirements": {
+      "functional": [
+        "Implement generic LruCache<K, V> extending LinkedHashMap<K, V> configured with initial capacity, load factor 0.75f, and accessOrder = true.",
+        "Override removeEldestEntry(Map.Entry<K, V> eldest) to trigger automatic eviction when size exceeds the configured maxCapacity.",
+        "Support time-to-live (TTL) expiration by storing TimestampedValue<V> and evicting expired entries lazily on get() or explicitly on audit.",
+        "Track telemetry metrics: totalRequests, cacheHits, cacheMisses, evictionCount, and compute hitRatio() as a formatted percentage.",
+        "Implement put(K key, V value), Optional<V> get(K key), boolean remove(K key), void clear(), and CacheStats getStats().",
+        "Provide an interactive terminal dashboard displaying live cache contents, access history, and real-time hit/miss metrics."
+      ],
+      "technicalConstraints": [
+        "All lookups (get) and insertions (put) must execute in amortized O(1) time complexity.",
+        "Storage must be strictly bounded; under zero circumstances may cache size exceed maxCapacity.",
+        "Null keys and null values must be rejected with NullPointerException or IllegalArgumentException.",
+        "Must compile cleanly with zero warnings under OpenJDK 21 LTS."
+      ],
+      "userDecisions": [
+        "Choose between coarse-grained synchronization (Collections.synchronizedMap) or fine-grained ReentrantReadWriteLock.",
+        "Select passive lazy TTL eviction on get() vs active periodic background cleaner thread."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Configuration parameters: maxCapacity (int > 0) and defaultTtlMillis (long >= 0).",
+        "Runtime method inputs: key (K), value (V), and optional custom TTL per entry."
+      ],
+      "outputsRequired": [
+        "Optional<V> values returned from get() queries.",
+        "CacheStats telemetry snapshot (hits, misses, hitRatio, size, evictions).",
+        "Console visualization of ordered entries from least to most recently used."
+      ],
+      "variablesNeeded": [
+        "private final int maxCapacity: Maximum permissible elements before eviction.",
+        "private final long defaultTtlMillis: Default lifespan before expiration.",
+        "private final AtomicLong hits, misses, evictions: Thread-safe telemetry counters.",
+        "private final ReentrantReadWriteLock lock: Read/write lock protecting access-order list."
+      ],
+      "conditionalLogic": [
+        "Check if entry timestamp + ttlMillis < currentTimeMillis(); if expired, remove and treat as cache miss.",
+        "Check if size() > maxCapacity inside removeEldestEntry; increment eviction counter.",
+        "Validate key != null and value != null on all entry points."
+      ],
+      "loopStructures": [
+        "Iterate through entrySet() during cleanExpired() sweeps or stats dumping.",
+        "While loop in CLI simulation driver generating randomized access patterns."
+      ],
+      "recommendedMethods": [
+        "public synchronized Optional<V> get(K key)",
+        "public synchronized void put(K key, V value)",
+        "public synchronized void put(K key, V value, long ttlMillis)",
+        "public synchronized int cleanExpired()",
+        "public CacheStats getStats()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Core LRU Data Structure & Bounded Eviction",
+        "objective": "Subclass LinkedHashMap with accessOrder=true and implement automatic capacity eviction via removeEldestEntry.",
+        "tasks": [
+          "Create LruCache<K, V> constructor invoking super(capacity, 0.75f, true).",
+          "Override removeEldestEntry to enforce size() > maxCapacity and record eviction events.",
+          "Verify that accessing an existing key moves it to the tail of the iteration order."
+        ],
+        "acceptanceCriteria": [
+          "Inserting N + 1 elements into a cache of capacity N evicts the least recently accessed key.",
+          "Accessing key K via get() preserves K while evicting the previously least-recently accessed key on next put."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Time-To-Live (TTL) Expiration Wrapper",
+        "objective": "Encapsulate cached values with creation timestamps and validate expiration on retrieval.",
+        "tasks": [
+          "Create internal CacheEntry<V>(V value, long createdAt, long ttlMillis).",
+          "Implement boolean isExpired() comparing System.currentTimeMillis() against expiration threshold.",
+          "In get(K key), if entry is expired, delete it, increment miss counter, and return Optional.empty()."
+        ],
+        "acceptanceCriteria": [
+          "Entries queried before TTL expiration return Optional.of(value).",
+          "Entries queried after TTL expiration return Optional.empty() and are pruned from storage."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Telemetry & Performance Instrumentation",
+        "objective": "Instrument the cache with atomic counters to measure hits, misses, evictions, and hit ratio.",
+        "tasks": [
+          "Add atomic counters for hits, misses, and evictions.",
+          "Create immutable CacheStats record exposing hitCount, missCount, evictionCount, and hitRatio percentage.",
+          "Provide a pretty-print formatted summary method for CLI diagnostics."
+        ],
+        "acceptanceCriteria": [
+          "Hit ratio mathematically equals hits / (hits + misses) * 100.",
+          "Stats reflect exact counts across concurrent or sequential operations."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Interactive Terminal Studio & Concurrency Driver",
+        "objective": "Build a command-line interface demonstrating live cache operations, eviction inspection, and stress testing.",
+        "tasks": [
+          "Implement a menu-driven CLI allowing users to put, get, view stats, and simulate traffic bursts.",
+          "Add a multi-threaded stress test simulating 10 concurrent reader/writer threads.",
+          "Print visual representation of cache memory state showing access recency."
+        ],
+        "acceptanceCriteria": [
+          "CLI executes without exceptions under rapid input sequences.",
+          "Multi-threaded test finishes with consistent telemetry metrics and no data corruption."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why does standard HashMap fail as an LRU cache, and how does LinkedHashMap solve it with O(1) complexity?",
+        "mentorInsight": "HashMap has no concept of element ordering; finding the least-recently used key would require scanning every entry in O(N) time. LinkedHashMap maintains a hidden doubly-linked list through all hash buckets. With accessOrder=true, every get() or put() unlinks the accessed node and splices it to the tail in O(1) time."
+      },
+      {
+        "question": "What happens if get() is called on an expired entry? Should it return null or Optional.empty()?",
+        "mentorInsight": "Returning Optional.empty() forces calling code to handle cache misses explicitly without risking NullPointerException, adhering to modern clean API design."
+      },
+      {
+        "question": "Why is Collections.synchronizedMap() or explicit synchronization needed around an access-order LinkedHashMap even for read-only get() calls?",
+        "mentorInsight": "In access-order mode, get() is structurally a WRITE operation! It modifies the internal doubly-linked list pointers to reorder nodes. Multiple concurrent get() calls without synchronization will corrupt pointers and trigger infinite loops."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Configuring LinkedHashMap Access Order",
+        "step": 1,
+        "hint": "Use the 3-argument super constructor: super(capacity, 0.75f, true).",
+        "level1Conceptual": "The third boolean parameter 'accessOrder' defaults to false (insertion order). Setting it to true changes ordering to last-accessed.",
+        "level2Implementation": "Pass initialCapacity, 0.75f load factor, and true for accessOrder in the constructor.",
+        "level3JavaSyntax": "public LruCache(int maxCapacity) {\n    super(maxCapacity, 0.75f, true);\n    this.maxCapacity = maxCapacity;\n}"
+      },
+      {
+        "topic": "Eviction Callback Mechanics",
+        "step": 2,
+        "hint": "Override removeEldestEntry to return true when size() > maxCapacity.",
+        "level1Conceptual": "LinkedHashMap calls removeEldestEntry after every put() or putAll(). If it returns true, the eldest node (head of linked list) is removed automatically.",
+        "level2Implementation": "Check if size() > maxCapacity; increment your eviction counter and return the boolean.",
+        "level3JavaSyntax": "@Override\nprotected boolean removeEldestEntry(Map.Entry<K, CacheEntry<V>> eldest) {\n    boolean shouldEvict = size() > maxCapacity;\n    if (shouldEvict) {\n        evictionCount.incrementAndGet();\n    }\n    return shouldEvict;\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Put 3 items into capacity 3 cache; retrieve all 3 successfully with 100% hit ratio.",
+        "Put 4th item into capacity 3 cache; verify oldest item is evicted and 4th item is present."
+      ],
+      "boundaryCases": [
+        "Capacity = 1: each new insertion immediately evicts the preceding item.",
+        "Max capacity reached, access head item, insert new item; verify second-oldest item is evicted instead of accessed item."
+      ],
+      "invalidInputCases": [
+        "Attempt to put null key or null value; verify IllegalArgumentException is thrown.",
+        "Instantiate cache with capacity <= 0; verify IllegalArgumentException."
+      ],
+      "edgeCases": [
+        "Entry with TTL of 10ms; sleep 20ms and get(); verify cache miss and lazy eviction.",
+        "Rapid repeated gets on the same key; verify hit count increments without re-eviction."
+      ]
+    },
+    "debuggingGuide": [
+      "ConcurrentModificationException during get(): Ensure all get() and put() calls are synchronized. Access-order get() mutates internal linked list pointers!",
+      "Eldest entry not evicting: Check that your constructor passed 'true' for accessOrder and that removeEldestEntry compares size() > maxCapacity.",
+      "Infinite loops or CPU spikes: Usually caused by unsynchronized access-order get() calls creating circular pointer references in the doubly-linked list."
+    ],
+    "projectPolish": [
+      "Add a formatted ASCII box telemetry dashboard showing cache occupancy, hit ratio bar, and memory stats.",
+      "Implement a bulk putAll() and an exportSnapshot() method returning an unmodifiable Map."
+    ],
+    "gitHubReady": {
+      "repoName": "in-memory-lru-cache-engine",
+      "readmeTemplate": "# In-Memory LRU Cache Engine\n\nA high-performance, bounded In-Memory Least-Recently-Used (LRU) Cache built in Java with TTL expiration and atomic telemetry.\n\n## Features\n- O(1) reads and writes using access-order `LinkedHashMap`\n- Strict bounded capacity with automated eldest entry eviction\n- Per-entry Time-To-Live (TTL) expiration support\n- Real-time telemetry: hit/miss ratio, eviction counters, latency metrics\n- Thread-safe design for concurrent systems\n\n## How to Run\n```bash\njavac LruCacheEngineDemo.java\njava LruCacheEngineDemo\n```\n",
+      "suggestedReadme": "# In-Memory LRU Cache Engine\n\nA high-performance, bounded In-Memory Least-Recently-Used (LRU) Cache built in Java with TTL expiration and atomic telemetry.\n\n## Features\n- O(1) reads and writes using access-order `LinkedHashMap`\n- Strict bounded capacity with automated eldest entry eviction\n- Per-entry Time-To-Live (TTL) expiration support\n- Real-time telemetry: hit/miss ratio, eviction counters, latency metrics\n- Thread-safe design for concurrent systems\n\n## How to Run\n```bash\njavac LruCacheEngineDemo.java\njava LruCacheEngineDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement in-memory LRU cache engine with TTL and telemetry\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/in-memory-lru-cache-engine.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "LruCache<K, V> extends LinkedHashMap with accessOrder=true",
+      "Automatic capacity eviction verified via removeEldestEntry override",
+      "Per-entry TTL expiration implemented with lazy and active sweep options",
+      "Atomic telemetry tracking hits, misses, and hit ratio percentage",
+      "Thread-safe synchronization guarding access-order pointer updates",
+      "Clean terminal CLI driver and multi-threaded verification test",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I built a bounded In-Memory LRU Cache leveraging Java's LinkedHashMap in access-order mode to deliver guaranteed O(1) lookups and evictions.",
+      "I implemented defensive TTL expiration and atomic telemetry counters to measure cache efficiency in high-throughput workloads.",
+      "I addressed critical concurrency pitfalls, ensuring that access-order read operations are synchronized to protect the internal doubly-linked list pointers."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Outstanding Work! You Built an Enterprise LRU Cache!",
+      "celebrationMessage": "Congratulations on completing the In-Memory LRU Cache Engine. You mastered access-order hashing, automatic eviction policies, and low-latency cache architectures!",
+      "congratulations": "Congratulations on completing the In-Memory LRU Cache Engine. You mastered access-order hashing, automatic eviction policies, and low-latency cache architectures!",
+      "skillsDemonstrated": [
+        "Advanced LinkedHashMap Access-Order Mechanics",
+        "Automatic Bounded Cache Eviction",
+        "Time-To-Live (TTL) Lifecycle Management",
+        "Atomic Telemetry & Hit-Ratio Analytics",
+        "Concurrency Synchronization & Pointer Defense"
+      ],
+      "resumeBullets": [
+        "Architected a thread-safe, bounded In-Memory LRU Cache in Java using access-order LinkedHashMap achieving sub-millisecond O(1) operations.",
+        "Engineered per-entry TTL expiration, atomic telemetry instrumentation, and automated eviction policies to prevent heap exhaustion."
+      ],
+      "nextStepAction": "Push your repository to GitHub and proceed to Guided Build 2: Course Ranker & Waiting List!",
+      "nextSteps": [
+        "Push your repository to GitHub using the provided commands.",
+        "Add the project to your resume under Java Systems Engineering.",
+        "Continue to Project 2: University Course Ranker & Waiting List."
+      ]
+    },
+    "scaffoldingCode": "// In-Memory LRU Cache Engine\n// Starter Scaffolding Template\n\nimport java.util.LinkedHashMap;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class LruCacheEngineDemo {\n\n    public static class LruCache<K, V> extends LinkedHashMap<K, V> {\n        private final int maxCapacity;\n        private final AtomicLong hits = new AtomicLong();\n        private final AtomicLong misses = new AtomicLong();\n        private final AtomicLong evictions = new AtomicLong();\n\n        public LruCache(int maxCapacity) {\n            super(maxCapacity, 0.75f, true);\n            this.maxCapacity = maxCapacity;\n        }\n\n        @Override\n        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n            boolean shouldEvict = size() > maxCapacity;\n            if (shouldEvict) {\n                evictions.incrementAndGet();\n            }\n            return shouldEvict;\n        }\n\n        public synchronized Optional<V> getOptional(K key) {\n            V val = super.get(key);\n            if (val != null) {\n                hits.incrementAndGet();\n                return Optional.of(val);\n            } else {\n                misses.incrementAndGet();\n                return Optional.empty();\n            }\n        }\n\n        public synchronized void putValue(K key, V value) {\n            if (key == null || value == null) {\n                throw new IllegalArgumentException(\"Key and value cannot be null\");\n            }\n            super.put(key, value);\n        }\n\n        public double getHitRatio() {\n            long h = hits.get();\n            long total = h + misses.get();\n            return total == 0 ? 0.0 : ((double) h / total) * 100.0;\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== In-Memory LRU Cache Engine ===\");\n        LruCache<String, String> cache = new LruCache<>(3);\n        cache.putValue(\"k1\", \"v1\");\n        cache.putValue(\"k2\", \"v2\");\n        cache.putValue(\"k3\", \"v3\");\n        System.out.println(\"Cache size: \" + cache.size());\n    }\n}",
+    "sampleConsoleRun": "=== In-Memory LRU Cache Engine ===\nCache initialized with maxCapacity = 3\n[PUT] k1 -> Session_101\n[PUT] k2 -> Session_102\n[PUT] k3 -> Session_103\n[GET] k1 -> Hit! Value = Session_101 (Promoted to MRU)\n[PUT] k4 -> Session_104 (Evicting least recently used: k2)\n[GET] k2 -> Miss! (Evicted)\n--- Telemetry Report ---\nCache Size: 3 / 3\nTotal Requests: 2\nHits: 1 | Misses: 1\nHit Ratio: 50.0%\nEvictions: 1\n\u2713 Verification Complete: Zero memory leaks detected."
+  },
+  "activities": [
+    {
+      "id": "act-guided-build-in-memory-lru-cache-engine-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Desk Workspace vs Warehouse Archival",
+      "description": "Why fixed-capacity LRU caching is critical for high-throughput computing.",
+      "content": "Imagine an analyst working at a physical desk that holds exactly 5 reference folders. When they need a folder, they grab it from the warehouse archive (database) and place it on top of their desk (cache). As new folders arrive, the desk fills up.\n\nWhen the desk is full and a 6th folder is needed, the analyst doesn't throw away a random file; they return the folder sitting at the very bottom that hasn't been touched in the longest time (Least Recently Used). If an old folder has an expiration stamp that has lapsed (TTL), it is shredded immediately.\n\nAn In-Memory LRU Cache replicates this physical workspace: keeping hot records on the fast CPU/heap desk while deterministically bounding memory usage and evicting cold data in O(1) time."
+    },
+    {
+      "id": "act-guided-build-in-memory-lru-cache-engine-concept",
+      "type": "concept",
+      "title": "Architecture of an LRU Cache with LinkedHashMap",
+      "description": "Technical deep dive into access-order doubly-linked lists and removeEldestEntry mechanics.",
+      "content": "### Formal Computer Science Definition\nA Least-Recently-Used (LRU) Cache is a bounded associative key-value store that evicts the item that has not been accessed for the longest duration whenever insertion exceeds maximum capacity. It guarantees $O(1)$ amortized lookup, insertion, and eviction.\n\n### Architectural Diagram\n\n```\n                                 LruCache<K, V>\n                                       |\n       +-------------------------------+-------------------------------+\n       |                                                               |\nHash Table (HashMap)                                      Doubly-Linked List\n- Bucket-indexed fast lookup O(1)                         - Maintains access ordering\n- Stores Key -> Node references                           - Head = Least Recently Used (LRU)\n                                                          - Tail = Most Recently Used (MRU)\n                                                                       |\n       +---------------------------------------------------------------+ \n       |  When get(K) is called: Node unlinked and spliced to Tail (MRU)\n       |  When put(K, V) exceeds capacity: Head node (LRU) evicted in O(1)\n```\n\n### Key Contracts & Implementation Rules\n1. **`super(capacity, 0.75f, true)`**: Passing `true` for `accessOrder` instructs `LinkedHashMap` to re-splice nodes to the tail on every `get()` and `put()`.\n2. **`removeEldestEntry(entry)`**: Invoked by `put()` automatically. Returning `size() > maxCapacity` triggers automatic head node removal.\n3. **Concurrency Warning**: Access-order `get()` mutates internal pointers! It must be synchronized to prevent race conditions."
+    },
+    {
+      "id": "act-guided-build-in-memory-lru-cache-engine-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Executable Demonstration: Complete In-Memory LRU Cache with Telemetry",
+      "description": "Production-ready runnable implementation of LruCache with hit ratio calculations.",
+      "content": "```java\nimport java.util.LinkedHashMap;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class LruCacheDemo {\n\n    public static class LruCache<K, V> extends LinkedHashMap<K, V> {\n        private final int maxCapacity;\n        private final AtomicLong hits = new AtomicLong();\n        private final AtomicLong misses = new AtomicLong();\n        private final AtomicLong evictions = new AtomicLong();\n\n        public LruCache(int maxCapacity) {\n            super(maxCapacity, 0.75f, true);\n            this.maxCapacity = maxCapacity;\n        }\n\n        @Override\n        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n            boolean shouldEvict = size() > maxCapacity;\n            if (shouldEvict) {\n                evictions.incrementAndGet();\n            }\n            return shouldEvict;\n        }\n\n        public synchronized Optional<V> getOptional(K key) {\n            V val = super.get(key);\n            if (val != null) {\n                hits.incrementAndGet();\n                return Optional.of(val);\n            }\n            misses.incrementAndGet();\n            return Optional.empty();\n        }\n\n        public synchronized void putValue(K key, V value) {\n            if (key == null || value == null) {\n                throw new IllegalArgumentException(\"Null key/value rejected\");\n            }\n            super.put(key, value);\n        }\n\n        public double getHitRatio() {\n            long h = hits.get();\n            long total = h + misses.get();\n            return total == 0 ? 0.0 : ((double) h / total) * 100.0;\n        }\n\n        public long getEvictionCount() {\n            return evictions.get();\n        }\n    }\n\n    public static void main(String[] args) {\n        LruCache<String, String> cache = new LruCache<>(3);\n        cache.putValue(\"A\", \"Alpha\");\n        cache.putValue(\"B\", \"Beta\");\n        cache.putValue(\"C\", \"Gamma\");\n        System.out.println(\"Cache keys after 3 puts: \" + cache.keySet());\n\n        // Access 'A' to promote it to MRU\n        cache.getOptional(\"A\");\n        System.out.println(\"Accessed 'A'. Next insertion should evict 'B'.\");\n\n        // Insert 'D' -> capacity exceeded, evicts 'B'\n        cache.putValue(\"D\", \"Delta\");\n        System.out.println(\"Cache keys after adding 'D': \" + cache.keySet());\n        System.out.println(\"Is 'B' present? \" + cache.getOptional(\"B\").isPresent());\n        System.out.println(\"Evictions count: \" + cache.getEvictionCount());\n        System.out.printf(\"Hit Ratio: %.1f%%\\n\", cache.getHitRatio());\n    }\n}\n```\n\n```text\nCache keys after 3 puts: [A, B, C]\nAccessed 'A'. Next insertion should evict 'B'.\nCache keys after adding 'D': [C, A, D]\nIs 'B' present? false\nEvictions count: 1\nHit Ratio: 50.0%\n```"
+    },
+    {
+      "id": "act-guided-build-in-memory-lru-cache-engine-mcq",
+      "type": "mcq",
+      "title": "LRU Architecture Assessment",
+      "description": "Validate technical knowledge of LRU eviction mechanics and LinkedHashMap.",
+      "questions": [
+        {
+          "question": "Why must get() calls be synchronized when using LinkedHashMap in access-order mode?",
+          "options": [
+            "Because get() hashes keys using multi-threaded crypto algorithms",
+            "Because get() modifies the pointers of the underlying doubly-linked list to move the accessed node to the tail",
+            "Because LinkedHashMap throws UnsupportedOperationException if unsynchronized",
+            "Because Java 21 enforces synchronization on all Map subclasses"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In access-order mode (accessOrder=true), get() is structurally a write operation that unlinks the accessed node and splices it to the MRU tail. Concurrent unsynchronized get() calls will corrupt pointers, creating infinite loops."
+        },
+        {
+          "question": "What is the amortized time complexity for get(), put(), and eviction in an LRU cache backed by LinkedHashMap?",
+          "options": [
+            "O(N) for get, O(1) for put",
+            "O(log N) for all operations",
+            "O(1) for get, put, and eviction",
+            "O(1) for get, O(N) for eviction"
+          ],
+          "correctAnswer": 2,
+          "explanation": "LinkedHashMap combines hash table bucket indexing (O(1) lookup) with doubly-linked list node splicing (O(1) relocation and head eviction), achieving O(1) amortized complexity for all core operations."
+        },
+        {
+          "question": "What does removeEldestEntry() receive as an argument?",
+          "options": [
+            "The Map.Entry that was least-recently accessed (at the head of the linked list)",
+            "The Map.Entry that was just inserted",
+            "The integer size of the cache",
+            "The current system timestamp"
+          ],
+          "correctAnswer": 0,
+          "explanation": "removeEldestEntry(Map.Entry<K, V> eldest) receives the eldest entry (the node at the head of the doubly-linked list), allowing custom eviction criteria based on key, value, or size."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-in-memory-lru-cache-engine-interview-qa",
+      "type": "interview_qa",
+      "title": "Staff Engineer System Design Interview Questions",
+      "description": "High-impact interview queries regarding cache eviction algorithms and telemetry.",
+      "questions": [
+        {
+          "question": "Compare LRU (Least Recently Used) with LFU (Least Frequently Used) and FIFO cache eviction strategies.",
+          "answer": "1. FIFO (First-In, First-Out): Evicts the oldest inserted entry regardless of access patterns. Trivial to implement (queue) but performs poorly when old items remain hot.\n2. LRU (Least Recently Used): Evicts the item whose last access timestamp is oldest. Highly effective for temporal locality workloads where recently used items are likely to be accessed again soon. Implemented via LinkedHashMap in O(1).\n3. LFU (Least Frequently Used): Evicts the item with the lowest access count. Excellent for frequency stability, but susceptible to cache pollution from burst items that become cold, and requires more complex O(1) double-linked bucket structures."
+        },
+        {
+          "question": "How would you implement a thread-safe LRU cache without synchronizing on every get() call?",
+          "answer": "To eliminate read contention in high-throughput systems:\n1. Use ConcurrentHashMap for lock-free O(1) key-value storage.\n2. Maintain access ordering using a concurrent ring buffer or striped thread-local queues that record access events asynchronously.\n3. A single maintenance thread (or worker thread during write) drains the access queues and updates the recency list, eliminating read locks entirely (similar to caffeine/Guava cache design)."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-in-memory-lru-cache-engine-self-eval",
+      "type": "self_evaluation",
+      "title": "LRU Cache Mastery Checklist",
+      "description": "Verify your readiness to architect enterprise in-memory caches.",
+      "items": [
+        "I understand how super(capacity, 0.75f, true) enables access-order node reordering.",
+        "I know how to override removeEldestEntry to enforce bounded memory ceilings.",
+        "I know why get() must be synchronized in access-order mode to protect linked list pointers.",
+        "I can implement atomic telemetry counters (hits, misses, hit ratio).",
+        "I can implement TTL expiration checks to prune stale cached entries."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-guided-build-in-memory-lru-cache-engine-1",
+      "title": "Basic Bounded LRU Cache",
+      "difficulty": "medium",
+      "problemStatement": "Implement `BoundedCache<K, V>` extending `LinkedHashMap<K, V>` with constructor `BoundedCache(int capacity)` that automatically evicts the least recently used entry whenever size exceeds capacity.",
+      "starterCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class BoundedCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n\n    public BoundedCache(int capacity) {\n        // TODO: Call super with accessOrder = true\n        this.capacity = capacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        // TODO: Return true if size exceeds capacity\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class BoundedCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n\n    public BoundedCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        return size() > capacity;\n    }\n}",
+      "expectedOutput": "Size bounded to capacity",
+      "testCases": [
+        {
+          "input": "BoundedCache(2), put 1, 2, 3 -> key 1 evicted",
+          "expectedOutput": "Size bounded to capacity"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-in-memory-lru-cache-engine-2",
+      "title": "Hit Ratio Telemetry Calculator",
+      "difficulty": "easy",
+      "problemStatement": "Implement `double calculateHitRatio(long hits, long misses)` that returns the cache hit percentage formatted as a double between 0.0 and 100.0. If total requests (hits + misses) is 0, return 0.0.",
+      "starterCode": "public class CacheTelemetry {\n    public static double calculateHitRatio(long hits, long misses) {\n        // TODO: Compute hit ratio percentage\n        return 0.0;\n    }\n}",
+      "solutionCode": "public class CacheTelemetry {\n    public static double calculateHitRatio(long hits, long misses) {\n        long total = hits + misses;\n        if (total <= 0) return 0.0;\n        return ((double) hits / total) * 100.0;\n    }\n}",
+      "expectedOutput": "75.0",
+      "testCases": [
+        {
+          "input": "hits = 75, misses = 25",
+          "expectedOutput": "75.0"
+        },
+        {
+          "input": "hits = 0, misses = 0",
+          "expectedOutput": "0.0"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-in-memory-lru-cache-engine-3",
+      "title": "Timestamped Cache Entry Validator",
+      "difficulty": "medium",
+      "problemStatement": "Implement `boolean isEntryExpired(long createdAtMillis, long ttlMillis, long currentMillis)` that returns `true` if `currentMillis >= createdAtMillis + ttlMillis` (or if ttlMillis <= 0 and expired), else `false`.",
+      "starterCode": "public class TtlValidator {\n    public static boolean isEntryExpired(long createdAtMillis, long ttlMillis, long currentMillis) {\n        // TODO: Validate TTL expiration\n        return false;\n    }\n}",
+      "solutionCode": "public class TtlValidator {\n    public static boolean isEntryExpired(long createdAtMillis, long ttlMillis, long currentMillis) {\n        if (ttlMillis <= 0) return true;\n        return currentMillis >= (createdAtMillis + ttlMillis);\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "created = 1000, ttl = 500, current = 1600",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "created = 1000, ttl = 500, current = 1200",
+          "expectedOutput": "false"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-in-memory-lru-cache-engine-4",
+      "title": "Synchronized Cache Snapshot Supplier",
+      "difficulty": "medium",
+      "problemStatement": "Implement `Map<K, V> getSafeSnapshot(Map<K, V> synchronizedCache)` that acquires the monitor lock on `synchronizedCache` and returns an unmodifiable defensive shallow copy (`Map.copyOf`).",
+      "starterCode": "import java.util.Map;\n\npublic class SnapshotSupplier {\n    public static <K, V> Map<K, V> getSafeSnapshot(Map<K, V> synchronizedCache) {\n        // TODO: Synchronize and return immutable copy\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class SnapshotSupplier {\n    public static <K, V> Map<K, V> getSafeSnapshot(Map<K, V> synchronizedCache) {\n        if (synchronizedCache == null) return Map.of();\n        synchronized (synchronizedCache) {\n            return Map.copyOf(synchronizedCache);\n        }\n    }\n}",
+      "expectedOutput": "{k1=v1}",
+      "testCases": [
+        {
+          "input": "synchronizedCache with {k1=v1}",
+          "expectedOutput": "{k1=v1}"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-in-memory-lru-cache-engine-5",
+      "title": "Eviction Audit Logger",
+      "difficulty": "medium",
+      "problemStatement": "Implement `class EvictionTracker<K>` with `recordEviction(K key)` and `List<K> getRecentEvictions(int count)` returning up to `count` most recent evicted keys in reverse chronological order using an `ArrayDeque`.",
+      "starterCode": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class EvictionTracker<K> {\n    private final ArrayDeque<K> history = new ArrayDeque<>();\n\n    public synchronized void recordEviction(K key) {\n        // TODO\n    }\n\n    public synchronized List<K> getRecentEvictions(int count) {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class EvictionTracker<K> {\n    private final ArrayDeque<K> history = new ArrayDeque<>();\n\n    public synchronized void recordEviction(K key) {\n        if (key != null) {\n            history.addFirst(key);\n        }\n    }\n\n    public synchronized List<K> getRecentEvictions(int count) {\n        List<K> result = new ArrayList<>();\n        int n = 0;\n        for (K key : history) {\n            if (n++ >= count) break;\n            result.add(key);\n        }\n        return List.copyOf(result);\n    }\n}",
+      "expectedOutput": "[k2, k1]",
+      "testCases": [
+        {
+          "input": "record k1, record k2, getRecent(2)",
+          "expectedOutput": "[k2, k1]"
+        }
+      ]
+    }
+  ]
+}

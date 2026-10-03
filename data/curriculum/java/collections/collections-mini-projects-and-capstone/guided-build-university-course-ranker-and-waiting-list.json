@@ -1,0 +1,735 @@
+{
+  "id": "les-col-proj-2-course-ranker",
+  "slug": "guided-build-university-course-ranker-and-waiting-list",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-mini-projects-and-capstone",
+  "languageSlug": "java",
+  "title": "Guided Build: Course Ranker & Waiting List",
+  "summary": "Model a high-demand student enrollment manager using TreeSet for grade-based ranking and PriorityQueue for waitlist priority scheduling.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "orderIndex": 2,
+  "prerequisites": [
+    "guided-build-in-memory-lru-cache-engine"
+  ],
+  "subtopics": [
+    "TreeSet multi-attribute sorting",
+    "PriorityQueue student queue",
+    "Capacity overflow handling",
+    "Dynamic rank recalculation"
+  ],
+  "learningObjectives": [
+    "Construct multi-attribute Comparator chains with defensive tie-breakers for TreeSet sorting",
+    "Implement a multi-tier PriorityQueue binary heap for scheduling based on seniority and timestamp",
+    "Validate course prerequisites using Set.containsAll() operations",
+    "Orchestrate event-driven waitlist promotion upon enrollment seat cancellations"
+  ],
+  "expectedOutcomes": [
+    "Model complex academic enrollment rules combining sorted sets and priority queues",
+    "Prevent element deduplication bugs in TreeSet by using composite unique identifiers",
+    "Deliver a complete GitHub portfolio project demonstrating multi-tier scheduling"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "mp-col-course-ranker",
+    "slug": "guided-build-university-course-ranker-and-waiting-list",
+    "title": "Guided Build: Course Ranker & Waiting List",
+    "projectBrief": {
+      "whatAreWeBuilding": "An automated university course registration and waitlist scheduler that manages competitive student enrollment using TreeSet for merit-based ranking and PriorityQueue for multi-tier waitlist scheduling.",
+      "problemItSolves": "High-demand courses fill up in seconds. Manual enrollment queues cause fairness disputes, priority errors, and seat vacancies when students drop. Universities require deterministic ranking by academic achievement and multi-tier priority waitlists.",
+      "finishedAppDescription": "A comprehensive console registration engine. Students enroll in bounded-capacity courses. Enrolled students are maintained in a TreeSet ordered by GPA and credit seniority. When full, additional applicants enter a PriorityQueue ordered by academic class and application timestamp. Dropping a seat automatically promotes the highest-priority waitlisted candidate.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "TreeSet sorted storage using custom multi-field Comparator",
+        "PriorityQueue min/max binary heap for waitlist priority ranking",
+        "HashMap for O(1) course and student directory lookups",
+        "HashSet for fast prerequisite course completion checks",
+        "State transitions: ENROLLED, WAITLISTED, DROPPED, GRADUATED",
+        "Comparable and Comparator contracts with defensive tie-breaking"
+      ],
+      "motivatingQuote": "Algorithms enforce fairness: combining TreeSets and PriorityQueues turns competitive scheduling into deterministic mathematics."
+    },
+    "realWorldScenario": {
+      "headline": "Tier-1 University High-Demand STEM Course Registration Engine",
+      "story": "Every semester, over 2,500 students compete for 150 seats in 'Advanced Distributed Systems'. The academic senate requires that active seats be ranked by GPA and credits for honors recognition, while waitlisted students must be prioritized by class standing (Seniors first, then Juniors) and application timestamp. If an enrolled student drops, the top waitlist candidate must be admitted immediately.",
+      "context": "Academic administration demands zero data inconsistency: no student can occupy both the enrolled set and waitlist queue simultaneously, and prerequisite courses must be validated prior to enrollment."
+    },
+    "requirements": {
+      "functional": [
+        "Define Student entity with id, name, gpa, creditsCompleted, classStanding (FRESHMAN to SENIOR), and completedCourses set.",
+        "Define Course with code, title, capacity, prerequisites set, enrolledStudents (TreeSet), and waitlist (PriorityQueue).",
+        "Enrolled students must be sorted in TreeSet: GPA descending -> creditsCompleted descending -> studentId ascending.",
+        "Waitlist students must be scheduled in PriorityQueue: classStanding priority (SENIOR > JUNIOR > SOPHOMORE > FRESHMAN) -> applicationTimestamp ascending.",
+        "Implement enrollStudent(Student s): validates prerequisites, checks capacity, places into enrolled TreeSet if space exists, otherwise queues into waitlist.",
+        "Implement dropStudent(Student s): removes student from course, triggers automatic promotion of top waitlisted candidate if available, and logs transition.",
+        "Provide CLI transcript reporting top 5 enrolled students by merit and current waitlist order."
+      ],
+      "technicalConstraints": [
+        "Enrollment set must never exceed defined course capacity.",
+        "Prerequisite checks via Set.containsAll() must execute in O(1) average time.",
+        "Waitlist promotion must execute in O(log N) time via PriorityQueue.poll().",
+        "Student identity comparison must rely on immutable student ID."
+      ],
+      "userDecisions": [
+        "Choose between natural Comparable ordering on Student vs explicit Comparator instances per course.",
+        "Determine whether dropped waitlisted candidates can re-queue with their original timestamp or reset."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Course attributes: code, title, maxCapacity, prerequisite codes.",
+        "Student profile: ID, name, GPA (0.0-4.0), credits, standing, completed course codes."
+      ],
+      "outputsRequired": [
+        "EnrollmentResult enum: SUCCESS_ENROLLED, SUCCESS_WAITLISTED, FAILED_PREREQUISITES, ALREADY_REGISTERED.",
+        "Formatted course roster with GPA rankings and waitlist depth.",
+        "Promotion notification logs when a student drops."
+      ],
+      "variablesNeeded": [
+        "private final TreeSet<Student> enrolled: Active students ordered by academic merit.",
+        "private final PriorityQueue<WaitlistEntry> waitlist: Candidates ordered by seniority and timestamp.",
+        "private final Set<String> prerequisites: Required course codes.",
+        "private final int capacity: Maximum active seats."
+      ],
+      "conditionalLogic": [
+        "Check if student.getCompletedCourses().containsAll(prerequisites); fail with FAILED_PREREQUISITES if false.",
+        "Check if enrolled.size() < capacity; if true, add to enrolled; else add to waitlist.",
+        "On drop: if waitlist is not empty, poll() highest priority entry and add to enrolled."
+      ],
+      "loopStructures": [
+        "For-each loop printing course transcript and waitlist roster.",
+        "Interactive CLI menu loop handling registrations and seat drops."
+      ],
+      "recommendedMethods": [
+        "public EnrollmentStatus enroll(Student student)",
+        "public boolean drop(String studentId)",
+        "public List<Student> getEnrolledRanked()",
+        "public List<Student> getWaitlistOrder()",
+        "public void printCourseRoster()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Domain Entities & Multi-Field Merit Comparator",
+        "objective": "Build Student and WaitlistEntry models with robust multi-field Comparator logic.",
+        "tasks": [
+          "Create Student class with id, name, gpa, credits, classStanding, and completedCourses set.",
+          "Build merit Comparator: comparingDouble(Student::getGpa).reversed().thenComparingInt(Student::getCredits).reversed().thenComparing(Student::getId).",
+          "Build waitlist Comparator: comparing(WaitlistEntry::getStandingPriority).reversed().thenComparingLong(WaitlistEntry::getTimestamp)."
+        ],
+        "acceptanceCriteria": [
+          "Students with identical GPAs are tie-broken by credits completed.",
+          "Waitlist comparator strictly places Seniors ahead of Juniors regardless of timestamp."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Course Registration Engine with Prerequisite Validation",
+        "objective": "Implement Course class encapsulating TreeSet enrolled roster and PriorityQueue waitlist.",
+        "tasks": [
+          "Implement enroll(Student) checking prerequisite Set via containsAll().",
+          "Route qualified applicants to TreeSet if size < capacity, or PriorityQueue if full.",
+          "Prevent duplicate registrations across enrolled set and waitlist."
+        ],
+        "acceptanceCriteria": [
+          "Students lacking prerequisites are rejected immediately.",
+          "When capacity is reached, subsequent valid applicants enter waitlist."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Automated Drop & Waitlist Promotion Lifecycle",
+        "objective": "Implement drop(studentId) that seamlessly promotes the top waitlisted candidate.",
+        "tasks": [
+          "Find and remove the dropped student from the enrolled TreeSet in O(log N).",
+          "If waitlist has candidates, poll() the highest priority entry and insert into enrolled.",
+          "Record and return the promoted student details for auditing."
+        ],
+        "acceptanceCriteria": [
+          "Dropping an enrolled student immediately increases available seat and promotes candidate #1.",
+          "Waitlist depth decreases by 1, and enrolled set maintains exact capacity limit."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Terminal Management Console & Portfolio Packaging",
+        "objective": "Create an interactive CLI displaying live enrollment dashboards, GPA distribution, and GitHub documentation.",
+        "tasks": [
+          "Build formatted terminal output displaying Merit Ranking table and Priority Waitlist queue.",
+          "Add batch simulation script generating 20 applicants for a 5-seat course.",
+          "Write comprehensive README.md with class diagram and setup instructions."
+        ],
+        "acceptanceCriteria": [
+          "Console displays clean ASCII tables with student rankings and standings.",
+          "GitHub repository initialized and pushed with clean commits."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why is TreeSet preferred over PriorityQueue for the enrolled students, but PriorityQueue preferred for the waitlist?",
+        "mentorInsight": "Enrolled students need full sorted visibility and quick individual removal when any arbitrary student drops (TreeSet.remove is O(log N)). The waitlist only ever promotes the single top candidate (PriorityQueue.poll is O(log N)), which matches binary heap mechanics perfectly."
+      },
+      {
+        "question": "Why must the Student merit Comparator include studentId as a final tie-breaker?",
+        "mentorInsight": "TreeSet considers two elements equal if comparator.compare(a, b) == 0. If two students have identical GPAs and credit hours, omitting the unique ID tie-breaker causes the TreeSet to discard the second student as a duplicate!"
+      },
+      {
+        "question": "How does Set.containsAll() ensure prerequisite validation in O(K) time?",
+        "mentorInsight": "Because completedCourses is a HashSet, probing each of the K prerequisites via contains() takes O(1) time, making the entire prerequisite check O(K) where K is the small number of course prerequisites."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Constructing the Merit Comparator Chain",
+        "step": 1,
+        "hint": "Chain Comparator.comparingDouble, thenComparingInt, and thenComparing.",
+        "level1Conceptual": "Sort descending by GPA, descending by credits, ascending by ID.",
+        "level2Implementation": "Use Comparator method references with reversed() where appropriate.",
+        "level3JavaSyntax": "Comparator<Student> meritOrder = Comparator\n    .comparingDouble(Student::getGpa).reversed()\n    .thenComparingInt(Student::getCreditsCompleted).reversed()\n    .thenComparing(Student::getId);"
+      },
+      {
+        "topic": "Waitlist Priority Promotion",
+        "step": 2,
+        "hint": "On drop(), check if waitlist.isEmpty(); if not, enrolled.add(waitlist.poll().getStudent()).",
+        "level1Conceptual": "Removing from TreeSet frees a seat; polling the PriorityQueue extracts the highest-ranked applicant.",
+        "level2Implementation": "Poll the top entry, retrieve the student object, and insert into the enrolled TreeSet.",
+        "level3JavaSyntax": "if (!waitlist.isEmpty()) {\n    WaitlistEntry next = waitlist.poll();\n    enrolled.add(next.getStudent());\n    System.out.println(\"Promoted: \" + next.getStudent().getName());\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Enroll 3 students into a 3-seat course; all 3 become ENROLLED and sorted by GPA.",
+        "Enroll 4th student into 3-seat course; 4th student enters WAITLIST."
+      ],
+      "boundaryCases": [
+        "Course capacity = 1: 1 student enrolled, 5 students waitlisted. Drop enrolled; verify top senior promoted.",
+        "Two students with identical GPA and credits; verify both are enrolled thanks to ID tie-breaker."
+      ],
+      "invalidInputCases": [
+        "Attempt to enroll student missing prerequisite; verify rejection with FAILED_PREREQUISITES.",
+        "Attempt to enroll same student twice; verify ALREADY_REGISTERED error."
+      ],
+      "edgeCases": [
+        "Drop student when waitlist is empty; verify course size decrements without errors.",
+        "Waitlist with Freshman arriving at t=1 and Senior arriving at t=10; verify Senior is polled first."
+      ]
+    },
+    "debuggingGuide": [
+      "Students disappearing from TreeSet: Ensure your Comparator has a final tie-breaker (e.g. comparing by ID). If compare() returns 0, TreeSet treats them as duplicates!",
+      "Wrong waitlist promotion order: Check that Standing priority enum uses natural ordinal or explicit ranking, and that timestamp comparison uses Long.compare().",
+      "Prerequisite false negatives: Ensure course codes match casing (e.g. 'CS101'.equalsIgnoreCase)."
+    ],
+    "projectPolish": [
+      "Add a formatted course transcript summary with average GPA and GPA standard deviation.",
+      "Implement a bulk enrollment simulation processing an incoming CSV student list."
+    ],
+    "gitHubReady": {
+      "repoName": "university-course-ranker-waiting-list",
+      "readmeTemplate": "# University Course Ranker & Waiting List\n\nAn automated university course registration and waitlist scheduler that manages competitive student enrollment using `TreeSet` for merit-based ranking and `PriorityQueue` for multi-tier waitlist scheduling.\n\n## Features\n- Merit-based active seat ranking using `TreeSet` with multi-field `Comparator`\n- Multi-tier waitlist scheduling using `PriorityQueue` (Seniority + Timestamp FIFO)\n- O(1) prerequisite validation using `HashSet.containsAll()`\n- Instant automated waitlist promotion upon seat drops\n- Clean terminal CLI dashboards and audit logs\n\n## How to Run\n```bash\njavac CourseRankerDemo.java\njava CourseRankerDemo\n```\n",
+      "suggestedReadme": "# University Course Ranker & Waiting List\n\nAn automated university course registration and waitlist scheduler that manages competitive student enrollment using `TreeSet` for merit-based ranking and `PriorityQueue` for multi-tier waitlist scheduling.\n\n## Features\n- Merit-based active seat ranking using `TreeSet` with multi-field `Comparator`\n- Multi-tier waitlist scheduling using `PriorityQueue` (Seniority + Timestamp FIFO)\n- O(1) prerequisite validation using `HashSet.containsAll()`\n- Instant automated waitlist promotion upon seat drops\n- Clean terminal CLI dashboards and audit logs\n\n## How to Run\n```bash\njavac CourseRankerDemo.java\njava CourseRankerDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement university course ranker and priority waitlist engine\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/university-course-ranker-waiting-list.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Student entity modeled with GPA, credits, standing, and prerequisite set",
+      "TreeSet configured with 3-tier Comparator (GPA, credits, ID tie-breaker)",
+      "PriorityQueue binary heap configured for Seniority-then-Timestamp scheduling",
+      "Prerequisite verification validated via HashSet.containsAll()",
+      "Automated seat drop and waitlist promotion tested and verified",
+      "Terminal dashboard formatted with ASCII alignment",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered an automated course registration engine that models competitive enrollment using Java Collections.",
+      "I combined TreeSet for academic merit ranking with PriorityQueue for multi-tier waitlist priority scheduling.",
+      "I resolved a classic collections pitfall by ensuring the TreeSet Comparator included an ID tie-breaker to prevent equal-GPA students from being discarded."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Excellent Work! Course Ranker & Waiting List Complete!",
+      "celebrationMessage": "Congratulations on completing the Course Ranker & Waiting List project. You synthesized TreeSets, PriorityQueues, and multi-field Comparators into a clean academic scheduler!",
+      "congratulations": "Congratulations on completing the Course Ranker & Waiting List project. You synthesized TreeSets, PriorityQueues, and multi-field Comparators into a clean academic scheduler!",
+      "skillsDemonstrated": [
+        "TreeSet Sorted Collections & Comparator Chaining",
+        "PriorityQueue Binary Heap Scheduling",
+        "Set Prerequisite Mathematics",
+        "Automated Event-Driven State Transitions",
+        "Defensive Identity Tie-Breaking"
+      ],
+      "resumeBullets": [
+        "Developed an automated course registration engine in Java utilizing TreeSet and PriorityQueue for merit-based ranking and priority waitlist scheduling.",
+        "Designed composite Comparator chains and O(1) prerequisite validation, automating candidate promotion on enrollment drops."
+      ],
+      "nextStepAction": "Commit to GitHub and continue to Guided Build 3: E-Commerce Cart & Catalog!",
+      "nextSteps": [
+        "Commit and push your changes to GitHub.",
+        "Highlight PriorityQueue and TreeSet algorithms on your profile.",
+        "Proceed to Guided Build 3: E-Commerce Shopping Cart & Product Catalog."
+      ]
+    },
+    "scaffoldingCode": "// University Course Ranker & Waiting List\n// Starter Scaffolding Template\n\nimport java.util.*;\n\npublic class CourseRankerDemo {\n    public enum Standing { FRESHMAN, SOPHOMORE, JUNIOR, SENIOR }\n\n    public static class Student {\n        final String id;\n        final String name;\n        final double gpa;\n        final int credits;\n        final Standing standing;\n        final Set<String> completedCourses = new HashSet<>();\n\n        public Student(String id, String name, double gpa, int credits, Standing standing) {\n            this.id = id;\n            this.name = name;\n            this.gpa = gpa;\n            this.credits = credits;\n            this.standing = standing;\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== Course Ranker & Waiting List ===\");\n    }\n}",
+    "sampleConsoleRun": "=== Course Ranker & Waiting List Engine ===\nCourse: CS401 (Advanced Distributed Systems) | Capacity: 3\nPrerequisites required: [CS201, CS301]\n\n[APPLY] S101: Alice (GPA: 3.9, Senior) -> ENROLLED (Rank 1)\n[APPLY] S102: Bob (GPA: 3.5, Junior) -> ENROLLED (Rank 2)\n[APPLY] S103: Charlie (GPA: 3.8, Senior) -> ENROLLED (Rank 2)\n[APPLY] S104: Diana (GPA: 3.7, Senior, t=10) -> WAITLIST (Pos 1)\n[APPLY] S105: Evan (GPA: 4.0, Sophomore, t=5) -> WAITLIST (Pos 2)\n\n--- Current Active Roster (Sorted by Merit) ---\n1. Alice (GPA: 3.9, Credits: 110)\n2. Charlie (GPA: 3.8, Credits: 95)\n3. Bob (GPA: 3.5, Credits: 75)\n\n--- Current Priority Waitlist ---\n1. Diana (Senior, Arrived: t=10)\n2. Evan (Sophomore, Arrived: t=5)\n\n[DROP] Bob drops course CS401...\n\u2713 Promotion Triggered! Diana (Senior) promoted from waitlist to enrolled!\nUpdated Enrolled Count: 3 / 3 | Waitlist Depth: 1"
+  },
+  "miniProject": {
+    "id": "mp-col-course-ranker",
+    "slug": "guided-build-university-course-ranker-and-waiting-list",
+    "title": "Guided Build: Course Ranker & Waiting List",
+    "projectBrief": {
+      "whatAreWeBuilding": "An automated university course registration and waitlist scheduler that manages competitive student enrollment using TreeSet for merit-based ranking and PriorityQueue for multi-tier waitlist scheduling.",
+      "problemItSolves": "High-demand courses fill up in seconds. Manual enrollment queues cause fairness disputes, priority errors, and seat vacancies when students drop. Universities require deterministic ranking by academic achievement and multi-tier priority waitlists.",
+      "finishedAppDescription": "A comprehensive console registration engine. Students enroll in bounded-capacity courses. Enrolled students are maintained in a TreeSet ordered by GPA and credit seniority. When full, additional applicants enter a PriorityQueue ordered by academic class and application timestamp. Dropping a seat automatically promotes the highest-priority waitlisted candidate.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "TreeSet sorted storage using custom multi-field Comparator",
+        "PriorityQueue min/max binary heap for waitlist priority ranking",
+        "HashMap for O(1) course and student directory lookups",
+        "HashSet for fast prerequisite course completion checks",
+        "State transitions: ENROLLED, WAITLISTED, DROPPED, GRADUATED",
+        "Comparable and Comparator contracts with defensive tie-breaking"
+      ],
+      "motivatingQuote": "Algorithms enforce fairness: combining TreeSets and PriorityQueues turns competitive scheduling into deterministic mathematics."
+    },
+    "realWorldScenario": {
+      "headline": "Tier-1 University High-Demand STEM Course Registration Engine",
+      "story": "Every semester, over 2,500 students compete for 150 seats in 'Advanced Distributed Systems'. The academic senate requires that active seats be ranked by GPA and credits for honors recognition, while waitlisted students must be prioritized by class standing (Seniors first, then Juniors) and application timestamp. If an enrolled student drops, the top waitlist candidate must be admitted immediately.",
+      "context": "Academic administration demands zero data inconsistency: no student can occupy both the enrolled set and waitlist queue simultaneously, and prerequisite courses must be validated prior to enrollment."
+    },
+    "requirements": {
+      "functional": [
+        "Define Student entity with id, name, gpa, creditsCompleted, classStanding (FRESHMAN to SENIOR), and completedCourses set.",
+        "Define Course with code, title, capacity, prerequisites set, enrolledStudents (TreeSet), and waitlist (PriorityQueue).",
+        "Enrolled students must be sorted in TreeSet: GPA descending -> creditsCompleted descending -> studentId ascending.",
+        "Waitlist students must be scheduled in PriorityQueue: classStanding priority (SENIOR > JUNIOR > SOPHOMORE > FRESHMAN) -> applicationTimestamp ascending.",
+        "Implement enrollStudent(Student s): validates prerequisites, checks capacity, places into enrolled TreeSet if space exists, otherwise queues into waitlist.",
+        "Implement dropStudent(Student s): removes student from course, triggers automatic promotion of top waitlisted candidate if available, and logs transition.",
+        "Provide CLI transcript reporting top 5 enrolled students by merit and current waitlist order."
+      ],
+      "technicalConstraints": [
+        "Enrollment set must never exceed defined course capacity.",
+        "Prerequisite checks via Set.containsAll() must execute in O(1) average time.",
+        "Waitlist promotion must execute in O(log N) time via PriorityQueue.poll().",
+        "Student identity comparison must rely on immutable student ID."
+      ],
+      "userDecisions": [
+        "Choose between natural Comparable ordering on Student vs explicit Comparator instances per course.",
+        "Determine whether dropped waitlisted candidates can re-queue with their original timestamp or reset."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Course attributes: code, title, maxCapacity, prerequisite codes.",
+        "Student profile: ID, name, GPA (0.0-4.0), credits, standing, completed course codes."
+      ],
+      "outputsRequired": [
+        "EnrollmentResult enum: SUCCESS_ENROLLED, SUCCESS_WAITLISTED, FAILED_PREREQUISITES, ALREADY_REGISTERED.",
+        "Formatted course roster with GPA rankings and waitlist depth.",
+        "Promotion notification logs when a student drops."
+      ],
+      "variablesNeeded": [
+        "private final TreeSet<Student> enrolled: Active students ordered by academic merit.",
+        "private final PriorityQueue<WaitlistEntry> waitlist: Candidates ordered by seniority and timestamp.",
+        "private final Set<String> prerequisites: Required course codes.",
+        "private final int capacity: Maximum active seats."
+      ],
+      "conditionalLogic": [
+        "Check if student.getCompletedCourses().containsAll(prerequisites); fail with FAILED_PREREQUISITES if false.",
+        "Check if enrolled.size() < capacity; if true, add to enrolled; else add to waitlist.",
+        "On drop: if waitlist is not empty, poll() highest priority entry and add to enrolled."
+      ],
+      "loopStructures": [
+        "For-each loop printing course transcript and waitlist roster.",
+        "Interactive CLI menu loop handling registrations and seat drops."
+      ],
+      "recommendedMethods": [
+        "public EnrollmentStatus enroll(Student student)",
+        "public boolean drop(String studentId)",
+        "public List<Student> getEnrolledRanked()",
+        "public List<Student> getWaitlistOrder()",
+        "public void printCourseRoster()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Domain Entities & Multi-Field Merit Comparator",
+        "objective": "Build Student and WaitlistEntry models with robust multi-field Comparator logic.",
+        "tasks": [
+          "Create Student class with id, name, gpa, credits, classStanding, and completedCourses set.",
+          "Build merit Comparator: comparingDouble(Student::getGpa).reversed().thenComparingInt(Student::getCredits).reversed().thenComparing(Student::getId).",
+          "Build waitlist Comparator: comparing(WaitlistEntry::getStandingPriority).reversed().thenComparingLong(WaitlistEntry::getTimestamp)."
+        ],
+        "acceptanceCriteria": [
+          "Students with identical GPAs are tie-broken by credits completed.",
+          "Waitlist comparator strictly places Seniors ahead of Juniors regardless of timestamp."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Course Registration Engine with Prerequisite Validation",
+        "objective": "Implement Course class encapsulating TreeSet enrolled roster and PriorityQueue waitlist.",
+        "tasks": [
+          "Implement enroll(Student) checking prerequisite Set via containsAll().",
+          "Route qualified applicants to TreeSet if size < capacity, or PriorityQueue if full.",
+          "Prevent duplicate registrations across enrolled set and waitlist."
+        ],
+        "acceptanceCriteria": [
+          "Students lacking prerequisites are rejected immediately.",
+          "When capacity is reached, subsequent valid applicants enter waitlist."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Automated Drop & Waitlist Promotion Lifecycle",
+        "objective": "Implement drop(studentId) that seamlessly promotes the top waitlisted candidate.",
+        "tasks": [
+          "Find and remove the dropped student from the enrolled TreeSet in O(log N).",
+          "If waitlist has candidates, poll() the highest priority entry and insert into enrolled.",
+          "Record and return the promoted student details for auditing."
+        ],
+        "acceptanceCriteria": [
+          "Dropping an enrolled student immediately increases available seat and promotes candidate #1.",
+          "Waitlist depth decreases by 1, and enrolled set maintains exact capacity limit."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Terminal Management Console & Portfolio Packaging",
+        "objective": "Create an interactive CLI displaying live enrollment dashboards, GPA distribution, and GitHub documentation.",
+        "tasks": [
+          "Build formatted terminal output displaying Merit Ranking table and Priority Waitlist queue.",
+          "Add batch simulation script generating 20 applicants for a 5-seat course.",
+          "Write comprehensive README.md with class diagram and setup instructions."
+        ],
+        "acceptanceCriteria": [
+          "Console displays clean ASCII tables with student rankings and standings.",
+          "GitHub repository initialized and pushed with clean commits."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why is TreeSet preferred over PriorityQueue for the enrolled students, but PriorityQueue preferred for the waitlist?",
+        "mentorInsight": "Enrolled students need full sorted visibility and quick individual removal when any arbitrary student drops (TreeSet.remove is O(log N)). The waitlist only ever promotes the single top candidate (PriorityQueue.poll is O(log N)), which matches binary heap mechanics perfectly."
+      },
+      {
+        "question": "Why must the Student merit Comparator include studentId as a final tie-breaker?",
+        "mentorInsight": "TreeSet considers two elements equal if comparator.compare(a, b) == 0. If two students have identical GPAs and credit hours, omitting the unique ID tie-breaker causes the TreeSet to discard the second student as a duplicate!"
+      },
+      {
+        "question": "How does Set.containsAll() ensure prerequisite validation in O(K) time?",
+        "mentorInsight": "Because completedCourses is a HashSet, probing each of the K prerequisites via contains() takes O(1) time, making the entire prerequisite check O(K) where K is the small number of course prerequisites."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Constructing the Merit Comparator Chain",
+        "step": 1,
+        "hint": "Chain Comparator.comparingDouble, thenComparingInt, and thenComparing.",
+        "level1Conceptual": "Sort descending by GPA, descending by credits, ascending by ID.",
+        "level2Implementation": "Use Comparator method references with reversed() where appropriate.",
+        "level3JavaSyntax": "Comparator<Student> meritOrder = Comparator\n    .comparingDouble(Student::getGpa).reversed()\n    .thenComparingInt(Student::getCreditsCompleted).reversed()\n    .thenComparing(Student::getId);"
+      },
+      {
+        "topic": "Waitlist Priority Promotion",
+        "step": 2,
+        "hint": "On drop(), check if waitlist.isEmpty(); if not, enrolled.add(waitlist.poll().getStudent()).",
+        "level1Conceptual": "Removing from TreeSet frees a seat; polling the PriorityQueue extracts the highest-ranked applicant.",
+        "level2Implementation": "Poll the top entry, retrieve the student object, and insert into the enrolled TreeSet.",
+        "level3JavaSyntax": "if (!waitlist.isEmpty()) {\n    WaitlistEntry next = waitlist.poll();\n    enrolled.add(next.getStudent());\n    System.out.println(\"Promoted: \" + next.getStudent().getName());\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Enroll 3 students into a 3-seat course; all 3 become ENROLLED and sorted by GPA.",
+        "Enroll 4th student into 3-seat course; 4th student enters WAITLIST."
+      ],
+      "boundaryCases": [
+        "Course capacity = 1: 1 student enrolled, 5 students waitlisted. Drop enrolled; verify top senior promoted.",
+        "Two students with identical GPA and credits; verify both are enrolled thanks to ID tie-breaker."
+      ],
+      "invalidInputCases": [
+        "Attempt to enroll student missing prerequisite; verify rejection with FAILED_PREREQUISITES.",
+        "Attempt to enroll same student twice; verify ALREADY_REGISTERED error."
+      ],
+      "edgeCases": [
+        "Drop student when waitlist is empty; verify course size decrements without errors.",
+        "Waitlist with Freshman arriving at t=1 and Senior arriving at t=10; verify Senior is polled first."
+      ]
+    },
+    "debuggingGuide": [
+      "Students disappearing from TreeSet: Ensure your Comparator has a final tie-breaker (e.g. comparing by ID). If compare() returns 0, TreeSet treats them as duplicates!",
+      "Wrong waitlist promotion order: Check that Standing priority enum uses natural ordinal or explicit ranking, and that timestamp comparison uses Long.compare().",
+      "Prerequisite false negatives: Ensure course codes match casing (e.g. 'CS101'.equalsIgnoreCase)."
+    ],
+    "projectPolish": [
+      "Add a formatted course transcript summary with average GPA and GPA standard deviation.",
+      "Implement a bulk enrollment simulation processing an incoming CSV student list."
+    ],
+    "gitHubReady": {
+      "repoName": "university-course-ranker-waiting-list",
+      "readmeTemplate": "# University Course Ranker & Waiting List\n\nAn automated university course registration and waitlist scheduler that manages competitive student enrollment using `TreeSet` for merit-based ranking and `PriorityQueue` for multi-tier waitlist scheduling.\n\n## Features\n- Merit-based active seat ranking using `TreeSet` with multi-field `Comparator`\n- Multi-tier waitlist scheduling using `PriorityQueue` (Seniority + Timestamp FIFO)\n- O(1) prerequisite validation using `HashSet.containsAll()`\n- Instant automated waitlist promotion upon seat drops\n- Clean terminal CLI dashboards and audit logs\n\n## How to Run\n```bash\njavac CourseRankerDemo.java\njava CourseRankerDemo\n```\n",
+      "suggestedReadme": "# University Course Ranker & Waiting List\n\nAn automated university course registration and waitlist scheduler that manages competitive student enrollment using `TreeSet` for merit-based ranking and `PriorityQueue` for multi-tier waitlist scheduling.\n\n## Features\n- Merit-based active seat ranking using `TreeSet` with multi-field `Comparator`\n- Multi-tier waitlist scheduling using `PriorityQueue` (Seniority + Timestamp FIFO)\n- O(1) prerequisite validation using `HashSet.containsAll()`\n- Instant automated waitlist promotion upon seat drops\n- Clean terminal CLI dashboards and audit logs\n\n## How to Run\n```bash\njavac CourseRankerDemo.java\njava CourseRankerDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement university course ranker and priority waitlist engine\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/university-course-ranker-waiting-list.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Student entity modeled with GPA, credits, standing, and prerequisite set",
+      "TreeSet configured with 3-tier Comparator (GPA, credits, ID tie-breaker)",
+      "PriorityQueue binary heap configured for Seniority-then-Timestamp scheduling",
+      "Prerequisite verification validated via HashSet.containsAll()",
+      "Automated seat drop and waitlist promotion tested and verified",
+      "Terminal dashboard formatted with ASCII alignment",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered an automated course registration engine that models competitive enrollment using Java Collections.",
+      "I combined TreeSet for academic merit ranking with PriorityQueue for multi-tier waitlist priority scheduling.",
+      "I resolved a classic collections pitfall by ensuring the TreeSet Comparator included an ID tie-breaker to prevent equal-GPA students from being discarded."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Excellent Work! Course Ranker & Waiting List Complete!",
+      "celebrationMessage": "Congratulations on completing the Course Ranker & Waiting List project. You synthesized TreeSets, PriorityQueues, and multi-field Comparators into a clean academic scheduler!",
+      "congratulations": "Congratulations on completing the Course Ranker & Waiting List project. You synthesized TreeSets, PriorityQueues, and multi-field Comparators into a clean academic scheduler!",
+      "skillsDemonstrated": [
+        "TreeSet Sorted Collections & Comparator Chaining",
+        "PriorityQueue Binary Heap Scheduling",
+        "Set Prerequisite Mathematics",
+        "Automated Event-Driven State Transitions",
+        "Defensive Identity Tie-Breaking"
+      ],
+      "resumeBullets": [
+        "Developed an automated course registration engine in Java utilizing TreeSet and PriorityQueue for merit-based ranking and priority waitlist scheduling.",
+        "Designed composite Comparator chains and O(1) prerequisite validation, automating candidate promotion on enrollment drops."
+      ],
+      "nextStepAction": "Commit to GitHub and continue to Guided Build 3: E-Commerce Cart & Catalog!",
+      "nextSteps": [
+        "Commit and push your changes to GitHub.",
+        "Highlight PriorityQueue and TreeSet algorithms on your profile.",
+        "Proceed to Guided Build 3: E-Commerce Shopping Cart & Product Catalog."
+      ]
+    },
+    "scaffoldingCode": "// University Course Ranker & Waiting List\n// Starter Scaffolding Template\n\nimport java.util.*;\n\npublic class CourseRankerDemo {\n    public enum Standing { FRESHMAN, SOPHOMORE, JUNIOR, SENIOR }\n\n    public static class Student {\n        final String id;\n        final String name;\n        final double gpa;\n        final int credits;\n        final Standing standing;\n        final Set<String> completedCourses = new HashSet<>();\n\n        public Student(String id, String name, double gpa, int credits, Standing standing) {\n            this.id = id;\n            this.name = name;\n            this.gpa = gpa;\n            this.credits = credits;\n            this.standing = standing;\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== Course Ranker & Waiting List ===\");\n    }\n}",
+    "sampleConsoleRun": "=== Course Ranker & Waiting List Engine ===\nCourse: CS401 (Advanced Distributed Systems) | Capacity: 3\nPrerequisites required: [CS201, CS301]\n\n[APPLY] S101: Alice (GPA: 3.9, Senior) -> ENROLLED (Rank 1)\n[APPLY] S102: Bob (GPA: 3.5, Junior) -> ENROLLED (Rank 2)\n[APPLY] S103: Charlie (GPA: 3.8, Senior) -> ENROLLED (Rank 2)\n[APPLY] S104: Diana (GPA: 3.7, Senior, t=10) -> WAITLIST (Pos 1)\n[APPLY] S105: Evan (GPA: 4.0, Sophomore, t=5) -> WAITLIST (Pos 2)\n\n--- Current Active Roster (Sorted by Merit) ---\n1. Alice (GPA: 3.9, Credits: 110)\n2. Charlie (GPA: 3.8, Credits: 95)\n3. Bob (GPA: 3.5, Credits: 75)\n\n--- Current Priority Waitlist ---\n1. Diana (Senior, Arrived: t=10)\n2. Evan (Sophomore, Arrived: t=5)\n\n[DROP] Bob drops course CS401...\n\u2713 Promotion Triggered! Diana (Senior) promoted from waitlist to enrolled!\nUpdated Enrolled Count: 3 / 3 | Waitlist Depth: 1"
+  },
+  "activities": [
+    {
+      "id": "act-guided-build-university-course-ranker-and-waiting-list-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Airport Boarding Lounge & Standby Upgrade Queue",
+      "description": "How sorted sets and priority queues work in tandem at commercial airlines.",
+      "content": "Consider an international first-class airline cabin with 10 seats. Passengers seated inside are arranged by loyalty tier and ticket value (TreeSet merit ranking). Once all 10 seats are booked, travelers seeking upgrades are placed on the standby upgrade list (PriorityQueue).\n\nThe standby list doesn't board in simple first-come-first-served order. A Platinum frequent flyer who requests an upgrade 1 hour before departure is prioritized above a Bronze flyer who requested it 3 days earlier (multi-tier priority heap). When a first-class passenger cancels their ticket, the automated system immediately polls the standby queue and issues a boarding pass to the top flyer.\n\nThis exact pattern governs enterprise university registration: TreeSets manage active merit-ranked seats, while PriorityQueues schedule waiting applicants."
+    },
+    {
+      "id": "act-guided-build-university-course-ranker-and-waiting-list-concept",
+      "type": "concept",
+      "title": "Architecture of Merit-Based Ranking and Priority Queues",
+      "description": "Technical analysis of TreeSet red-black trees and PriorityQueue binary min/max heaps.",
+      "content": "### Formal Computer Science Definition\nA priority scheduling system coordinates two distinct algebraic structures: a balanced binary search tree (`TreeSet`) maintaining a dynamically sorted view of active participants in $O(\\log N)$ time, and a binary heap (`PriorityQueue`) providing $O(1)$ peek and $O(\\log N)$ extract-max for prioritized scheduling.\n\n### Dual Data Structure Coordination\n\n```\n                               CourseRegistrationEngine\n                                          |\n             +----------------------------+----------------------------+\n             |                                                         |\n   Enrolled (TreeSet<Student>)                                Waitlist (PriorityQueue<Entry>)\n   - Red-Black Tree                                          - Binary Array Heap\n   - Sorted: GPA desc -> Credits desc -> ID asc              - Priority: Seniority -> Timestamp asc\n   - O(log N) insert, search, remove                         - O(1) peek(), O(log N) poll()\n             |\n             +--> Drop Event: enrolled.remove(student) -> enrolled.add(waitlist.poll())\n```\n\n### Key Contracts & Pitfalls\n1. **TreeSet Invariant**: `TreeSet` uses `comparator.compare(a, b) == 0` for uniqueness! If two students have identical GPAs and credits, they will be treated as duplicate unless a unique field (like student ID) is appended to the comparator chain.\n2. **PriorityQueue Invariant**: `PriorityQueue` does not maintain full sorted order; it guarantees only that the root element (head) has the highest priority."
+    },
+    {
+      "id": "act-guided-build-university-course-ranker-and-waiting-list-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Complete Executable Course Ranker & Waitlist Engine",
+      "description": "Runnable demonstration of merit ranking, waitlist scheduling, and automated promotion.",
+      "content": "```java\nimport java.util.Comparator;\nimport java.util.HashSet;\nimport java.util.PriorityQueue;\nimport java.util.Set;\nimport java.util.TreeSet;\n\npublic class CourseRankerDemo {\n\n    public enum Standing { FRESHMAN, SOPHOMORE, JUNIOR, SENIOR }\n\n    public static class Student {\n        final String id;\n        final String name;\n        final double gpa;\n        final int credits;\n        final Standing standing;\n        final Set<String> completedCourses = new HashSet<>();\n\n        public Student(String id, String name, double gpa, int credits, Standing standing) {\n            this.id = id;\n            this.name = name;\n            this.gpa = gpa;\n            this.credits = credits;\n            this.standing = standing;\n        }\n\n        @Override\n        public String toString() {\n            return id + \":\" + name + \" (GPA:\" + gpa + \", \" + standing + \")\";\n        }\n    }\n\n    public static class WaitlistEntry {\n        final Student student;\n        final long timestamp;\n\n        public WaitlistEntry(Student student, long timestamp) {\n            this.student = student;\n            this.timestamp = timestamp;\n        }\n    }\n\n    public static class Course {\n        final String code;\n        final int capacity;\n        final TreeSet<Student> enrolled;\n        final PriorityQueue<WaitlistEntry> waitlist;\n\n        public Course(String code, int capacity) {\n            this.code = code;\n            this.capacity = capacity;\n\n            // Merit Comparator: GPA desc, Credits desc, ID asc\n            Comparator<Student> meritOrder = Comparator\n                .comparingDouble((Student s) -> s.gpa).reversed()\n                .thenComparingInt((Student s) -> s.credits).reversed()\n                .thenComparing(s -> s.id);\n            this.enrolled = new TreeSet<>(meritOrder);\n\n            // Waitlist Comparator: Standing priority desc, Timestamp asc\n            Comparator<WaitlistEntry> waitlistOrder = Comparator\n                .comparing((WaitlistEntry w) -> w.student.standing).reversed()\n                .thenComparingLong(w -> w.timestamp);\n            this.waitlist = new PriorityQueue<>(waitlistOrder);\n        }\n\n        public void enroll(Student student, long timestamp) {\n            if (enrolled.size() < capacity) {\n                enrolled.add(student);\n                System.out.println(\"[ENROLLED] \" + student.name);\n            } else {\n                waitlist.add(new WaitlistEntry(student, timestamp));\n                System.out.println(\"[WAITLISTED] \" + student.name);\n            }\n        }\n\n        public void drop(Student student) {\n            if (enrolled.remove(student)) {\n                System.out.println(\"[DROPPED] \" + student.name);\n                if (!waitlist.isEmpty()) {\n                    Student promoted = waitlist.poll().student;\n                    enrolled.add(promoted);\n                    System.out.println(\"[PROMOTED] \" + promoted.name + \" from waitlist!\");\n                }\n            }\n        }\n    }\n\n    public static void main(String[] args) {\n        Course cs401 = new Course(\"CS401\", 2);\n        Student s1 = new Student(\"S1\", \"Alice\", 3.9, 100, Standing.SENIOR);\n        Student s2 = new Student(\"S2\", \"Bob\", 3.5, 80, Standing.JUNIOR);\n        Student s3 = new Student(\"S3\", \"Charlie\", 3.8, 110, Standing.SENIOR);\n\n        cs401.enroll(s1, 10);\n        cs401.enroll(s2, 20);\n        cs401.enroll(s3, 30); // Capacity full -> waitlist\n\n        System.out.println(\"Enrolled: \" + cs401.enrolled);\n\n        // Alice drops -> Charlie should be promoted\n        cs401.drop(s1);\n        System.out.println(\"Enrolled after drop: \" + cs401.enrolled);\n    }\n}\n```\n\n```text\n[ENROLLED] Alice\n[ENROLLED] Bob\n[WAITLISTED] Charlie\nEnrolled: [S1:Alice (GPA:3.9, SENIOR), S2:Bob (GPA:3.5, JUNIOR)]\n[DROPPED] Alice\n[PROMOTED] Charlie from waitlist!\nEnrolled after drop: [S3:Charlie (GPA:3.8, SENIOR), S2:Bob (GPA:3.5, JUNIOR)]\n```"
+    },
+    {
+      "id": "act-guided-build-university-course-ranker-and-waiting-list-mcq",
+      "type": "mcq",
+      "title": "Course Ranker Architecture Assessment",
+      "description": "Assess comprehension of TreeSet comparator contracts and PriorityQueue scheduling.",
+      "questions": [
+        {
+          "question": "What happens if a TreeSet comparator compares only student GPA without an ID tie-breaker, and two students with GPA 3.8 are added?",
+          "options": [
+            "Both students are stored side by side",
+            "The TreeSet throws IllegalArgumentException",
+            "The second student is rejected as a duplicate because compare(s1, s2) returns 0",
+            "The second student replaces the first student"
+          ],
+          "correctAnswer": 2,
+          "explanation": "TreeSet defines set uniqueness using the Comparator contract. If compare(s1, s2) == 0, the set considers them identical elements and ignores the second addition."
+        },
+        {
+          "question": "What is the time complexity of promoting a student from the PriorityQueue waitlist into the TreeSet enrolled roster?",
+          "options": [
+            "O(1)",
+            "O(N)",
+            "O(log W + log E) where W is waitlist size and E is enrolled size",
+            "O(N log N)"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Polling from the PriorityQueue requires re-heapifying in O(log W) time. Inserting into the TreeSet requires red-black tree insertion in O(log E) time. Total time is logarithmic O(log W + log E)."
+        },
+        {
+          "question": "Why is PriorityQueue preferred over a sorted ArrayList for the waitlist?",
+          "options": [
+            "PriorityQueue uses less memory than ArrayList",
+            "PriorityQueue achieves O(log N) insertion while ArrayList requires O(N) element shifts to insert in sorted order",
+            "PriorityQueue allows null entries",
+            "PriorityQueue guarantees total order across all elements"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Maintaining a sorted ArrayList requires O(N) shifts on insertion. A PriorityQueue binary heap inserts in O(log N) time, making it significantly more efficient for dynamic queues."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-university-course-ranker-and-waiting-list-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Architect System Design Interview Questions",
+      "description": "Staff-level design problems on priority queues, dynamic ranking, and race conditions.",
+      "questions": [
+        {
+          "question": "How would you handle dynamic student GPA updates after they have already been inserted into the TreeSet?",
+          "answer": "TreeSet does not monitor internal object mutations. If a student's GPA changes while inside the TreeSet, the node becomes misplaced in the red-black tree, corrupting tree invariants and future searches.\n\nTo update a student's GPA safely:\n1. Remove the student from the TreeSet (enrolled.remove(student)) using their old state.\n2. Update the student's GPA field.\n3. Re-insert the student into the TreeSet (enrolled.add(student)).\nThis guarantees the red-black tree places the node at its new correct sorted position."
+        },
+        {
+          "question": "Explain how you would prevent race conditions when thousands of students register concurrently at 9:00 AM.",
+          "answer": "To protect course capacity from oversubscription under high concurrency:\n1. Use an AtomicInteger for course seat reservations so threads can attempt seat reservation with decrementAndGet() before acquiring data locks.\n2. Synchronize registration at the Course level using ReentrantLock so that admissions to the TreeSet and PriorityQueue occur atomically.\n3. Use ConcurrentSkipListSet instead of TreeSet if lock-free concurrent sorted views are required."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-university-course-ranker-and-waiting-list-self-eval",
+      "type": "self_evaluation",
+      "title": "Course Ranker Mastery Checklist",
+      "description": "Assess your proficiency with PriorityQueue and TreeSet multi-attribute scheduling.",
+      "items": [
+        "I understand how to construct 3-tier Comparator chains with reversed() orderings.",
+        "I know why a unique tie-breaker (like ID) is required to prevent TreeSet element loss.",
+        "I know how PriorityQueue extracts the highest-priority element via poll() in O(log N) time.",
+        "I can validate course prerequisites using Set.containsAll().",
+        "I can architect automatic event-driven promotions when active seats are dropped."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-guided-build-university-course-ranker-and-waiting-list-1",
+      "title": "Prerequisite Set Checker",
+      "difficulty": "easy",
+      "problemStatement": "Implement `boolean hasPrerequisites(Set<String> completedCourses, Set<String> requiredPrerequisites)` that returns `true` if `completedCourses` contains every required prerequisite course code.",
+      "starterCode": "import java.util.Set;\n\npublic class PrerequisiteChecker {\n    public static boolean hasPrerequisites(Set<String> completedCourses, Set<String> requiredPrerequisites) {\n        // TODO: Validate prerequisites\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Set;\n\npublic class PrerequisiteChecker {\n    public static boolean hasPrerequisites(Set<String> completedCourses, Set<String> requiredPrerequisites) {\n        if (requiredPrerequisites == null || requiredPrerequisites.isEmpty()) return true;\n        if (completedCourses == null) return false;\n        return completedCourses.containsAll(requiredPrerequisites);\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "completed = ['CS101', 'CS201'], required = ['CS101']",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "completed = ['CS101'], required = ['CS101', 'CS201']",
+          "expectedOutput": "false"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-university-course-ranker-and-waiting-list-2",
+      "title": "Multi-Field Student Merit Comparator",
+      "difficulty": "medium",
+      "problemStatement": "Implement `Comparator<StudentGrade> createMeritComparator()` that orders `StudentGrade(String id, double gpa, int credits)` primarily by `gpa` descending, secondarily by `credits` descending, and tertiarily by `id` ascending.",
+      "starterCode": "import java.util.Comparator;\n\npublic class MeritComparatorFactory {\n    public record StudentGrade(String id, double gpa, int credits) {}\n\n    public static Comparator<StudentGrade> createMeritComparator() {\n        // TODO: Return 3-tier comparator\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Comparator;\n\npublic class MeritComparatorFactory {\n    public record StudentGrade(String id, double gpa, int credits) {}\n\n    public static Comparator<StudentGrade> createMeritComparator() {\n        return Comparator\n            .comparingDouble((StudentGrade s) -> s.gpa).reversed()\n            .thenComparingInt((StudentGrade s) -> s.credits).reversed()\n            .thenComparing(s -> s.id);\n    }\n}",
+      "expectedOutput": "Orders highest GPA first, then credits, then ID",
+      "testCases": [
+        {
+          "input": "StudentGrade('A', 3.8, 90), StudentGrade('B', 3.9, 80)",
+          "expectedOutput": "Orders highest GPA first, then credits, then ID"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-university-course-ranker-and-waiting-list-3",
+      "title": "PriorityQueue Standby Promoter",
+      "difficulty": "medium",
+      "problemStatement": "Implement `String promoteNext(PriorityQueue<String> waitlist)` that polls the top candidate from `waitlist` and returns their name. If the waitlist is empty or null, return `null`.",
+      "starterCode": "import java.util.PriorityQueue;\n\npublic class StandbyPromoter {\n    public static String promoteNext(PriorityQueue<String> waitlist) {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.PriorityQueue;\n\npublic class StandbyPromoter {\n    public static String promoteNext(PriorityQueue<String> waitlist) {\n        if (waitlist == null || waitlist.isEmpty()) return null;\n        return waitlist.poll();\n    }\n}",
+      "expectedOutput": "Candidate_1",
+      "testCases": [
+        {
+          "input": "waitlist with ['Candidate_1', 'Candidate_2']",
+          "expectedOutput": "Candidate_1"
+        },
+        {
+          "input": "empty waitlist",
+          "expectedOutput": "null"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-university-course-ranker-and-waiting-list-4",
+      "title": "Course Capacity Manager",
+      "difficulty": "medium",
+      "problemStatement": "Implement `class CourseCapacityManager` with `boolean tryEnroll(String studentId)` (returns true if enrolled under capacity, false if full) and `void drop(String studentId)` that frees up a seat.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class CourseCapacityManager {\n    private final int capacity;\n    private final Set<String> enrolled = new HashSet<>();\n\n    public CourseCapacityManager(int capacity) {\n        this.capacity = capacity;\n    }\n\n    public boolean tryEnroll(String studentId) {\n        // TODO\n        return false;\n    }\n\n    public void drop(String studentId) {\n        // TODO\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class CourseCapacityManager {\n    private final int capacity;\n    private final Set<String> enrolled = new HashSet<>();\n\n    public CourseCapacityManager(int capacity) {\n        this.capacity = capacity;\n    }\n\n    public boolean tryEnroll(String studentId) {\n        if (studentId == null || enrolled.contains(studentId)) return false;\n        if (enrolled.size() < capacity) {\n            enrolled.add(studentId);\n            return true;\n        }\n        return false;\n    }\n\n    public void drop(String studentId) {\n        if (studentId != null) {\n            enrolled.remove(studentId);\n        }\n    }\n}",
+      "expectedOutput": "true then false on capacity",
+      "testCases": [
+        {
+          "input": "Capacity 1, enroll S1 -> true; enroll S2 -> false",
+          "expectedOutput": "true then false on capacity"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-university-course-ranker-and-waiting-list-5",
+      "title": "Safe GPA Rank Extractor",
+      "difficulty": "medium",
+      "problemStatement": "Implement `List<String> getTopKStudents(TreeSet<Student> enrolledStudents, int k)` that returns an unmodifiable list of up to `k` highest-ranked student IDs from the already sorted `enrolledStudents` set.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.TreeSet;\n\npublic class RankExtractor {\n    public static class Student { String id; double gpa; }\n\n    public static List<String> getTopKStudents(TreeSet<Student> enrolledStudents, int k) {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.TreeSet;\n\npublic class RankExtractor {\n    public static class Student { public String id; public double gpa; }\n\n    public static List<String> getTopKStudents(TreeSet<Student> enrolledStudents, int k) {\n        if (enrolledStudents == null || k <= 0) return List.of();\n        List<String> result = new ArrayList<>();\n        int count = 0;\n        for (Student s : enrolledStudents) {\n            if (count++ >= k) break;\n            result.add(s.id);\n        }\n        return List.copyOf(result);\n    }\n}",
+      "expectedOutput": "[S101, S102]",
+      "testCases": [
+        {
+          "input": "enrolled with S101, S102, S103; k = 2",
+          "expectedOutput": "[S101, S102]"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,765 @@
+{
+  "id": "les-col-proj-5-trading-capstone",
+  "slug": "capstone-in-memory-stock-trading-and-order-matching-engine",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-mini-projects-and-capstone",
+  "languageSlug": "java",
+  "title": "Capstone: In-Memory Stock Trading & Order Matching Engine",
+  "summary": "Synthesize all collection interfaces: order books using TreeMap/TreeSet, trade queues with ArrayDeque, fast portfolio lookups with HashMap, and type-safe trading rules.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 30,
+  "orderIndex": 5,
+  "prerequisites": [
+    "guided-build-generic-rule-engine-and-filter-pipeline"
+  ],
+  "subtopics": [
+    "Bid/Ask order book matching",
+    "Price-time priority queue",
+    "Instant portfolio balance lookups",
+    "Auditable trade execution log"
+  ],
+  "learningObjectives": [
+    "Synthesize TreeMaps and ArrayDeques to architect continuous Price-Time Priority limit order books",
+    "Implement financial matching algorithms supporting full and partial fills at resting prices",
+    "Reconcile multi-trader portfolio cash and equity balances atomically upon trade execution",
+    "Maintain an immutable financial audit ledger of all executed trades"
+  ],
+  "expectedOutcomes": [
+    "Master the synthesis of all core Java Collection structures in an enterprise capstone",
+    "Understand electronic financial exchange architectures and order book mechanics",
+    "Publish an institutional-grade stock trading capstone project to GitHub"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "mp-col-trading-capstone",
+    "slug": "capstone-in-memory-stock-trading-and-order-matching-engine",
+    "title": "Capstone: In-Memory Stock Trading & Order Matching Engine",
+    "projectBrief": {
+      "whatAreWeBuilding": "An institutional-grade In-Memory Electronic Stock Exchange & Limit Order Matching Engine synthesizing TreeMaps, ArrayDeques, HashMaps, and custom Comparators to deliver continuous Price-Time Priority matching and atomic portfolio settlement.",
+      "problemItSolves": "Financial exchanges (like NASDAQ and NYSE) process millions of limit orders per second. They require deterministic matching where best prices trade first, ties are broken by arrival time (FIFO), partial fills are tracked precisely, and trader portfolios settle with zero cash or share leakage.",
+      "finishedAppDescription": "A complete terminal stock exchange and matching engine. It maintains dual-sided Limit Order Books for multiple tickers. Bids are sorted in descending price order via TreeMap; Asks are sorted in ascending price order. Orders at identical price levels queue in ArrayDeques. Incoming orders execute continuous cross-matching against opposite sides, emitting Trade execution events and updating trader cash/equity balances in real-time.",
+      "estimatedTime": "45\u201360 minutes",
+      "difficulty": "advanced",
+      "javaFundamentals": [
+        "TreeMap dual-direction sorting (Reverse order for Bids, Natural order for Asks)",
+        "ArrayDeque FIFO queues for Price-Time Priority level buffers",
+        "HashMap<TraderID, Portfolio> for instant balance and position lookups",
+        "Order book matching algorithm with full and partial fill mechanics",
+        "Atomic cash and equity ledger reconciliation with zero floating-point error",
+        "Audit event streaming using unmodifiable List<Trade> ledgers"
+      ],
+      "motivatingQuote": "Wall Street runs on data structures: a TreeMap plus ArrayDeque is the literal mathematical heart of modern electronic financial markets."
+    },
+    "realWorldScenario": {
+      "headline": "Institutional High-Frequency Equities Matching Engine",
+      "story": "You are a quantitative software engineer at a proprietary trading firm building a new low-latency alternative trading system (ATS). Market participants place limit orders to buy (Bids) and sell (Asks) tech equities like AAPL and GOOGL. Your engine must maintain the live order book, execute crossing orders at the resting price, handle partial fills, deduct settlement cash, and stream trade receipts to the consolidated tape.",
+      "context": "Financial markets demand zero mathematical error: bids trade at the highest available price, asks trade at the lowest available price, and trades must balance cash and shares atomically across buyers and sellers."
+    },
+    "requirements": {
+      "functional": [
+        "Define Order entity with orderId, traderId, symbol, side (BUY / SELL), priceCents, initialQuantity, remainingQuantity, and timestamp.",
+        "Implement LimitOrderBook for a symbol: Bids in TreeMap<Long, ArrayDeque<Order>> (descending), Asks in TreeMap<Long, ArrayDeque<Order>> (ascending).",
+        "Implement continuous Price-Time Priority matching: when Bid price >= best Ask price (or Ask price <= best Bid price), execute matches at the resting order's price.",
+        "Support partial fills: decrement remaining quantities; completely filled orders are removed from queue, while partially filled orders retain queue priority.",
+        "Implement TraderPortfolio tracking cashCents and Map<String, Integer> share holdings; update buyer and seller portfolios atomically upon trade execution.",
+        "Maintain an immutable List<Trade> audit log recording tradeId, buyerId, sellerId, symbol, priceCents, quantity, and timestamp.",
+        "Provide an interactive terminal exchange dashboard displaying Market Depth (L2 Order Book), recent trades ticker, and portfolio statements."
+      ],
+      "technicalConstraints": [
+        "Prices must be modeled as integer cents (e.g. 15025 for $150.25) to eliminate rounding drift.",
+        "Best bid and best ask lookups must execute in O(1) or O(log P) time where P is unique price levels.",
+        "Level FIFO insertions and removals must execute in O(1) time via ArrayDeque.",
+        "Must compile cleanly with zero warnings under OpenJDK 21 LTS."
+      ],
+      "userDecisions": [
+        "Choose between executing trades at the resting order price (standard exchange convention) vs incoming order price.",
+        "Select whether to support Market orders (crossing any available price) in addition to Limit orders."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Order parameters: orderId, traderId, symbol, side (BUY/SELL), price in cents, quantity.",
+        "Trader registration: traderId, name, initial cash balance."
+      ],
+      "outputsRequired": [
+        "OrderPlacementResult: FILLED, PARTIALLY_FILLED, RESTING_IN_BOOK.",
+        "Level 2 Market Depth display (top 5 bids and top 5 asks).",
+        "Trade execution receipt and updated portfolio balance sheets."
+      ],
+      "variablesNeeded": [
+        "private final TreeMap<Long, ArrayDeque<Order>> bids: Price descending map.",
+        "private final TreeMap<Long, ArrayDeque<Order>> asks: Price ascending map.",
+        "private final Map<String, TraderPortfolio> portfolios: Trader cash and equity balances.",
+        "private final List<Trade> tradeHistory: Historical ledger."
+      ],
+      "conditionalLogic": [
+        "For BUY order: while remainingQty > 0 and !asks.isEmpty() and bestAskPrice <= buyPrice: match orders.",
+        "For SELL order: while remainingQty > 0 and !bids.isEmpty() and bestBidPrice >= sellPrice: match orders.",
+        "If remainingQty == 0, remove resting order from ArrayDeque; if ArrayDeque is empty, remove price level from TreeMap."
+      ],
+      "loopStructures": [
+        "While loop matching orders across book until spread opens or quantity is exhausted.",
+        "For-each loop rendering Level 2 market depth table in terminal."
+      ],
+      "recommendedMethods": [
+        "public OrderResult placeOrder(Order order)",
+        "private void matchBuyOrder(Order buyOrder)",
+        "private void matchSellOrder(Order sellOrder)",
+        "public MarketDepth getMarketDepth(int depthLevels)",
+        "public void settleTrade(Order buy, Order sell, long matchPrice, int matchQty)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Order Entity & Dual Limit Order Book Architecture",
+        "objective": "Build Order, Side, and LimitOrderBook classes with sorted TreeMaps.",
+        "tasks": [
+          "Create Order record/class with id, traderId, symbol, side, priceCents, quantity, remainingQty, and timestamp.",
+          "Instantiate Bids TreeMap with Collections.reverseOrder() and Asks TreeMap with natural ordering.",
+          "Implement helper methods: addOrderToBook(order), getBestBidPrice(), getBestAskPrice()."
+        ],
+        "acceptanceCriteria": [
+          "Bids are sorted highest price first; Asks are sorted lowest price first.",
+          "Orders at identical prices form a FIFO ArrayDeque preserving arrival order."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Continuous Price-Time Matching Algorithm",
+        "objective": "Implement cross-matching logic supporting full and partial fills.",
+        "tasks": [
+          "Implement matchBuyOrder: compare with asks.firstEntry(); execute match at resting ask price.",
+          "Implement matchSellOrder: compare with bids.firstEntry(); execute match at resting bid price.",
+          "Handle partial fills: decrement quantities, remove empty queues and empty price keys.",
+          "Emit Trade events into the central trade history log."
+        ],
+        "acceptanceCriteria": [
+          "Crossing orders execute immediately at the resting price.",
+          "Partial fills leave the remaining quantity resting at the exact same queue priority."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Trader Portfolios & Atomic Settlement Ledger",
+        "objective": "Implement TraderPortfolio and atomic cash/stock transfer upon trade execution.",
+        "tasks": [
+          "Create TraderPortfolio tracking cashCents and Map<String, Integer> stockHoldings.",
+          "In settleTrade(): debit buyer cash, credit seller cash; debit seller shares, credit buyer shares.",
+          "Verify zero financial leakage (total cash + total shares across traders remains strictly conserved)."
+        ],
+        "acceptanceCriteria": [
+          "Cash and stock positions update synchronously with every trade execution.",
+          "Unfunded trades or insufficient shares are rejected prior to matching."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Level 2 Market Depth Visualization & CLI Terminal",
+        "objective": "Create a live terminal dashboard displaying Market Depth (L2) and trade ticker.",
+        "tasks": [
+          "Implement getMarketDepth(int depth) aggregating cumulative quantities per price level.",
+          "Render formatted ASCII Order Book showing Bids (Green) and Asks (Red) with bid-ask spread.",
+          "Print live Trade Tape stream showing matched orders in real-time."
+        ],
+        "acceptanceCriteria": [
+          "Market Depth accurately displays top 5 bid levels and top 5 ask levels with total share volume.",
+          "Spread (lowest ask - highest bid) is calculated and displayed correctly."
+        ]
+      },
+      {
+        "milestoneNumber": 5,
+        "title": "Automated Market Simulation & GitHub Capstone Packaging",
+        "objective": "Create a comprehensive multi-agent trading simulation and production GitHub repository.",
+        "tasks": [
+          "Build simulation script running Market Maker, Buy-Side Fund, and Retail Trader orders.",
+          "Validate post-trade invariants: book consistency, portfolio balances, zero orphan entries.",
+          "Write institutional README.md with architecture diagrams and push to GitHub."
+        ],
+        "acceptanceCriteria": [
+          "Simulation processes 50+ mixed limit orders with multiple crossings and partial fills.",
+          "GitHub repository published with clean documentation, diagrams, and commit history."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why do Bids use Collections.reverseOrder() while Asks use natural ordering in TreeMap?",
+        "mentorInsight": "In financial markets, buyers want to buy as low as possible, but the best buyer is the one offering the HIGHEST price (highest bid first -> reverse order). Sellers want to sell as high as possible, but the best seller is the one offering the LOWEST price (lowest ask first -> natural order)."
+      },
+      {
+        "question": "Why must empty ArrayDeques be removed from the TreeMap when all orders at a price level are filled?",
+        "mentorInsight": "If an empty ArrayDeque remains in the TreeMap, calls to firstKey() or firstEntry() will return a phantom price level with zero available orders, causing NullPointerExceptions or infinite matching loops. Always call map.remove(price) when queue.isEmpty()."
+      },
+      {
+        "question": "What is the resting price execution rule in electronic exchanges?",
+        "mentorInsight": "When an incoming order crosses the spread, the trade executes at the price of the order ALREADY SITTING in the book (the resting order). This rewards liquidity providers who posted quotes first."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Dual Order Book Data Structures",
+        "step": 1,
+        "hint": "Instantiate bids with reverseOrder() and asks with natural order.",
+        "level1Conceptual": "Bids sort highest price first; Asks sort lowest price first.",
+        "level2Implementation": "Declare TreeMap<Long, ArrayDeque<Order>> for both sides.",
+        "level3JavaSyntax": "private final TreeMap<Long, ArrayDeque<Order>> bids =\n    new TreeMap<>(Collections.reverseOrder());\nprivate final TreeMap<Long, ArrayDeque<Order>> asks =\n    new TreeMap<>();"
+      },
+      {
+        "topic": "Partial Fill Loop",
+        "step": 2,
+        "hint": "Match min(incomingRemaining, restingRemaining) and update both.",
+        "level1Conceptual": "Trade quantity is the minimum of what buyer needs and what seller offers.",
+        "level2Implementation": "Deduct trade quantity from both orders. If resting order is zero, poll it from queue.",
+        "level3JavaSyntax": "int tradeQty = Math.min(incoming.remainingQty, resting.remainingQty);\nincoming.remainingQty -= tradeQty;\nresting.remainingQty -= tradeQty;\nif (resting.remainingQty == 0) {\n    queue.poll();\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Place Bid $150 x 10, Place Ask $150 x 10; verify immediate match of 10 shares at $150.00.",
+        "Place Bid $150 x 20, Place Ask $150 x 10; verify partial fill of 10 shares, 10 shares remaining on Bid side."
+      ],
+      "boundaryCases": [
+        "Incoming Bid price strictly below lowest Ask; verify order rests in book without matching.",
+        "Incoming order matches across multiple distinct price levels in a single sweep."
+      ],
+      "invalidInputCases": [
+        "Place order with price <= 0 or quantity <= 0; throws IllegalArgumentException.",
+        "Trader with insufficient cash attempts to place buy order; rejected with InsufficientFundsException."
+      ],
+      "edgeCases": [
+        "Two identical orders placed at same price; verify first arriving order is filled first (FIFO time priority).",
+        "All orders at a price level filled; verify price key is completely removed from TreeMap."
+      ]
+    },
+    "debuggingGuide": [
+      "Infinite matching loop: Check that empty queues are removed from the TreeMap when their size hits 0 (e.g. if (queue.isEmpty()) asks.remove(price);).",
+      "Incorrect trade price: Ensure trade executes at the resting order's price, not the incoming order's price.",
+      "Spread inverted (Bid > Ask without trade): Ensure match loop executes BEFORE placing the residual quantity into the resting book."
+    ],
+    "projectPolish": [
+      "Render a live ASCII visual depth chart displaying Bid volume bars vs Ask volume bars.",
+      "Implement a simulated automated Market Maker generating continuous 2-sided liquidity quotes."
+    ],
+    "gitHubReady": {
+      "repoName": "stock-trading-order-matching-engine",
+      "readmeTemplate": "# In-Memory Stock Trading & Order Matching Engine\n\nAn institutional-grade In-Memory Electronic Stock Exchange & Limit Order Matching Engine in Java synthesizing `TreeMap`, `ArrayDeque`, `HashMap`, and `Comparator` algorithms for continuous Price-Time Priority trading.\n\n## Features\n- Continuous Limit Order Book matching engine supporting full and partial fills\n- Dual-direction sorted order books (`TreeMap` reverse-ordered for Bids, natural-ordered for Asks)\n- Strict Price-Time Priority level queuing via `ArrayDeque` (FIFO)\n- Atomic multi-trader portfolio settlement and cash ledger reconciliation\n- Level 2 Market Depth (L2) terminal dashboard and real-time Trade Tape stream\n- Integer-cent financial architecture eliminating rounding drift\n\n## How to Run\n```bash\njavac StockExchangeDemo.java\njava StockExchangeDemo\n```\n",
+      "suggestedReadme": "# In-Memory Stock Trading & Order Matching Engine\n\nAn institutional-grade In-Memory Electronic Stock Exchange & Limit Order Matching Engine in Java synthesizing `TreeMap`, `ArrayDeque`, `HashMap`, and `Comparator` algorithms for continuous Price-Time Priority trading.\n\n## Features\n- Continuous Limit Order Book matching engine supporting full and partial fills\n- Dual-direction sorted order books (`TreeMap` reverse-ordered for Bids, natural-ordered for Asks)\n- Strict Price-Time Priority level queuing via `ArrayDeque` (FIFO)\n- Atomic multi-trader portfolio settlement and cash ledger reconciliation\n- Level 2 Market Depth (L2) terminal dashboard and real-time Trade Tape stream\n- Integer-cent financial architecture eliminating rounding drift\n\n## How to Run\n```bash\njavac StockExchangeDemo.java\njava StockExchangeDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement in-memory electronic stock exchange and matching engine\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/stock-trading-order-matching-engine.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Dual LimitOrderBook implemented with TreeMap<Long, ArrayDeque<Order>>",
+      "Bids ordered descending (reverseOrder) and Asks ordered ascending (natural)",
+      "Price-Time Priority (FIFO) enforced at each individual price level",
+      "Continuous cross-matching algorithm handling full and partial fills",
+      "Atomic cash and equity portfolio settlement implemented without financial loss",
+      "Level 2 Market Depth and Trade Tape terminal visualization",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered an institutional electronic stock exchange matching engine in Java synthesizing the entire Collections Framework.",
+      "I used dual TreeMaps to maintain ordered Bid and Ask books and ArrayDeques to enforce FIFO time priority at each price tick.",
+      "I implemented continuous matching with partial fills and atomic portfolio settlement, modeling Wall Street exchange mechanics with mathematical precision."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udfc6 Capstone Mastered! Stock Trading Engine Complete!",
+      "celebrationMessage": "Congratulations on completing the Capstone: In-Memory Stock Trading & Order Matching Engine! You synthesized Lists, Sets, Maps, Queues, Deques, Comparators, and Generics into an institutional-grade financial system!",
+      "congratulations": "Congratulations on completing the Capstone: In-Memory Stock Trading & Order Matching Engine! You synthesized Lists, Sets, Maps, Queues, Deques, Comparators, and Generics into an institutional-grade financial system!",
+      "skillsDemonstrated": [
+        "Advanced TreeMap Dual-Sorted Book Architecture",
+        "Price-Time Priority Queuing with ArrayDeque",
+        "Continuous Order Matching Algorithm with Partial Fills",
+        "Atomic Multi-Account Financial Settlement",
+        "Level 2 Market Depth Visualization & Telemetry"
+      ],
+      "resumeBullets": [
+        "Architected an in-memory electronic stock exchange matching engine in Java utilizing TreeMap and ArrayDeque for continuous Price-Time Priority limit order execution.",
+        "Engineered partial-fill cross matching, real-time Level 2 Market Depth book visualization, and atomic multi-trader ledger settlement with zero financial discrepancy."
+      ],
+      "nextStepAction": "Commit your capstone project to GitHub and celebrate mastering the entire Java Collections Framework!",
+      "nextSteps": [
+        "Commit and push your capstone repository to GitHub.",
+        "Feature this capstone prominently on your developer portfolio and LinkedIn.",
+        "Proceed to the next section: Data Structures & Algorithms (DSA)!"
+      ]
+    },
+    "scaffoldingCode": "// In-Memory Stock Trading & Order Matching Engine\n// Starter Scaffolding Template\n\nimport java.util.*;\n\npublic class StockExchangeDemo {\n    public enum Side { BUY, SELL }\n\n    public static class Order {\n        final String id;\n        final String traderId;\n        final String symbol;\n        final Side side;\n        final long priceCents;\n        final int initialQty;\n        int remainingQty;\n        final long timestamp;\n\n        public Order(String id, String traderId, String symbol, Side side, long priceCents, int qty) {\n            this.id = id;\n            this.traderId = traderId;\n            this.symbol = symbol;\n            this.side = side;\n            this.priceCents = priceCents;\n            this.initialQty = qty;\n            this.remainingQty = qty;\n            this.timestamp = System.nanoTime();\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== In-Memory Stock Trading Engine ===\");\n    }\n}",
+    "sampleConsoleRun": "=== Electronic Stock Exchange Matching Engine ===\nSymbol: AAPL | Ticker Active\n\n[NEW ORDER] BUY AAPL 50 @ $150.00 (Trader: Fund_Alpha) -> Resting in Book\n[NEW ORDER] BUY AAPL 30 @ $149.50 (Trader: Retail_1) -> Resting in Book\n[NEW ORDER] SELL AAPL 20 @ $150.50 (Trader: MM_Apex) -> Resting in Book\n[NEW ORDER] SELL AAPL 40 @ $151.00 (Trader: MM_Apex) -> Resting in Book\n\n--- Level 2 Market Depth (AAPL) ---\nBIDS (BUY)                    ASKS (SELL)\nQty    Price                  Price    Qty\n50     $150.00                $150.50  20\n30     $149.50                $151.00  40\nSpread: $0.50 (Spread Open)\n\n[CROSSING ORDER] SELL AAPL 60 @ $150.00 (Trader: Hedge_Beta)\n\u2713 MATCH DETECTED! Resting Bid: $150.00 x 50 shares\n  >> TRADE #1: 50 shares @ $150.00 | Buyer: Fund_Alpha | Seller: Hedge_Beta ($7,500.00)\n  >> Residual 10 shares of Sell order resting at $150.00\n\n--- Updated Market Depth (AAPL) ---\nBIDS (BUY)                    ASKS (SELL)\nQty    Price                  Price    Qty\n30     $149.50                $150.00  10\n                              $150.50  20\n                              $151.00  40\n\u2713 Settlement Complete: Cash and share positions balanced across all 4 traders."
+  },
+  "miniProject": {
+    "id": "mp-col-trading-capstone",
+    "slug": "capstone-in-memory-stock-trading-and-order-matching-engine",
+    "title": "Capstone: In-Memory Stock Trading & Order Matching Engine",
+    "projectBrief": {
+      "whatAreWeBuilding": "An institutional-grade In-Memory Electronic Stock Exchange & Limit Order Matching Engine synthesizing TreeMaps, ArrayDeques, HashMaps, and custom Comparators to deliver continuous Price-Time Priority matching and atomic portfolio settlement.",
+      "problemItSolves": "Financial exchanges (like NASDAQ and NYSE) process millions of limit orders per second. They require deterministic matching where best prices trade first, ties are broken by arrival time (FIFO), partial fills are tracked precisely, and trader portfolios settle with zero cash or share leakage.",
+      "finishedAppDescription": "A complete terminal stock exchange and matching engine. It maintains dual-sided Limit Order Books for multiple tickers. Bids are sorted in descending price order via TreeMap; Asks are sorted in ascending price order. Orders at identical price levels queue in ArrayDeques. Incoming orders execute continuous cross-matching against opposite sides, emitting Trade execution events and updating trader cash/equity balances in real-time.",
+      "estimatedTime": "45\u201360 minutes",
+      "difficulty": "advanced",
+      "javaFundamentals": [
+        "TreeMap dual-direction sorting (Reverse order for Bids, Natural order for Asks)",
+        "ArrayDeque FIFO queues for Price-Time Priority level buffers",
+        "HashMap<TraderID, Portfolio> for instant balance and position lookups",
+        "Order book matching algorithm with full and partial fill mechanics",
+        "Atomic cash and equity ledger reconciliation with zero floating-point error",
+        "Audit event streaming using unmodifiable List<Trade> ledgers"
+      ],
+      "motivatingQuote": "Wall Street runs on data structures: a TreeMap plus ArrayDeque is the literal mathematical heart of modern electronic financial markets."
+    },
+    "realWorldScenario": {
+      "headline": "Institutional High-Frequency Equities Matching Engine",
+      "story": "You are a quantitative software engineer at a proprietary trading firm building a new low-latency alternative trading system (ATS). Market participants place limit orders to buy (Bids) and sell (Asks) tech equities like AAPL and GOOGL. Your engine must maintain the live order book, execute crossing orders at the resting price, handle partial fills, deduct settlement cash, and stream trade receipts to the consolidated tape.",
+      "context": "Financial markets demand zero mathematical error: bids trade at the highest available price, asks trade at the lowest available price, and trades must balance cash and shares atomically across buyers and sellers."
+    },
+    "requirements": {
+      "functional": [
+        "Define Order entity with orderId, traderId, symbol, side (BUY / SELL), priceCents, initialQuantity, remainingQuantity, and timestamp.",
+        "Implement LimitOrderBook for a symbol: Bids in TreeMap<Long, ArrayDeque<Order>> (descending), Asks in TreeMap<Long, ArrayDeque<Order>> (ascending).",
+        "Implement continuous Price-Time Priority matching: when Bid price >= best Ask price (or Ask price <= best Bid price), execute matches at the resting order's price.",
+        "Support partial fills: decrement remaining quantities; completely filled orders are removed from queue, while partially filled orders retain queue priority.",
+        "Implement TraderPortfolio tracking cashCents and Map<String, Integer> share holdings; update buyer and seller portfolios atomically upon trade execution.",
+        "Maintain an immutable List<Trade> audit log recording tradeId, buyerId, sellerId, symbol, priceCents, quantity, and timestamp.",
+        "Provide an interactive terminal exchange dashboard displaying Market Depth (L2 Order Book), recent trades ticker, and portfolio statements."
+      ],
+      "technicalConstraints": [
+        "Prices must be modeled as integer cents (e.g. 15025 for $150.25) to eliminate rounding drift.",
+        "Best bid and best ask lookups must execute in O(1) or O(log P) time where P is unique price levels.",
+        "Level FIFO insertions and removals must execute in O(1) time via ArrayDeque.",
+        "Must compile cleanly with zero warnings under OpenJDK 21 LTS."
+      ],
+      "userDecisions": [
+        "Choose between executing trades at the resting order price (standard exchange convention) vs incoming order price.",
+        "Select whether to support Market orders (crossing any available price) in addition to Limit orders."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Order parameters: orderId, traderId, symbol, side (BUY/SELL), price in cents, quantity.",
+        "Trader registration: traderId, name, initial cash balance."
+      ],
+      "outputsRequired": [
+        "OrderPlacementResult: FILLED, PARTIALLY_FILLED, RESTING_IN_BOOK.",
+        "Level 2 Market Depth display (top 5 bids and top 5 asks).",
+        "Trade execution receipt and updated portfolio balance sheets."
+      ],
+      "variablesNeeded": [
+        "private final TreeMap<Long, ArrayDeque<Order>> bids: Price descending map.",
+        "private final TreeMap<Long, ArrayDeque<Order>> asks: Price ascending map.",
+        "private final Map<String, TraderPortfolio> portfolios: Trader cash and equity balances.",
+        "private final List<Trade> tradeHistory: Historical ledger."
+      ],
+      "conditionalLogic": [
+        "For BUY order: while remainingQty > 0 and !asks.isEmpty() and bestAskPrice <= buyPrice: match orders.",
+        "For SELL order: while remainingQty > 0 and !bids.isEmpty() and bestBidPrice >= sellPrice: match orders.",
+        "If remainingQty == 0, remove resting order from ArrayDeque; if ArrayDeque is empty, remove price level from TreeMap."
+      ],
+      "loopStructures": [
+        "While loop matching orders across book until spread opens or quantity is exhausted.",
+        "For-each loop rendering Level 2 market depth table in terminal."
+      ],
+      "recommendedMethods": [
+        "public OrderResult placeOrder(Order order)",
+        "private void matchBuyOrder(Order buyOrder)",
+        "private void matchSellOrder(Order sellOrder)",
+        "public MarketDepth getMarketDepth(int depthLevels)",
+        "public void settleTrade(Order buy, Order sell, long matchPrice, int matchQty)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Order Entity & Dual Limit Order Book Architecture",
+        "objective": "Build Order, Side, and LimitOrderBook classes with sorted TreeMaps.",
+        "tasks": [
+          "Create Order record/class with id, traderId, symbol, side, priceCents, quantity, remainingQty, and timestamp.",
+          "Instantiate Bids TreeMap with Collections.reverseOrder() and Asks TreeMap with natural ordering.",
+          "Implement helper methods: addOrderToBook(order), getBestBidPrice(), getBestAskPrice()."
+        ],
+        "acceptanceCriteria": [
+          "Bids are sorted highest price first; Asks are sorted lowest price first.",
+          "Orders at identical prices form a FIFO ArrayDeque preserving arrival order."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Continuous Price-Time Matching Algorithm",
+        "objective": "Implement cross-matching logic supporting full and partial fills.",
+        "tasks": [
+          "Implement matchBuyOrder: compare with asks.firstEntry(); execute match at resting ask price.",
+          "Implement matchSellOrder: compare with bids.firstEntry(); execute match at resting bid price.",
+          "Handle partial fills: decrement quantities, remove empty queues and empty price keys.",
+          "Emit Trade events into the central trade history log."
+        ],
+        "acceptanceCriteria": [
+          "Crossing orders execute immediately at the resting price.",
+          "Partial fills leave the remaining quantity resting at the exact same queue priority."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Trader Portfolios & Atomic Settlement Ledger",
+        "objective": "Implement TraderPortfolio and atomic cash/stock transfer upon trade execution.",
+        "tasks": [
+          "Create TraderPortfolio tracking cashCents and Map<String, Integer> stockHoldings.",
+          "In settleTrade(): debit buyer cash, credit seller cash; debit seller shares, credit buyer shares.",
+          "Verify zero financial leakage (total cash + total shares across traders remains strictly conserved)."
+        ],
+        "acceptanceCriteria": [
+          "Cash and stock positions update synchronously with every trade execution.",
+          "Unfunded trades or insufficient shares are rejected prior to matching."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Level 2 Market Depth Visualization & CLI Terminal",
+        "objective": "Create a live terminal dashboard displaying Market Depth (L2) and trade ticker.",
+        "tasks": [
+          "Implement getMarketDepth(int depth) aggregating cumulative quantities per price level.",
+          "Render formatted ASCII Order Book showing Bids (Green) and Asks (Red) with bid-ask spread.",
+          "Print live Trade Tape stream showing matched orders in real-time."
+        ],
+        "acceptanceCriteria": [
+          "Market Depth accurately displays top 5 bid levels and top 5 ask levels with total share volume.",
+          "Spread (lowest ask - highest bid) is calculated and displayed correctly."
+        ]
+      },
+      {
+        "milestoneNumber": 5,
+        "title": "Automated Market Simulation & GitHub Capstone Packaging",
+        "objective": "Create a comprehensive multi-agent trading simulation and production GitHub repository.",
+        "tasks": [
+          "Build simulation script running Market Maker, Buy-Side Fund, and Retail Trader orders.",
+          "Validate post-trade invariants: book consistency, portfolio balances, zero orphan entries.",
+          "Write institutional README.md with architecture diagrams and push to GitHub."
+        ],
+        "acceptanceCriteria": [
+          "Simulation processes 50+ mixed limit orders with multiple crossings and partial fills.",
+          "GitHub repository published with clean documentation, diagrams, and commit history."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why do Bids use Collections.reverseOrder() while Asks use natural ordering in TreeMap?",
+        "mentorInsight": "In financial markets, buyers want to buy as low as possible, but the best buyer is the one offering the HIGHEST price (highest bid first -> reverse order). Sellers want to sell as high as possible, but the best seller is the one offering the LOWEST price (lowest ask first -> natural order)."
+      },
+      {
+        "question": "Why must empty ArrayDeques be removed from the TreeMap when all orders at a price level are filled?",
+        "mentorInsight": "If an empty ArrayDeque remains in the TreeMap, calls to firstKey() or firstEntry() will return a phantom price level with zero available orders, causing NullPointerExceptions or infinite matching loops. Always call map.remove(price) when queue.isEmpty()."
+      },
+      {
+        "question": "What is the resting price execution rule in electronic exchanges?",
+        "mentorInsight": "When an incoming order crosses the spread, the trade executes at the price of the order ALREADY SITTING in the book (the resting order). This rewards liquidity providers who posted quotes first."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Dual Order Book Data Structures",
+        "step": 1,
+        "hint": "Instantiate bids with reverseOrder() and asks with natural order.",
+        "level1Conceptual": "Bids sort highest price first; Asks sort lowest price first.",
+        "level2Implementation": "Declare TreeMap<Long, ArrayDeque<Order>> for both sides.",
+        "level3JavaSyntax": "private final TreeMap<Long, ArrayDeque<Order>> bids =\n    new TreeMap<>(Collections.reverseOrder());\nprivate final TreeMap<Long, ArrayDeque<Order>> asks =\n    new TreeMap<>();"
+      },
+      {
+        "topic": "Partial Fill Loop",
+        "step": 2,
+        "hint": "Match min(incomingRemaining, restingRemaining) and update both.",
+        "level1Conceptual": "Trade quantity is the minimum of what buyer needs and what seller offers.",
+        "level2Implementation": "Deduct trade quantity from both orders. If resting order is zero, poll it from queue.",
+        "level3JavaSyntax": "int tradeQty = Math.min(incoming.remainingQty, resting.remainingQty);\nincoming.remainingQty -= tradeQty;\nresting.remainingQty -= tradeQty;\nif (resting.remainingQty == 0) {\n    queue.poll();\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Place Bid $150 x 10, Place Ask $150 x 10; verify immediate match of 10 shares at $150.00.",
+        "Place Bid $150 x 20, Place Ask $150 x 10; verify partial fill of 10 shares, 10 shares remaining on Bid side."
+      ],
+      "boundaryCases": [
+        "Incoming Bid price strictly below lowest Ask; verify order rests in book without matching.",
+        "Incoming order matches across multiple distinct price levels in a single sweep."
+      ],
+      "invalidInputCases": [
+        "Place order with price <= 0 or quantity <= 0; throws IllegalArgumentException.",
+        "Trader with insufficient cash attempts to place buy order; rejected with InsufficientFundsException."
+      ],
+      "edgeCases": [
+        "Two identical orders placed at same price; verify first arriving order is filled first (FIFO time priority).",
+        "All orders at a price level filled; verify price key is completely removed from TreeMap."
+      ]
+    },
+    "debuggingGuide": [
+      "Infinite matching loop: Check that empty queues are removed from the TreeMap when their size hits 0 (e.g. if (queue.isEmpty()) asks.remove(price);).",
+      "Incorrect trade price: Ensure trade executes at the resting order's price, not the incoming order's price.",
+      "Spread inverted (Bid > Ask without trade): Ensure match loop executes BEFORE placing the residual quantity into the resting book."
+    ],
+    "projectPolish": [
+      "Render a live ASCII visual depth chart displaying Bid volume bars vs Ask volume bars.",
+      "Implement a simulated automated Market Maker generating continuous 2-sided liquidity quotes."
+    ],
+    "gitHubReady": {
+      "repoName": "stock-trading-order-matching-engine",
+      "readmeTemplate": "# In-Memory Stock Trading & Order Matching Engine\n\nAn institutional-grade In-Memory Electronic Stock Exchange & Limit Order Matching Engine in Java synthesizing `TreeMap`, `ArrayDeque`, `HashMap`, and `Comparator` algorithms for continuous Price-Time Priority trading.\n\n## Features\n- Continuous Limit Order Book matching engine supporting full and partial fills\n- Dual-direction sorted order books (`TreeMap` reverse-ordered for Bids, natural-ordered for Asks)\n- Strict Price-Time Priority level queuing via `ArrayDeque` (FIFO)\n- Atomic multi-trader portfolio settlement and cash ledger reconciliation\n- Level 2 Market Depth (L2) terminal dashboard and real-time Trade Tape stream\n- Integer-cent financial architecture eliminating rounding drift\n\n## How to Run\n```bash\njavac StockExchangeDemo.java\njava StockExchangeDemo\n```\n",
+      "suggestedReadme": "# In-Memory Stock Trading & Order Matching Engine\n\nAn institutional-grade In-Memory Electronic Stock Exchange & Limit Order Matching Engine in Java synthesizing `TreeMap`, `ArrayDeque`, `HashMap`, and `Comparator` algorithms for continuous Price-Time Priority trading.\n\n## Features\n- Continuous Limit Order Book matching engine supporting full and partial fills\n- Dual-direction sorted order books (`TreeMap` reverse-ordered for Bids, natural-ordered for Asks)\n- Strict Price-Time Priority level queuing via `ArrayDeque` (FIFO)\n- Atomic multi-trader portfolio settlement and cash ledger reconciliation\n- Level 2 Market Depth (L2) terminal dashboard and real-time Trade Tape stream\n- Integer-cent financial architecture eliminating rounding drift\n\n## How to Run\n```bash\njavac StockExchangeDemo.java\njava StockExchangeDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement in-memory electronic stock exchange and matching engine\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/stock-trading-order-matching-engine.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Dual LimitOrderBook implemented with TreeMap<Long, ArrayDeque<Order>>",
+      "Bids ordered descending (reverseOrder) and Asks ordered ascending (natural)",
+      "Price-Time Priority (FIFO) enforced at each individual price level",
+      "Continuous cross-matching algorithm handling full and partial fills",
+      "Atomic cash and equity portfolio settlement implemented without financial loss",
+      "Level 2 Market Depth and Trade Tape terminal visualization",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered an institutional electronic stock exchange matching engine in Java synthesizing the entire Collections Framework.",
+      "I used dual TreeMaps to maintain ordered Bid and Ask books and ArrayDeques to enforce FIFO time priority at each price tick.",
+      "I implemented continuous matching with partial fills and atomic portfolio settlement, modeling Wall Street exchange mechanics with mathematical precision."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udfc6 Capstone Mastered! Stock Trading Engine Complete!",
+      "celebrationMessage": "Congratulations on completing the Capstone: In-Memory Stock Trading & Order Matching Engine! You synthesized Lists, Sets, Maps, Queues, Deques, Comparators, and Generics into an institutional-grade financial system!",
+      "congratulations": "Congratulations on completing the Capstone: In-Memory Stock Trading & Order Matching Engine! You synthesized Lists, Sets, Maps, Queues, Deques, Comparators, and Generics into an institutional-grade financial system!",
+      "skillsDemonstrated": [
+        "Advanced TreeMap Dual-Sorted Book Architecture",
+        "Price-Time Priority Queuing with ArrayDeque",
+        "Continuous Order Matching Algorithm with Partial Fills",
+        "Atomic Multi-Account Financial Settlement",
+        "Level 2 Market Depth Visualization & Telemetry"
+      ],
+      "resumeBullets": [
+        "Architected an in-memory electronic stock exchange matching engine in Java utilizing TreeMap and ArrayDeque for continuous Price-Time Priority limit order execution.",
+        "Engineered partial-fill cross matching, real-time Level 2 Market Depth book visualization, and atomic multi-trader ledger settlement with zero financial discrepancy."
+      ],
+      "nextStepAction": "Commit your capstone project to GitHub and celebrate mastering the entire Java Collections Framework!",
+      "nextSteps": [
+        "Commit and push your capstone repository to GitHub.",
+        "Feature this capstone prominently on your developer portfolio and LinkedIn.",
+        "Proceed to the next section: Data Structures & Algorithms (DSA)!"
+      ]
+    },
+    "scaffoldingCode": "// In-Memory Stock Trading & Order Matching Engine\n// Starter Scaffolding Template\n\nimport java.util.*;\n\npublic class StockExchangeDemo {\n    public enum Side { BUY, SELL }\n\n    public static class Order {\n        final String id;\n        final String traderId;\n        final String symbol;\n        final Side side;\n        final long priceCents;\n        final int initialQty;\n        int remainingQty;\n        final long timestamp;\n\n        public Order(String id, String traderId, String symbol, Side side, long priceCents, int qty) {\n            this.id = id;\n            this.traderId = traderId;\n            this.symbol = symbol;\n            this.side = side;\n            this.priceCents = priceCents;\n            this.initialQty = qty;\n            this.remainingQty = qty;\n            this.timestamp = System.nanoTime();\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== In-Memory Stock Trading Engine ===\");\n    }\n}",
+    "sampleConsoleRun": "=== Electronic Stock Exchange Matching Engine ===\nSymbol: AAPL | Ticker Active\n\n[NEW ORDER] BUY AAPL 50 @ $150.00 (Trader: Fund_Alpha) -> Resting in Book\n[NEW ORDER] BUY AAPL 30 @ $149.50 (Trader: Retail_1) -> Resting in Book\n[NEW ORDER] SELL AAPL 20 @ $150.50 (Trader: MM_Apex) -> Resting in Book\n[NEW ORDER] SELL AAPL 40 @ $151.00 (Trader: MM_Apex) -> Resting in Book\n\n--- Level 2 Market Depth (AAPL) ---\nBIDS (BUY)                    ASKS (SELL)\nQty    Price                  Price    Qty\n50     $150.00                $150.50  20\n30     $149.50                $151.00  40\nSpread: $0.50 (Spread Open)\n\n[CROSSING ORDER] SELL AAPL 60 @ $150.00 (Trader: Hedge_Beta)\n\u2713 MATCH DETECTED! Resting Bid: $150.00 x 50 shares\n  >> TRADE #1: 50 shares @ $150.00 | Buyer: Fund_Alpha | Seller: Hedge_Beta ($7,500.00)\n  >> Residual 10 shares of Sell order resting at $150.00\n\n--- Updated Market Depth (AAPL) ---\nBIDS (BUY)                    ASKS (SELL)\nQty    Price                  Price    Qty\n30     $149.50                $150.00  10\n                              $150.50  20\n                              $151.00  40\n\u2713 Settlement Complete: Cash and share positions balanced across all 4 traders."
+  },
+  "activities": [
+    {
+      "id": "act-capstone-in-memory-stock-trading-and-order-matching-engine-analogy",
+      "type": "analogy",
+      "title": "Practical Context: The Trading Pit & Two-Sided Auction House",
+      "description": "How continuous double auctions match buyers and sellers at high speed.",
+      "content": "Imagine an auction floor where both buyers and sellers shout quotes simultaneously. On the left side of the room, auctioneers arrange buyers in order of how much they are willing to pay (Bids), with the most generous buyer standing right at the front (highest price first).\n\nOn the right side of the room, sellers are arranged in order of the minimum price they will accept (Asks), with the most competitive seller standing right at the front (lowest price first).\n\nWhen a new buyer shouts a price that meets or exceeds the front seller's price, the auctioneer immediately strikes the gavel, matches the trade at the seller's stated price, hands over the shares, and transfers the cash. If several buyers offer the exact same price, whoever arrived at the microphone first gets filled first (Price-Time Priority).\n\nIn Java, `TreeMap` manages the sorted price levels, `ArrayDeque` queues orders at the microphone, and `HashMap` tracks the bank accounts."
+    },
+    {
+      "id": "act-capstone-in-memory-stock-trading-and-order-matching-engine-concept",
+      "type": "concept",
+      "title": "Architecture of a Limit Order Book & Matching Engine",
+      "description": "Technical analysis of dual TreeMap sorting, ArrayDeque FIFO priority, and atomic settlement.",
+      "content": "### Formal Computer Science Definition\nA continuous limit order book is a double auction system represented as two monotonic sorted associative maps: Bids ordered descending $P_{bid} \\downarrow$ and Asks ordered ascending $P_{ask} \\uparrow$. Each price level contains a FIFO queue $Q_p$ enforcing strict price-time priority. The engine executes matches whenever $\\max(P_{bid}) \\ge \\min(P_{ask})$.\n\n### Limit Order Book Memory Architecture\n\n```\n                                ElectronicExchange\n                                        |\n            +---------------------------+---------------------------+\n            |                                                       |\n   BIDS (Buy Orders)                                       ASKS (Sell Orders)\n   - TreeMap<Long, ArrayDeque<Order>>                      - TreeMap<Long, ArrayDeque<Order>>\n   - Comparator: Collections.reverseOrder()                - Natural Order (Ascending)\n   - Highest price at firstEntry()                         - Lowest price at firstEntry()\n            |                                                       |\n            +---------------------------+---------------------------+\n                                        |\n               [Matching Condition: Best Bid Price >= Best Ask Price]\n               - Match executed at RESTING order price\n               - Filled quantity = min(bidRemaining, askRemaining)\n               - If queue empty -> remove price key from TreeMap\n                                        |\n               [Atomic Settlement: Ledger Update across Portfolios]\n```\n\n### Critical Invariants\n1. **Spread Invariant**: When no crossing order is active, $\\text{Best Bid} < \\text{Best Ask}$. The difference is the bid-ask spread.\n2. **FIFO Queue Invariant**: Within each price node, orders must be processed strictly in the order they arrived (`ArrayDeque.pollFirst()`).\n3. **Resting Price Rule**: The matched trade executes at the price of the order that was already in the book."
+    },
+    {
+      "id": "act-capstone-in-memory-stock-trading-and-order-matching-engine-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Complete Executable Electronic Stock Matching Engine",
+      "description": "Full runnable implementation of dual LimitOrderBook, continuous matching, and portfolio settlement.",
+      "content": "```java\nimport java.util.ArrayDeque;\nimport java.util.Collections;\nimport java.util.HashMap;\nimport java.util.Map;\nimport java.util.TreeMap;\n\npublic class StockExchangeDemo {\n\n    public enum Side { BUY, SELL }\n\n    public static class Order {\n        final String id;\n        final String traderId;\n        final Side side;\n        final long priceCents;\n        int remainingQty;\n\n        public Order(String id, String traderId, Side side, long priceCents, int qty) {\n            this.id = id;\n            this.traderId = traderId;\n            this.side = side;\n            this.priceCents = priceCents;\n            this.remainingQty = qty;\n        }\n\n        @Override\n        public String toString() {\n            return side + \" \" + remainingQty + \"@$\" + (priceCents / 100.0) + \" (\" + traderId + \")\";\n        }\n    }\n\n    public static class LimitOrderBook {\n        final TreeMap<Long, ArrayDeque<Order>> bids = new TreeMap<>(Collections.reverseOrder());\n        final TreeMap<Long, ArrayDeque<Order>> asks = new TreeMap<>();\n        final Map<String, Long> traderCash = new HashMap<>();\n        final Map<String, Integer> traderStock = new HashMap<>();\n\n        public void initTrader(String trader, long cash, int shares) {\n            traderCash.put(trader, cash);\n            traderStock.put(trader, shares);\n        }\n\n        public void placeOrder(Order order) {\n            if (order.side == Side.BUY) {\n                matchBuy(order);\n            } else {\n                matchSell(order);\n            }\n        }\n\n        private void matchBuy(Order buy) {\n            while (buy.remainingQty > 0 && !asks.isEmpty()) {\n                long bestAskPrice = asks.firstKey();\n                if (buy.priceCents < bestAskPrice) break; // Spread open\n\n                ArrayDeque<Order> queue = asks.get(bestAskPrice);\n                Order restingAsk = queue.peek();\n\n                int fillQty = Math.min(buy.remainingQty, restingAsk.remainingQty);\n                settle(buy.traderId, restingAsk.traderId, bestAskPrice, fillQty);\n\n                buy.remainingQty -= fillQty;\n                restingAsk.remainingQty -= fillQty;\n\n                if (restingAsk.remainingQty == 0) {\n                    queue.poll();\n                }\n                if (queue.isEmpty()) {\n                    asks.remove(bestAskPrice);\n                }\n            }\n            if (buy.remainingQty > 0) {\n                bids.computeIfAbsent(buy.priceCents, k -> new ArrayDeque<>()).add(buy);\n            }\n        }\n\n        private void matchSell(Order sell) {\n            while (sell.remainingQty > 0 && !bids.isEmpty()) {\n                long bestBidPrice = bids.firstKey();\n                if (sell.priceCents > bestBidPrice) break; // Spread open\n\n                ArrayDeque<Order> queue = bids.get(bestBidPrice);\n                Order restingBid = queue.peek();\n\n                int fillQty = Math.min(sell.remainingQty, restingBid.remainingQty);\n                settle(restingBid.traderId, sell.traderId, bestBidPrice, fillQty);\n\n                sell.remainingQty -= fillQty;\n                restingBid.remainingQty -= fillQty;\n\n                if (restingBid.remainingQty == 0) {\n                    queue.poll();\n                }\n                if (queue.isEmpty()) {\n                    bids.remove(bestBidPrice);\n                }\n            }\n            if (sell.remainingQty > 0) {\n                asks.computeIfAbsent(sell.priceCents, k -> new ArrayDeque<>()).add(sell);\n            }\n        }\n\n        private void settle(String buyer, String seller, long price, int qty) {\n            long cost = price * qty;\n            traderCash.put(buyer, traderCash.get(buyer) - cost);\n            traderCash.put(seller, traderCash.get(seller) + cost);\n            traderStock.put(buyer, traderStock.get(buyer) + qty);\n            traderStock.put(seller, traderStock.get(seller) - qty);\n            System.out.printf(\"  [TRADE] %d shares @ $%.2f | Buyer: %s | Seller: %s\\n\",\n                qty, price / 100.0, buyer, seller);\n        }\n    }\n\n    public static void main(String[] args) {\n        LimitOrderBook book = new LimitOrderBook();\n        book.initTrader(\"Alice\", 1000000, 100); // $10,000, 100 shares\n        book.initTrader(\"Bob\", 1000000, 100);\n\n        // Alice places resting Ask: SELL 50 @ $150.00\n        book.placeOrder(new Order(\"O1\", \"Alice\", Side.SELL, 15000, 50));\n        System.out.println(\"Resting Asks: \" + book.asks);\n\n        // Bob places crossing Bid: BUY 30 @ $150.00 (Partial Fill of 30 shares)\n        book.placeOrder(new Order(\"O2\", \"Bob\", Side.BUY, 15000, 30));\n        System.out.println(\"Asks after partial fill: \" + book.asks);\n        System.out.println(\"Bob Cash: $\" + (book.traderCash.get(\"Bob\") / 100.0) + \" | Shares: \" + book.traderStock.get(\"Bob\"));\n    }\n}\n```\n\n```text\nResting Asks: {15000=[SELL 50@$150.0 (Alice)]}\n  [TRADE] 30 shares @ $150.00 | Buyer: Bob | Seller: Alice\nAsks after partial fill: {15000=[SELL 20@$150.0 (Alice)]}\nBob Cash: $5500.0 | Shares: 130\n```"
+    },
+    {
+      "id": "act-capstone-in-memory-stock-trading-and-order-matching-engine-mcq",
+      "type": "mcq",
+      "title": "Stock Exchange Architecture Assessment",
+      "description": "Assess technical mastery over dual-side limit order books and matching algorithms.",
+      "questions": [
+        {
+          "question": "Why are Bids stored in a TreeMap with Collections.reverseOrder() while Asks use natural ordering?",
+          "options": [
+            "To prevent deadlocks between buyer and seller threads",
+            "Because the best bid is the highest price (firstKey() gets highest), whereas the best ask is the lowest price (firstKey() gets lowest)",
+            "Because Collections.reverseOrder() uses less memory",
+            "Because Bids require 64-bit keys while Asks require 32-bit keys"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Matching engines require instant O(1) access to the best available quote on each side: the highest bid and the lowest ask. Configuring reverse order on Bids places the highest bid at firstKey()."
+        },
+        {
+          "question": "What is the primary advantage of using ArrayDeque over LinkedList to store orders at each price level?",
+          "options": [
+            "ArrayDeque supports binary search",
+            "ArrayDeque is backed by a circular contiguous array, eliminating node pointer overhead and maximizing CPU cache locality",
+            "ArrayDeque allows thread-safe writes without locking",
+            "ArrayDeque automatically sorts orders by volume"
+          ],
+          "correctAnswer": 1,
+          "explanation": "LinkedList creates a 24-byte Node object for every order, causing garbage collection pauses and CPU cache misses. ArrayDeque uses a contiguous circular array, delivering cache-friendly O(1) FIFO operations."
+        },
+        {
+          "question": "When an incoming market or aggressive limit order crosses the book, at what price does the trade execute under standard exchange rules?",
+          "options": [
+            "At the incoming order's limit price",
+            "At the midpoint between the bid and ask",
+            "At the price of the resting order that was already in the book",
+            "At the previous day's closing price"
+          ],
+          "correctAnswer": 2,
+          "explanation": "In continuous double auction markets, crossing trades execute at the price of the resting order. This incentivizes market participants to supply liquidity by placing resting limit orders."
+        }
+      ]
+    },
+    {
+      "id": "act-capstone-in-memory-stock-trading-and-order-matching-engine-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Architect Low-Latency Financial Engineering Interview Questions",
+      "description": "Staff-level quantitative systems interview queries on matching engine performance and zero-allocation design.",
+      "questions": [
+        {
+          "question": "How do ultra-low-latency financial matching engines optimize limit order books beyond standard Java TreeMaps?",
+          "answer": "In production high-frequency trading (HFT):\n1. TreeMaps incur pointer chasing and object allocation on every price insert. Production engines use flat, pre-allocated price-level circular arrays or fixed binary radix trees.\n2. Order objects are pooled (zero garbage collection allocations).\n3. Fixed-point arithmetic is performed using primitive long primitives directly in CPU registers without boxed Long keys.\n4. Core matching logic runs pinned to a single isolated CPU core, using lock-free single-writer ring buffers (Disruptor pattern) to achieve sub-microsecond tick-to-trade latencies."
+        },
+        {
+          "question": "Explain how you guarantee zero monetary leakage when settling millions of concurrent partial fills.",
+          "answer": "Financial ledgers enforce double-entry bookkeeping:\n1. Every trade execution must produce two equal and opposite entries: (buyer cash - X, seller cash + X) and (seller stock - Y, buyer stock + Y).\n2. All math is performed in indivisible integer cents or fractional satoshis/micro-shares (never float or double).\n3. Invariant check: The sum of all trader cash plus exchange vault balance must remain invariant before and after trade execution. In unit tests, assert sum(cash_after) == sum(cash_before)."
+        }
+      ]
+    },
+    {
+      "id": "act-capstone-in-memory-stock-trading-and-order-matching-engine-self-eval",
+      "type": "self_evaluation",
+      "title": "Trading Engine Capstone Mastery Checklist",
+      "description": "Assess your readiness to architect mission-critical low-latency financial systems.",
+      "items": [
+        "I understand how dual TreeMaps organize Bids (descending) and Asks (ascending) for instant top-of-book access.",
+        "I know how to enforce Price-Time Priority using ArrayDeque FIFO queues at each price level.",
+        "I can implement full and partial order fills while correctly pruning empty price keys.",
+        "I model currency in integer cents to ensure exact financial reconciliation.",
+        "I can synthesize Lists, Sets, Maps, and Queues into a production-grade system."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-capstone-in-memory-stock-trading-and-order-matching-engine-1",
+      "title": "Dual-Side Book Initializer",
+      "difficulty": "medium",
+      "problemStatement": "Implement `TreeMap<Long, ArrayDeque<String>> createBidBook()` that returns an empty `TreeMap` configured with `Collections.reverseOrder()` so that highest prices sort first.",
+      "starterCode": "import java.util.ArrayDeque;\nimport java.util.TreeMap;\n\npublic class BookFactory {\n    public static TreeMap<Long, ArrayDeque<String>> createBidBook() {\n        // TODO: Return reverse-ordered TreeMap\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\nimport java.util.Collections;\nimport java.util.TreeMap;\n\npublic class BookFactory {\n    public static TreeMap<Long, ArrayDeque<String>> createBidBook() {\n        return new TreeMap<>(Collections.reverseOrder());\n    }\n}",
+      "expectedOutput": "Highest price first",
+      "testCases": [
+        {
+          "input": "put 100, put 200, firstKey()",
+          "expectedOutput": "200"
+        }
+      ]
+    },
+    {
+      "id": "prob-capstone-in-memory-stock-trading-and-order-matching-engine-2",
+      "title": "Spread Calculator",
+      "difficulty": "easy",
+      "problemStatement": "Implement `long calculateSpread(long bestBidCents, long bestAskCents)` that returns `bestAskCents - bestBidCents`. If `bestBidCents >= bestAskCents` (crossed book), return `0`.",
+      "starterCode": "public class SpreadCalculator {\n    public static long calculateSpread(long bestBidCents, long bestAskCents) {\n        // TODO\n        return 0L;\n    }\n}",
+      "solutionCode": "public class SpreadCalculator {\n    public static long calculateSpread(long bestBidCents, long bestAskCents) {\n        if (bestBidCents >= bestAskCents) return 0L;\n        return bestAskCents - bestBidCents;\n    }\n}",
+      "expectedOutput": "50",
+      "testCases": [
+        {
+          "input": "bestBid = 15000, bestAsk = 15050",
+          "expectedOutput": "50"
+        },
+        {
+          "input": "bestBid = 15100, bestAsk = 15000",
+          "expectedOutput": "0"
+        }
+      ]
+    },
+    {
+      "id": "prob-capstone-in-memory-stock-trading-and-order-matching-engine-3",
+      "title": "FIFO Price-Level Queue Inserter",
+      "difficulty": "medium",
+      "problemStatement": "Implement `void enqueueOrder(Map<Long, ArrayDeque<String>> book, long price, String orderId)` that adds `orderId` to the end of the `ArrayDeque` at `price`, creating the queue if it does not already exist.",
+      "starterCode": "import java.util.ArrayDeque;\nimport java.util.Map;\n\npublic class QueueInserter {\n    public static void enqueueOrder(Map<Long, ArrayDeque<String>> book, long price, String orderId) {\n        // TODO: Use computeIfAbsent\n    }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\nimport java.util.Map;\n\npublic class QueueInserter {\n    public static void enqueueOrder(Map<Long, ArrayDeque<String>> book, long price, String orderId) {\n        if (book != null && orderId != null) {\n            book.computeIfAbsent(price, k -> new ArrayDeque<>()).addLast(orderId);\n        }\n    }\n}",
+      "expectedOutput": "[O1, O2]",
+      "testCases": [
+        {
+          "input": "enqueue(100, 'O1'), enqueue(100, 'O2')",
+          "expectedOutput": "[O1, O2]"
+        }
+      ]
+    },
+    {
+      "id": "prob-capstone-in-memory-stock-trading-and-order-matching-engine-4",
+      "title": "Partial Fill Quantity Calculator",
+      "difficulty": "easy",
+      "problemStatement": "Implement `int calculateFillQuantity(int incomingQty, int restingQty)` that returns the quantity filled, which is the minimum of `incomingQty` and `restingQty`. If either is <= 0, return 0.",
+      "starterCode": "public class FillCalculator {\n    public static int calculateFillQuantity(int incomingQty, int restingQty) {\n        // TODO\n        return 0;\n    }\n}",
+      "solutionCode": "public class FillCalculator {\n    public static int calculateFillQuantity(int incomingQty, int restingQty) {\n        if (incomingQty <= 0 || restingQty <= 0) return 0;\n        return Math.min(incomingQty, restingQty);\n    }\n}",
+      "expectedOutput": "40",
+      "testCases": [
+        {
+          "input": "incoming = 100, resting = 40",
+          "expectedOutput": "40"
+        },
+        {
+          "input": "incoming = 25, resting = 50",
+          "expectedOutput": "25"
+        }
+      ]
+    },
+    {
+      "id": "prob-capstone-in-memory-stock-trading-and-order-matching-engine-5",
+      "title": "Atomic Double-Entry Cash Settlement",
+      "difficulty": "medium",
+      "problemStatement": "Implement `void settleCash(Map<String, Long> balances, String buyer, String seller, long totalCostCents)` that debits `buyer` by `totalCostCents` and credits `seller` by `totalCostCents`.",
+      "starterCode": "import java.util.Map;\n\npublic class CashSettler {\n    public static void settleCash(Map<String, Long> balances, String buyer, String seller, long totalCostCents) {\n        // TODO\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class CashSettler {\n    public static void settleCash(Map<String, Long> balances, String buyer, String seller, long totalCostCents) {\n        if (balances == null || buyer == null || seller == null) return;\n        balances.put(buyer, balances.getOrDefault(buyer, 0L) - totalCostCents);\n        balances.put(seller, balances.getOrDefault(seller, 0L) + totalCostCents);\n    }\n}",
+      "expectedOutput": "buyer=5000, seller=15000",
+      "testCases": [
+        {
+          "input": "buyer=10000, seller=10000, cost=5000",
+          "expectedOutput": "buyer=5000, seller=15000"
+        }
+      ]
+    }
+  ]
+}

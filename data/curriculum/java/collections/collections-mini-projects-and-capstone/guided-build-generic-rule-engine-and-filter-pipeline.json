@@ -1,0 +1,725 @@
+{
+  "id": "les-col-proj-4-generic-pipeline",
+  "slug": "guided-build-generic-rule-engine-and-filter-pipeline",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-mini-projects-and-capstone",
+  "languageSlug": "java",
+  "title": "Guided Build: Generic Rule Engine & Filter Pipeline",
+  "summary": "Build a type-safe generic filter pipeline using bounded type parameters and custom wildcards to filter, transform, and aggregate collections.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 25,
+  "orderIndex": 4,
+  "prerequisites": [
+    "guided-build-ecommerce-shopping-cart-and-product-catalog"
+  ],
+  "subtopics": [
+    "Generic pipeline architecture",
+    "PECS wildcard method signatures",
+    "Chained filter predicates",
+    "Batch processing"
+  ],
+  "learningObjectives": [
+    "Design a reusable generic pipeline supporting fluent Predicate<? super T> filtering",
+    "Apply the PECS principle to accept covariant input streams and contravariant consumers",
+    "Implement rule evaluation strategies with error accumulation and short-circuit options",
+    "Deliver immutable batch result sets with zero raw type casts"
+  ],
+  "expectedOutcomes": [
+    "Master advanced Java generic wildcard signatures in production architectures",
+    "Build decoupled, reusable audit and transformation pipelines for enterprise backends",
+    "Publish a verified generic framework portfolio project to GitHub"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "mp-col-generic-pipeline",
+    "slug": "guided-build-generic-rule-engine-and-filter-pipeline",
+    "title": "Guided Build: Generic Rule Engine & Filter Pipeline",
+    "projectBrief": {
+      "whatAreWeBuilding": "A strongly-typed, reusable Generic Rule Engine & Filter Pipeline in Java synthesizing bounded type parameters, PECS wildcard signatures, and functional collection processing for auditing and batch data streams.",
+      "problemItSolves": "Enterprise compliance, transaction auditing, and ETL pipelines frequently reinvent custom loops and type-casts for every domain model. Hardcoded validation leads to brittle, repetitive code. Systems need a decoupled, type-safe pipeline that chains filters, transformations, and rule verifications.",
+      "finishedAppDescription": "A flexible streaming pipeline engine capable of processing any collection of domain items. It supports chained Predicate filters using <? super T>, type transformations using <? super T, ? extends R>, rule validation with accumulated error reports, short-circuit evaluation, and batch execution over arbitrary collections.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "advanced",
+      "javaFundamentals": [
+        "Generic class and method signatures with bounded type parameters",
+        "PECS (Producer Extends, Consumer Super) wildcard design",
+        "Functional interfaces: Predicate<? super T>, Function<? super T, ? extends R>, Consumer<? super T>",
+        "Composite rule execution with short-circuit and accumulation strategies",
+        "Defensive unmodifiable result collections using List.copyOf()",
+        "Type erasure safety and non-reified generic contracts"
+      ],
+      "motivatingQuote": "Generics are about expressive boundaries: mastering PECS wildcards unlocks true architectural reusability across entire codebases."
+    },
+    "realWorldScenario": {
+      "headline": "FinTech Payment Fraud & Compliance Rule Pipeline",
+      "story": "A cross-border payments network processes millions of transactions hourly. Every transfer must pass through fraud detection rules (velocity limits, blacklisted jurisdictions, AML thresholds), enrich payload data (currency conversion, fee calculation), and route valid payments to settlement queues while recording audit violations. Your lead tasked you with implementing a generic, reusable rule pipeline that can audit transactions, user signups, and loan applications without code duplication.",
+      "context": "Compliance engines require compile-time type safety: a rule for Transaction or its supertypes (AuditableEvent) must be accepted interchangeably through contravariant wildcards (Consumer Super)."
+    },
+    "requirements": {
+      "functional": [
+        "Define generic interface Rule<T> with boolean evaluate(T item) and String getFailureMessage().",
+        "Implement Pipeline<T> supporting chained filter(Predicate<? super T>), rule validation, and transform(Function<? super T, ? extends R>).",
+        "Support PECS signatures: accept collections of subtypes via Iterable<? extends T> and consumers of supertypes via Consumer<? super T>.",
+        "Implement two rule execution modes: FAIL_FAST (aborts on first rule failure) and ACCUMULATE (collects all validation failures for the item).",
+        "Provide PipelineResult<R> capturing successfully transformed items and an unmodifiable list of ValidationFailure records.",
+        "Provide a terminal CLI demo running financial transaction records through fraud, AML, and velocity rule pipelines."
+      ],
+      "technicalConstraints": [
+        "Must enforce strict PECS compliance: <? extends T> on input streams, <? super T> on predicates and consumers.",
+        "Must never perform unchecked raw type casts inside the pipeline.",
+        "Pipeline processing must be memory-efficient and execute in single-pass O(N) time over the input collection.",
+        "Must compile cleanly with zero warnings under OpenJDK 21 LTS."
+      ],
+      "userDecisions": [
+        "Choose between eager collection evaluation vs lazy iterator-based streaming.",
+        "Select whether validation errors halt entire batch or merely quarantine individual records."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Source collection: Iterable<? extends T> containing raw domain items.",
+        "Rule definitions: List of Rule<? super T> validation policies.",
+        "Transformation functions: Function<? super T, ? extends R> payload mappers."
+      ],
+      "outputsRequired": [
+        "List<R> of successfully filtered and transformed records.",
+        "List<ValidationFailure> detailing rejected records and violated rule descriptions."
+      ],
+      "variablesNeeded": [
+        "private final List<Predicate<? super T>> filters: Chained predicates.",
+        "private final List<Rule<? super T>> rules: Compliance rules.",
+        "private final ExecutionMode mode: FAIL_FAST vs ACCUMULATE."
+      ],
+      "conditionalLogic": [
+        "Iterate through filters; if any predicate.test(item) is false, skip item immediately.",
+        "Evaluate rules; if rule.evaluate(item) is false, log failure; in FAIL_FAST mode, abort immediately.",
+        "If all checks pass, apply mapper function and append to successful results."
+      ],
+      "loopStructures": [
+        "For-each loop iterating through input stream Iterable<? extends T>.",
+        "Inner loop iterating through rules for each candidate element."
+      ],
+      "recommendedMethods": [
+        "public Pipeline<T> filter(Predicate<? super T> predicate)",
+        "public Pipeline<T> addRule(Rule<? super T> rule)",
+        "public <R> PipelineResult<R> process(Iterable<? extends T> items, Function<? super T, ? extends R> mapper)",
+        "public static <T> Pipeline<T> create(ExecutionMode mode)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Rule & Validation Failure Architecture",
+        "objective": "Define the generic Rule<T> interface and ValidationFailure record.",
+        "tasks": [
+          "Create functional interface Rule<T> with test(T item) and getRuleDescription().",
+          "Create record ValidationFailure(String itemId, String ruleName, String reason).",
+          "Implement utility factory methods for common rules (e.g. numeric threshold, non-blank strings)."
+        ],
+        "acceptanceCriteria": [
+          "Rules can be declared using lambda expressions or concrete classes.",
+          "ValidationFailure captures item identity and failure reason cleanly."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "PECS Pipeline & Contravariant Filters",
+        "objective": "Implement the core Pipeline<T> engine enforcing PECS wildcard contracts.",
+        "tasks": [
+          "Implement filter(Predicate<? super T>) accepting supertype predicates.",
+          "Implement addRule(Rule<? super T>) to attach validation checks.",
+          "Support method chaining (fluent builder pattern) returning 'this'."
+        ],
+        "acceptanceCriteria": [
+          "Pipeline<Payment> accepts Predicate<AuditableEvent> thanks to <? super T> wildcard.",
+          "Fluent builder methods allow chaining: pipeline.filter(...).addRule(...)."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Batch Transformation & Error Accumulation",
+        "objective": "Implement execute(Iterable<? extends T>, Function<? super T, ? extends R>).",
+        "tasks": [
+          "Accept input collections via Iterable<? extends T> covariance.",
+          "Apply mapper function Function<? super T, ? extends R> to generate output type R.",
+          "Collect successful items into an immutable list and failures into a quarantine list."
+        ],
+        "acceptanceCriteria": [
+          "Pipeline processes List<Subtype> into List<TargetType> seamlessly.",
+          "Failed records do not block valid records in ACCUMULATE mode."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Terminal Financial Audit Demo & GitHub Launch",
+        "objective": "Build a financial transaction audit CLI and prepare GitHub portfolio repository.",
+        "tasks": [
+          "Build CLI demo processing cross-border payments with high-risk country and limit checks.",
+          "Format pipeline telemetry: processed count, success rate, quarantined count.",
+          "Write detailed README.md explaining PECS design and push to GitHub."
+        ],
+        "acceptanceCriteria": [
+          "Terminal demo executes audit stream without exceptions.",
+          "GitHub repository pushed with clean commits and documentation."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why must the filter parameter be Predicate<? super T> instead of Predicate<T>?",
+        "mentorInsight": "PECS: Producer Extends, Consumer Super. The filter is a CONSUMER of T (it reads T to make a decision). Using <? super T> allows a general predicate (like Predicate<AuditableEvent>) to filter a specific subtype (like PaymentTransaction) without compilation errors."
+      },
+      {
+        "question": "Why should the input collection be Iterable<? extends T> instead of Iterable<T>?",
+        "mentorInsight": "The input collection is a PRODUCER of T (the pipeline reads elements from it). Generics are invariant: List<WirePayment> is NOT a List<Payment>. Using <? extends T> allows the pipeline to accept List<WirePayment> seamlessly."
+      },
+      {
+        "question": "How does PipelineResult maintain immutability of returned data?",
+        "mentorInsight": "By wrapping results in List.copyOf(successes) and List.copyOf(failures), callers cannot alter the pipeline's internal state or compromise audit logs."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "PECS Method Signatures",
+        "step": 1,
+        "hint": "Use <? super T> for Predicates and <? extends T> for input collections.",
+        "level1Conceptual": "Input collections produce data (extends); rule tests consume data (super).",
+        "level2Implementation": "Declare filter(Predicate<? super T> p) and process(Iterable<? extends T> input).",
+        "level3JavaSyntax": "public <R> PipelineResult<R> process(\n    Iterable<? extends T> items,\n    Function<? super T, ? extends R> mapper) {\n    // Implementation\n}"
+      },
+      {
+        "topic": "Rule Evaluation and Short-Circuiting",
+        "step": 2,
+        "hint": "Loop through rules; if false, record failure and break if FAIL_FAST.",
+        "level1Conceptual": "Check each rule sequentially. In fail-fast mode, stop at the first failure.",
+        "level2Implementation": "Track a boolean valid flag. If false, append to failure list and skip mapping.",
+        "level3JavaSyntax": "boolean passed = true;\nfor (Rule<? super T> rule : rules) {\n    if (!rule.evaluate(item)) {\n        failures.add(new ValidationFailure(item.getId(), rule.getName(), rule.getReason()));\n        passed = false;\n        if (mode == Mode.FAIL_FAST) break;\n    }\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Process 5 valid payments; all 5 pass filters and rules, returning 5 transformed DTOs with 0 failures.",
+        "Process payment exceeding threshold; verify item is quarantined with exact rule violation reason."
+      ],
+      "boundaryCases": [
+        "Empty input collection; returns empty success and failure lists without NPE.",
+        "Single item input failing rule; quarantined with 1 failure and 0 successes."
+      ],
+      "invalidInputCases": [
+        "Pass null collection or null mapper; throws IllegalArgumentException.",
+        "Rule returning null failure message handled gracefully."
+      ],
+      "edgeCases": [
+        "Filter rejecting all items; mapper function is never invoked.",
+        "ACCUMULATE mode on item violating 3 separate rules; records all 3 failures for that single item."
+      ]
+    },
+    "debuggingGuide": [
+      "Compilation error: 'Predicate<Object> cannot be converted to Predicate<T>': Ensure method signature uses Predicate<? super T>, not Predicate<T>.",
+      "Compilation error: 'List<Subtype> cannot be converted to Iterable<T>': Ensure method signature uses Iterable<? extends T>.",
+      "UnsupportedOperationException when clearing results: Remember that List.copyOf() produces an immutable list; do not attempt mutation on returned results."
+    ],
+    "projectPolish": [
+      "Add a formatted ASCII audit table displaying rule pass/fail statistics and rejection reasons.",
+      "Implement a parallel processing method utilizing Java Stream parallel() for high-throughput batching."
+    ],
+    "gitHubReady": {
+      "repoName": "generic-rule-engine-pipeline",
+      "readmeTemplate": "# Generic Rule Engine & Filter Pipeline\n\nA strongly-typed, reusable Generic Rule Engine & Filter Pipeline in Java synthesizing bounded type parameters, PECS wildcard signatures, and functional collection processing.\n\n## Features\n- Strict PECS compliance (`Predicate<? super T>`, `Function<? super T, ? extends R>`, `Iterable<? extends T>`)\n- Fluent builder API for chaining filters and compliance rules\n- Dual execution strategies: `FAIL_FAST` (short-circuit) and `ACCUMULATE` (full audit)\n- Immutable `PipelineResult` containing processed records and quarantined failures\n- Production financial compliance and transaction auditing CLI demo\n\n## How to Run\n```bash\njavac GenericPipelineDemo.java\njava GenericPipelineDemo\n```\n",
+      "suggestedReadme": "# Generic Rule Engine & Filter Pipeline\n\nA strongly-typed, reusable Generic Rule Engine & Filter Pipeline in Java synthesizing bounded type parameters, PECS wildcard signatures, and functional collection processing.\n\n## Features\n- Strict PECS compliance (`Predicate<? super T>`, `Function<? super T, ? extends R>`, `Iterable<? extends T>`)\n- Fluent builder API for chaining filters and compliance rules\n- Dual execution strategies: `FAIL_FAST` (short-circuit) and `ACCUMULATE` (full audit)\n- Immutable `PipelineResult` containing processed records and quarantined failures\n- Production financial compliance and transaction auditing CLI demo\n\n## How to Run\n```bash\njavac GenericPipelineDemo.java\njava GenericPipelineDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement generic rule engine and PECS filter pipeline\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/generic-rule-engine-pipeline.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Rule<T> functional interface defined with evaluate and description",
+      "Pipeline<T> implemented with fluent filter(Predicate<? super T>) chaining",
+      "PECS wildcard compliance verified across all producer and consumer methods",
+      "FAIL_FAST and ACCUMULATE execution modes supported",
+      "ValidationFailure records captured and returned in immutable snapshots",
+      "Financial compliance terminal demo executed with clear telemetry",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered a generic rule validation and transformation pipeline applying the PECS principle to enterprise data streams.",
+      "I used contravariant wildcards (<? super T>) for predicates and covariant wildcards (<? extends T>) for data sources to maximize API reusability.",
+      "I decoupled compliance rules from domain entities, enabling the same pipeline engine to validate payments, user onboarding, and access control."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Exceptional Architecture! Generic Pipeline Complete!",
+      "celebrationMessage": "Congratulations on completing the Generic Rule Engine & Filter Pipeline. You mastered PECS wildcards, generic bounds, and type-safe data transformations!",
+      "congratulations": "Congratulations on completing the Generic Rule Engine & Filter Pipeline. You mastered PECS wildcards, generic bounds, and type-safe data transformations!",
+      "skillsDemonstrated": [
+        "PECS Wildcard Design (Producer Extends, Consumer Super)",
+        "Generic Bounded Type Parameters",
+        "Functional Pipeline Composition",
+        "Defensive Error Accumulation",
+        "Type-Safe Batch Stream Processing"
+      ],
+      "resumeBullets": [
+        "Architected a type-safe Generic Rule Engine & Filter Pipeline in Java utilizing PECS wildcard signatures for decoupled compliance validation.",
+        "Engineered fluent predicate chaining, multi-rule audit accumulation, and immutable result projections with zero unchecked casting."
+      ],
+      "nextStepAction": "Commit your project to GitHub and proceed to the Grand Capstone: In-Memory Stock Trading & Order Matching Engine!",
+      "nextSteps": [
+        "Commit and push your changes to GitHub.",
+        "Showcase advanced PECS generics on your engineering portfolio.",
+        "Begin the final Capstone Project: In-Memory Stock Trading & Order Matching Engine."
+      ]
+    },
+    "scaffoldingCode": "// Generic Rule Engine & Filter Pipeline\n// Starter Scaffolding Template\n\nimport java.util.*;\nimport java.util.function.*;\n\npublic class GenericPipelineDemo {\n\n    public interface Rule<T> {\n        boolean evaluate(T item);\n        String getRuleName();\n        String getFailureReason();\n    }\n\n    public record ValidationFailure(String itemId, String ruleName, String reason) {}\n\n    public record PipelineResult<R>(List<R> successfulItems, List<ValidationFailure> failures) {}\n\n    public static void main(String[] args) {\n        System.out.println(\"=== Generic Rule Engine & Filter Pipeline ===\");\n    }\n}",
+    "sampleConsoleRun": "=== Generic Compliance Pipeline Demo ===\n[CONFIG] Initialized Payment Audit Pipeline (Mode: ACCUMULATE)\n[RULE 1] AML_SANCTION_CHECK: Rejects sanctioned destination countries\n[RULE 2] VELOCITY_LIMIT: Max $10,000 per cross-border transaction\n[RULE 3] KYC_VERIFIED: Requires KYC level >= 2\n\n--- Processing Batch of 4 Payment Transfers ---\n[TX-101] $4,500.00 to UK (KYC: 2) -> \u2713 PASSED ALL RULES\n[TX-102] $15,000.00 to DE (KYC: 3) -> \u2717 FAILED: VELOCITY_LIMIT (Exceeds $10k threshold)\n[TX-103] $200.00 to IR (KYC: 1) -> \u2717 FAILED: AML_SANCTION_CHECK & KYC_VERIFIED\n[TX-104] $850.00 to JP (KYC: 2) -> \u2713 PASSED ALL RULES\n\n================ AUDIT SUMMARY ================\nTotal Batch Processed: 4\nApproved & Enriched:    2 (50.0%)\nQuarantined / Rejected: 2 (50.0%)\nTotal Rule Violations:  3\n==============================================="
+  },
+  "miniProject": {
+    "id": "mp-col-generic-pipeline",
+    "slug": "guided-build-generic-rule-engine-and-filter-pipeline",
+    "title": "Guided Build: Generic Rule Engine & Filter Pipeline",
+    "projectBrief": {
+      "whatAreWeBuilding": "A strongly-typed, reusable Generic Rule Engine & Filter Pipeline in Java synthesizing bounded type parameters, PECS wildcard signatures, and functional collection processing for auditing and batch data streams.",
+      "problemItSolves": "Enterprise compliance, transaction auditing, and ETL pipelines frequently reinvent custom loops and type-casts for every domain model. Hardcoded validation leads to brittle, repetitive code. Systems need a decoupled, type-safe pipeline that chains filters, transformations, and rule verifications.",
+      "finishedAppDescription": "A flexible streaming pipeline engine capable of processing any collection of domain items. It supports chained Predicate filters using <? super T>, type transformations using <? super T, ? extends R>, rule validation with accumulated error reports, short-circuit evaluation, and batch execution over arbitrary collections.",
+      "estimatedTime": "35\u201345 minutes",
+      "difficulty": "advanced",
+      "javaFundamentals": [
+        "Generic class and method signatures with bounded type parameters",
+        "PECS (Producer Extends, Consumer Super) wildcard design",
+        "Functional interfaces: Predicate<? super T>, Function<? super T, ? extends R>, Consumer<? super T>",
+        "Composite rule execution with short-circuit and accumulation strategies",
+        "Defensive unmodifiable result collections using List.copyOf()",
+        "Type erasure safety and non-reified generic contracts"
+      ],
+      "motivatingQuote": "Generics are about expressive boundaries: mastering PECS wildcards unlocks true architectural reusability across entire codebases."
+    },
+    "realWorldScenario": {
+      "headline": "FinTech Payment Fraud & Compliance Rule Pipeline",
+      "story": "A cross-border payments network processes millions of transactions hourly. Every transfer must pass through fraud detection rules (velocity limits, blacklisted jurisdictions, AML thresholds), enrich payload data (currency conversion, fee calculation), and route valid payments to settlement queues while recording audit violations. Your lead tasked you with implementing a generic, reusable rule pipeline that can audit transactions, user signups, and loan applications without code duplication.",
+      "context": "Compliance engines require compile-time type safety: a rule for Transaction or its supertypes (AuditableEvent) must be accepted interchangeably through contravariant wildcards (Consumer Super)."
+    },
+    "requirements": {
+      "functional": [
+        "Define generic interface Rule<T> with boolean evaluate(T item) and String getFailureMessage().",
+        "Implement Pipeline<T> supporting chained filter(Predicate<? super T>), rule validation, and transform(Function<? super T, ? extends R>).",
+        "Support PECS signatures: accept collections of subtypes via Iterable<? extends T> and consumers of supertypes via Consumer<? super T>.",
+        "Implement two rule execution modes: FAIL_FAST (aborts on first rule failure) and ACCUMULATE (collects all validation failures for the item).",
+        "Provide PipelineResult<R> capturing successfully transformed items and an unmodifiable list of ValidationFailure records.",
+        "Provide a terminal CLI demo running financial transaction records through fraud, AML, and velocity rule pipelines."
+      ],
+      "technicalConstraints": [
+        "Must enforce strict PECS compliance: <? extends T> on input streams, <? super T> on predicates and consumers.",
+        "Must never perform unchecked raw type casts inside the pipeline.",
+        "Pipeline processing must be memory-efficient and execute in single-pass O(N) time over the input collection.",
+        "Must compile cleanly with zero warnings under OpenJDK 21 LTS."
+      ],
+      "userDecisions": [
+        "Choose between eager collection evaluation vs lazy iterator-based streaming.",
+        "Select whether validation errors halt entire batch or merely quarantine individual records."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Source collection: Iterable<? extends T> containing raw domain items.",
+        "Rule definitions: List of Rule<? super T> validation policies.",
+        "Transformation functions: Function<? super T, ? extends R> payload mappers."
+      ],
+      "outputsRequired": [
+        "List<R> of successfully filtered and transformed records.",
+        "List<ValidationFailure> detailing rejected records and violated rule descriptions."
+      ],
+      "variablesNeeded": [
+        "private final List<Predicate<? super T>> filters: Chained predicates.",
+        "private final List<Rule<? super T>> rules: Compliance rules.",
+        "private final ExecutionMode mode: FAIL_FAST vs ACCUMULATE."
+      ],
+      "conditionalLogic": [
+        "Iterate through filters; if any predicate.test(item) is false, skip item immediately.",
+        "Evaluate rules; if rule.evaluate(item) is false, log failure; in FAIL_FAST mode, abort immediately.",
+        "If all checks pass, apply mapper function and append to successful results."
+      ],
+      "loopStructures": [
+        "For-each loop iterating through input stream Iterable<? extends T>.",
+        "Inner loop iterating through rules for each candidate element."
+      ],
+      "recommendedMethods": [
+        "public Pipeline<T> filter(Predicate<? super T> predicate)",
+        "public Pipeline<T> addRule(Rule<? super T> rule)",
+        "public <R> PipelineResult<R> process(Iterable<? extends T> items, Function<? super T, ? extends R> mapper)",
+        "public static <T> Pipeline<T> create(ExecutionMode mode)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Rule & Validation Failure Architecture",
+        "objective": "Define the generic Rule<T> interface and ValidationFailure record.",
+        "tasks": [
+          "Create functional interface Rule<T> with test(T item) and getRuleDescription().",
+          "Create record ValidationFailure(String itemId, String ruleName, String reason).",
+          "Implement utility factory methods for common rules (e.g. numeric threshold, non-blank strings)."
+        ],
+        "acceptanceCriteria": [
+          "Rules can be declared using lambda expressions or concrete classes.",
+          "ValidationFailure captures item identity and failure reason cleanly."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "PECS Pipeline & Contravariant Filters",
+        "objective": "Implement the core Pipeline<T> engine enforcing PECS wildcard contracts.",
+        "tasks": [
+          "Implement filter(Predicate<? super T>) accepting supertype predicates.",
+          "Implement addRule(Rule<? super T>) to attach validation checks.",
+          "Support method chaining (fluent builder pattern) returning 'this'."
+        ],
+        "acceptanceCriteria": [
+          "Pipeline<Payment> accepts Predicate<AuditableEvent> thanks to <? super T> wildcard.",
+          "Fluent builder methods allow chaining: pipeline.filter(...).addRule(...)."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Batch Transformation & Error Accumulation",
+        "objective": "Implement execute(Iterable<? extends T>, Function<? super T, ? extends R>).",
+        "tasks": [
+          "Accept input collections via Iterable<? extends T> covariance.",
+          "Apply mapper function Function<? super T, ? extends R> to generate output type R.",
+          "Collect successful items into an immutable list and failures into a quarantine list."
+        ],
+        "acceptanceCriteria": [
+          "Pipeline processes List<Subtype> into List<TargetType> seamlessly.",
+          "Failed records do not block valid records in ACCUMULATE mode."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Terminal Financial Audit Demo & GitHub Launch",
+        "objective": "Build a financial transaction audit CLI and prepare GitHub portfolio repository.",
+        "tasks": [
+          "Build CLI demo processing cross-border payments with high-risk country and limit checks.",
+          "Format pipeline telemetry: processed count, success rate, quarantined count.",
+          "Write detailed README.md explaining PECS design and push to GitHub."
+        ],
+        "acceptanceCriteria": [
+          "Terminal demo executes audit stream without exceptions.",
+          "GitHub repository pushed with clean commits and documentation."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why must the filter parameter be Predicate<? super T> instead of Predicate<T>?",
+        "mentorInsight": "PECS: Producer Extends, Consumer Super. The filter is a CONSUMER of T (it reads T to make a decision). Using <? super T> allows a general predicate (like Predicate<AuditableEvent>) to filter a specific subtype (like PaymentTransaction) without compilation errors."
+      },
+      {
+        "question": "Why should the input collection be Iterable<? extends T> instead of Iterable<T>?",
+        "mentorInsight": "The input collection is a PRODUCER of T (the pipeline reads elements from it). Generics are invariant: List<WirePayment> is NOT a List<Payment>. Using <? extends T> allows the pipeline to accept List<WirePayment> seamlessly."
+      },
+      {
+        "question": "How does PipelineResult maintain immutability of returned data?",
+        "mentorInsight": "By wrapping results in List.copyOf(successes) and List.copyOf(failures), callers cannot alter the pipeline's internal state or compromise audit logs."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "PECS Method Signatures",
+        "step": 1,
+        "hint": "Use <? super T> for Predicates and <? extends T> for input collections.",
+        "level1Conceptual": "Input collections produce data (extends); rule tests consume data (super).",
+        "level2Implementation": "Declare filter(Predicate<? super T> p) and process(Iterable<? extends T> input).",
+        "level3JavaSyntax": "public <R> PipelineResult<R> process(\n    Iterable<? extends T> items,\n    Function<? super T, ? extends R> mapper) {\n    // Implementation\n}"
+      },
+      {
+        "topic": "Rule Evaluation and Short-Circuiting",
+        "step": 2,
+        "hint": "Loop through rules; if false, record failure and break if FAIL_FAST.",
+        "level1Conceptual": "Check each rule sequentially. In fail-fast mode, stop at the first failure.",
+        "level2Implementation": "Track a boolean valid flag. If false, append to failure list and skip mapping.",
+        "level3JavaSyntax": "boolean passed = true;\nfor (Rule<? super T> rule : rules) {\n    if (!rule.evaluate(item)) {\n        failures.add(new ValidationFailure(item.getId(), rule.getName(), rule.getReason()));\n        passed = false;\n        if (mode == Mode.FAIL_FAST) break;\n    }\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Process 5 valid payments; all 5 pass filters and rules, returning 5 transformed DTOs with 0 failures.",
+        "Process payment exceeding threshold; verify item is quarantined with exact rule violation reason."
+      ],
+      "boundaryCases": [
+        "Empty input collection; returns empty success and failure lists without NPE.",
+        "Single item input failing rule; quarantined with 1 failure and 0 successes."
+      ],
+      "invalidInputCases": [
+        "Pass null collection or null mapper; throws IllegalArgumentException.",
+        "Rule returning null failure message handled gracefully."
+      ],
+      "edgeCases": [
+        "Filter rejecting all items; mapper function is never invoked.",
+        "ACCUMULATE mode on item violating 3 separate rules; records all 3 failures for that single item."
+      ]
+    },
+    "debuggingGuide": [
+      "Compilation error: 'Predicate<Object> cannot be converted to Predicate<T>': Ensure method signature uses Predicate<? super T>, not Predicate<T>.",
+      "Compilation error: 'List<Subtype> cannot be converted to Iterable<T>': Ensure method signature uses Iterable<? extends T>.",
+      "UnsupportedOperationException when clearing results: Remember that List.copyOf() produces an immutable list; do not attempt mutation on returned results."
+    ],
+    "projectPolish": [
+      "Add a formatted ASCII audit table displaying rule pass/fail statistics and rejection reasons.",
+      "Implement a parallel processing method utilizing Java Stream parallel() for high-throughput batching."
+    ],
+    "gitHubReady": {
+      "repoName": "generic-rule-engine-pipeline",
+      "readmeTemplate": "# Generic Rule Engine & Filter Pipeline\n\nA strongly-typed, reusable Generic Rule Engine & Filter Pipeline in Java synthesizing bounded type parameters, PECS wildcard signatures, and functional collection processing.\n\n## Features\n- Strict PECS compliance (`Predicate<? super T>`, `Function<? super T, ? extends R>`, `Iterable<? extends T>`)\n- Fluent builder API for chaining filters and compliance rules\n- Dual execution strategies: `FAIL_FAST` (short-circuit) and `ACCUMULATE` (full audit)\n- Immutable `PipelineResult` containing processed records and quarantined failures\n- Production financial compliance and transaction auditing CLI demo\n\n## How to Run\n```bash\njavac GenericPipelineDemo.java\njava GenericPipelineDemo\n```\n",
+      "suggestedReadme": "# Generic Rule Engine & Filter Pipeline\n\nA strongly-typed, reusable Generic Rule Engine & Filter Pipeline in Java synthesizing bounded type parameters, PECS wildcard signatures, and functional collection processing.\n\n## Features\n- Strict PECS compliance (`Predicate<? super T>`, `Function<? super T, ? extends R>`, `Iterable<? extends T>`)\n- Fluent builder API for chaining filters and compliance rules\n- Dual execution strategies: `FAIL_FAST` (short-circuit) and `ACCUMULATE` (full audit)\n- Immutable `PipelineResult` containing processed records and quarantined failures\n- Production financial compliance and transaction auditing CLI demo\n\n## How to Run\n```bash\njavac GenericPipelineDemo.java\njava GenericPipelineDemo\n```\n",
+      "gitCommands": [
+        {
+          "step": "Initialize Git repository",
+          "command": "git init"
+        },
+        {
+          "step": "Stage all source files and documentation",
+          "command": "git add ."
+        },
+        {
+          "step": "Commit initial implementation",
+          "command": "git commit -m \"feat: implement generic rule engine and PECS filter pipeline\""
+        },
+        {
+          "step": "Add remote origin",
+          "command": "git remote add origin https://github.com/munaf085/generic-rule-engine-pipeline.git"
+        },
+        {
+          "step": "Push to main branch",
+          "command": "git push -u origin main"
+        }
+      ]
+    },
+    "portfolioChecklist": [
+      "Rule<T> functional interface defined with evaluate and description",
+      "Pipeline<T> implemented with fluent filter(Predicate<? super T>) chaining",
+      "PECS wildcard compliance verified across all producer and consumer methods",
+      "FAIL_FAST and ACCUMULATE execution modes supported",
+      "ValidationFailure records captured and returned in immutable snapshots",
+      "Financial compliance terminal demo executed with clear telemetry",
+      "Production-ready README.md committed and pushed to GitHub"
+    ],
+    "explainYourProject": [
+      "I engineered a generic rule validation and transformation pipeline applying the PECS principle to enterprise data streams.",
+      "I used contravariant wildcards (<? super T>) for predicates and covariant wildcards (<? extends T>) for data sources to maximize API reusability.",
+      "I decoupled compliance rules from domain entities, enabling the same pipeline engine to validate payments, user onboarding, and access control."
+    ],
+    "projectCompletion": {
+      "headline": "\ud83c\udf89 Exceptional Architecture! Generic Pipeline Complete!",
+      "celebrationMessage": "Congratulations on completing the Generic Rule Engine & Filter Pipeline. You mastered PECS wildcards, generic bounds, and type-safe data transformations!",
+      "congratulations": "Congratulations on completing the Generic Rule Engine & Filter Pipeline. You mastered PECS wildcards, generic bounds, and type-safe data transformations!",
+      "skillsDemonstrated": [
+        "PECS Wildcard Design (Producer Extends, Consumer Super)",
+        "Generic Bounded Type Parameters",
+        "Functional Pipeline Composition",
+        "Defensive Error Accumulation",
+        "Type-Safe Batch Stream Processing"
+      ],
+      "resumeBullets": [
+        "Architected a type-safe Generic Rule Engine & Filter Pipeline in Java utilizing PECS wildcard signatures for decoupled compliance validation.",
+        "Engineered fluent predicate chaining, multi-rule audit accumulation, and immutable result projections with zero unchecked casting."
+      ],
+      "nextStepAction": "Commit your project to GitHub and proceed to the Grand Capstone: In-Memory Stock Trading & Order Matching Engine!",
+      "nextSteps": [
+        "Commit and push your changes to GitHub.",
+        "Showcase advanced PECS generics on your engineering portfolio.",
+        "Begin the final Capstone Project: In-Memory Stock Trading & Order Matching Engine."
+      ]
+    },
+    "scaffoldingCode": "// Generic Rule Engine & Filter Pipeline\n// Starter Scaffolding Template\n\nimport java.util.*;\nimport java.util.function.*;\n\npublic class GenericPipelineDemo {\n\n    public interface Rule<T> {\n        boolean evaluate(T item);\n        String getRuleName();\n        String getFailureReason();\n    }\n\n    public record ValidationFailure(String itemId, String ruleName, String reason) {}\n\n    public record PipelineResult<R>(List<R> successfulItems, List<ValidationFailure> failures) {}\n\n    public static void main(String[] args) {\n        System.out.println(\"=== Generic Rule Engine & Filter Pipeline ===\");\n    }\n}",
+    "sampleConsoleRun": "=== Generic Compliance Pipeline Demo ===\n[CONFIG] Initialized Payment Audit Pipeline (Mode: ACCUMULATE)\n[RULE 1] AML_SANCTION_CHECK: Rejects sanctioned destination countries\n[RULE 2] VELOCITY_LIMIT: Max $10,000 per cross-border transaction\n[RULE 3] KYC_VERIFIED: Requires KYC level >= 2\n\n--- Processing Batch of 4 Payment Transfers ---\n[TX-101] $4,500.00 to UK (KYC: 2) -> \u2713 PASSED ALL RULES\n[TX-102] $15,000.00 to DE (KYC: 3) -> \u2717 FAILED: VELOCITY_LIMIT (Exceeds $10k threshold)\n[TX-103] $200.00 to IR (KYC: 1) -> \u2717 FAILED: AML_SANCTION_CHECK & KYC_VERIFIED\n[TX-104] $850.00 to JP (KYC: 2) -> \u2713 PASSED ALL RULES\n\n================ AUDIT SUMMARY ================\nTotal Batch Processed: 4\nApproved & Enriched:    2 (50.0%)\nQuarantined / Rejected: 2 (50.0%)\nTotal Rule Violations:  3\n==============================================="
+  },
+  "activities": [
+    {
+      "id": "act-guided-build-generic-rule-engine-and-filter-pipeline-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Water Purification & Mineral Enrichment Plant",
+      "description": "How multi-stage filtering and transformation stages turn raw inputs into refined outputs.",
+      "content": "Imagine an industrial water purification facility. Untreated raw water from various mountain reservoirs (Iterable<? extends RawWater>) enters the intake pipe.\n\nThe stream passes through several physical filter screens that remove sediment and impurities (Predicate<? super Water> filters). It then undergoes quality testing probes checking chemical and biological safety standards (Rule<? super Water>). Water that fails the safety standards is diverted into a quarantine tank with an incident log (ValidationFailure).\n\nWater that passes all filters enters the mineralization chamber, which enriches the water and bottles it into premium mineral water (Function<? super Water, ? extends BottledProduct>). The pipeline operates generically regardless of which specific spring the water came from, delivering verified output and an auditable reject log."
+    },
+    {
+      "id": "act-guided-build-generic-rule-engine-and-filter-pipeline-concept",
+      "type": "concept",
+      "title": "Architecture of a PECS-Compliant Generic Pipeline",
+      "description": "Technical analysis of PECS wildcard mechanics, contravariant consumers, and covariant producers.",
+      "content": "### Formal Computer Science Definition\nA generic pipeline is a composable higher-order stream processor that consumes an input sequence of upper-bounded type $\\tau_{in} \\le T$, applies a sequence of contravariant predicates $\\phi: T \\to \\text{bool}$, and projects valid elements via a covariant morphism $f: T \\to R$ into an immutable output sequence.\n\n### The PECS Wildcard Map\n\n```\n                                Pipeline<T>\n                                     |\n     +-------------------------------+-------------------------------+\n     |                                                               |\nInput Producer (PECS: Extends)                             Rule Consumers (PECS: Super)\n- Iterable<? extends T> items                              - Predicate<? super T> filter\n- We READ from this collection                             - Rule<? super T> rule\n- Accepts Subtype of T                                     - We PASS T into this consumer\n                                                           - Accepts Supertype of T\n                                     |\n                    [Transformation: Function<? super T, ? extends R>]\n                                     |\n                             PipelineResult<R>\n                    - List<R> successfulItems (immutable)\n                    - List<ValidationFailure> failures (immutable)\n```\n\n### Critical Rules of Generics Design\n1. **Consumer Super**: Any method that passes an element into a callback (`predicate.test(item)`, `consumer.accept(item)`) must declare `? super T`. This allows a general `Predicate<Object>` or `Predicate<Entity>` to validate a `User`.\n2. **Producer Extends**: Any method that reads elements from a data source (`collection.iterator()`) must declare `? extends T`. This allows a `List<AdminUser>` to be passed to a method expecting `Iterable<User>`."
+    },
+    {
+      "id": "act-guided-build-generic-rule-engine-and-filter-pipeline-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Complete Executable Generic Rule Engine",
+      "description": "Full runnable code showing PECS signatures, chained filters, rule accumulation, and batch transformation.",
+      "content": "```java\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.function.Function;\nimport java.util.function.Predicate;\n\npublic class PipelineDemo {\n\n    public interface Identifiable {\n        String getId();\n    }\n\n    public static class Transaction implements Identifiable {\n        final String id;\n        final double amount;\n        final String country;\n\n        public Transaction(String id, double amount, String country) {\n            this.id = id;\n            this.amount = amount;\n            this.country = country;\n        }\n\n        @Override public String getId() { return id; }\n        @Override public String toString() { return id + \"($\" + amount + \", \" + country + \")\"; }\n    }\n\n    public record ValidationFailure(String itemId, String ruleName, String reason) {}\n\n    public record PipelineResult<R>(List<R> successful, List<ValidationFailure> failures) {}\n\n    public static class Pipeline<T extends Identifiable> {\n        private final List<Predicate<? super T>> filters = new ArrayList<>();\n        private final List<java.util.Map.Entry<String, Predicate<? super T>>> rules = new ArrayList<>();\n\n        public Pipeline<T> filter(Predicate<? super T> predicate) {\n            filters.add(predicate);\n            return this;\n        }\n\n        public Pipeline<T> addRule(String ruleName, Predicate<? super T> rulePredicate) {\n            rules.add(java.util.Map.entry(ruleName, rulePredicate));\n            return this;\n        }\n\n        public <R> PipelineResult<R> process(Iterable<? extends T> items, Function<? super T, ? extends R> mapper) {\n            List<R> successes = new ArrayList<>();\n            List<ValidationFailure> failures = new ArrayList<>();\n\n            for (T item : items) {\n                // 1. Evaluate filters\n                boolean passedFilters = true;\n                for (Predicate<? super T> filter : filters) {\n                    if (!filter.test(item)) {\n                        passedFilters = false;\n                        break;\n                    }\n                }\n                if (!passedFilters) continue;\n\n                // 2. Evaluate compliance rules\n                boolean passedRules = true;\n                for (var rule : rules) {\n                    if (!rule.getValue().test(item)) {\n                        failures.add(new ValidationFailure(item.getId(), rule.getKey(), \"Rule violated: \" + rule.getKey()));\n                        passedRules = false;\n                    }\n                }\n\n                if (passedRules) {\n                    successes.add(mapper.apply(item));\n                }\n            }\n            return new PipelineResult<>(List.copyOf(successes), List.copyOf(failures));\n        }\n    }\n\n    public static void main(String[] args) {\n        Pipeline<Transaction> pipeline = new Pipeline<>();\n\n        // Filter out zero/negative amounts\n        pipeline.filter(tx -> tx.amount > 0);\n\n        // Rules: limit <= 10000, banned country != 'XX'\n        pipeline.addRule(\"VELOCITY_LIMIT\", tx -> tx.amount <= 10000.0);\n        pipeline.addRule(\"SANCTIONED_COUNTRY\", tx -> !\"XX\".equals(tx.country));\n\n        List<Transaction> batch = Arrays.asList(\n            new Transaction(\"TX1\", 500.0, \"US\"),\n            new Transaction(\"TX2\", 15000.0, \"UK\"), // fails velocity\n            new Transaction(\"TX3\", 200.0, \"XX\"),   // fails sanctions\n            new Transaction(\"TX4\", -50.0, \"US\")     // filtered out\n        );\n\n        PipelineResult<String> result = pipeline.process(batch, tx -> \"APPROVED: \" + tx.id);\n        System.out.println(\"Successful: \" + result.successful());\n        System.out.println(\"Failures: \" + result.failures());\n    }\n}\n```\n\n```text\nSuccessful: [APPROVED: TX1]\nFailures: [ValidationFailure[itemId=TX2, ruleName=VELOCITY_LIMIT, reason=Rule violated: VELOCITY_LIMIT], ValidationFailure[itemId=TX3, ruleName=SANCTIONED_COUNTRY, reason=Rule violated: SANCTIONED_COUNTRY]]\n```"
+    },
+    {
+      "id": "act-guided-build-generic-rule-engine-and-filter-pipeline-mcq",
+      "type": "mcq",
+      "title": "PECS Pipeline Architecture Assessment",
+      "description": "Evaluate mastery over generic wildcard bounds and functional pipeline architecture.",
+      "questions": [
+        {
+          "question": "Why does filter(Predicate<? super T> predicate) use '? super T' instead of 'T'?",
+          "options": [
+            "It allows the JVM to allocate less heap memory",
+            "It enables a broader predicate defined on a supertype of T (such as Predicate<Object>) to filter elements of type T",
+            "It makes the filter execute on multiple CPU threads",
+            "It enforces that T implements Comparable"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Under PECS, a predicate consumes T. Declaring Predicate<? super T> allows any predicate that can handle a supertype of T to be used seamlessly."
+        },
+        {
+          "question": "What is the consequence of declaring the input parameter as process(List<T> items) instead of process(Iterable<? extends T> items)?",
+          "options": [
+            "The method cannot accept a List<SubtypeOfT> because generic types are invariant in Java",
+            "The method throws ClassCastException at runtime",
+            "The method runs twice as slow",
+            "The method requires items to be mutable"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Because Java generics are invariant, List<Dog> is not a List<Animal>. Declaring Iterable<? extends T> makes the input source covariant, allowing List<Dog> to be passed to a method expecting Animal."
+        },
+        {
+          "question": "In what scenario is ACCUMULATE mode preferred over FAIL_FAST mode in rule validation?",
+          "options": [
+            "When processing real-time network packets where latency is paramount",
+            "When validating user form inputs or compliance audits where the caller needs a complete list of all validation errors at once",
+            "When memory is extremely limited",
+            "When all rules are identical"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ACCUMULATE evaluates all rules and collects every violation, allowing users to see and fix all input errors in a single submission instead of fixing one error at a time."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-generic-rule-engine-and-filter-pipeline-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Architect Generics Interview Questions",
+      "description": "Staff-level design problems on type erasure, wildcards, and high-throughput pipelines.",
+      "questions": [
+        {
+          "question": "Explain the difference between List<? extends Number> and List<? super Integer> in terms of reading and writing.",
+          "answer": "1. List<? extends Number>: Covariant producer. You can safely READ elements from it, and they will be guaranteed to be instances of Number (or its subclasses). However, you CANNOT write any element into it (except null) because the compiler doesn't know the exact concrete subtype (it could be a List<Double> or List<Long>).\n2. List<? super Integer>: Contravariant consumer. You can safely WRITE Integer (and its subclasses) into it because it points to an Integer, Number, or Object list. However, when READING from it, elements can only be typed as Object because the list might be a List<Object>."
+        },
+        {
+          "question": "How do you preserve type safety in a heterogeneous container like a pipeline registry without unchecked warnings?",
+          "answer": "Use the Typesafe Heterogeneous Container pattern: map Class<T> tokens to instances (Map<Class<?>, Object>). Provide a generic method <T> void register(Class<T> type, T instance) and <T> T get(Class<T> type) using type.cast(storage.get(type)). Because the Class<T> token carries runtime type information, the cast is guaranteed to be safe and eliminates raw type warnings."
+        }
+      ]
+    },
+    {
+      "id": "act-guided-build-generic-rule-engine-and-filter-pipeline-self-eval",
+      "type": "self_evaluation",
+      "title": "Generic Pipeline Mastery Checklist",
+      "description": "Verify your readiness to design type-safe generic frameworks.",
+      "items": [
+        "I know when to use <? extends T> (producers/inputs) and <? super T> (consumers/predicates).",
+        "I understand why generics are invariant and how wildcards restore covariance and contravariance.",
+        "I can implement fluent method chaining with generic builder return types.",
+        "I can design execution strategies supporting both FAIL_FAST and ACCUMULATE modes.",
+        "I protect pipeline output by returning immutable collections via List.copyOf()."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-guided-build-generic-rule-engine-and-filter-pipeline-1",
+      "title": "Contravariant Predicate Filter",
+      "difficulty": "medium",
+      "problemStatement": "Implement `<T> List<T> filterList(List<T> source, Predicate<? super T> condition)` that evaluates `condition` on each element of `source` and returns an unmodifiable List of matching elements using `List.copyOf()`.",
+      "starterCode": "import java.util.List;\nimport java.util.function.Predicate;\n\npublic class ContravariantFilter {\n    public static <T> List<T> filterList(List<T> source, Predicate<? super T> condition) {\n        // TODO: Apply contravariant predicate\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.function.Predicate;\n\npublic class ContravariantFilter {\n    public static <T> List<T> filterList(List<T> source, Predicate<? super T> condition) {\n        if (source == null || condition == null) return List.of();\n        List<T> matched = new ArrayList<>();\n        for (T item : source) {\n            if (item != null && condition.test(item)) {\n                matched.add(item);\n            }\n        }\n        return List.copyOf(matched);\n    }\n}",
+      "expectedOutput": "[12, 14]",
+      "testCases": [
+        {
+          "input": "[10, 11, 12, 13, 14], n -> n % 2 == 0 && n > 11",
+          "expectedOutput": "[12, 14]"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-generic-rule-engine-and-filter-pipeline-2",
+      "title": "Covariant Producer Transformer",
+      "difficulty": "medium",
+      "problemStatement": "Implement `<T, R> List<R> transformAll(Iterable<? extends T> producer, Function<? super T, ? extends R> mapper)` that maps each item in `producer` into type `R` and returns an unmodifiable List.",
+      "starterCode": "import java.util.List;\nimport java.util.function.Function;\n\npublic class CovariantMapper {\n    public static <T, R> List<R> transformAll(Iterable<? extends T> producer, Function<? super T, ? extends R> mapper) {\n        // TODO: Map covariant items\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.function.Function;\n\npublic class CovariantMapper {\n    public static <T, R> List<R> transformAll(Iterable<? extends T> producer, Function<? super T, ? extends R> mapper) {\n        if (producer == null || mapper == null) return List.of();\n        List<R> result = new ArrayList<>();\n        for (T item : producer) {\n            if (item != null) {\n                result.add(mapper.apply(item));\n            }\n        }\n        return List.copyOf(result);\n    }\n}",
+      "expectedOutput": "[1, 2, 3]",
+      "testCases": [
+        {
+          "input": "producer = ['a', 'bb', 'ccc'], mapper = String::length",
+          "expectedOutput": "[1, 2, 3]"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-generic-rule-engine-and-filter-pipeline-3",
+      "title": "Composite Rule Evaluator",
+      "difficulty": "medium",
+      "problemStatement": "Implement `boolean evaluateAllRules(T item, List<Predicate<? super T>> rules)` that returns `true` if and only if `item` satisfies every predicate in `rules`. If rules is empty, return `true`.",
+      "starterCode": "import java.util.List;\nimport java.util.function.Predicate;\n\npublic class RuleEvaluator {\n    public static <T> boolean evaluateAllRules(T item, List<Predicate<? super T>> rules) {\n        // TODO\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.function.Predicate;\n\npublic class RuleEvaluator {\n    public static <T> boolean evaluateAllRules(T item, List<Predicate<? super T>> rules) {\n        if (rules == null || rules.isEmpty()) return true;\n        for (Predicate<? super T> rule : rules) {\n            if (rule != null && !rule.test(item)) {\n                return false;\n            }\n        }\n        return true;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "item = 25, rules = [n -> n > 10, n -> n < 50]",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "item = 5, rules = [n -> n > 10]",
+          "expectedOutput": "false"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-generic-rule-engine-and-filter-pipeline-4",
+      "title": "Batch Stream Quarantine Filter",
+      "difficulty": "medium",
+      "problemStatement": "Implement `void partitionItems(List<T> source, Predicate<? super T> validator, List<T> passed, List<T> quarantined)` that routes valid items into `passed` and invalid items into `quarantined`.",
+      "starterCode": "import java.util.List;\nimport java.util.function.Predicate;\n\npublic class QuarantineRouter {\n    public static <T> void partitionItems(List<T> source, Predicate<? super T> validator, List<T> passed, List<T> quarantined) {\n        // TODO\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.function.Predicate;\n\npublic class QuarantineRouter {\n    public static <T> void partitionItems(List<T> source, Predicate<? super T> validator, List<T> passed, List<T> quarantined) {\n        if (source == null || validator == null) return;\n        for (T item : source) {\n            if (validator.test(item)) {\n                if (passed != null) passed.add(item);\n            } else {\n                if (quarantined != null) quarantined.add(item);\n            }\n        }\n    }\n}",
+      "expectedOutput": "passed=[10, 20], quarantined=[5]",
+      "testCases": [
+        {
+          "input": "[10, 5, 20], n -> n >= 10",
+          "expectedOutput": "passed=[10, 20], quarantined=[5]"
+        }
+      ]
+    },
+    {
+      "id": "prob-guided-build-generic-rule-engine-and-filter-pipeline-5",
+      "title": "Safe Bounded Collection Extractor",
+      "difficulty": "medium",
+      "problemStatement": "Implement `<T extends Comparable<? super T>> T findMaxItem(Iterable<? extends T> items)` that finds and returns the maximum element using natural ordering. If items is empty or null, return `null`.",
+      "starterCode": "public class BoundedMaxFinder {\n    public static <T extends Comparable<? super T>> T findMaxItem(Iterable<? extends T> items) {\n        // TODO: Return maximum item\n        return null;\n    }\n}",
+      "solutionCode": "public class BoundedMaxFinder {\n    public static <T extends Comparable<? super T>> T findMaxItem(Iterable<? extends T> items) {\n        if (items == null) return null;\n        T max = null;\n        for (T item : items) {\n            if (item != null) {\n                if (max == null || item.compareTo(max) > 0) {\n                    max = item;\n                }\n            }\n        }\n        return max;\n    }\n}",
+      "expectedOutput": "99",
+      "testCases": [
+        {
+          "input": "[12, 99, 45, 8]",
+          "expectedOutput": "99"
+        }
+      ]
+    }
+  ]
+}
