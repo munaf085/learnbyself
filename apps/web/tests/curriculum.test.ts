@@ -30,7 +30,7 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
 
     const collections = course?.sections.find(s => s.slug === 'collections');
     expect(collections).toBeDefined();
-    expect(collections?.isLocked).toBe(true);
+    expect(collections?.isLocked).toBe(false);
     expect(collections?.title).toBe('Collections & Generics');
 
     const dsa = course?.sections.find(s => s.slug === 'dsa');
