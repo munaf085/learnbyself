@@ -62,15 +62,21 @@ describe('Java OOP - Module 2: Constructors & Initialization', () => {
         expect(qa.companyTags?.length).toBeGreaterThan(0);
       }
 
-      // Verify Practice Problems (all with multi-line initialCode and solutions)
+      // Verify Practice Problems (mixture of starter/scaffold and from-scratch challenges)
       expect(lesson?.practiceProblems).toBeDefined();
       expect(lesson?.practiceProblems!.length).toBeGreaterThanOrEqual(5);
+      const withStarter = lesson!.practiceProblems!.filter(p => !!p.initialCode);
+      const fromScratch = lesson!.practiceProblems!.filter(p => !p.initialCode);
+      expect(withStarter.length).toBeGreaterThanOrEqual(1); // Guided / Fix-bug problems
+      expect(fromScratch.length).toBeGreaterThanOrEqual(2); // Independent from-scratch builds
+
       for (const prob of lesson!.practiceProblems!) {
         expect(prob.title.length).toBeGreaterThan(3);
         expect(prob.description.length).toBeGreaterThan(15);
-        expect(prob.initialCode, `Problem ${prob.id} must have initialCode`).toBeDefined();
-        expect(prob.initialCode!.length).toBeGreaterThan(10);
-        expect(prob.initialCode).toContain('\n'); // Ensure proper multi-line indentation
+        if (prob.initialCode) {
+          expect(prob.initialCode.length).toBeGreaterThan(10);
+          expect(prob.initialCode).toContain('\n'); // Ensure proper multi-line indentation
+        }
         expect(prob.solutionCode).toBeDefined();
         expect(prob.solutionCode!.length).toBeGreaterThan(10);
         expect(prob.expectedOutput).toBeDefined();

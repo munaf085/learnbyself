@@ -96,15 +96,16 @@ export const StepWorkspace: React.FC<StepWorkspaceProps> = ({
       badge: '✍️ GUIDED PRACTICE',
       content: (
         <div className="space-y-4">
-          {mcqActivities.map((act) => (
-            act.questions ? (
+          {mcqActivities.map((act: any) => {
+            const qList = act.questions || act.mcq?.questions;
+            return qList && qList.length > 0 ? (
               <QuizRunner
                 key={act.id}
-                questions={act.questions}
-                categoryTitle={act.title}
+                questions={qList}
+                categoryTitle={act.title || "Interactive Concept Check"}
               />
-            ) : null
-          ))}
+            ) : null;
+          })}
         </div>
       )
     });

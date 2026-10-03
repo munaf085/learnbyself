@@ -39,7 +39,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
   const [activeTab, setActiveTab] = useState('concept');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedSnippetId, setCopiedSnippetId] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
   // Synchronize state whenever initialLesson prop changes on route transition
@@ -99,9 +99,9 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
 
   const analogyActivity = currentLesson.activities.find(a => a.type === 'analogy');
   const conceptActivity = currentLesson.activities.find(a => a.type === 'concept');
-  const codeActivity = currentLesson.activities.find(a => a.type === 'code_walkthrough');
+  const codeActivities = currentLesson.activities.filter(a => a.type === 'code_walkthrough');
   const mcqActivities = currentLesson.activities.filter(a => a.type === 'mcq' || a.type === 'output_prediction');
-  const totalQuestions = mcqActivities.reduce((acc, act) => acc + (act.questions?.length || 0), 0);
+  const totalQuestions = mcqActivities.reduce((acc, act: any) => acc + (act.questions?.length || act.mcq?.questions?.length || 0), 0);
   const practiceActivity = currentLesson.activities.find(a => a.practice);
   const practiceProblems = currentLesson.practiceProblems || [];
   const interviewActivity = currentLesson.activities.find(a => a.type === 'interview_qa');
@@ -292,59 +292,77 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
               />
             )}
 
-            {/* 3. Verified Java Code Showcase & Terminal Preview */}
-            {codeActivity?.codeSnippet && (
-              <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-subtle space-y-0">
-                <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800">
-                  <div className="flex items-center space-x-2">
-                    <Code2 className="w-4 h-4 text-brand-400" />
-                    <span className="text-xs font-semibold text-slate-200">
-                      {codeActivity.title || "Java Source Code"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(codeActivity.codeSnippet || '');
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className="text-xs text-slate-400 hover:text-white flex items-center space-x-1.5 transition-colors cursor-pointer"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400">Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Code</span>
-                      </>
-                    )}
-                  </button>
+            {/* 3. Verified Java Code Showcases & Terminal Previews */}
+            {codeActivities.length > 0 && (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center space-x-2">
+                  <Code2 className="w-4 h-4 text-brand-600" />
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900">
+                    Step-by-Step Code Examples ({codeActivities.length} {codeActivities.length === 1 ? 'Example' : 'Examples'})
+                  </h3>
                 </div>
 
-                <div className="p-4 bg-slate-950 overflow-x-auto text-xs font-mono text-slate-100 leading-relaxed">
-                  <pre>{codeActivity.codeSnippet}</pre>
-                </div>
+                {codeActivities.map((codeAct, idx) => {
+                  const snippetId = codeAct.id || `code-${idx}`;
+                  const isSnippetCopied = copiedSnippetId === snippetId;
 
-                {conceptActivity?.outputSnippet && (
-                  <div className="p-3.5 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-emerald-400">
-                    <div className="flex items-center space-x-2">
-                      <Terminal className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-slate-400">Terminal Output:</span>
-                      <span className="font-semibold text-emerald-300">{conceptActivity.outputSnippet}</span>
+                  return (
+                    <div key={snippetId} className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-subtle space-y-0">
+                      <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-5 h-5 rounded-full bg-brand-600/30 text-brand-300 font-mono text-[11px] font-bold flex items-center justify-center border border-brand-500/30">
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-200">
+                            {codeAct.title || `Example ${idx + 1}`}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(codeAct.codeSnippet || '');
+                            setCopiedSnippetId(snippetId);
+                            setTimeout(() => setCopiedSnippetId(null), 2000);
+                          }}
+                          className="text-xs text-slate-400 hover:text-white flex items-center space-x-1.5 transition-colors cursor-pointer"
+                        >
+                          {isSnippetCopied ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="text-emerald-400">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Copy Code</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="p-4 bg-slate-950 overflow-x-auto text-xs font-mono text-slate-100 leading-relaxed">
+                        <pre>{codeAct.codeSnippet}</pre>
+                      </div>
+
+                      {conceptActivity?.outputSnippet && idx === 0 && (
+                        <div className="p-3.5 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-emerald-400">
+                          <div className="flex items-center space-x-2">
+                            <Terminal className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="text-slate-400">Terminal Output:</span>
+                            <span className="font-semibold text-emerald-300">{conceptActivity.outputSnippet}</span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 font-sans">✓ Verified Console Output</span>
+                        </div>
+                      )}
+
+                      {codeAct.description && (
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                          <span className="font-semibold text-slate-800">Walkthrough: </span>
+                          {codeAct.description}
+                        </div>
+                      )}
                     </div>
-                    <span className="text-[11px] text-slate-500 font-sans">✓ Verified Console Output</span>
-                  </div>
-                )}
-
-                {codeActivity.description && (
-                  <div className="p-4 bg-slate-50 border-t border-slate-100 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    <span className="font-semibold text-slate-800">Walkthrough: </span>
-                    {codeActivity.description}
-                  </div>
-                )}
+                  );
+                })}
               </div>
             )}
 
@@ -356,15 +374,16 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
         {activeTab === 'mcq' && (
           <div className="space-y-6 animate-fadeIn">
             {mcqActivities.length > 0 ? (
-              mcqActivities.map((act) => (
-                act.questions ? (
+              mcqActivities.map((act: any) => {
+                const qList = act.questions || act.mcq?.questions;
+                return qList && qList.length > 0 ? (
                   <QuizRunner
                     key={act.id}
-                    questions={act.questions}
-                    categoryTitle={act.title}
+                    questions={qList}
+                    categoryTitle={act.title || "Interactive Concept Check (10 Questions)"}
                   />
-                ) : null
-              ))
+                ) : null;
+              })
             ) : (
               <Card className="text-center py-8 text-slate-500">
                 MCQ challenges being prepared for this lesson.
