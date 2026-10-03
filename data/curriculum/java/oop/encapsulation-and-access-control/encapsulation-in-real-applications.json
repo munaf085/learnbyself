@@ -1,0 +1,869 @@
+{
+  "id": "les-enc-6",
+  "slug": "encapsulation-in-real-applications",
+  "title": "Encapsulation in Real Applications",
+  "summary": "See how production systems (shopping carts, thermostats, bank balances) use encapsulation to guard complex business invariants.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "read-only-objects"
+  ],
+  "learningOutcomes": [
+    "Model real-world business domains with multi-field invariants",
+    "Enforce business rules inside high-level domain methods rather than naked setters",
+    "Maintain cohesive state in a realistic E-Commerce Shopping Cart system"
+  ],
+  "activities": [
+    {
+      "id": "act-eira-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Automated Car Transmission",
+      "analogy": {
+        "story": "In an automatic vehicle, you do not manually manipulate the planetary gear sets, torque converter, or transmission fluid valves. If drivers had direct access to clutch solenoids while traveling at 100 km/h, someone would inevitably throw it into reverse and shatter the gearbox.\n\nInstead, you interact with a simple, high-level interface: Drive, Neutral, Reverse, Park. When you shift to 'Reverse' while moving at 100 km/h, the car's computer safely intercepts the request, refuses to engage reverse, and protects the engine from destruction.\n\nEncapsulation in real applications is that transmission control computer: it prevents users and calling code from performing illegal, destructive state transitions.",
+        "takeaway": "Real-world domain models expose high-level business actions (like 'addItem' or 'applyCoupon') that maintain internal integrity, rather than exposing raw variable setters.",
+        "headline": "Everyday Analogy: The Automated Car Transmission",
+        "keyTakeaway": "Real-world domain models expose high-level business actions (like 'addItem' or 'applyCoupon') that maintain internal integrity, rather than exposing raw variable setters."
+      }
+    },
+    {
+      "id": "act-eira-2",
+      "type": "concept",
+      "title": "Designing Domain Actions Over Naked Setters",
+      "concept": {
+        "explanation": "In production software, modeling a business entity (like a Shopping Cart or Bank Account) purely with naked getters and setters (e.g., setCartTotal(double d), setItemCount(int i)) is an architectural anti-pattern called an 'Anemic Domain Model'.\n\nWhy?\nBecause outside code can set itemCount to 5 while leaving cartTotal at 0.0. The state becomes contradictory and corrupted.\n\nRich Encapsulation Solution:\n1. Keep fields private: itemCount, subtotal, discount, finalTotal.\n2. Expose Domain Methods: addItem(price), removeItem(price), applyCoupon(percent).\n3. Automatic Invariant Calculation: Every domain method automatically recalculates finalTotal = subtotal - discount, ensuring internal state can never be contradictory.",
+        "codeIllustration": "// Anemic (Anti-Pattern):\ncart.setItemCount(2);\ncart.setTotal(0.0); // Contradictory!\n\n// Rich Encapsulated Domain Action:\ncart.addItem(\"Book\", 25.0); // Automatically updates count, subtotal, and tax atomically!",
+        "rules": [
+          "Rule 1: Prefer domain action verbs (deposit, enroll, checkout) over generic setters (setX).",
+          "Rule 2: Never allow outside code to set calculated values directly; recalculate them internally.",
+          "Rule 3: Keep multi-field state transitions atomic\u2014either the whole action succeeds or the state remains untouched."
+        ]
+      },
+      "content": "In production software, modeling a business entity (like a Shopping Cart or Bank Account) purely with naked getters and setters (e.g., setCartTotal(double d), setItemCount(int i)) is an architectural anti-pattern called an 'Anemic Domain Model'.\n\nWhy?\nBecause outside code can set itemCount to 5 while leaving cartTotal at 0.0. The state becomes contradictory and corrupted.\n\nRich Encapsulation Solution:\n1. Keep fields private: itemCount, subtotal, discount, finalTotal.\n2. Expose Domain Methods: addItem(price), removeItem(price), applyCoupon(percent).\n3. Automatic Invariant Calculation: Every domain method automatically recalculates finalTotal = subtotal - discount, ensuring internal state can never be contradictory.\n\n\n### Code Illustration:\n```java\n// Anemic (Anti-Pattern):\ncart.setItemCount(2);\ncart.setTotal(0.0); // Contradictory!\n\n// Rich Encapsulated Domain Action:\ncart.addItem(\"Book\", 25.0); // Automatically updates count, subtotal, and tax atomically!\n```\n\n\n### Core Rules:\n- Rule 1: Prefer domain action verbs (deposit, enroll, checkout) over generic setters (setX).\n- Rule 2: Never allow outside code to set calculated values directly; recalculate them internally.\n- Rule 3: Keep multi-field state transitions atomic\u2014either the whole action succeeds or the state remains untouched.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Prefer domain action verbs (deposit, enroll, checkout) over generic setters (setX).",
+          "Rule 2: Never allow outside code to set calculated values directly; recalculate them internally.",
+          "Rule 3: Keep multi-field state transitions atomic\u2014either the whole action succeeds or the state remains untouched."
+        ]
+      }
+    },
+    {
+      "id": "act-eira-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Enterprise Shopping Cart with Coupon Enforcement",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class ShoppingCart {\n    private String customerId;\n    private int itemCount;\n    private double subtotal;\n    private double discountRate; // e.g. 0.10 for 10%\n\n    public ShoppingCart(String customerId) {\n        this.customerId = customerId;\n        this.itemCount = 0;\n        this.subtotal = 0.0;\n        this.discountRate = 0.0;\n    }\n\n    public void addItem(double itemPrice) {\n        if (itemPrice <= 0) {\n            System.out.println(\"Invalid item price: $\" + itemPrice);\n            return;\n        }\n        this.itemCount++;\n        this.subtotal += itemPrice;\n        System.out.println(\"Added item ($\" + itemPrice + \"). Cart items: \" + itemCount);\n    }\n\n    public void applyCoupon(String couponCode) {\n        if (\"SAVE10\".equalsIgnoreCase(couponCode)) {\n            this.discountRate = 0.10;\n            System.out.println(\"Coupon SAVE10 applied (10% off).\");\n        } else if (\"SAVE20\".equalsIgnoreCase(couponCode) && subtotal >= 100.0) {\n            this.discountRate = 0.20;\n            System.out.println(\"Coupon SAVE20 applied (20% off).\");\n        } else {\n            System.out.println(\"Coupon rejected or order minimum not met.\");\n        }\n    }\n\n    public double calculateFinalTotal() {\n        double discountAmount = subtotal * discountRate;\n        return subtotal - discountAmount;\n    }\n\n    public int getItemCount() { return itemCount; }\n    public double getSubtotal() { return subtotal; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ShoppingCart cart = new ShoppingCart(\"CUST-4401\");\n        cart.addItem(60.0);\n        cart.addItem(50.0); // Subtotal: 110.0\n        cart.applyCoupon(\"SAVE20\"); // Eligible for 20%\n        System.out.println(\"Final Checkout Total: $\" + cart.calculateFinalTotal());\n    }\n}",
+        "explanation": "Notice how calculateFinalTotal() guarantees the final price is calculated accurately from subtotal and discountRate. Callers cannot cheat the system by calling cart.setFinalTotal(0.01)."
+      },
+      "codeSnippet": "class ShoppingCart {\n    private String customerId;\n    private int itemCount;\n    private double subtotal;\n    private double discountRate; // e.g. 0.10 for 10%\n\n    public ShoppingCart(String customerId) {\n        this.customerId = customerId;\n        this.itemCount = 0;\n        this.subtotal = 0.0;\n        this.discountRate = 0.0;\n    }\n\n    public void addItem(double itemPrice) {\n        if (itemPrice <= 0) {\n            System.out.println(\"Invalid item price: $\" + itemPrice);\n            return;\n        }\n        this.itemCount++;\n        this.subtotal += itemPrice;\n        System.out.println(\"Added item ($\" + itemPrice + \"). Cart items: \" + itemCount);\n    }\n\n    public void applyCoupon(String couponCode) {\n        if (\"SAVE10\".equalsIgnoreCase(couponCode)) {\n            this.discountRate = 0.10;\n            System.out.println(\"Coupon SAVE10 applied (10% off).\");\n        } else if (\"SAVE20\".equalsIgnoreCase(couponCode) && subtotal >= 100.0) {\n            this.discountRate = 0.20;\n            System.out.println(\"Coupon SAVE20 applied (20% off).\");\n        } else {\n            System.out.println(\"Coupon rejected or order minimum not met.\");\n        }\n    }\n\n    public double calculateFinalTotal() {\n        double discountAmount = subtotal * discountRate;\n        return subtotal - discountAmount;\n    }\n\n    public int getItemCount() { return itemCount; }\n    public double getSubtotal() { return subtotal; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ShoppingCart cart = new ShoppingCart(\"CUST-4401\");\n        cart.addItem(60.0);\n        cart.addItem(50.0); // Subtotal: 110.0\n        cart.applyCoupon(\"SAVE20\"); // Eligible for 20%\n        System.out.println(\"Final Checkout Total: $\" + cart.calculateFinalTotal());\n    }\n}",
+      "description": "Notice how calculateFinalTotal() guarantees the final price is calculated accurately from subtotal and discountRate. Callers cannot cheat the system by calling cart.setFinalTotal(0.01)."
+    },
+    {
+      "id": "act-eira-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Loyalty Rewards Points Engine",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class LoyaltyAccount {\n    private String memberName;\n    private int pointsBalance;\n    private String tierLevel; // Bronze, Silver, Gold\n\n    public LoyaltyAccount(String name) {\n        this.memberName = name;\n        this.pointsBalance = 0;\n        this.tierLevel = \"Bronze\";\n    }\n\n    public void earnPoints(int points) {\n        if (points <= 0) return;\n        this.pointsBalance += points;\n        updateTier();\n    }\n\n    public boolean redeemPoints(int points) {\n        if (points > 0 && points <= pointsBalance) {\n            this.pointsBalance -= points;\n            updateTier();\n            return true;\n        }\n        return false;\n    }\n\n    // Private helper: keeps tier synchronized with points\n    private void updateTier() {\n        if (pointsBalance >= 1000) {\n            tierLevel = \"Gold\";\n        } else if (pointsBalance >= 500) {\n            tierLevel = \"Silver\";\n        } else {\n            tierLevel = \"Bronze\";\n        }\n    }\n\n    public int getPointsBalance() { return pointsBalance;\n    }\n    public String getTierLevel() { return tierLevel; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        LoyaltyAccount acc = new LoyaltyAccount(\"Neha\");\n        acc.earnPoints(300); // 300 -> Bronze\n        System.out.println(\"Current Tier: \" + acc.getTierLevel());\n        acc.earnPoints(300); // 600 -> Silver\n        System.out.println(\"Promoted Tier: \" + acc.getTierLevel());\n    }\n}",
+        "explanation": "Because updateTier() is private and called automatically by earnPoints and redeemPoints, tierLevel is NEVER out of sync with pointsBalance."
+      },
+      "codeSnippet": "class LoyaltyAccount {\n    private String memberName;\n    private int pointsBalance;\n    private String tierLevel; // Bronze, Silver, Gold\n\n    public LoyaltyAccount(String name) {\n        this.memberName = name;\n        this.pointsBalance = 0;\n        this.tierLevel = \"Bronze\";\n    }\n\n    public void earnPoints(int points) {\n        if (points <= 0) return;\n        this.pointsBalance += points;\n        updateTier();\n    }\n\n    public boolean redeemPoints(int points) {\n        if (points > 0 && points <= pointsBalance) {\n            this.pointsBalance -= points;\n            updateTier();\n            return true;\n        }\n        return false;\n    }\n\n    // Private helper: keeps tier synchronized with points\n    private void updateTier() {\n        if (pointsBalance >= 1000) {\n            tierLevel = \"Gold\";\n        } else if (pointsBalance >= 500) {\n            tierLevel = \"Silver\";\n        } else {\n            tierLevel = \"Bronze\";\n        }\n    }\n\n    public int getPointsBalance() { return pointsBalance;\n    }\n    public String getTierLevel() { return tierLevel; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        LoyaltyAccount acc = new LoyaltyAccount(\"Neha\");\n        acc.earnPoints(300); // 300 -> Bronze\n        System.out.println(\"Current Tier: \" + acc.getTierLevel());\n        acc.earnPoints(300); // 600 -> Silver\n        System.out.println(\"Promoted Tier: \" + acc.getTierLevel());\n    }\n}",
+      "description": "Because updateTier() is private and called automatically by earnPoints and redeemPoints, tierLevel is NEVER out of sync with pointsBalance."
+    },
+    {
+      "id": "act-eira-5",
+      "type": "mcq",
+      "title": "Interactive Real-World Encapsulation Quiz",
+      "questions": [
+        {
+          "id": "q-eira-1",
+          "type": "mcq",
+          "prompt": "What is an 'Anemic Domain Model' in object-oriented architecture?",
+          "question": "What is an 'Anemic Domain Model' in object-oriented architecture?",
+          "options": [
+            "A class that consumes too much CPU memory",
+            "A class that only contains public getters and setters without any real business logic or validation",
+            "A class that contains only private static methods",
+            "A class that has no variables"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "An anemic domain model treats objects as dumb data holders with naked getters/setters, forcing business logic to be duplicated across caller code.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-2",
+          "type": "mcq",
+          "prompt": "Why should a ShoppingCart class avoid exposing setSubtotal(double total)?",
+          "question": "Why should a ShoppingCart class avoid exposing setSubtotal(double total)?",
+          "options": [
+            "Because subtotal should be calculated automatically from the items in the cart to prevent price manipulation",
+            "Because Java doubles cannot be set using setters",
+            "Because external callers prefer integers",
+            "Because shopping carts cannot contain numbers"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Calculated values must be controlled internally; an external setSubtotal would allow callers to set prices to zero or arbitrary amounts.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-3",
+          "type": "mcq",
+          "prompt": "What is a 'Business Invariant' in an application?",
+          "question": "What is a 'Business Invariant' in an application?",
+          "options": [
+            "A constant defined in the operating system",
+            "A business rule that must never be violated at any point in the object's lifecycle (e.g., tier must match points)",
+            "A variable whose name starts with an underscore",
+            "A class with a main method"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Business invariants are fundamental enterprise rules that encapsulated classes strictly guarantee.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-4",
+          "type": "mcq",
+          "prompt": "In our car transmission analogy, why does the vehicle intercept the gear shift?",
+          "question": "In our car transmission analogy, why does the vehicle intercept the gear shift?",
+          "options": [
+            "To show an error message on the GPS",
+            "To prevent dangerous state transitions (like shifting to Reverse at high speed) that destroy mechanical components",
+            "To conserve gasoline",
+            "To honk the horn"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Encapsulation prevents illegal and destructive state transitions by inspecting operations before allowing them to take effect.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-5",
+          "type": "mcq",
+          "prompt": "Which of the following method names represents a rich domain action rather than a naked setter?",
+          "question": "Which of the following method names represents a rich domain action rather than a naked setter?",
+          "options": [
+            "setBalance(double b)",
+            "depositFunds(double amount)",
+            "setAge(int a)",
+            "setStatus(String s)"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "'depositFunds(double amount)' expresses a clear domain intent and allows business validation, whereas setBalance() is a naked mutator.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-6",
+          "type": "mcq",
+          "prompt": "How does encapsulation simplify testing of business logic?",
+          "question": "How does encapsulation simplify testing of business logic?",
+          "options": [
+            "It eliminates the need for any unit testing",
+            "Because business rules are self-contained inside the class methods, they can be tested directly and deterministically",
+            "By converting all classes to public static methods",
+            "By generating test cases automatically at compile time"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Encapsulated classes isolate their state and logic, making them straightforward to unit-test in complete isolation.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-7",
+          "type": "mcq",
+          "prompt": "If LoyaltyAccount automatically updates tierLevel whenever points change, what access modifier should updateTier() have?",
+          "question": "If LoyaltyAccount automatically updates tierLevel whenever points change, what access modifier should updateTier() have?",
+          "options": [
+            "public",
+            "private",
+            "protected",
+            "default"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "updateTier() is an internal helper that must not be called arbitrarily from outside, so it should be private.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-8",
+          "type": "mcq",
+          "prompt": "What is the consequence if outside code can directly set both 'itemCount' and 'cartTotal'?",
+          "question": "What is the consequence if outside code can directly set both 'itemCount' and 'cartTotal'?",
+          "options": [
+            "The compiler will fail",
+            "The cart can easily end up with 10 items but a total of $0.00, causing catastrophic financial discrepancy",
+            "The JVM runs out of heap memory",
+            "The customer gets logged out automatically"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Exposing independent setters for dependent fields allows callers to create contradictory state.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-9",
+          "type": "mcq",
+          "prompt": "What is 'Atomic State Transition'?",
+          "question": "What is 'Atomic State Transition'?",
+          "options": [
+            "A transition that occurs at the speed of light",
+            "An operation where either all related fields update successfully together, or none of them update at all if a validation check fails",
+            "Splitting an object into smaller objects",
+            "Assigning numbers using bitwise operators"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Atomicity ensures the object never ends up in a half-updated, invalid intermediate state.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-eira-10",
+          "type": "mcq",
+          "prompt": "What is the primary advantage of putting calculation logic inside domain methods rather than UI controller code?",
+          "question": "What is the primary advantage of putting calculation logic inside domain methods rather than UI controller code?",
+          "options": [
+            "The business logic can be reused across Web, Mobile, and API endpoints without copy-pasting code",
+            "The UI runs at 120 FPS",
+            "The web browser compiles Java bytecode natively",
+            "It eliminates the need for databases"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Encapsulating logic in domain classes prevents duplication across multiple client platforms (web, mobile, external APIs).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-eira-1",
+            "type": "mcq",
+            "prompt": "What is an 'Anemic Domain Model' in object-oriented architecture?",
+            "question": "What is an 'Anemic Domain Model' in object-oriented architecture?",
+            "options": [
+              "A class that consumes too much CPU memory",
+              "A class that only contains public getters and setters without any real business logic or validation",
+              "A class that contains only private static methods",
+              "A class that has no variables"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "An anemic domain model treats objects as dumb data holders with naked getters/setters, forcing business logic to be duplicated across caller code.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-2",
+            "type": "mcq",
+            "prompt": "Why should a ShoppingCart class avoid exposing setSubtotal(double total)?",
+            "question": "Why should a ShoppingCart class avoid exposing setSubtotal(double total)?",
+            "options": [
+              "Because subtotal should be calculated automatically from the items in the cart to prevent price manipulation",
+              "Because Java doubles cannot be set using setters",
+              "Because external callers prefer integers",
+              "Because shopping carts cannot contain numbers"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Calculated values must be controlled internally; an external setSubtotal would allow callers to set prices to zero or arbitrary amounts.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-3",
+            "type": "mcq",
+            "prompt": "What is a 'Business Invariant' in an application?",
+            "question": "What is a 'Business Invariant' in an application?",
+            "options": [
+              "A constant defined in the operating system",
+              "A business rule that must never be violated at any point in the object's lifecycle (e.g., tier must match points)",
+              "A variable whose name starts with an underscore",
+              "A class with a main method"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Business invariants are fundamental enterprise rules that encapsulated classes strictly guarantee.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-4",
+            "type": "mcq",
+            "prompt": "In our car transmission analogy, why does the vehicle intercept the gear shift?",
+            "question": "In our car transmission analogy, why does the vehicle intercept the gear shift?",
+            "options": [
+              "To show an error message on the GPS",
+              "To prevent dangerous state transitions (like shifting to Reverse at high speed) that destroy mechanical components",
+              "To conserve gasoline",
+              "To honk the horn"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Encapsulation prevents illegal and destructive state transitions by inspecting operations before allowing them to take effect.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-5",
+            "type": "mcq",
+            "prompt": "Which of the following method names represents a rich domain action rather than a naked setter?",
+            "question": "Which of the following method names represents a rich domain action rather than a naked setter?",
+            "options": [
+              "setBalance(double b)",
+              "depositFunds(double amount)",
+              "setAge(int a)",
+              "setStatus(String s)"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "'depositFunds(double amount)' expresses a clear domain intent and allows business validation, whereas setBalance() is a naked mutator.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-6",
+            "type": "mcq",
+            "prompt": "How does encapsulation simplify testing of business logic?",
+            "question": "How does encapsulation simplify testing of business logic?",
+            "options": [
+              "It eliminates the need for any unit testing",
+              "Because business rules are self-contained inside the class methods, they can be tested directly and deterministically",
+              "By converting all classes to public static methods",
+              "By generating test cases automatically at compile time"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Encapsulated classes isolate their state and logic, making them straightforward to unit-test in complete isolation.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-7",
+            "type": "mcq",
+            "prompt": "If LoyaltyAccount automatically updates tierLevel whenever points change, what access modifier should updateTier() have?",
+            "question": "If LoyaltyAccount automatically updates tierLevel whenever points change, what access modifier should updateTier() have?",
+            "options": [
+              "public",
+              "private",
+              "protected",
+              "default"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "updateTier() is an internal helper that must not be called arbitrarily from outside, so it should be private.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-8",
+            "type": "mcq",
+            "prompt": "What is the consequence if outside code can directly set both 'itemCount' and 'cartTotal'?",
+            "question": "What is the consequence if outside code can directly set both 'itemCount' and 'cartTotal'?",
+            "options": [
+              "The compiler will fail",
+              "The cart can easily end up with 10 items but a total of $0.00, causing catastrophic financial discrepancy",
+              "The JVM runs out of heap memory",
+              "The customer gets logged out automatically"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Exposing independent setters for dependent fields allows callers to create contradictory state.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-9",
+            "type": "mcq",
+            "prompt": "What is 'Atomic State Transition'?",
+            "question": "What is 'Atomic State Transition'?",
+            "options": [
+              "A transition that occurs at the speed of light",
+              "An operation where either all related fields update successfully together, or none of them update at all if a validation check fails",
+              "Splitting an object into smaller objects",
+              "Assigning numbers using bitwise operators"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Atomicity ensures the object never ends up in a half-updated, invalid intermediate state.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-eira-10",
+            "type": "mcq",
+            "prompt": "What is the primary advantage of putting calculation logic inside domain methods rather than UI controller code?",
+            "question": "What is the primary advantage of putting calculation logic inside domain methods rather than UI controller code?",
+            "options": [
+              "The business logic can be reused across Web, Mobile, and API endpoints without copy-pasting code",
+              "The UI runs at 120 FPS",
+              "The web browser compiles Java bytecode natively",
+              "It eliminates the need for databases"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Encapsulating logic in domain classes prevents duplication across multiple client platforms (web, mobile, external APIs).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-eira-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: Real-World Encapsulation",
+      "questions": [
+        {
+          "id": "i-eira-1",
+          "question": "What is the difference between an Anemic Domain Model and a Rich Domain Model in enterprise Java?",
+          "answer": "An Anemic Domain Model consists of entities that are merely data bags (private fields with public getters/setters) while business logic lives in external service classes. A Rich Domain Model co-locates business logic, state validation, and state mutation directly inside the entity itself, fulfilling true OOP encapsulation.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Anemic = data bag with setters",
+            "Rich = logic and data together inside entity"
+          ]
+        },
+        {
+          "id": "i-eira-2",
+          "question": "Why is 'Tell, Don't Ask' a fundamental OOP design principle?",
+          "answer": "'Tell, Don't Ask' means you should tell an object what action to perform (e.g. cart.applyDiscount(0.10)) rather than asking the object for its internal data, performing calculations outside, and setting the data back into the object. It preserves encapsulation and prevents logic leaks.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Tell objects what to do",
+            "Do not query data to manipulate outside and write back"
+          ]
+        },
+        {
+          "id": "i-eira-3",
+          "question": "How does encapsulation prevent race conditions in multi-threaded banking systems?",
+          "answer": "By hiding balance and funneling operations through synchronized or atomic domain methods (like transfer or withdraw), the class can enforce locking and balance verification at the exact moment of modification, preventing two concurrent threads from overdrawing the account.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Protects critical sections",
+            "Prevents interleaved corrupting writes"
+          ]
+        },
+        {
+          "id": "i-eira-4",
+          "question": "How do you enforce business rules when a single transaction spans two separate objects (like transferring money between two accounts)?",
+          "answer": "A domain service orchestrates the high-level workflow, but each individual account strictly encapsulates its own invariants: the source account verifies sufficiency and deducts via withdraw(), while the destination verifies positive amounts and adds via deposit(). Neither account exposes its balance field directly.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Service coordinates workflow",
+            "Entities defend their own internal invariants"
+          ]
+        },
+        {
+          "id": "i-eira-5",
+          "question": "What happens when an entity class violates encapsulation by exposing an internal mutable List or Map?",
+          "answer": "Outside callers can call getList().clear() or getList().add(invalidItem), bypassing all class validation and corrupting business rules. The entity must return an unmodifiable view or a defensive copy of the collection.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Exposing collections leaks mutation",
+            "Return unmodifiable views or defensive copies"
+          ]
+        },
+        {
+          "id": "i-eira-6",
+          "question": "Can you provide an example of encapsulation reducing code duplication across a microservices system?",
+          "answer": "When a Product class encapsulates VAT tax calculation rules internally, every microservice (billing, invoicing, reporting, catalog) invokes product.getTotalPriceWithTax(). If tax laws change, the calculation is updated in one place rather than in 20 disparate services.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Single source of truth for business calculations",
+            "Changes localized to one class"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-eira-1",
+          "question": "What is the difference between an Anemic Domain Model and a Rich Domain Model in enterprise Java?",
+          "expectedAnswer": "An Anemic Domain Model consists of entities that are merely data bags (private fields with public getters/setters) while business logic lives in external service classes. A Rich Domain Model co-locates business logic, state validation, and state mutation directly inside the entity itself, fulfilling true OOP encapsulation.",
+          "keyPoints": [
+            "Anemic = data bag with setters",
+            "Rich = logic and data together inside entity"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-eira-2",
+          "question": "Why is 'Tell, Don't Ask' a fundamental OOP design principle?",
+          "expectedAnswer": "'Tell, Don't Ask' means you should tell an object what action to perform (e.g. cart.applyDiscount(0.10)) rather than asking the object for its internal data, performing calculations outside, and setting the data back into the object. It preserves encapsulation and prevents logic leaks.",
+          "keyPoints": [
+            "Tell objects what to do",
+            "Do not query data to manipulate outside and write back"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-eira-3",
+          "question": "How does encapsulation prevent race conditions in multi-threaded banking systems?",
+          "expectedAnswer": "By hiding balance and funneling operations through synchronized or atomic domain methods (like transfer or withdraw), the class can enforce locking and balance verification at the exact moment of modification, preventing two concurrent threads from overdrawing the account.",
+          "keyPoints": [
+            "Protects critical sections",
+            "Prevents interleaved corrupting writes"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-eira-4",
+          "question": "How do you enforce business rules when a single transaction spans two separate objects (like transferring money between two accounts)?",
+          "expectedAnswer": "A domain service orchestrates the high-level workflow, but each individual account strictly encapsulates its own invariants: the source account verifies sufficiency and deducts via withdraw(), while the destination verifies positive amounts and adds via deposit(). Neither account exposes its balance field directly.",
+          "keyPoints": [
+            "Service coordinates workflow",
+            "Entities defend their own internal invariants"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-eira-5",
+          "question": "What happens when an entity class violates encapsulation by exposing an internal mutable List or Map?",
+          "expectedAnswer": "Outside callers can call getList().clear() or getList().add(invalidItem), bypassing all class validation and corrupting business rules. The entity must return an unmodifiable view or a defensive copy of the collection.",
+          "keyPoints": [
+            "Exposing collections leaks mutation",
+            "Return unmodifiable views or defensive copies"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-eira-6",
+          "question": "Can you provide an example of encapsulation reducing code duplication across a microservices system?",
+          "expectedAnswer": "When a Product class encapsulates VAT tax calculation rules internally, every microservice (billing, invoicing, reporting, catalog) invokes product.getTotalPriceWithTax(). If tax laws change, the calculation is updated in one place rather than in 20 disparate services.",
+          "keyPoints": [
+            "Single source of truth for business calculations",
+            "Changes localized to one class"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-eira-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I know why domain actions are superior to naked setters.",
+        "I can build classes that maintain multi-variable invariants automatically.",
+        "I understand the difference between an anemic model and a rich domain model."
+      ],
+      "checklist": [
+        "I know why domain actions are superior to naked setters.",
+        "I can build classes that maintain multi-variable invariants automatically.",
+        "I understand the difference between an anemic model and a rich domain model."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "encapsulation-and-access-control",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-eira-1",
+      "title": "Warmup: Coffee Order Counter",
+      "difficulty": "easy",
+      "description": "Modify CoffeeOrder by making 'shots' private. Provide addShot() that increases shots by 1 (up to max 5 shots) and calculatePrice() that returns $2.50 base + ($0.75 * shots). In Main, create order, add 2 shots, and print 'Coffee total: $4.0'.",
+      "problemStatement": "Modify CoffeeOrder by making 'shots' private. Provide addShot() that increases shots by 1 (up to max 5 shots) and calculatePrice() that returns $2.50 base + ($0.75 * shots). In Main, create order, add 2 shots, and print 'Coffee total: $4.0'.",
+      "expectedOutput": "Coffee total: $4.0",
+      "hint": "Keep shots private",
+      "hints": [
+        "Keep shots private",
+        "addShot checks shots < 5",
+        "calculatePrice returns 2.50 + shots * 0.75"
+      ],
+      "solutionCode": "class CoffeeOrder {\n    private int shots = 0;\n\n    public void addShot() {\n        if (shots < 5) {\n            shots++;\n        }\n    }\n\n    public double calculatePrice() {\n        return 2.50 + (shots * 0.75);\n    }\n\n    public int getShots() {\n        return shots;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        CoffeeOrder order = new CoffeeOrder();\n        order.addShot();\n        order.addShot();\n        System.out.println(\"Coffee total: $\" + order.calculatePrice());\n    }\n}",
+      "initialCode": "class CoffeeOrder {\n    public int shots = 0;\n    // Encapsulate and provide addShot() and calculatePrice()\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-eira-2",
+      "title": "Code from Scratch: Ride Share Fare Calculator",
+      "difficulty": "easy",
+      "description": "Write a complete RideFare class from scratch with private double distanceKm and private boolean surgePricing. Provide a constructor setting distanceKm (> 0). Provide a method setSurge(boolean surge). Provide calculateTotalFare() returning (distanceKm * 2.0) * (surge ? 1.5 : 1.0). In Main, create a 10.0 km ride, enable surge, and print 'Total fare: $30.0'.",
+      "problemStatement": "Write a complete RideFare class from scratch with private double distanceKm and private boolean surgePricing. Provide a constructor setting distanceKm (> 0). Provide a method setSurge(boolean surge). Provide calculateTotalFare() returning (distanceKm * 2.0) * (surge ? 1.5 : 1.0). In Main, create a 10.0 km ride, enable surge, and print 'Total fare: $30.0'.",
+      "expectedOutput": "Total fare: $30.0",
+      "hint": "Write RideFare from scratch",
+      "hints": [
+        "Write RideFare from scratch",
+        "Base fare = distance * 2.0",
+        "Surge multiplies by 1.5"
+      ],
+      "solutionCode": "class RideFare {\n    private double distanceKm;\n    private boolean surgePricing;\n\n    public RideFare(double distance) {\n        this.distanceKm = distance > 0 ? distance : 1.0;\n        this.surgePricing = false;\n    }\n\n    public void setSurge(boolean surge) {\n        this.surgePricing = surge;\n    }\n\n    public double calculateTotalFare() {\n        double base = distanceKm * 2.0;\n        return surgePricing ? base * 1.5 : base;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        RideFare ride = new RideFare(10.0);\n        ride.setSurge(true);\n        System.out.println(\"Total fare: $\" + ride.calculateTotalFare());\n    }\n}"
+    },
+    {
+      "id": "p-eira-3",
+      "title": "Code from Scratch: Bank Account with Overdraft Limit",
+      "difficulty": "medium",
+      "description": "Write a complete CheckingAccount class from scratch with private double balance and private double overdraftLimit (e.g. 100.0). Provide a constructor setting initial balance (>= 0) and overdraftLimit (>= 0). Provide deposit(double amount) which rejects negative numbers. Provide withdraw(double amount) which succeeds if amount <= (balance + overdraftLimit) and returns true; otherwise returns false and prints 'Transaction Declined'. In Main, create account with $50.0 balance and $50.0 overdraft. Withdraw $80.0 (balance becomes -30.0), try withdrawing $50.0 (declined). Print 'Final balance: $-30.0'.",
+      "problemStatement": "Write a complete CheckingAccount class from scratch with private double balance and private double overdraftLimit (e.g. 100.0). Provide a constructor setting initial balance (>= 0) and overdraftLimit (>= 0). Provide deposit(double amount) which rejects negative numbers. Provide withdraw(double amount) which succeeds if amount <= (balance + overdraftLimit) and returns true; otherwise returns false and prints 'Transaction Declined'. In Main, create account with $50.0 balance and $50.0 overdraft. Withdraw $80.0 (balance becomes -30.0), try withdrawing $50.0 (declined). Print 'Final balance: $-30.0'.",
+      "expectedOutput": "Transaction Declined\nFinal balance: $-30.0",
+      "hint": "Allow balance to become negative down to -overdraftLimit",
+      "hints": [
+        "Allow balance to become negative down to -overdraftLimit",
+        "Reject if amount > (balance + overdraftLimit)"
+      ],
+      "solutionCode": "class CheckingAccount {\n    private double balance;\n    private double overdraftLimit;\n\n    public CheckingAccount(double initialBalance, double overdraft) {\n        this.balance = initialBalance >= 0 ? initialBalance : 0.0;\n        this.overdraftLimit = overdraft >= 0 ? overdraft : 0.0;\n    }\n\n    public void deposit(double amount) {\n        if (amount > 0) {\n            balance += amount;\n        }\n    }\n\n    public boolean withdraw(double amount) {\n        if (amount > 0 && amount <= (balance + overdraftLimit)) {\n            balance -= amount;\n            return true;\n        } else {\n            System.out.println(\"Transaction Declined\");\n            return false;\n        }\n    }\n\n    public double getBalance() {\n        return balance;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        CheckingAccount acc = new CheckingAccount(50.0, 50.0);\n        acc.withdraw(80.0);\n        acc.withdraw(50.0); // Declined\n        System.out.println(\"Final balance: $\" + acc.getBalance());\n    }\n}"
+    },
+    {
+      "id": "p-eira-4",
+      "title": "Fix Broken Code: Naked Setters Corrupting Order",
+      "difficulty": "easy",
+      "description": "The class below exposes setTotal() directly, allowing callers to put the order into an invalid state where itemCount is 3 but total is $0.00. Fix the class by removing setTotal() and replacing it with a domain method addItems(int count, double pricePerItem). In Main, add 3 items at $15.0 each and print 'Order verified: 3 items, Total: $45.0'.",
+      "problemStatement": "The class below exposes setTotal() directly, allowing callers to put the order into an invalid state where itemCount is 3 but total is $0.00. Fix the class by removing setTotal() and replacing it with a domain method addItems(int count, double pricePerItem). In Main, add 3 items at $15.0 each and print 'Order verified: 3 items, Total: $45.0'.",
+      "expectedOutput": "Order verified: 3 items, Total: $45.0",
+      "hint": "Remove setTotal and setItemCount",
+      "hints": [
+        "Remove setTotal and setItemCount",
+        "Provide addItems(int count, double pricePerItem)",
+        "Calculate total automatically"
+      ],
+      "solutionCode": "class OrderInvoice {\n    private int itemCount = 0;\n    private double totalAmount = 0.0;\n\n    public void addItems(int count, double pricePerItem) {\n        if (count > 0 && pricePerItem > 0) {\n            this.itemCount += count;\n            this.totalAmount += (count * pricePerItem);\n        }\n    }\n\n    public int getItemCount() { return itemCount; }\n    public double getTotalAmount() { return totalAmount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        OrderInvoice order = new OrderInvoice();\n        order.addItems(3, 15.0);\n        System.out.println(\"Order verified: \" + order.getItemCount() + \" items, Total: $\" + order.getTotalAmount());\n    }\n}",
+      "initialCode": "class OrderInvoice {\n    private int itemCount;\n    private double totalAmount;\n\n    public void setItemCount(int c) { this.itemCount = c; }\n    public void setTotal(double t) { this.totalAmount = t; } // Bug: Allows arbitrary total!\n\n    public int getItemCount() { return itemCount; }\n    public double getTotalAmount() { return totalAmount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Fix and run test\n    }\n}"
+    },
+    {
+      "id": "p-eira-5",
+      "title": "Challenge: Smart Thermostat with Eco Mode Enforcement",
+      "difficulty": "medium",
+      "description": "Write a complete EcoThermostat class from scratch with private double currentTemp, private double targetTemp (16.0 to 28.0 C), and private boolean ecoMode. When ecoMode is enabled (setEcoMode(true)), targetTemp is automatically clamped between 18.0 C and 22.0 C. Provide setTargetTemp(double temp) which respects this eco restriction. In Main, create thermostat at 20.0 C, enable ecoMode, try setting target to 26.0 C (which must be clamped to 22.0 C), and print 'Target set to: 22.0 C'.",
+      "problemStatement": "Write a complete EcoThermostat class from scratch with private double currentTemp, private double targetTemp (16.0 to 28.0 C), and private boolean ecoMode. When ecoMode is enabled (setEcoMode(true)), targetTemp is automatically clamped between 18.0 C and 22.0 C. Provide setTargetTemp(double temp) which respects this eco restriction. In Main, create thermostat at 20.0 C, enable ecoMode, try setting target to 26.0 C (which must be clamped to 22.0 C), and print 'Target set to: 22.0 C'.",
+      "expectedOutput": "Target set to: 22.0 C",
+      "hint": "When ecoMode is true, clamp between 18.0 and 22.0",
+      "hints": [
+        "When ecoMode is true, clamp between 18.0 and 22.0",
+        "Enforce boundary in setTargetTemp"
+      ],
+      "solutionCode": "class EcoThermostat {\n    private double targetTemp;\n    private boolean ecoMode;\n\n    public EcoThermostat(double initialTemp) {\n        this.ecoMode = false;\n        setTargetTemp(initialTemp);\n    }\n\n    public void setEcoMode(boolean eco) {\n        this.ecoMode = eco;\n        if (ecoMode) {\n            // Re-clamp current target if needed\n            if (targetTemp > 22.0) targetTemp = 22.0;\n            if (targetTemp < 18.0) targetTemp = 18.0;\n        }\n    }\n\n    public void setTargetTemp(double temp) {\n        double max = ecoMode ? 22.0 : 28.0;\n        double min = ecoMode ? 18.0 : 16.0;\n        if (temp > max) {\n            this.targetTemp = max;\n        } else if (temp < min) {\n            this.targetTemp = min;\n        } else {\n            this.targetTemp = temp;\n        }\n    }\n\n    public double getTargetTemp() { return targetTemp; }\n    public boolean isEcoMode() { return ecoMode; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        EcoThermostat t = new EcoThermostat(20.0);\n        t.setEcoMode(true);\n        t.setTargetTemp(26.0); // Clamped to 22.0 by ecoMode rule\n        System.out.println(\"Target set to: \" + t.getTargetTemp() + \" C\");\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-eira-1",
+      "question": "What is the difference between an Anemic Domain Model and a Rich Domain Model in enterprise Java?",
+      "expectedAnswer": "An Anemic Domain Model consists of entities that are merely data bags (private fields with public getters/setters) while business logic lives in external service classes. A Rich Domain Model co-locates business logic, state validation, and state mutation directly inside the entity itself, fulfilling true OOP encapsulation.",
+      "keyPoints": [
+        "Anemic = data bag with setters",
+        "Rich = logic and data together inside entity"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-eira-2",
+      "question": "Why is 'Tell, Don't Ask' a fundamental OOP design principle?",
+      "expectedAnswer": "'Tell, Don't Ask' means you should tell an object what action to perform (e.g. cart.applyDiscount(0.10)) rather than asking the object for its internal data, performing calculations outside, and setting the data back into the object. It preserves encapsulation and prevents logic leaks.",
+      "keyPoints": [
+        "Tell objects what to do",
+        "Do not query data to manipulate outside and write back"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-eira-3",
+      "question": "How does encapsulation prevent race conditions in multi-threaded banking systems?",
+      "expectedAnswer": "By hiding balance and funneling operations through synchronized or atomic domain methods (like transfer or withdraw), the class can enforce locking and balance verification at the exact moment of modification, preventing two concurrent threads from overdrawing the account.",
+      "keyPoints": [
+        "Protects critical sections",
+        "Prevents interleaved corrupting writes"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-eira-4",
+      "question": "How do you enforce business rules when a single transaction spans two separate objects (like transferring money between two accounts)?",
+      "expectedAnswer": "A domain service orchestrates the high-level workflow, but each individual account strictly encapsulates its own invariants: the source account verifies sufficiency and deducts via withdraw(), while the destination verifies positive amounts and adds via deposit(). Neither account exposes its balance field directly.",
+      "keyPoints": [
+        "Service coordinates workflow",
+        "Entities defend their own internal invariants"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-eira-5",
+      "question": "What happens when an entity class violates encapsulation by exposing an internal mutable List or Map?",
+      "expectedAnswer": "Outside callers can call getList().clear() or getList().add(invalidItem), bypassing all class validation and corrupting business rules. The entity must return an unmodifiable view or a defensive copy of the collection.",
+      "keyPoints": [
+        "Exposing collections leaks mutation",
+        "Return unmodifiable views or defensive copies"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-eira-6",
+      "question": "Can you provide an example of encapsulation reducing code duplication across a microservices system?",
+      "expectedAnswer": "When a Product class encapsulates VAT tax calculation rules internally, every microservice (billing, invoicing, reporting, catalog) invokes product.getTotalPriceWithTax(). If tax laws change, the calculation is updated in one place rather than in 20 disparate services.",
+      "keyPoints": [
+        "Single source of truth for business calculations",
+        "Changes localized to one class"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

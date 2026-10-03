@@ -1,0 +1,872 @@
+{
+  "id": "les-enc-4",
+  "slug": "validating-object-state",
+  "title": "Validating Object State",
+  "summary": "Implement guard clauses inside setters and constructors to reject illegal states and protect application integrity.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 4,
+  "prerequisites": [
+    "getters-and-setters"
+  ],
+  "learningOutcomes": [
+    "Write robust input guard clauses in setters and constructors",
+    "Prevent corrupted object states such as negative numbers and empty strings",
+    "Maintain internal state consistency across multiple dependent fields"
+  ],
+  "activities": [
+    {
+      "id": "act-vos-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Airport Security Scanner",
+      "analogy": {
+        "story": "At an airport gate, security officers don't just ask travelers to behave\u2014they place bags through an X-ray scanner and check boarding passes. If a prohibited item is detected, it is immediately confiscated before the passenger ever steps onto the plane.\n\nValidation in encapsulated classes is your airport security checkpoint. When outside code calls a setter or constructor with invalid data (like an empty student name, an age of -500, or a negative bank deposit), the guard clause intercepts the value at the perimeter and refuses to let it into the object's memory.",
+        "takeaway": "Never trust external input blindly. Inspect every value at the object's perimeter using validation guards before storing it in private memory.",
+        "headline": "Everyday Analogy: The Airport Security Scanner",
+        "keyTakeaway": "Never trust external input blindly. Inspect every value at the object's perimeter using validation guards before storing it in private memory."
+      }
+    },
+    {
+      "id": "act-vos-2",
+      "type": "concept",
+      "title": "Guard Clauses and Fail-Safe State Protection",
+      "concept": {
+        "explanation": "A guard clause is a conditional statement placed at the very top of a method or setter that checks for invalid arguments and handles them immediately, either by rejecting the update or falling back to a safe default.\n\nKey Validation Techniques in Encapsulation:\n1. Range Validation: Ensuring numbers fall within acceptable mathematical or business boundaries (e.g. 0 <= percentage <= 100, salary > 0).\n2. String Sanitization: Checking that strings are not null and not empty (using input != null && !input.trim().isEmpty()).\n3. Consistent State Across Fields: In multi-field operations (e.g. startDate and endDate), ensuring one field does not invalidate another.\n4. Fail-Safe Strategy: Either ignore invalid updates, log a warning, clamp to allowed boundaries (Math.max/min), or throw an IllegalArgumentException.",
+        "codeIllustration": "public void setDiscountPercent(double percent) {\n    // Guard Clause at top of method\n    if (percent < 0.0 || percent > 50.0) {\n        System.out.println(\"Invalid discount rate: \" + percent + \". Must be 0 to 50%.\");\n        return; // Guard protects private field!\n    }\n    this.discountPercent = percent;\n}",
+        "rules": [
+          "Rule 1: Always check for null before invoking methods on incoming Object parameters.",
+          "Rule 2: Place guard clauses at the beginning of the method before making any state changes.",
+          "Rule 3: Ensure constructors also run validation, preferably by calling setters or sharing validation logic."
+        ]
+      },
+      "content": "A guard clause is a conditional statement placed at the very top of a method or setter that checks for invalid arguments and handles them immediately, either by rejecting the update or falling back to a safe default.\n\nKey Validation Techniques in Encapsulation:\n1. Range Validation: Ensuring numbers fall within acceptable mathematical or business boundaries (e.g. 0 <= percentage <= 100, salary > 0).\n2. String Sanitization: Checking that strings are not null and not empty (using input != null && !input.trim().isEmpty()).\n3. Consistent State Across Fields: In multi-field operations (e.g. startDate and endDate), ensuring one field does not invalidate another.\n4. Fail-Safe Strategy: Either ignore invalid updates, log a warning, clamp to allowed boundaries (Math.max/min), or throw an IllegalArgumentException.\n\n\n### Code Illustration:\n```java\npublic void setDiscountPercent(double percent) {\n    // Guard Clause at top of method\n    if (percent < 0.0 || percent > 50.0) {\n        System.out.println(\"Invalid discount rate: \" + percent + \". Must be 0 to 50%.\");\n        return; // Guard protects private field!\n    }\n    this.discountPercent = percent;\n}\n```\n\n\n### Core Rules:\n- Rule 1: Always check for null before invoking methods on incoming Object parameters.\n- Rule 2: Place guard clauses at the beginning of the method before making any state changes.\n- Rule 3: Ensure constructors also run validation, preferably by calling setters or sharing validation logic.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Always check for null before invoking methods on incoming Object parameters.",
+          "Rule 2: Place guard clauses at the beginning of the method before making any state changes.",
+          "Rule 3: Ensure constructors also run validation, preferably by calling setters or sharing validation logic."
+        ]
+      }
+    },
+    {
+      "id": "act-vos-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Robust Student Grade & Age Validator",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class StudentRegistration {\n    private String studentName;\n    private int age;\n    private double gpa;\n\n    public StudentRegistration(String name, int age, double gpa) {\n        setName(name);\n        setAge(age);\n        setGpa(gpa);\n    }\n\n    public void setName(String name) {\n        if (name != null && !name.trim().isEmpty()) {\n            this.studentName = name.trim();\n        } else {\n            this.studentName = \"Unknown Student\";\n        }\n    }\n\n    public void setAge(int age) {\n        if (age >= 16 && age <= 100) {\n            this.age = age;\n        } else {\n            System.out.println(\"Age \" + age + \" is out of bounds [16-100]. Defaulting to 18.\");\n            this.age = 18;\n        }\n    }\n\n    public void setGpa(double gpa) {\n        if (gpa >= 0.0 && gpa <= 4.0) {\n            this.gpa = gpa;\n        } else {\n            System.out.println(\"GPA \" + gpa + \" is invalid. Clamping to 0.0.\");\n            this.gpa = 0.0;\n        }\n    }\n\n    public String getStudentName() { return studentName; }\n    public int getAge() { return age; }\n    public double getGpa() { return gpa; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        StudentRegistration s = new StudentRegistration(\"  Farhan  \", 12, 5.5);\n        System.out.println(\"Clean Name: '\" + s.getStudentName() + \"'\");\n        System.out.println(\"Clamped Age: \" + s.getAge());\n        System.out.println(\"Clamped GPA: \" + s.getGpa());\n    }\n}",
+        "explanation": "This demonstrates defense in depth: trimming whitespace, rejecting negative/out-of-bound numbers, and ensuring constructors reuse setter validation logic."
+      },
+      "codeSnippet": "class StudentRegistration {\n    private String studentName;\n    private int age;\n    private double gpa;\n\n    public StudentRegistration(String name, int age, double gpa) {\n        setName(name);\n        setAge(age);\n        setGpa(gpa);\n    }\n\n    public void setName(String name) {\n        if (name != null && !name.trim().isEmpty()) {\n            this.studentName = name.trim();\n        } else {\n            this.studentName = \"Unknown Student\";\n        }\n    }\n\n    public void setAge(int age) {\n        if (age >= 16 && age <= 100) {\n            this.age = age;\n        } else {\n            System.out.println(\"Age \" + age + \" is out of bounds [16-100]. Defaulting to 18.\");\n            this.age = 18;\n        }\n    }\n\n    public void setGpa(double gpa) {\n        if (gpa >= 0.0 && gpa <= 4.0) {\n            this.gpa = gpa;\n        } else {\n            System.out.println(\"GPA \" + gpa + \" is invalid. Clamping to 0.0.\");\n            this.gpa = 0.0;\n        }\n    }\n\n    public String getStudentName() { return studentName; }\n    public int getAge() { return age; }\n    public double getGpa() { return gpa; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        StudentRegistration s = new StudentRegistration(\"  Farhan  \", 12, 5.5);\n        System.out.println(\"Clean Name: '\" + s.getStudentName() + \"'\");\n        System.out.println(\"Clamped Age: \" + s.getAge());\n        System.out.println(\"Clamped GPA: \" + s.getGpa());\n    }\n}",
+      "description": "This demonstrates defense in depth: trimming whitespace, rejecting negative/out-of-bound numbers, and ensuring constructors reuse setter validation logic."
+    },
+    {
+      "id": "act-vos-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Multi-Field Invariant Validation in a Date Range",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class BookingPeriod {\n    private int startDay; // 1 to 31\n    private int endDay;   // 1 to 31\n\n    public BookingPeriod(int start, int end) {\n        if (start >= 1 && start <= 31 && end >= start && end <= 31) {\n            this.startDay = start;\n            this.endDay = end;\n        } else {\n            // Safe fallback\n            this.startDay = 1;\n            this.endDay = 1;\n        }\n    }\n\n    public void updatePeriod(int newStart, int newEnd) {\n        if (newStart < 1 || newEnd > 31 || newStart > newEnd) {\n            System.out.println(\"Invalid period: start cannot be after end.\");\n            return;\n        }\n        this.startDay = newStart;\n        this.endDay = newEnd;\n        System.out.println(\"Period updated: Day \" + startDay + \" to \" + endDay);\n    }\n\n    public int getDurationDays() {\n        return (endDay - startDay) + 1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BookingPeriod booking = new BookingPeriod(5, 12);\n        System.out.println(\"Initial duration: \" + booking.getDurationDays() + \" days\");\n\n        booking.updatePeriod(20, 10); // End before start -> Rejected!\n        booking.updatePeriod(15, 22); // Valid!\n        System.out.println(\"New duration: \" + booking.getDurationDays() + \" days\");\n    }\n}",
+        "explanation": "In real applications, multiple fields must stay mutually consistent. Notice how updatePeriod validates both startDay and endDay simultaneously before writing either."
+      },
+      "codeSnippet": "class BookingPeriod {\n    private int startDay; // 1 to 31\n    private int endDay;   // 1 to 31\n\n    public BookingPeriod(int start, int end) {\n        if (start >= 1 && start <= 31 && end >= start && end <= 31) {\n            this.startDay = start;\n            this.endDay = end;\n        } else {\n            // Safe fallback\n            this.startDay = 1;\n            this.endDay = 1;\n        }\n    }\n\n    public void updatePeriod(int newStart, int newEnd) {\n        if (newStart < 1 || newEnd > 31 || newStart > newEnd) {\n            System.out.println(\"Invalid period: start cannot be after end.\");\n            return;\n        }\n        this.startDay = newStart;\n        this.endDay = newEnd;\n        System.out.println(\"Period updated: Day \" + startDay + \" to \" + endDay);\n    }\n\n    public int getDurationDays() {\n        return (endDay - startDay) + 1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BookingPeriod booking = new BookingPeriod(5, 12);\n        System.out.println(\"Initial duration: \" + booking.getDurationDays() + \" days\");\n\n        booking.updatePeriod(20, 10); // End before start -> Rejected!\n        booking.updatePeriod(15, 22); // Valid!\n        System.out.println(\"New duration: \" + booking.getDurationDays() + \" days\");\n    }\n}",
+      "description": "In real applications, multiple fields must stay mutually consistent. Notice how updatePeriod validates both startDay and endDay simultaneously before writing either."
+    },
+    {
+      "id": "act-vos-5",
+      "type": "mcq",
+      "title": "Interactive Validation Quiz",
+      "questions": [
+        {
+          "id": "q-vos-1",
+          "type": "mcq",
+          "prompt": "What is the primary role of a guard clause in a setter method?",
+          "question": "What is the primary role of a guard clause in a setter method?",
+          "options": [
+            "To encrypt the data using SHA-256",
+            "To inspect incoming arguments and reject or handle invalid values before modifying fields",
+            "To make the JVM garbage collector skip this object",
+            "To convert primitive numbers into Strings"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Guard clauses examine arguments at the start of the method and halt execution if invalid values are passed.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-2",
+          "type": "mcq",
+          "prompt": "Which of the following conditions correctly checks if a String parameter 'str' is neither null nor empty whitespace?",
+          "question": "Which of the following conditions correctly checks if a String parameter 'str' is neither null nor empty whitespace?",
+          "options": [
+            "str == null",
+            "str.length() > 0",
+            "str != null && !str.trim().isEmpty()",
+            "str.equals(\"\")"
+          ],
+          "correctAnswer": 2,
+          "correctAnswerIndex": 2,
+          "explanation": "Checking 'str != null' prevents NullPointerException; '!str.trim().isEmpty()' ensures it contains actual non-space characters.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-3",
+          "type": "mcq",
+          "prompt": "Why should a constructor delegate field assignment to setters or share validation logic?",
+          "question": "Why should a constructor delegate field assignment to setters or share validation logic?",
+          "options": [
+            "To avoid duplicating the same validation rules in both the constructor and setter (DRY principle)",
+            "Because constructors cannot execute if-statements",
+            "Because Java does not allow private fields in constructors",
+            "To prevent the compiler from generating default values"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Delegating to setters eliminates duplicate validation rules, adhering to the Don't Repeat Yourself (DRY) principle.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-4",
+          "type": "mcq",
+          "prompt": "What happens if a setter checks for invalid input and simply returns without updating the field?",
+          "question": "What happens if a setter checks for invalid input and simply returns without updating the field?",
+          "options": [
+            "The Java program terminates with a fatal error",
+            "The object safely retains its previous valid state without getting corrupted",
+            "The field is reset to null automatically",
+            "The compiler rejects the class file"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Early return leaves the object in its prior valid state, preventing corrupted values from polluting memory.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-5",
+          "type": "mcq",
+          "prompt": "If an object has two dependent fields (like startTime and endTime), how should setters handle them?",
+          "question": "If an object has two dependent fields (like startTime and endTime), how should setters handle them?",
+          "options": [
+            "Ignore the dependency and let the caller worry about it",
+            "Validate that the new value does not violate the relationship (e.g. startTime <= endTime)",
+            "Always set both values to zero",
+            "Declare both fields as public"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Setters must protect multi-field invariants so one field never puts another field into an invalid contradiction.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-6",
+          "type": "mcq",
+          "prompt": "What is the danger of checking 'if (str.isEmpty())' before checking 'if (str != null)'?",
+          "question": "What is the danger of checking 'if (str.isEmpty())' before checking 'if (str != null)'?",
+          "options": [
+            "The code runs slower",
+            "If str is null, invoking .isEmpty() throws a fatal NullPointerException immediately",
+            "The compiler refuses to compile the code",
+            "It returns true for all strings"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Short-circuit evaluation (&&) must check 'str != null' first; calling any method on null crashes with NullPointerException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-7",
+          "type": "mcq",
+          "prompt": "What is defensive clamping?",
+          "question": "What is defensive clamping?",
+          "options": [
+            "Locking the computer screen during compilation",
+            "Constraining a number to stay within an allowed minimum and maximum boundary (e.g. using Math.min/Math.max)",
+            "Refusing to allow any updates to private fields",
+            "Deleting unused variables"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Clamping forces an out-of-range value to the nearest legal boundary (e.g. clamping 115% volume down to 100%).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-8",
+          "type": "mcq",
+          "prompt": "Where should validation guards be placed inside a method?",
+          "question": "Where should validation guards be placed inside a method?",
+          "options": [
+            "At the very end right before returning",
+            "At the very beginning, before any state modification occurs",
+            "Inside the destructor",
+            "Inside a separate package"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Guards should be placed at the top (fail-fast principle) so invalid calls are aborted before state changes occur.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-9",
+          "type": "mcq",
+          "prompt": "In an e-commerce Product class, what should a setPrice(double price) method reject?",
+          "question": "In an e-commerce Product class, what should a setPrice(double price) method reject?",
+          "options": [
+            "Values less than or equal to 0.0 (or negative prices)",
+            "Any decimal numbers",
+            "Prices over $10",
+            "Even numbers"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Prices cannot be negative or zero in standard retail pricing.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-vos-10",
+          "type": "mcq",
+          "prompt": "What is the Fail-Fast principle in software engineering?",
+          "question": "What is the Fail-Fast principle in software engineering?",
+          "options": [
+            "Write code as quickly as possible without testing",
+            "Immediately report or reject errors at the point of origin rather than allowing corrupted data to propagate silently",
+            "Allow incorrect values to be processed and fixed later",
+            "Crash the operating system on any warning"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Fail-fast ensures bad input is rejected at the entry point so corrupted state never propagates silently through the system.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-vos-1",
+            "type": "mcq",
+            "prompt": "What is the primary role of a guard clause in a setter method?",
+            "question": "What is the primary role of a guard clause in a setter method?",
+            "options": [
+              "To encrypt the data using SHA-256",
+              "To inspect incoming arguments and reject or handle invalid values before modifying fields",
+              "To make the JVM garbage collector skip this object",
+              "To convert primitive numbers into Strings"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Guard clauses examine arguments at the start of the method and halt execution if invalid values are passed.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-2",
+            "type": "mcq",
+            "prompt": "Which of the following conditions correctly checks if a String parameter 'str' is neither null nor empty whitespace?",
+            "question": "Which of the following conditions correctly checks if a String parameter 'str' is neither null nor empty whitespace?",
+            "options": [
+              "str == null",
+              "str.length() > 0",
+              "str != null && !str.trim().isEmpty()",
+              "str.equals(\"\")"
+            ],
+            "correctAnswer": 2,
+            "correctAnswerIndex": 2,
+            "explanation": "Checking 'str != null' prevents NullPointerException; '!str.trim().isEmpty()' ensures it contains actual non-space characters.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-3",
+            "type": "mcq",
+            "prompt": "Why should a constructor delegate field assignment to setters or share validation logic?",
+            "question": "Why should a constructor delegate field assignment to setters or share validation logic?",
+            "options": [
+              "To avoid duplicating the same validation rules in both the constructor and setter (DRY principle)",
+              "Because constructors cannot execute if-statements",
+              "Because Java does not allow private fields in constructors",
+              "To prevent the compiler from generating default values"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Delegating to setters eliminates duplicate validation rules, adhering to the Don't Repeat Yourself (DRY) principle.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-4",
+            "type": "mcq",
+            "prompt": "What happens if a setter checks for invalid input and simply returns without updating the field?",
+            "question": "What happens if a setter checks for invalid input and simply returns without updating the field?",
+            "options": [
+              "The Java program terminates with a fatal error",
+              "The object safely retains its previous valid state without getting corrupted",
+              "The field is reset to null automatically",
+              "The compiler rejects the class file"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Early return leaves the object in its prior valid state, preventing corrupted values from polluting memory.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-5",
+            "type": "mcq",
+            "prompt": "If an object has two dependent fields (like startTime and endTime), how should setters handle them?",
+            "question": "If an object has two dependent fields (like startTime and endTime), how should setters handle them?",
+            "options": [
+              "Ignore the dependency and let the caller worry about it",
+              "Validate that the new value does not violate the relationship (e.g. startTime <= endTime)",
+              "Always set both values to zero",
+              "Declare both fields as public"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Setters must protect multi-field invariants so one field never puts another field into an invalid contradiction.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-6",
+            "type": "mcq",
+            "prompt": "What is the danger of checking 'if (str.isEmpty())' before checking 'if (str != null)'?",
+            "question": "What is the danger of checking 'if (str.isEmpty())' before checking 'if (str != null)'?",
+            "options": [
+              "The code runs slower",
+              "If str is null, invoking .isEmpty() throws a fatal NullPointerException immediately",
+              "The compiler refuses to compile the code",
+              "It returns true for all strings"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Short-circuit evaluation (&&) must check 'str != null' first; calling any method on null crashes with NullPointerException.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-7",
+            "type": "mcq",
+            "prompt": "What is defensive clamping?",
+            "question": "What is defensive clamping?",
+            "options": [
+              "Locking the computer screen during compilation",
+              "Constraining a number to stay within an allowed minimum and maximum boundary (e.g. using Math.min/Math.max)",
+              "Refusing to allow any updates to private fields",
+              "Deleting unused variables"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Clamping forces an out-of-range value to the nearest legal boundary (e.g. clamping 115% volume down to 100%).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-8",
+            "type": "mcq",
+            "prompt": "Where should validation guards be placed inside a method?",
+            "question": "Where should validation guards be placed inside a method?",
+            "options": [
+              "At the very end right before returning",
+              "At the very beginning, before any state modification occurs",
+              "Inside the destructor",
+              "Inside a separate package"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Guards should be placed at the top (fail-fast principle) so invalid calls are aborted before state changes occur.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-9",
+            "type": "mcq",
+            "prompt": "In an e-commerce Product class, what should a setPrice(double price) method reject?",
+            "question": "In an e-commerce Product class, what should a setPrice(double price) method reject?",
+            "options": [
+              "Values less than or equal to 0.0 (or negative prices)",
+              "Any decimal numbers",
+              "Prices over $10",
+              "Even numbers"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Prices cannot be negative or zero in standard retail pricing.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-vos-10",
+            "type": "mcq",
+            "prompt": "What is the Fail-Fast principle in software engineering?",
+            "question": "What is the Fail-Fast principle in software engineering?",
+            "options": [
+              "Write code as quickly as possible without testing",
+              "Immediately report or reject errors at the point of origin rather than allowing corrupted data to propagate silently",
+              "Allow incorrect values to be processed and fixed later",
+              "Crash the operating system on any warning"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Fail-fast ensures bad input is rejected at the entry point so corrupted state never propagates silently through the system.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-vos-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: State Validation",
+      "questions": [
+        {
+          "id": "i-vos-1",
+          "question": "What is the Fail-Fast principle, and how does encapsulation support it?",
+          "answer": "Fail-Fast means identifying and reporting bad input or invalid state immediately at the system boundary rather than allowing corrupt data to seep deep into the application. Encapsulated setters and constructors act as boundary gatekeepers that validate and fail fast before internal state is touched.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Reject bad input at boundary",
+            "Prevent corrupted state propagation"
+          ]
+        },
+        {
+          "id": "i-vos-2",
+          "question": "How should an enterprise Java class react when invalid input is passed to a setter?",
+          "answer": "Two primary approaches are used: 1. Fail-safe: Ignore the invalid value or clamp to a safe default while logging a warning. 2. Exceptional: Throw an unchecked exception like IllegalArgumentException or NullPointerException to signal a programming contract violation.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Throw IllegalArgumentException or clamp/fallback",
+            "Always prevent state corruption"
+          ]
+        },
+        {
+          "id": "i-vos-3",
+          "question": "How do you protect multi-variable invariants during concurrent or sequential updates?",
+          "answer": "Rather than providing separate independent setters for mutually dependent fields (which leaves the object in a temporarily invalid state between calls), provide an atomic method that updates all dependent fields together after validating their combined consistency.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Combine dependent updates into atomic methods",
+            "Avoid half-updated states"
+          ]
+        },
+        {
+          "id": "i-vos-4",
+          "question": "Why is 'input != null && !input.trim().isEmpty()' the standard check for Java String validation?",
+          "answer": "Because a String can be null (which causes NullPointerException if dereferenced), empty (\"\"), or composed purely of invisible whitespace (\"   \"). The expression safely verifies the reference is non-null first, then strips whitespace and confirms non-emptiness.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Guards against null, empty, and whitespace",
+            "Safe short-circuit evaluation"
+          ]
+        },
+        {
+          "id": "i-vos-5",
+          "question": "What is the difference between validation in the constructor vs validation in setters?",
+          "answer": "Validation in the constructor guarantees an object is born in a valid state. Validation in setters guarantees an object stays in a valid state throughout its lifetime. Reusing setter validation inside constructors avoids code duplication.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Constructor = valid birth",
+            "Setter = valid lifetime",
+            "Reuse validation logic"
+          ]
+        },
+        {
+          "id": "i-vos-6",
+          "question": "What is an invariant check in domain-driven design?",
+          "answer": "An invariant check is an assertion that verifies an aggregate or entity complies with all fundamental business constraints (e.g. an order with items must have a non-negative total). Encapsulation ensures these invariants are impossible to violate from outside the class.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Guarantees business rules",
+            "Maintains aggregate consistency"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-vos-1",
+          "question": "What is the Fail-Fast principle, and how does encapsulation support it?",
+          "expectedAnswer": "Fail-Fast means identifying and reporting bad input or invalid state immediately at the system boundary rather than allowing corrupt data to seep deep into the application. Encapsulated setters and constructors act as boundary gatekeepers that validate and fail fast before internal state is touched.",
+          "keyPoints": [
+            "Reject bad input at boundary",
+            "Prevent corrupted state propagation"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-vos-2",
+          "question": "How should an enterprise Java class react when invalid input is passed to a setter?",
+          "expectedAnswer": "Two primary approaches are used: 1. Fail-safe: Ignore the invalid value or clamp to a safe default while logging a warning. 2. Exceptional: Throw an unchecked exception like IllegalArgumentException or NullPointerException to signal a programming contract violation.",
+          "keyPoints": [
+            "Throw IllegalArgumentException or clamp/fallback",
+            "Always prevent state corruption"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-vos-3",
+          "question": "How do you protect multi-variable invariants during concurrent or sequential updates?",
+          "expectedAnswer": "Rather than providing separate independent setters for mutually dependent fields (which leaves the object in a temporarily invalid state between calls), provide an atomic method that updates all dependent fields together after validating their combined consistency.",
+          "keyPoints": [
+            "Combine dependent updates into atomic methods",
+            "Avoid half-updated states"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-vos-4",
+          "question": "Why is 'input != null && !input.trim().isEmpty()' the standard check for Java String validation?",
+          "expectedAnswer": "Because a String can be null (which causes NullPointerException if dereferenced), empty (\"\"), or composed purely of invisible whitespace (\"   \"). The expression safely verifies the reference is non-null first, then strips whitespace and confirms non-emptiness.",
+          "keyPoints": [
+            "Guards against null, empty, and whitespace",
+            "Safe short-circuit evaluation"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-vos-5",
+          "question": "What is the difference between validation in the constructor vs validation in setters?",
+          "expectedAnswer": "Validation in the constructor guarantees an object is born in a valid state. Validation in setters guarantees an object stays in a valid state throughout its lifetime. Reusing setter validation inside constructors avoids code duplication.",
+          "keyPoints": [
+            "Constructor = valid birth",
+            "Setter = valid lifetime",
+            "Reuse validation logic"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        },
+        {
+          "id": "i-vos-6",
+          "question": "What is an invariant check in domain-driven design?",
+          "expectedAnswer": "An invariant check is an assertion that verifies an aggregate or entity complies with all fundamental business constraints (e.g. an order with items must have a non-negative total). Encapsulation ensures these invariants are impossible to violate from outside the class.",
+          "keyPoints": [
+            "Guarantees business rules",
+            "Maintains aggregate consistency"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-vos-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I always check for null before invoking String operations.",
+        "I place guard clauses at the top of methods to fail-fast.",
+        "I know how to maintain consistency across multiple dependent fields."
+      ],
+      "checklist": [
+        "I always check for null before invoking String operations.",
+        "I place guard clauses at the top of methods to fail-fast.",
+        "I know how to maintain consistency across multiple dependent fields."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "encapsulation-and-access-control",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-vos-1",
+      "title": "Warmup: Validate Speedometer Range",
+      "difficulty": "easy",
+      "description": "Modify Speedometer to clamp 'currentSpeed' (double) between 0.0 and 220.0 km/h. In Main, instantiate with 50.0, attempt to set -20.0 (ignored or clamped), set 180.0, and print 'Verified speed: 180.0 km/h'.",
+      "problemStatement": "Modify Speedometer to clamp 'currentSpeed' (double) between 0.0 and 220.0 km/h. In Main, instantiate with 50.0, attempt to set -20.0 (ignored or clamped), set 180.0, and print 'Verified speed: 180.0 km/h'.",
+      "expectedOutput": "Verified speed: 180.0 km/h",
+      "hint": "Check 'speed >= 0.0 && speed <= 220.0'",
+      "hints": [
+        "Check 'speed >= 0.0 && speed <= 220.0'",
+        "Reject out-of-range updates",
+        "Print speed with km/h"
+      ],
+      "solutionCode": "class Speedometer {\n    private double currentSpeed;\n\n    public Speedometer(double speed) {\n        setSpeed(speed);\n    }\n\n    public void setSpeed(double speed) {\n        if (speed >= 0.0 && speed <= 220.0) {\n            this.currentSpeed = speed;\n        }\n    }\n\n    public double getSpeed() {\n        return currentSpeed;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Speedometer s = new Speedometer(50.0);\n        s.setSpeed(-20.0); // Rejected\n        s.setSpeed(180.0); // Accepted\n        System.out.println(\"Verified speed: \" + s.getSpeed() + \" km/h\");\n    }\n}",
+      "initialCode": "class Speedometer {\n    private double currentSpeed;\n\n    public Speedometer(double speed) {\n        setSpeed(speed);\n    }\n\n    public void setSpeed(double speed) {\n        // Add range check 0.0 to 220.0\n        this.currentSpeed = speed;\n    }\n\n    public double getSpeed() {\n        return currentSpeed;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your test here\n    }\n}"
+    },
+    {
+      "id": "p-vos-2",
+      "title": "Code from Scratch: Sanitized User Profile",
+      "difficulty": "easy",
+      "description": "Write a complete ValidatedUser class from scratch with private String username and private String email. In setUsername, reject null, empty, or strings under 3 characters. In setEmail, reject strings that do not contain both '@' and '.'. Provide a constructor and getters. In Main, create user with valid 'arjun' and 'arjun@mail.com', attempt to update email to 'bademail' (rejected), and print 'Email: arjun@mail.com'.",
+      "problemStatement": "Write a complete ValidatedUser class from scratch with private String username and private String email. In setUsername, reject null, empty, or strings under 3 characters. In setEmail, reject strings that do not contain both '@' and '.'. Provide a constructor and getters. In Main, create user with valid 'arjun' and 'arjun@mail.com', attempt to update email to 'bademail' (rejected), and print 'Email: arjun@mail.com'.",
+      "expectedOutput": "Email: arjun@mail.com",
+      "hint": "Write ValidatedUser from scratch",
+      "hints": [
+        "Write ValidatedUser from scratch",
+        "Check contains('@') and contains('.')",
+        "Ensure previous valid state remains if bad input passed"
+      ],
+      "solutionCode": "class ValidatedUser {\n    private String username;\n    private String email;\n\n    public ValidatedUser(String username, String email) {\n        setUsername(username);\n        setEmail(email);\n    }\n\n    public void setUsername(String username) {\n        if (username != null && username.trim().length() >= 3) {\n            this.username = username.trim();\n        } else {\n            this.username = \"default_user\";\n        }\n    }\n\n    public void setEmail(String email) {\n        if (email != null && email.contains(\"@\") && email.contains(\".\")) {\n            this.email = email.trim();\n        }\n    }\n\n    public String getUsername() { return username; }\n    public String getEmail() { return email; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ValidatedUser u = new ValidatedUser(\"arjun\", \"arjun@mail.com\");\n        u.setEmail(\"bademail\"); // Rejected\n        System.out.println(\"Email: \" + u.getEmail());\n    }\n}"
+    },
+    {
+      "id": "p-vos-3",
+      "title": "Code from Scratch: Thermostat Temperature Guard",
+      "difficulty": "medium",
+      "description": "Write a complete SmartThermostat class from scratch with private double targetTemp. The allowed comfort range is 16.0 C to 30.0 C. Provide a constructor setting the initial temperature (defaulting to 22.0 if out of range). Provide setTargetTemp(double temp) which prints 'Out of range' if outside [16, 30] and does not modify the state. Provide getTargetTemp(). In Main, create thermostat at 22.0, try setting 35.0, then set 24.5, and print 'Target: 24.5 C'.",
+      "problemStatement": "Write a complete SmartThermostat class from scratch with private double targetTemp. The allowed comfort range is 16.0 C to 30.0 C. Provide a constructor setting the initial temperature (defaulting to 22.0 if out of range). Provide setTargetTemp(double temp) which prints 'Out of range' if outside [16, 30] and does not modify the state. Provide getTargetTemp(). In Main, create thermostat at 22.0, try setting 35.0, then set 24.5, and print 'Target: 24.5 C'.",
+      "expectedOutput": "Out of range\nTarget: 24.5 C",
+      "hint": "Write SmartThermostat from scratch",
+      "hints": [
+        "Write SmartThermostat from scratch",
+        "Check temp >= 16.0 && temp <= 30.0",
+        "Print Out of range on invalid attempt"
+      ],
+      "solutionCode": "class SmartThermostat {\n    private double targetTemp;\n\n    public SmartThermostat(double initialTemp) {\n        if (initialTemp >= 16.0 && initialTemp <= 30.0) {\n            this.targetTemp = initialTemp;\n        } else {\n            this.targetTemp = 22.0;\n        }\n    }\n\n    public void setTargetTemp(double temp) {\n        if (temp >= 16.0 && temp <= 30.0) {\n            this.targetTemp = temp;\n        } else {\n            System.out.println(\"Out of range\");\n        }\n    }\n\n    public double getTargetTemp() {\n        return targetTemp;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SmartThermostat t = new SmartThermostat(22.0);\n        t.setTargetTemp(35.0);\n        t.setTargetTemp(24.5);\n        System.out.println(\"Target: \" + t.getTargetTemp() + \" C\");\n    }\n}"
+    },
+    {
+      "id": "p-vos-4",
+      "title": "Fix Broken Code: Missing String Null Safety",
+      "difficulty": "easy",
+      "description": "The BookTitle class below crashes with a NullPointerException when a null title is passed because it calls title.length() before checking if title is null. Fix the setter so it safely guards against null before checking length. In Main, pass null (should fallback to 'Untitled') and print 'Book: Untitled'.",
+      "problemStatement": "The BookTitle class below crashes with a NullPointerException when a null title is passed because it calls title.length() before checking if title is null. Fix the setter so it safely guards against null before checking length. In Main, pass null (should fallback to 'Untitled') and print 'Book: Untitled'.",
+      "expectedOutput": "Book: Untitled",
+      "hint": "Add title != null check before title.trim().isEmpty()",
+      "hints": [
+        "Add title != null check before title.trim().isEmpty()",
+        "Fallback to 'Untitled' if null or empty"
+      ],
+      "solutionCode": "class BookTitle {\n    private String title;\n\n    public void setTitle(String title) {\n        if (title != null && !title.trim().isEmpty()) {\n            this.title = title.trim();\n        } else {\n            this.title = \"Untitled\";\n        }\n    }\n\n    public String getTitle() { return title; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BookTitle b = new BookTitle();\n        b.setTitle(null);\n        System.out.println(\"Book: \" + b.getTitle());\n    }\n}",
+      "initialCode": "class BookTitle {\n    private String title;\n\n    public void setTitle(String title) {\n        // Bug: Crashes if title is null!\n        if (title.length() > 0) {\n            this.title = title;\n        } else {\n            this.title = \"Untitled\";\n        }\n    }\n\n    public String getTitle() { return title; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BookTitle b = new BookTitle();\n        b.setTitle(null);\n        System.out.println(\"Book: \" + b.getTitle());\n    }\n}"
+    },
+    {
+      "id": "p-vos-5",
+      "title": "Challenge: Atomic Multi-Field Scoreboard",
+      "difficulty": "medium",
+      "description": "Write a complete MatchScore class from scratch with private int teamAScore and private int teamBScore. Scores can never decrease (they are strictly monotonic). Provide a constructor setting both to 0. Provide an atomic updateScore(int newA, int newB) method that validates newA >= teamAScore and newB >= teamBScore before updating both; if either is less, print 'Invalid score revision'. In Main, update to 1, 0; try updating to 0, 2 (rejected); update to 2, 1; and print 'Score: 2 - 1'.",
+      "problemStatement": "Write a complete MatchScore class from scratch with private int teamAScore and private int teamBScore. Scores can never decrease (they are strictly monotonic). Provide a constructor setting both to 0. Provide an atomic updateScore(int newA, int newB) method that validates newA >= teamAScore and newB >= teamBScore before updating both; if either is less, print 'Invalid score revision'. In Main, update to 1, 0; try updating to 0, 2 (rejected); update to 2, 1; and print 'Score: 2 - 1'.",
+      "expectedOutput": "Invalid score revision\nScore: 2 - 1",
+      "hint": "Enforce newA >= teamAScore && newB >= teamBScore",
+      "hints": [
+        "Enforce newA >= teamAScore && newB >= teamBScore",
+        "Atomic update ensures neither changes if one is bad"
+      ],
+      "solutionCode": "class MatchScore {\n    private int teamAScore;\n    private int teamBScore;\n\n    public MatchScore() {\n        this.teamAScore = 0;\n        this.teamBScore = 0;\n    }\n\n    public void updateScore(int newA, int newB) {\n        if (newA >= teamAScore && newB >= teamBScore) {\n            this.teamAScore = newA;\n            this.teamBScore = newB;\n        } else {\n            System.out.println(\"Invalid score revision\");\n        }\n    }\n\n    public String getScoreString() {\n        return teamAScore + \" - \" + teamBScore;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        MatchScore match = new MatchScore();\n        match.updateScore(1, 0);\n        match.updateScore(0, 2); // Rejected because team A would decrease from 1 to 0\n        match.updateScore(2, 1); // Accepted\n        System.out.println(\"Score: \" + match.getScoreString());\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-vos-1",
+      "question": "What is the Fail-Fast principle, and how does encapsulation support it?",
+      "expectedAnswer": "Fail-Fast means identifying and reporting bad input or invalid state immediately at the system boundary rather than allowing corrupt data to seep deep into the application. Encapsulated setters and constructors act as boundary gatekeepers that validate and fail fast before internal state is touched.",
+      "keyPoints": [
+        "Reject bad input at boundary",
+        "Prevent corrupted state propagation"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-vos-2",
+      "question": "How should an enterprise Java class react when invalid input is passed to a setter?",
+      "expectedAnswer": "Two primary approaches are used: 1. Fail-safe: Ignore the invalid value or clamp to a safe default while logging a warning. 2. Exceptional: Throw an unchecked exception like IllegalArgumentException or NullPointerException to signal a programming contract violation.",
+      "keyPoints": [
+        "Throw IllegalArgumentException or clamp/fallback",
+        "Always prevent state corruption"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-vos-3",
+      "question": "How do you protect multi-variable invariants during concurrent or sequential updates?",
+      "expectedAnswer": "Rather than providing separate independent setters for mutually dependent fields (which leaves the object in a temporarily invalid state between calls), provide an atomic method that updates all dependent fields together after validating their combined consistency.",
+      "keyPoints": [
+        "Combine dependent updates into atomic methods",
+        "Avoid half-updated states"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-vos-4",
+      "question": "Why is 'input != null && !input.trim().isEmpty()' the standard check for Java String validation?",
+      "expectedAnswer": "Because a String can be null (which causes NullPointerException if dereferenced), empty (\"\"), or composed purely of invisible whitespace (\"   \"). The expression safely verifies the reference is non-null first, then strips whitespace and confirms non-emptiness.",
+      "keyPoints": [
+        "Guards against null, empty, and whitespace",
+        "Safe short-circuit evaluation"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-vos-5",
+      "question": "What is the difference between validation in the constructor vs validation in setters?",
+      "expectedAnswer": "Validation in the constructor guarantees an object is born in a valid state. Validation in setters guarantees an object stays in a valid state throughout its lifetime. Reusing setter validation inside constructors avoids code duplication.",
+      "keyPoints": [
+        "Constructor = valid birth",
+        "Setter = valid lifetime",
+        "Reuse validation logic"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    },
+    {
+      "id": "i-vos-6",
+      "question": "What is an invariant check in domain-driven design?",
+      "expectedAnswer": "An invariant check is an assertion that verifies an aggregate or entity complies with all fundamental business constraints (e.g. an order with items must have a non-negative total). Encapsulation ensures these invariants are impossible to violate from outside the class.",
+      "keyPoints": [
+        "Guarantees business rules",
+        "Maintains aggregate consistency"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    }
+  ]
+}

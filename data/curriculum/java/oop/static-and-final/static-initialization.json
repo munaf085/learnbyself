@@ -1,0 +1,862 @@
+{
+  "id": "les-sf-4",
+  "slug": "static-initialization",
+  "title": "Static Initialization",
+  "summary": "Master static blocks ('static { ... }'): one-time execution during class loading to initialize complex class-level data.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 4,
+  "prerequisites": [
+    "static-methods"
+  ],
+  "learningOutcomes": [
+    "Write and trace static initialization blocks",
+    "Understand the exact sequence: Static blocks execute once on class load, BEFORE any constructor",
+    "Initialize complex static collections and configurations safely"
+  ],
+  "activities": [
+    {
+      "id": "act-si-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: Setting Up the Electric Grid Before Opening Factory Doors",
+      "analogy": {
+        "story": "Imagine a high-tech car manufacturing facility.\n\nBefore the very first worker walks through the door, and before the very first automobile chassis is assembled on the conveyor belt, the building's Master Power Plant must be fired up. High-voltage transformers are calibrated, water pumps are pressurized, and network servers are booted. This complex infrastructure setup happens exactly ONCE when the factory opens.\n\nAfter that, every time a new car is assembled, only the normal car assembly process runs (Constructor).\n\nA static initialization block is that factory power plant startup: it executes one-time setup logic when the class is first loaded, long before any constructor runs.",
+        "takeaway": "Static blocks execute once upon class loading to prepare complex class-level resources. Constructors execute repeatedly for every individual object born.",
+        "headline": "Everyday Analogy: Setting Up the Electric Grid Before Opening Factory Doors",
+        "keyTakeaway": "Static blocks execute once upon class loading to prepare complex class-level resources. Constructors execute repeatedly for every individual object born."
+      }
+    },
+    {
+      "id": "act-si-2",
+      "type": "concept",
+      "title": "The Static Initialization Block Syntax & Order of Execution",
+      "concept": {
+        "explanation": "When a static variable requires more than a simple one-line expression to initialize (for example, reading a config file, populating a lookup array, or requiring try-catch error handling), Java provides the Static Initialization Block.\n\nSyntax:\nstatic {\n    // Code runs once when class is loaded\n}\n\nExecution Order Rules:\n1. Class Loading Trigger: When the class is first referenced (by calling a static method, accessing a static variable, or calling new).\n2. Static Variables and Static Blocks: Execute in the exact top-to-bottom order they appear in the source code.\n3. Object Instantiation (new): Instance initializers and Constructors run ONLY when 'new' is called, and they run on every object creation.\n4. Static blocks NEVER execute twice in the same ClassLoader lifecycle.",
+        "codeIllustration": "class Demo {\n    static int code;\n\n    // Static block runs ONCE on class load\n    static {\n        System.out.println(\"1. Static Block Executed\");\n        code = 999;\n    }\n\n    // Constructor runs on every 'new'\n    public Demo() {\n        System.out.println(\"2. Constructor Executed\");\n    }\n}",
+        "rules": [
+          "Rule 1: Static blocks run before any constructor runs.",
+          "Rule 2: If a class has multiple static blocks, they run in top-down appearance order.",
+          "Rule 3: Static blocks cannot throw checked exceptions without catching them inside the block."
+        ]
+      },
+      "content": "When a static variable requires more than a simple one-line expression to initialize (for example, reading a config file, populating a lookup array, or requiring try-catch error handling), Java provides the Static Initialization Block.\n\nSyntax:\nstatic {\n    // Code runs once when class is loaded\n}\n\nExecution Order Rules:\n1. Class Loading Trigger: When the class is first referenced (by calling a static method, accessing a static variable, or calling new).\n2. Static Variables and Static Blocks: Execute in the exact top-to-bottom order they appear in the source code.\n3. Object Instantiation (new): Instance initializers and Constructors run ONLY when 'new' is called, and they run on every object creation.\n4. Static blocks NEVER execute twice in the same ClassLoader lifecycle.\n\n\n### Code Illustration:\n```java\nclass Demo {\n    static int code;\n\n    // Static block runs ONCE on class load\n    static {\n        System.out.println(\"1. Static Block Executed\");\n        code = 999;\n    }\n\n    // Constructor runs on every 'new'\n    public Demo() {\n        System.out.println(\"2. Constructor Executed\");\n    }\n}\n```\n\n\n### Core Rules:\n- Rule 1: Static blocks run before any constructor runs.\n- Rule 2: If a class has multiple static blocks, they run in top-down appearance order.\n- Rule 3: Static blocks cannot throw checked exceptions without catching them inside the block.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Static blocks run before any constructor runs.",
+          "Rule 2: If a class has multiple static blocks, they run in top-down appearance order.",
+          "Rule 3: Static blocks cannot throw checked exceptions without catching them inside the block."
+        ]
+      }
+    },
+    {
+      "id": "act-si-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Tracing Static Block vs Constructor Order",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class SystemInitializer {\n    private static String databaseUrl;\n\n    // Static initialization block\n    static {\n        System.out.println(\"[STEP 1] Static block executing: Initializing Database Connection Pool...\");\n        databaseUrl = \"jdbc:postgresql://cloud-db.internal:5432/production\";\n    }\n\n    public SystemInitializer(String clientName) {\n        System.out.println(\"[STEP 2] Constructor executing for client: \" + clientName);\n    }\n\n    public static String getDatabaseUrl() {\n        return databaseUrl;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"--- Main method started ---\");\n\n        // First instance:\n        SystemInitializer s1 = new SystemInitializer(\"WebPortal\");\n\n        // Second instance:\n        SystemInitializer s2 = new SystemInitializer(\"MobileApp\");\n\n        System.out.println(\"Shared DB: \" + SystemInitializer.getDatabaseUrl());\n    }\n}",
+        "explanation": "Observe the output: Step 1 executes ONLY once when SystemInitializer is first loaded. Step 2 executes for both WebPortal and MobileApp."
+      },
+      "codeSnippet": "class SystemInitializer {\n    private static String databaseUrl;\n\n    // Static initialization block\n    static {\n        System.out.println(\"[STEP 1] Static block executing: Initializing Database Connection Pool...\");\n        databaseUrl = \"jdbc:postgresql://cloud-db.internal:5432/production\";\n    }\n\n    public SystemInitializer(String clientName) {\n        System.out.println(\"[STEP 2] Constructor executing for client: \" + clientName);\n    }\n\n    public static String getDatabaseUrl() {\n        return databaseUrl;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"--- Main method started ---\");\n\n        // First instance:\n        SystemInitializer s1 = new SystemInitializer(\"WebPortal\");\n\n        // Second instance:\n        SystemInitializer s2 = new SystemInitializer(\"MobileApp\");\n\n        System.out.println(\"Shared DB: \" + SystemInitializer.getDatabaseUrl());\n    }\n}",
+      "description": "Observe the output: Step 1 executes ONLY once when SystemInitializer is first loaded. Step 2 executes for both WebPortal and MobileApp."
+    },
+    {
+      "id": "act-si-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Populating Complex Static Cache Lookup Table",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class CountryCodeRegistry {\n    private static String[] codeLookup = new String[26];\n\n    // Populate static array via static block\n    static {\n        for (int i = 0; i < 26; i++) {\n            codeLookup[i] = \"ZONE-\" + (char) ('A' + i);\n        }\n        System.out.println(\"CountryCodeRegistry initialized with 26 zones.\");\n    }\n\n    public static String getZone(char letter) {\n        char upper = Character.toUpperCase(letter);\n        if (upper >= 'A' && upper <= 'Z') {\n            return codeLookup[upper - 'A'];\n        }\n        return \"ZONE-UNKNOWN\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Zone for 'A': \" + CountryCodeRegistry.getZone('A'));\n        System.out.println(\"Zone for 'M': \" + CountryCodeRegistry.getZone('M'));\n    }\n}",
+        "explanation": "Complex array generation and loops cannot be performed in a simple one-line variable declaration. The static block enables rich algorithmic setup of class-level structures."
+      },
+      "codeSnippet": "class CountryCodeRegistry {\n    private static String[] codeLookup = new String[26];\n\n    // Populate static array via static block\n    static {\n        for (int i = 0; i < 26; i++) {\n            codeLookup[i] = \"ZONE-\" + (char) ('A' + i);\n        }\n        System.out.println(\"CountryCodeRegistry initialized with 26 zones.\");\n    }\n\n    public static String getZone(char letter) {\n        char upper = Character.toUpperCase(letter);\n        if (upper >= 'A' && upper <= 'Z') {\n            return codeLookup[upper - 'A'];\n        }\n        return \"ZONE-UNKNOWN\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Zone for 'A': \" + CountryCodeRegistry.getZone('A'));\n        System.out.println(\"Zone for 'M': \" + CountryCodeRegistry.getZone('M'));\n    }\n}",
+      "description": "Complex array generation and loops cannot be performed in a simple one-line variable declaration. The static block enables rich algorithmic setup of class-level structures."
+    },
+    {
+      "id": "act-si-5",
+      "type": "mcq",
+      "title": "Interactive Static Initialization Quiz",
+      "questions": [
+        {
+          "id": "q-si-1",
+          "type": "mcq",
+          "prompt": "When does a static initialization block execute in Java?",
+          "question": "When does a static initialization block execute in Java?",
+          "options": [
+            "Every time an object is instantiated with 'new'",
+            "Exactly once, when the class is first loaded into memory by the JVM",
+            "When the operating system boots",
+            "Whenever a garbage collection cycle finishes"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static blocks execute exactly once when the class is loaded by the ClassLoader.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-2",
+          "type": "mcq",
+          "prompt": "What is the relative execution order between a static block and a constructor?",
+          "question": "What is the relative execution order between a static block and a constructor?",
+          "options": [
+            "The constructor runs first, then the static block",
+            "The static block always runs first, before any constructor executes",
+            "They execute concurrently in separate threads",
+            "The static block runs only after all objects are deleted"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static blocks run at class-load time; constructors run subsequently when instances are created.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-3",
+          "type": "mcq",
+          "prompt": "If a class has two static initialization blocks, in what order do they run?",
+          "question": "If a class has two static initialization blocks, in what order do they run?",
+          "options": [
+            "Random order determined by the JVM",
+            "In the exact order they appear in the source code file from top to bottom",
+            "The shorter block runs first",
+            "Only the second block runs; the first is ignored"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Java executes multiple static blocks sequentially from top to bottom as they appear in the file.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-4",
+          "type": "mcq",
+          "prompt": "Why would an engineer use a static block instead of a simple inline assignment (static int x = 10;)?",
+          "question": "Why would an engineer use a static block instead of a simple inline assignment (static int x = 10;)?",
+          "options": [
+            "When initialization requires loops, multi-step logic, or exception handling (try-catch)",
+            "Because inline assignments are not supported in Java",
+            "To make variables private",
+            "To reduce bytecode file size"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Static blocks are ideal for multi-line logic, populating arrays/tables, or handling checked exceptions.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-5",
+          "type": "mcq",
+          "prompt": "Can a static block access instance variables directly?",
+          "question": "Can a static block access instance variables directly?",
+          "options": [
+            "Yes, static blocks can access all variables",
+            "No, static blocks run before any instance exists and cannot touch non-static members",
+            "Only if the instance variables are declared public",
+            "Only if the class is an inner class"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "No instance exists when a static block executes, so non-static members cannot be accessed.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-6",
+          "type": "mcq",
+          "prompt": "If a class is loaded and 100 objects of that class are created, how many times does the static block execute?",
+          "question": "If a class is loaded and 100 objects of that class are created, how many times does the static block execute?",
+          "options": [
+            "100 times",
+            "1 time",
+            "0 times",
+            "2 times"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static initialization blocks run strictly once per class loading, regardless of the number of instances created.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-7",
+          "type": "mcq",
+          "prompt": "In our factory analogy, what does the Master Power Plant startup represent?",
+          "question": "In our factory analogy, what does the Master Power Plant startup represent?",
+          "options": [
+            "The constructor",
+            "The static initialization block",
+            "The garbage collector",
+            "The compiler"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Powering up the factory once before building any car represents one-time static initialization.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-8",
+          "type": "mcq",
+          "prompt": "What happens if a static initialization block throws an uncaught runtime exception?",
+          "question": "What happens if a static initialization block throws an uncaught runtime exception?",
+          "options": [
+            "The JVM ignores it and proceeds normally",
+            "The JVM throws ExceptionInInitializerError and the class fails to load, preventing any object creation",
+            "The static block re-runs automatically",
+            "The class becomes abstract"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "An unhandled exception in a static block causes an ExceptionInInitializerError, making the class unusable.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-9",
+          "type": "mcq",
+          "prompt": "Can you declare a return type for a static initialization block?",
+          "question": "Can you declare a return type for a static initialization block?",
+          "options": [
+            "Yes, it must return void",
+            "No, static blocks have no method signature, no return type, and no parameters",
+            "Yes, it can return int",
+            "Only boolean"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static blocks consist simply of 'static { ... }' with no parameters or return types.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-si-10",
+          "type": "mcq",
+          "prompt": "Can a class have both static blocks and instance initialization blocks?",
+          "question": "Can a class have both static blocks and instance initialization blocks?",
+          "options": [
+            "No, Java permits only one or the other",
+            "Yes, static blocks run once on class load, while instance blocks run on every 'new' before the constructor body",
+            "Only in Java 8 and earlier",
+            "Only if the class is final"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Java supports both: static blocks for one-time class setup, and instance blocks for per-object setup.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-si-1",
+            "type": "mcq",
+            "prompt": "When does a static initialization block execute in Java?",
+            "question": "When does a static initialization block execute in Java?",
+            "options": [
+              "Every time an object is instantiated with 'new'",
+              "Exactly once, when the class is first loaded into memory by the JVM",
+              "When the operating system boots",
+              "Whenever a garbage collection cycle finishes"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static blocks execute exactly once when the class is loaded by the ClassLoader.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-2",
+            "type": "mcq",
+            "prompt": "What is the relative execution order between a static block and a constructor?",
+            "question": "What is the relative execution order between a static block and a constructor?",
+            "options": [
+              "The constructor runs first, then the static block",
+              "The static block always runs first, before any constructor executes",
+              "They execute concurrently in separate threads",
+              "The static block runs only after all objects are deleted"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static blocks run at class-load time; constructors run subsequently when instances are created.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-3",
+            "type": "mcq",
+            "prompt": "If a class has two static initialization blocks, in what order do they run?",
+            "question": "If a class has two static initialization blocks, in what order do they run?",
+            "options": [
+              "Random order determined by the JVM",
+              "In the exact order they appear in the source code file from top to bottom",
+              "The shorter block runs first",
+              "Only the second block runs; the first is ignored"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Java executes multiple static blocks sequentially from top to bottom as they appear in the file.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-4",
+            "type": "mcq",
+            "prompt": "Why would an engineer use a static block instead of a simple inline assignment (static int x = 10;)?",
+            "question": "Why would an engineer use a static block instead of a simple inline assignment (static int x = 10;)?",
+            "options": [
+              "When initialization requires loops, multi-step logic, or exception handling (try-catch)",
+              "Because inline assignments are not supported in Java",
+              "To make variables private",
+              "To reduce bytecode file size"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Static blocks are ideal for multi-line logic, populating arrays/tables, or handling checked exceptions.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-5",
+            "type": "mcq",
+            "prompt": "Can a static block access instance variables directly?",
+            "question": "Can a static block access instance variables directly?",
+            "options": [
+              "Yes, static blocks can access all variables",
+              "No, static blocks run before any instance exists and cannot touch non-static members",
+              "Only if the instance variables are declared public",
+              "Only if the class is an inner class"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "No instance exists when a static block executes, so non-static members cannot be accessed.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-6",
+            "type": "mcq",
+            "prompt": "If a class is loaded and 100 objects of that class are created, how many times does the static block execute?",
+            "question": "If a class is loaded and 100 objects of that class are created, how many times does the static block execute?",
+            "options": [
+              "100 times",
+              "1 time",
+              "0 times",
+              "2 times"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static initialization blocks run strictly once per class loading, regardless of the number of instances created.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-7",
+            "type": "mcq",
+            "prompt": "In our factory analogy, what does the Master Power Plant startup represent?",
+            "question": "In our factory analogy, what does the Master Power Plant startup represent?",
+            "options": [
+              "The constructor",
+              "The static initialization block",
+              "The garbage collector",
+              "The compiler"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Powering up the factory once before building any car represents one-time static initialization.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-8",
+            "type": "mcq",
+            "prompt": "What happens if a static initialization block throws an uncaught runtime exception?",
+            "question": "What happens if a static initialization block throws an uncaught runtime exception?",
+            "options": [
+              "The JVM ignores it and proceeds normally",
+              "The JVM throws ExceptionInInitializerError and the class fails to load, preventing any object creation",
+              "The static block re-runs automatically",
+              "The class becomes abstract"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "An unhandled exception in a static block causes an ExceptionInInitializerError, making the class unusable.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-9",
+            "type": "mcq",
+            "prompt": "Can you declare a return type for a static initialization block?",
+            "question": "Can you declare a return type for a static initialization block?",
+            "options": [
+              "Yes, it must return void",
+              "No, static blocks have no method signature, no return type, and no parameters",
+              "Yes, it can return int",
+              "Only boolean"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static blocks consist simply of 'static { ... }' with no parameters or return types.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-si-10",
+            "type": "mcq",
+            "prompt": "Can a class have both static blocks and instance initialization blocks?",
+            "question": "Can a class have both static blocks and instance initialization blocks?",
+            "options": [
+              "No, Java permits only one or the other",
+              "Yes, static blocks run once on class load, while instance blocks run on every 'new' before the constructor body",
+              "Only in Java 8 and earlier",
+              "Only if the class is final"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Java supports both: static blocks for one-time class setup, and instance blocks for per-object setup.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-si-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: Static Initialization",
+      "questions": [
+        {
+          "id": "i-si-1",
+          "question": "What is the exact sequence of initialization when a class is instantiated for the first time?",
+          "answer": "1. Class is loaded: Static variables and static initialization blocks execute in top-down order. 2. Memory allocated on heap for new instance. 3. Instance variables initialized to default values, then explicit initializers and instance initializer blocks run. 4. Constructor body executes.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Static members (once) -> Instance fields/blocks -> Constructor body"
+          ]
+        },
+        {
+          "id": "i-si-2",
+          "question": "What causes an 'ExceptionInInitializerError' in Java?",
+          "answer": "An ExceptionInInitializerError is thrown when an unchecked exception (like NullPointerException, ArithmeticException, or ArrayIndexOutOfBoundsException) is thrown inside a static initialization block or during static variable initialization and is not caught.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Uncaught exception in static block",
+            "Renders class unusable"
+          ]
+        },
+        {
+          "id": "i-si-3",
+          "question": "Can a static block throw a checked exception (like IOException)?",
+          "answer": "A static block cannot throw a checked exception to the outside world because there is no caller to declare a 'throws' clause. Any checked exception occurring inside a static block must be caught with a try-catch block inside the static block itself.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Must handle checked exceptions internally",
+            "No 'throws' clause allowed on static blocks"
+          ]
+        },
+        {
+          "id": "i-si-4",
+          "question": "What is an instance initialization block, and how does it differ from a static block?",
+          "answer": "An instance initialization block is written as '{ ... }' without the static keyword. It executes every time a new object is instantiated with 'new', right before the constructor body runs. A static block ('static { ... }') executes only once when the class is loaded.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Instance block = runs on every 'new'",
+            "Static block = runs once on class load"
+          ]
+        },
+        {
+          "id": "i-si-5",
+          "question": "Is it possible to execute code in Java without a main() method using static blocks?",
+          "answer": "In ancient Java versions (Java 6 and earlier), a static block could print and call System.exit(0) before the main check. However, in modern Java (Java 7+), the JVM strictly verifies the presence of a valid public static void main(String[] args) method before launching the class.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Historically possible",
+            "Modern JVM enforces main() check prior to launch"
+          ]
+        },
+        {
+          "id": "i-si-6",
+          "question": "Why should heavy operations (like network calls or large file I/O) be avoided in static initialization blocks?",
+          "answer": "Because class loading is synchronous and holds internal JVM class-loading locks. If a static block hangs or times out during a network call, the application thread freezes, potentially causing deadlocks or failing application bootstrap.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Holds class-loading locks",
+            "Can freeze application bootstrap"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-si-1",
+          "question": "What is the exact sequence of initialization when a class is instantiated for the first time?",
+          "expectedAnswer": "1. Class is loaded: Static variables and static initialization blocks execute in top-down order. 2. Memory allocated on heap for new instance. 3. Instance variables initialized to default values, then explicit initializers and instance initializer blocks run. 4. Constructor body executes.",
+          "keyPoints": [
+            "Static members (once) -> Instance fields/blocks -> Constructor body"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-si-2",
+          "question": "What causes an 'ExceptionInInitializerError' in Java?",
+          "expectedAnswer": "An ExceptionInInitializerError is thrown when an unchecked exception (like NullPointerException, ArithmeticException, or ArrayIndexOutOfBoundsException) is thrown inside a static initialization block or during static variable initialization and is not caught.",
+          "keyPoints": [
+            "Uncaught exception in static block",
+            "Renders class unusable"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-si-3",
+          "question": "Can a static block throw a checked exception (like IOException)?",
+          "expectedAnswer": "A static block cannot throw a checked exception to the outside world because there is no caller to declare a 'throws' clause. Any checked exception occurring inside a static block must be caught with a try-catch block inside the static block itself.",
+          "keyPoints": [
+            "Must handle checked exceptions internally",
+            "No 'throws' clause allowed on static blocks"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-si-4",
+          "question": "What is an instance initialization block, and how does it differ from a static block?",
+          "expectedAnswer": "An instance initialization block is written as '{ ... }' without the static keyword. It executes every time a new object is instantiated with 'new', right before the constructor body runs. A static block ('static { ... }') executes only once when the class is loaded.",
+          "keyPoints": [
+            "Instance block = runs on every 'new'",
+            "Static block = runs once on class load"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-si-5",
+          "question": "Is it possible to execute code in Java without a main() method using static blocks?",
+          "expectedAnswer": "In ancient Java versions (Java 6 and earlier), a static block could print and call System.exit(0) before the main check. However, in modern Java (Java 7+), the JVM strictly verifies the presence of a valid public static void main(String[] args) method before launching the class.",
+          "keyPoints": [
+            "Historically possible",
+            "Modern JVM enforces main() check prior to launch"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-si-6",
+          "question": "Why should heavy operations (like network calls or large file I/O) be avoided in static initialization blocks?",
+          "expectedAnswer": "Because class loading is synchronous and holds internal JVM class-loading locks. If a static block hangs or times out during a network call, the application thread freezes, potentially causing deadlocks or failing application bootstrap.",
+          "keyPoints": [
+            "Holds class-loading locks",
+            "Can freeze application bootstrap"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-si-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I know that static blocks execute once on class load before any constructor.",
+        "I know how to populate complex class-level arrays and tables in static blocks.",
+        "I understand that uncaught exceptions in static blocks trigger ExceptionInInitializerError."
+      ],
+      "checklist": [
+        "I know that static blocks execute once on class load before any constructor.",
+        "I know how to populate complex class-level arrays and tables in static blocks.",
+        "I understand that uncaught exceptions in static blocks trigger ExceptionInInitializerError."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "static-and-final",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-si-1",
+      "title": "Warmup: Static Configuration Block",
+      "difficulty": "easy",
+      "description": "Add a static initialization block to DatabaseConfig that sets static String serverNode to 'CLUSTER-ALPHA-01' and static int defaultPort to 5432. In Main, print 'Connected to CLUSTER-ALPHA-01 on port 5432'.",
+      "problemStatement": "Add a static initialization block to DatabaseConfig that sets static String serverNode to 'CLUSTER-ALPHA-01' and static int defaultPort to 5432. In Main, print 'Connected to CLUSTER-ALPHA-01 on port 5432'.",
+      "expectedOutput": "Connected to CLUSTER-ALPHA-01 on port 5432",
+      "hint": "Write 'static { serverNode = ...; defaultPort = ...; }'",
+      "hints": [
+        "Write 'static { serverNode = ...; defaultPort = ...; }'",
+        "Access via DatabaseConfig.serverNode"
+      ],
+      "solutionCode": "class DatabaseConfig {\n    public static String serverNode;\n    public static int defaultPort;\n\n    static {\n        serverNode = \"CLUSTER-ALPHA-01\";\n        defaultPort = 5432;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Connected to \" + DatabaseConfig.serverNode + \" on port \" + DatabaseConfig.defaultPort);\n    }\n}",
+      "initialCode": "class DatabaseConfig {\n    public static String serverNode;\n    public static int defaultPort;\n\n    // Add static block here\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-si-2",
+      "title": "Code from Scratch: Precomputed Factorial Table",
+      "difficulty": "easy",
+      "description": "Write a complete FactorialLookup class from scratch with private static int[] factorials = new int[6]. In a static block, compute factorials for 0 through 5 (0! = 1, 1! = 1, 2! = 2, 3! = 6, 4! = 24, 5! = 120). Provide static getFactorial(int n) returning factorials[n] or -1 if out of range. In Main, print '5! = 120'.",
+      "problemStatement": "Write a complete FactorialLookup class from scratch with private static int[] factorials = new int[6]. In a static block, compute factorials for 0 through 5 (0! = 1, 1! = 1, 2! = 2, 3! = 6, 4! = 24, 5! = 120). Provide static getFactorial(int n) returning factorials[n] or -1 if out of range. In Main, print '5! = 120'.",
+      "expectedOutput": "5! = 120",
+      "hint": "Populate factorials in static block",
+      "hints": [
+        "Populate factorials in static block",
+        "FactorialLookup.getFactorial(5) returns 120"
+      ],
+      "solutionCode": "class FactorialLookup {\n    private static int[] factorials = new int[6];\n\n    static {\n        factorials[0] = 1;\n        for (int i = 1; i <= 5; i++) {\n            factorials[i] = factorials[i - 1] * i;\n        }\n    }\n\n    public static int getFactorial(int n) {\n        if (n >= 0 && n <= 5) return factorials[n];\n        return -1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"5! = \" + FactorialLookup.getFactorial(5));\n    }\n}"
+    },
+    {
+      "id": "p-si-3",
+      "title": "Code from Scratch: Execution Order Tracer",
+      "difficulty": "medium",
+      "description": "Write a complete OrderTracer class from scratch. It contains static int step = 1. A static block prints 'Static Block: step 1'. The constructor prints 'Constructor: step 2'. In Main, print 'Main started', create two OrderTracer instances, and observe the exact execution flow.",
+      "problemStatement": "Write a complete OrderTracer class from scratch. It contains static int step = 1. A static block prints 'Static Block: step 1'. The constructor prints 'Constructor: step 2'. In Main, print 'Main started', create two OrderTracer instances, and observe the exact execution flow.",
+      "expectedOutput": "Main started\nStatic Block: step 1\nConstructor: step 2\nConstructor: step 2",
+      "hint": "Static block executes only on first instantiation",
+      "hints": [
+        "Static block executes only on first instantiation",
+        "Constructor executes for both o1 and o2"
+      ],
+      "solutionCode": "class OrderTracer {\n    static {\n        System.out.println(\"Static Block: step 1\");\n    }\n\n    public OrderTracer() {\n        System.out.println(\"Constructor: step 2\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Main started\");\n        OrderTracer o1 = new OrderTracer();\n        OrderTracer o2 = new OrderTracer();\n    }\n}"
+    },
+    {
+      "id": "p-si-4",
+      "title": "Fix Broken Code: Static Block Null Pointer Trap",
+      "difficulty": "easy",
+      "description": "The class below throws NullPointerException during static initialization because it calls configMap.length before allocating the array. Fix the static block by allocating the array first. In Main, print 'Config items: 3'.",
+      "problemStatement": "The class below throws NullPointerException during static initialization because it calls configMap.length before allocating the array. Fix the static block by allocating the array first. In Main, print 'Config items: 3'.",
+      "expectedOutput": "Config items: 3",
+      "hint": "Allocate configItems = new String[3] first inside the static block",
+      "hints": [
+        "Allocate configItems = new String[3] first inside the static block"
+      ],
+      "solutionCode": "class BrokenInit {\n    public static String[] configItems;\n\n    static {\n        configItems = new String[3];\n        configItems[0] = \"Alpha\";\n        configItems[1] = \"Beta\";\n        configItems[2] = \"Gamma\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Config items: \" + BrokenInit.configItems.length);\n    }\n}",
+      "initialCode": "class BrokenInit {\n    public static String[] configItems;\n\n    static {\n        // Bug: configItems is null!\n        // configItems[0] = \"A\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Fix so configItems has 3 elements\n    }\n}"
+    },
+    {
+      "id": "p-si-5",
+      "title": "Challenge: Multi-Zone DNS Cache Initializer",
+      "difficulty": "medium",
+      "description": "Write a complete DnsCache class from scratch. It contains private static String[] domains and private static String[] ips. In a static block, initialize 3 entries: 'example.com' -> '93.184.216.34', 'dns.google' -> '8.8.8.8', 'localhost' -> '127.0.0.1'. Provide static resolveIp(String domain) returning the matching IP or 'NOT_FOUND'. In Main, resolve 'dns.google' and print 'Resolved: 8.8.8.8'.",
+      "problemStatement": "Write a complete DnsCache class from scratch. It contains private static String[] domains and private static String[] ips. In a static block, initialize 3 entries: 'example.com' -> '93.184.216.34', 'dns.google' -> '8.8.8.8', 'localhost' -> '127.0.0.1'. Provide static resolveIp(String domain) returning the matching IP or 'NOT_FOUND'. In Main, resolve 'dns.google' and print 'Resolved: 8.8.8.8'.",
+      "expectedOutput": "Resolved: 8.8.8.8",
+      "hint": "Initialize domains and ips inside static block",
+      "hints": [
+        "Initialize domains and ips inside static block",
+        "Loop to find matching domain"
+      ],
+      "solutionCode": "class DnsCache {\n    private static String[] domains;\n    private static String[] ips;\n\n    static {\n        domains = new String[]{\"example.com\", \"dns.google\", \"localhost\"};\n        ips = new String[]{\"93.184.216.34\", \"8.8.8.8\", \"127.0.0.1\"};\n    }\n\n    public static String resolveIp(String domain) {\n        if (domain == null) return \"NOT_FOUND\";\n        for (int i = 0; i < domains.length; i++) {\n            if (domains[i].equalsIgnoreCase(domain.trim())) {\n                return ips[i];\n            }\n        }\n        return \"NOT_FOUND\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Resolved: \" + DnsCache.resolveIp(\"dns.google\"));\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-si-1",
+      "question": "What is the exact sequence of initialization when a class is instantiated for the first time?",
+      "expectedAnswer": "1. Class is loaded: Static variables and static initialization blocks execute in top-down order. 2. Memory allocated on heap for new instance. 3. Instance variables initialized to default values, then explicit initializers and instance initializer blocks run. 4. Constructor body executes.",
+      "keyPoints": [
+        "Static members (once) -> Instance fields/blocks -> Constructor body"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-si-2",
+      "question": "What causes an 'ExceptionInInitializerError' in Java?",
+      "expectedAnswer": "An ExceptionInInitializerError is thrown when an unchecked exception (like NullPointerException, ArithmeticException, or ArrayIndexOutOfBoundsException) is thrown inside a static initialization block or during static variable initialization and is not caught.",
+      "keyPoints": [
+        "Uncaught exception in static block",
+        "Renders class unusable"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-si-3",
+      "question": "Can a static block throw a checked exception (like IOException)?",
+      "expectedAnswer": "A static block cannot throw a checked exception to the outside world because there is no caller to declare a 'throws' clause. Any checked exception occurring inside a static block must be caught with a try-catch block inside the static block itself.",
+      "keyPoints": [
+        "Must handle checked exceptions internally",
+        "No 'throws' clause allowed on static blocks"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-si-4",
+      "question": "What is an instance initialization block, and how does it differ from a static block?",
+      "expectedAnswer": "An instance initialization block is written as '{ ... }' without the static keyword. It executes every time a new object is instantiated with 'new', right before the constructor body runs. A static block ('static { ... }') executes only once when the class is loaded.",
+      "keyPoints": [
+        "Instance block = runs on every 'new'",
+        "Static block = runs once on class load"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-si-5",
+      "question": "Is it possible to execute code in Java without a main() method using static blocks?",
+      "expectedAnswer": "In ancient Java versions (Java 6 and earlier), a static block could print and call System.exit(0) before the main check. However, in modern Java (Java 7+), the JVM strictly verifies the presence of a valid public static void main(String[] args) method before launching the class.",
+      "keyPoints": [
+        "Historically possible",
+        "Modern JVM enforces main() check prior to launch"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-si-6",
+      "question": "Why should heavy operations (like network calls or large file I/O) be avoided in static initialization blocks?",
+      "expectedAnswer": "Because class loading is synchronous and holds internal JVM class-loading locks. If a static block hangs or times out during a network call, the application thread freezes, potentially causing deadlocks or failing application bootstrap.",
+      "keyPoints": [
+        "Holds class-loading locks",
+        "Can freeze application bootstrap"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

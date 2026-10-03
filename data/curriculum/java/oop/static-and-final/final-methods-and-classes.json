@@ -1,0 +1,869 @@
+{
+  "id": "les-sf-7",
+  "slug": "final-methods-and-classes",
+  "title": "final Methods and Classes",
+  "summary": "Lock classes against inheritance and lock methods against overriding to ensure design security and invariant stability.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "prerequisites": [
+    "final-variables"
+  ],
+  "learningOutcomes": [
+    "Declare final classes to prevent inheritance completely (like java.lang.String)",
+    "Declare final methods to prevent subclasses from altering critical security algorithms",
+    "Understand the architectural rationale for locking designs against extension"
+  ],
+  "activities": [
+    {
+      "id": "act-fmc-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Sealed Legal Contract",
+      "analogy": {
+        "story": "When a legal contract or will is finalized and signed by a judge, it is sealed with an official notarized wax stamp.\n\nNobody can subsequently append new pages to rewrite the clauses (Final Class: No inheritance / extension permitted). And nobody can cross out individual paragraphs or alter specific terms (Final Method: No overriding permitted).\n\nA normal class is an open draft that other programmers can extend and override. A final class or method is that sealed legal document: its implementation is complete, finalized, and permanently protected against distortion.",
+        "takeaway": "Marking a class final locks the entire blueprint against inheritance. Marking a method final locks its specific implementation against overriding.",
+        "headline": "Everyday Analogy: The Sealed Legal Contract",
+        "keyTakeaway": "Marking a class final locks the entire blueprint against inheritance. Marking a method final locks its specific implementation against overriding."
+      }
+    },
+    {
+      "id": "act-fmc-2",
+      "type": "concept",
+      "title": "Preventing Extension and Overriding for Security & Stability",
+      "concept": {
+        "explanation": "Why would an engineer want to prevent other developers from extending their class or overriding their methods?\n\n1. Security & Immutability (Final Classes):\n   - Classic Example: java.lang.String.\n   - If String were non-final, a malicious developer could extend String and create a subclass 'HackedString' that alters strings behind the scenes. Because file paths, network URLs, and usernames are stored in Strings, making String final guarantees system security.\n   - Syntax: 'public final class SecurityKey { ... }'\n   - Rule: A final class CANNOT be extended by any class ('class Sub inherits from SecurityKey' is a compile-time error).\n\n2. Preserving Critical Algorithms (Final Methods):\n   - If a class has a critical authentication or security hash calculation algorithm, marking the method 'final' allows other developers to inherit other features of the class, while strictly preventing them from overriding that critical method.\n   - Syntax: 'public final boolean verifyCredentials(String token) { ... }'\n   - Rule: Subclasses CAN inherit and call final methods, but CANNOT override them.",
+        "codeIllustration": "// Sealed Class: Nobody can extend this\npublic final class ImmutableToken {\n    private final String value;\n    public ImmutableToken(String v) { this.value = v; }\n}\n\n// Normal Class with Sealed Method:\npublic class BaseSecurity {\n    // Critical: Subclasses CANNOT change this verification logic\n    public final boolean verifyChecksum(String hash) {\n        return hash != null && hash.length() == 64;\n    }\n}",
+        "rules": [
+          "Rule 1: If a class is declared final, all of its methods are implicitly final as well.",
+          "Rule 2: An incomplete base class can NEVER be declared final (they are exact opposites!).",
+          "Rule 3: Use final classes when designing value objects, security credentials, or utility toolkits."
+        ]
+      },
+      "content": "Why would an engineer want to prevent other developers from extending their class or overriding their methods?\n\n1. Security & Immutability (Final Classes):\n   - Classic Example: java.lang.String.\n   - If String were non-final, a malicious developer could extend String and create a subclass 'HackedString' that alters strings behind the scenes. Because file paths, network URLs, and usernames are stored in Strings, making String final guarantees system security.\n   - Syntax: 'public final class SecurityKey { ... }'\n   - Rule: A final class CANNOT be extended by any class ('class Sub inherits from SecurityKey' is a compile-time error).\n\n2. Preserving Critical Algorithms (Final Methods):\n   - If a class has a critical authentication or security hash calculation algorithm, marking the method 'final' allows other developers to inherit other features of the class, while strictly preventing them from overriding that critical method.\n   - Syntax: 'public final boolean verifyCredentials(String token) { ... }'\n   - Rule: Subclasses CAN inherit and call final methods, but CANNOT override them.\n\n\n### Code Illustration:\n```java\n// Sealed Class: Nobody can extend this\npublic final class ImmutableToken {\n    private final String value;\n    public ImmutableToken(String v) { this.value = v; }\n}\n\n// Normal Class with Sealed Method:\npublic class BaseSecurity {\n    // Critical: Subclasses CANNOT change this verification logic\n    public final boolean verifyChecksum(String hash) {\n        return hash != null && hash.length() == 64;\n    }\n}\n```\n\n\n### Core Rules:\n- Rule 1: If a class is declared final, all of its methods are implicitly final as well.\n- Rule 2: An incomplete base class can NEVER be declared final (they are exact opposites!).\n- Rule 3: Use final classes when designing value objects, security credentials, or utility toolkits.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: If a class is declared final, all of its methods are implicitly final as well.",
+          "Rule 2: An incomplete base class can NEVER be declared final (they are exact opposites!).",
+          "Rule 3: Use final classes when designing value objects, security credentials, or utility toolkits."
+        ]
+      }
+    },
+    {
+      "id": "act-fmc-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Sealed Security Token Class",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "// Final Class: Locked against inheritance\npublic final class SecurityToken {\n    private final String tokenPayload;\n    private final long expirationEpoch;\n\n    public SecurityToken(String payload, long expiration) {\n        this.tokenPayload = payload;\n        this.expirationEpoch = expiration;\n    }\n\n    public String getTokenPayload() { return tokenPayload; }\n    public long getExpirationEpoch() { return expirationEpoch; }\n\n    public boolean isExpired(long currentEpoch) {\n        return currentEpoch > expirationEpoch;\n    }\n}\n\n// Attempting inheritance below causes a compiler error:\n// class RogueToken inherits from SecurityToken {} // COMPILE ERROR: cannot inherit from final SecurityToken\n\npublic class Main {\n    public static void main(String[] args) {\n        SecurityToken token = new SecurityToken(\"AUTH-XYZ-991\", 1800000000L);\n        System.out.println(\"Token: \" + token.getTokenPayload());\n        System.out.println(\"Is expired at 1700000000: \" + token.isExpired(1700000000L));\n    }\n}",
+        "explanation": "SecurityToken is final. No subclass can ever inherit from it, guaranteeing that token verification behavior is 100% predictable throughout the enterprise system."
+      },
+      "codeSnippet": "// Final Class: Locked against inheritance\npublic final class SecurityToken {\n    private final String tokenPayload;\n    private final long expirationEpoch;\n\n    public SecurityToken(String payload, long expiration) {\n        this.tokenPayload = payload;\n        this.expirationEpoch = expiration;\n    }\n\n    public String getTokenPayload() { return tokenPayload; }\n    public long getExpirationEpoch() { return expirationEpoch; }\n\n    public boolean isExpired(long currentEpoch) {\n        return currentEpoch > expirationEpoch;\n    }\n}\n\n// Attempting inheritance below causes a compiler error:\n// class RogueToken inherits from SecurityToken {} // COMPILE ERROR: cannot inherit from final SecurityToken\n\npublic class Main {\n    public static void main(String[] args) {\n        SecurityToken token = new SecurityToken(\"AUTH-XYZ-991\", 1800000000L);\n        System.out.println(\"Token: \" + token.getTokenPayload());\n        System.out.println(\"Is expired at 1700000000: \" + token.isExpired(1700000000L));\n    }\n}",
+      "description": "SecurityToken is final. No subclass can ever inherit from it, guaranteeing that token verification behavior is 100% predictable throughout the enterprise system."
+    },
+    {
+      "id": "act-fmc-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Final Method Locking Critical Business Calculation",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class BankingCompliance {\n    private String bankName;\n\n    public BankingCompliance(String name) {\n        this.bankName = name;\n    }\n\n    // Standard method: Subclasses can customize this if desired\n    public void displayWelcome() {\n        System.out.println(\"Welcome to \" + bankName);\n    }\n\n    // FINAL METHOD: Subclasses are strictly FORBIDDEN from overriding this compliance formula!\n    public final double calculateMandatoryTaxReserve(double annualProfit) {\n        // Legally mandated 22% statutory reserve\n        return annualProfit * 0.22;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankingCompliance comp = new BankingCompliance(\"Apex Commercial Bank\");\n        comp.displayWelcome();\n        double reserve = comp.calculateMandatoryTaxReserve(1000000.0);\n        System.out.println(\"Mandatory 22% Reserve on $1M: $\" + reserve);\n    }\n}",
+        "explanation": "Even if BankingCompliance is subclassed in future modules, calculateMandatoryTaxReserve can never be tampered with or overridden, guaranteeing statutory compliance."
+      },
+      "codeSnippet": "class BankingCompliance {\n    private String bankName;\n\n    public BankingCompliance(String name) {\n        this.bankName = name;\n    }\n\n    // Standard method: Subclasses can customize this if desired\n    public void displayWelcome() {\n        System.out.println(\"Welcome to \" + bankName);\n    }\n\n    // FINAL METHOD: Subclasses are strictly FORBIDDEN from overriding this compliance formula!\n    public final double calculateMandatoryTaxReserve(double annualProfit) {\n        // Legally mandated 22% statutory reserve\n        return annualProfit * 0.22;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankingCompliance comp = new BankingCompliance(\"Apex Commercial Bank\");\n        comp.displayWelcome();\n        double reserve = comp.calculateMandatoryTaxReserve(1000000.0);\n        System.out.println(\"Mandatory 22% Reserve on $1M: $\" + reserve);\n    }\n}",
+      "description": "Even if BankingCompliance is subclassed in future modules, calculateMandatoryTaxReserve can never be tampered with or overridden, guaranteeing statutory compliance."
+    },
+    {
+      "id": "act-fmc-5",
+      "type": "mcq",
+      "title": "Interactive final Methods & Classes Quiz",
+      "questions": [
+        {
+          "id": "q-fmc-1",
+          "type": "mcq",
+          "prompt": "What happens if a developer attempts to extend a class marked as 'final' (e.g. class Sub inherits from FinalClass)?",
+          "question": "What happens if a developer attempts to extend a class marked as 'final' (e.g. class Sub inherits from FinalClass)?",
+          "options": [
+            "The code compiles but throws an error at runtime",
+            "The compiler emits an error: 'cannot inherit from final ClassName'",
+            "The subclass is created as an interface",
+            "The final modifier is removed automatically"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Inheriting from a final class is strictly forbidden by the Java compiler.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-2",
+          "type": "mcq",
+          "prompt": "Why is java.lang.String declared as a 'final class' in the Java Standard Library?",
+          "question": "Why is java.lang.String declared as a 'final class' in the Java Standard Library?",
+          "options": [
+            "To save 4 bytes of memory",
+            "For security, thread-safety, and performance: preventing malicious subclasses from altering string contents behind the scenes",
+            "Because Strings cannot store numbers",
+            "Because Strings are written in C++"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "If String were open to inheritance, rogue subclasses could compromise file systems, network connections, and security credentials.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-3",
+          "type": "mcq",
+          "prompt": "Can an incomplete base class be declared as 'final' in Java (e.g. 'final incomplete base class Demo')?",
+          "question": "Can an incomplete base class be declared as 'final' in Java (e.g. 'final incomplete base class Demo')?",
+          "options": [
+            "Yes, it is common practice",
+            "No, abstract and final are mutually contradictory: abstract REQUIRES inheritance, while final PREVENTS inheritance",
+            "Only if it contains static methods",
+            "Only in Java 17+"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "'abstract' demands subclasses, whereas 'final' forbids subclasses; using both together is a compile-time error.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-4",
+          "type": "mcq",
+          "prompt": "If a class is declared final, what is the default status of all methods inside that class?",
+          "question": "If a class is declared final, what is the default status of all methods inside that class?",
+          "options": [
+            "All methods are automatically abstract",
+            "All methods are implicitly final (since no subclass can ever exist to override them)",
+            "All methods become static",
+            "All methods become private"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Because a final class cannot be extended, none of its methods can ever be overridden, making them implicitly final.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-5",
+          "type": "mcq",
+          "prompt": "What is the primary purpose of marking an individual method 'final' in a non-final class?",
+          "question": "What is the primary purpose of marking an individual method 'final' in a non-final class?",
+          "options": [
+            "To make the method run 100x faster",
+            "To lock that specific method's algorithm so subclasses cannot override or tamper with it",
+            "To prevent the method from taking parameters",
+            "To make the method return void"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "A final method allows the class to be extended while protecting specific critical algorithms from modification.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-6",
+          "type": "mcq",
+          "prompt": "Can a final method be overloaded in the same class?",
+          "question": "Can a final method be overloaded in the same class?",
+          "options": [
+            "No, final methods cannot be overloaded",
+            "Yes, overloading (different parameter signatures in the same class) is fully permitted on final methods",
+            "Only if the return type is int",
+            "Only if the method is static"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Overloading has nothing to do with overriding; final methods can be overloaded freely within the same class.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-7",
+          "type": "mcq",
+          "prompt": "In our legal contract analogy, what does the wax stamp preventing pages from being appended represent?",
+          "question": "In our legal contract analogy, what does the wax stamp preventing pages from being appended represent?",
+          "options": [
+            "A final class that cannot be extended",
+            "A static block",
+            "A private variable",
+            "The compiler"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "The sealed contract that cannot be extended represents a final class.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-8",
+          "type": "mcq",
+          "prompt": "Which of the following wrapper classes in java.lang is also declared final?",
+          "question": "Which of the following wrapper classes in java.lang is also declared final?",
+          "options": [
+            "java.lang.Integer",
+            "java.lang.Double",
+            "java.lang.Boolean",
+            "All of the above"
+          ],
+          "correctAnswer": 3,
+          "correctAnswerIndex": 3,
+          "explanation": "All primitive wrapper classes (Integer, Double, Boolean, Long, etc.) are declared final to preserve immutable value semantics.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-9",
+          "type": "mcq",
+          "prompt": "Can a private method in a class be overridden by another class?",
+          "question": "Can a private method in a class be overridden by another class?",
+          "options": [
+            "Yes, any method can be overridden",
+            "No, private methods are invisible to outside classes and subclasses, so they are implicitly final",
+            "Only if declared in the same file",
+            "Only in package-private classes"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Private methods cannot be seen by subclasses, so they can never be overridden (they are implicitly final).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fmc-10",
+          "type": "mcq",
+          "prompt": "What compiler optimization does marking a method final enable (devirtualization)?",
+          "question": "What compiler optimization does marking a method final enable (devirtualization)?",
+          "options": [
+            "The JVM can inline the method call directly because it knows the method cannot be overridden polymorphically at runtime",
+            "It converts the bytecode to C++",
+            "It deletes unused variables",
+            "It runs the code on the GPU"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "The JVM JIT compiler can inline final methods safely without virtual method table dispatch overhead.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-fmc-1",
+            "type": "mcq",
+            "prompt": "What happens if a developer attempts to extend a class marked as 'final' (e.g. class Sub inherits from FinalClass)?",
+            "question": "What happens if a developer attempts to extend a class marked as 'final' (e.g. class Sub inherits from FinalClass)?",
+            "options": [
+              "The code compiles but throws an error at runtime",
+              "The compiler emits an error: 'cannot inherit from final ClassName'",
+              "The subclass is created as an interface",
+              "The final modifier is removed automatically"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Inheriting from a final class is strictly forbidden by the Java compiler.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-2",
+            "type": "mcq",
+            "prompt": "Why is java.lang.String declared as a 'final class' in the Java Standard Library?",
+            "question": "Why is java.lang.String declared as a 'final class' in the Java Standard Library?",
+            "options": [
+              "To save 4 bytes of memory",
+              "For security, thread-safety, and performance: preventing malicious subclasses from altering string contents behind the scenes",
+              "Because Strings cannot store numbers",
+              "Because Strings are written in C++"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "If String were open to inheritance, rogue subclasses could compromise file systems, network connections, and security credentials.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-3",
+            "type": "mcq",
+            "prompt": "Can an incomplete base class be declared as 'final' in Java (e.g. 'final incomplete base class Demo')?",
+            "question": "Can an incomplete base class be declared as 'final' in Java (e.g. 'final incomplete base class Demo')?",
+            "options": [
+              "Yes, it is common practice",
+              "No, abstract and final are mutually contradictory: abstract REQUIRES inheritance, while final PREVENTS inheritance",
+              "Only if it contains static methods",
+              "Only in Java 17+"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "'abstract' demands subclasses, whereas 'final' forbids subclasses; using both together is a compile-time error.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-4",
+            "type": "mcq",
+            "prompt": "If a class is declared final, what is the default status of all methods inside that class?",
+            "question": "If a class is declared final, what is the default status of all methods inside that class?",
+            "options": [
+              "All methods are automatically abstract",
+              "All methods are implicitly final (since no subclass can ever exist to override them)",
+              "All methods become static",
+              "All methods become private"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Because a final class cannot be extended, none of its methods can ever be overridden, making them implicitly final.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-5",
+            "type": "mcq",
+            "prompt": "What is the primary purpose of marking an individual method 'final' in a non-final class?",
+            "question": "What is the primary purpose of marking an individual method 'final' in a non-final class?",
+            "options": [
+              "To make the method run 100x faster",
+              "To lock that specific method's algorithm so subclasses cannot override or tamper with it",
+              "To prevent the method from taking parameters",
+              "To make the method return void"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "A final method allows the class to be extended while protecting specific critical algorithms from modification.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-6",
+            "type": "mcq",
+            "prompt": "Can a final method be overloaded in the same class?",
+            "question": "Can a final method be overloaded in the same class?",
+            "options": [
+              "No, final methods cannot be overloaded",
+              "Yes, overloading (different parameter signatures in the same class) is fully permitted on final methods",
+              "Only if the return type is int",
+              "Only if the method is static"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Overloading has nothing to do with overriding; final methods can be overloaded freely within the same class.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-7",
+            "type": "mcq",
+            "prompt": "In our legal contract analogy, what does the wax stamp preventing pages from being appended represent?",
+            "question": "In our legal contract analogy, what does the wax stamp preventing pages from being appended represent?",
+            "options": [
+              "A final class that cannot be extended",
+              "A static block",
+              "A private variable",
+              "The compiler"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "The sealed contract that cannot be extended represents a final class.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-8",
+            "type": "mcq",
+            "prompt": "Which of the following wrapper classes in java.lang is also declared final?",
+            "question": "Which of the following wrapper classes in java.lang is also declared final?",
+            "options": [
+              "java.lang.Integer",
+              "java.lang.Double",
+              "java.lang.Boolean",
+              "All of the above"
+            ],
+            "correctAnswer": 3,
+            "correctAnswerIndex": 3,
+            "explanation": "All primitive wrapper classes (Integer, Double, Boolean, Long, etc.) are declared final to preserve immutable value semantics.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-9",
+            "type": "mcq",
+            "prompt": "Can a private method in a class be overridden by another class?",
+            "question": "Can a private method in a class be overridden by another class?",
+            "options": [
+              "Yes, any method can be overridden",
+              "No, private methods are invisible to outside classes and subclasses, so they are implicitly final",
+              "Only if declared in the same file",
+              "Only in package-private classes"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Private methods cannot be seen by subclasses, so they can never be overridden (they are implicitly final).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fmc-10",
+            "type": "mcq",
+            "prompt": "What compiler optimization does marking a method final enable (devirtualization)?",
+            "question": "What compiler optimization does marking a method final enable (devirtualization)?",
+            "options": [
+              "The JVM can inline the method call directly because it knows the method cannot be overridden polymorphically at runtime",
+              "It converts the bytecode to C++",
+              "It deletes unused variables",
+              "It runs the code on the GPU"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "The JVM JIT compiler can inline final methods safely without virtual method table dispatch overhead.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-fmc-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: final Methods & Classes",
+      "questions": [
+        {
+          "id": "i-fmc-1",
+          "question": "Why would an API or library designer deliberately make a class final?",
+          "answer": "1. Immutability guarantee: Prevents subclasses from adding mutable state or breaking value semantics (e.g. String, LocalDate). 2. Security: Prevents tampering with sensitive logic (like cryptography keys or credential validators). 3. Design simplicity: Follows Joshua Bloch's principle: 'Design and document for inheritance or else prohibit it'.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Enforces immutability",
+            "Protects security-sensitive logic",
+            "Prohibits unintended inheritance"
+          ]
+        },
+        {
+          "id": "i-fmc-2",
+          "question": "Can a final class contain non-final fields?",
+          "answer": "Yes! Marking a class final only prevents other classes from inheriting from it. It does not automatically make the class's fields final. Fields can still be mutable unless explicitly declared final.",
+          "company": "Google",
+          "keyTakeaways": [
+            "final class != immutable fields",
+            "Fields must be explicitly final for immutability"
+          ]
+        },
+        {
+          "id": "i-fmc-3",
+          "question": "What is JIT method inlining, and how do final methods facilitate it?",
+          "answer": "Normally, non-final instance methods require dynamic dispatch via the virtual method table (vtable). When a method is final, the JIT compiler knows definitively that no subclass overrides it, allowing it to eliminate the dispatch overhead and inline the method body directly into the caller's code.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Eliminates vtable lookup",
+            "Enables JIT compiler inlining"
+          ]
+        },
+        {
+          "id": "i-fmc-4",
+          "question": "Can a constructor be declared final?",
+          "answer": "No. Constructors are never inherited by subclasses; each class has its own constructors. Because overriding constructors is impossible by definition, marking a constructor final is a syntax error.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Constructors cannot be final",
+            "Constructors are never inherited or overridden"
+          ]
+        },
+        {
+          "id": "i-fmc-5",
+          "question": "Why is 'abstract final' illegal on both classes and methods in Java?",
+          "answer": "'abstract' means 'incomplete, must be extended/overridden'. 'final' means 'complete, cannot be extended/overridden'. They are polar opposites, so combining them causes an immediate compiler error.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Direct logical contradiction",
+            "abstract requires extension, final forbids it"
+          ]
+        },
+        {
+          "id": "i-fmc-6",
+          "question": "How does marking a class final impact testing frameworks like Mockito?",
+          "answer": "Historically, Mockito created dynamic subclasses at runtime to mock behavior; final classes could not be mocked without special bytecode plugins (like mockito-inline). Modern Mockito handles final classes transparently via instrumentation, but design-wise, composition is preferred over inheritance.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Historically prevented subclass mocking",
+            "Modern Mockito handles via agent instrumentation"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-fmc-1",
+          "question": "Why would an API or library designer deliberately make a class final?",
+          "expectedAnswer": "1. Immutability guarantee: Prevents subclasses from adding mutable state or breaking value semantics (e.g. String, LocalDate). 2. Security: Prevents tampering with sensitive logic (like cryptography keys or credential validators). 3. Design simplicity: Follows Joshua Bloch's principle: 'Design and document for inheritance or else prohibit it'.",
+          "keyPoints": [
+            "Enforces immutability",
+            "Protects security-sensitive logic",
+            "Prohibits unintended inheritance"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-fmc-2",
+          "question": "Can a final class contain non-final fields?",
+          "expectedAnswer": "Yes! Marking a class final only prevents other classes from inheriting from it. It does not automatically make the class's fields final. Fields can still be mutable unless explicitly declared final.",
+          "keyPoints": [
+            "final class != immutable fields",
+            "Fields must be explicitly final for immutability"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-fmc-3",
+          "question": "What is JIT method inlining, and how do final methods facilitate it?",
+          "expectedAnswer": "Normally, non-final instance methods require dynamic dispatch via the virtual method table (vtable). When a method is final, the JIT compiler knows definitively that no subclass overrides it, allowing it to eliminate the dispatch overhead and inline the method body directly into the caller's code.",
+          "keyPoints": [
+            "Eliminates vtable lookup",
+            "Enables JIT compiler inlining"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-fmc-4",
+          "question": "Can a constructor be declared final?",
+          "expectedAnswer": "No. Constructors are never inherited by subclasses; each class has its own constructors. Because overriding constructors is impossible by definition, marking a constructor final is a syntax error.",
+          "keyPoints": [
+            "Constructors cannot be final",
+            "Constructors are never inherited or overridden"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-fmc-5",
+          "question": "Why is 'abstract final' illegal on both classes and methods in Java?",
+          "expectedAnswer": "'abstract' means 'incomplete, must be extended/overridden'. 'final' means 'complete, cannot be extended/overridden'. They are polar opposites, so combining them causes an immediate compiler error.",
+          "keyPoints": [
+            "Direct logical contradiction",
+            "abstract requires extension, final forbids it"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-fmc-6",
+          "question": "How does marking a class final impact testing frameworks like Mockito?",
+          "expectedAnswer": "Historically, Mockito created dynamic subclasses at runtime to mock behavior; final classes could not be mocked without special bytecode plugins (like mockito-inline). Modern Mockito handles final classes transparently via instrumentation, but design-wise, composition is preferred over inheritance.",
+          "keyPoints": [
+            "Historically prevented subclass mocking",
+            "Modern Mockito handles via agent instrumentation"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-fmc-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I know that final classes cannot be extended by any class.",
+        "I understand that final methods cannot be overridden by subclasses.",
+        "I know why java.lang.String and wrapper classes are declared final."
+      ],
+      "checklist": [
+        "I know that final classes cannot be extended by any class.",
+        "I understand that final methods cannot be overridden by subclasses.",
+        "I know why java.lang.String and wrapper classes are declared final."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "static-and-final",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-fmc-1",
+      "title": "Warmup: Seal the Security Credential",
+      "difficulty": "easy",
+      "description": "Declare SecurityCredential as a final class with private final String apiKey. Provide constructor and getApiKey(). In Main, instantiate with 'API-SEC-99', print 'Sealed API Key: API-SEC-99'.",
+      "problemStatement": "Declare SecurityCredential as a final class with private final String apiKey. Provide constructor and getApiKey(). In Main, instantiate with 'API-SEC-99', print 'Sealed API Key: API-SEC-99'.",
+      "expectedOutput": "Sealed API Key: API-SEC-99",
+      "hint": "Add final to class declaration: final class SecurityCredential",
+      "hints": [
+        "Add final to class declaration: final class SecurityCredential",
+        "Make apiKey private final"
+      ],
+      "solutionCode": "final class SecurityCredential {\n    private final String apiKey;\n\n    public SecurityCredential(String key) {\n        this.apiKey = key;\n    }\n    public String getApiKey() { return apiKey; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecurityCredential cred = new SecurityCredential(\"API-SEC-99\");\n        System.out.println(\"Sealed API Key: \" + cred.getApiKey());\n    }\n}",
+      "initialCode": "class SecurityCredential {\n    // Make this class final and field final\n    private String apiKey;\n\n    public SecurityCredential(String key) {\n        this.apiKey = key;\n    }\n    public String getApiKey() { return apiKey; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-fmc-2",
+      "title": "Code from Scratch: Locked Password Hasher",
+      "difficulty": "easy",
+      "description": "Write a complete PasswordHasher class from scratch. Provide public final String hashPassword(String raw) that returns 'HASHED_' + raw. Provide a constructor taking no arguments. In Main, instantiate hasher, hash 'mypassword123', and print 'Result: HASHED_mypassword123'.",
+      "problemStatement": "Write a complete PasswordHasher class from scratch. Provide public final String hashPassword(String raw) that returns 'HASHED_' + raw. Provide a constructor taking no arguments. In Main, instantiate hasher, hash 'mypassword123', and print 'Result: HASHED_mypassword123'.",
+      "expectedOutput": "Result: HASHED_mypassword123",
+      "hint": "Declare method as public final String hashPassword",
+      "hints": [
+        "Declare method as public final String hashPassword",
+        "Subclasses cannot override final methods"
+      ],
+      "solutionCode": "class PasswordHasher {\n    public final String hashPassword(String raw) {\n        if (raw == null) return \"HASHED_EMPTY\";\n        return \"HASHED_\" + raw;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        PasswordHasher hasher = new PasswordHasher();\n        System.out.println(\"Result: \" + hasher.hashPassword(\"mypassword123\"));\n    }\n}"
+    },
+    {
+      "id": "p-fmc-3",
+      "title": "Code from Scratch: Sealed Immutable Point",
+      "difficulty": "medium",
+      "description": "Write a complete ImmutableCoordinate class from scratch declared as 'final class'. It has private final int x and private final int y. Provide constructor and getters getX() and getY(). In Main, create coordinate (10, 20) and print 'Coordinate: [10, 20]'.",
+      "problemStatement": "Write a complete ImmutableCoordinate class from scratch declared as 'final class'. It has private final int x and private final int y. Provide constructor and getters getX() and getY(). In Main, create coordinate (10, 20) and print 'Coordinate: [10, 20]'.",
+      "expectedOutput": "Coordinate: [10, 20]",
+      "hint": "Declare final class ImmutableCoordinate",
+      "hints": [
+        "Declare final class ImmutableCoordinate",
+        "Make fields private final int"
+      ],
+      "solutionCode": "final class ImmutableCoordinate {\n    private final int x;\n    private final int y;\n\n    public ImmutableCoordinate(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    public int getX() { return x; }\n    public int getY() { return y; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ImmutableCoordinate pt = new ImmutableCoordinate(10, 20);\n        System.out.println(\"Coordinate: [\" + pt.getX() + \", \" + pt.getY() + \"]\");\n    }\n}"
+    },
+    {
+      "id": "p-fmc-4",
+      "title": "Fix Broken Code: Attempt to Override Final Method",
+      "difficulty": "easy",
+      "description": "The class Below demonstrates a final method 'verifyChecksum'. A junior developer attempted to override it in an intended extension, causing a compile error. Fix the code by demonstrating how the caller simply invokes the inherited final method without attempting to override it. In Main, print 'Checksum verified: true'.",
+      "problemStatement": "The class Below demonstrates a final method 'verifyChecksum'. A junior developer attempted to override it in an intended extension, causing a compile error. Fix the code by demonstrating how the caller simply invokes the inherited final method without attempting to override it. In Main, print 'Checksum verified: true'.",
+      "expectedOutput": "Checksum verified: true",
+      "hint": "Call sec.verifyChecksum(\"SECURE_KEY\")",
+      "hints": [
+        "Call sec.verifyChecksum(\"SECURE_KEY\")",
+        "Print boolean result"
+      ],
+      "solutionCode": "class SecurityBase {\n    public final boolean verifyChecksum(String token) {\n        return token != null && token.length() > 5;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecurityBase sec = new SecurityBase();\n        boolean valid = sec.verifyChecksum(\"SECURE_KEY\");\n        System.out.println(\"Checksum verified: \" + valid);\n    }\n}",
+      "initialCode": "class SecurityBase {\n    public final boolean verifyChecksum(String token) {\n        return token != null && token.length() > 5;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecurityBase sec = new SecurityBase();\n        // Call verifyChecksum on token \"SECURE_KEY\"\n    }\n}"
+    },
+    {
+      "id": "p-fmc-5",
+      "title": "Challenge: Sealed License Key Validator",
+      "difficulty": "medium",
+      "description": "Write a complete LicenseKeyValidator class from scratch declared as 'final class'. It contains private final String secretPrefix = 'LIC-'. Provide public final boolean isValidKey(String key) returning true if key starts with 'LIC-' and key.length() == 12. In Main, test 'LIC-99887766' (valid, len 12) and print 'License valid: true'.",
+      "problemStatement": "Write a complete LicenseKeyValidator class from scratch declared as 'final class'. It contains private final String secretPrefix = 'LIC-'. Provide public final boolean isValidKey(String key) returning true if key starts with 'LIC-' and key.length() == 12. In Main, test 'LIC-99887766' (valid, len 12) and print 'License valid: true'.",
+      "expectedOutput": "License valid: true",
+      "hint": "Declare final class LicenseKeyValidator",
+      "hints": [
+        "Declare final class LicenseKeyValidator",
+        "Check key.startsWith and key.length() == 12"
+      ],
+      "solutionCode": "final class LicenseKeyValidator {\n    private final String secretPrefix = \"LIC-\";\n\n    public final boolean isValidKey(String key) {\n        if (key == null) return false;\n        return key.startsWith(secretPrefix) && key.length() == 12;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        LicenseKeyValidator validator = new LicenseKeyValidator();\n        System.out.println(\"License valid: \" + validator.isValidKey(\"LIC-99887766\"));\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-fmc-1",
+      "question": "Why would an API or library designer deliberately make a class final?",
+      "expectedAnswer": "1. Immutability guarantee: Prevents subclasses from adding mutable state or breaking value semantics (e.g. String, LocalDate). 2. Security: Prevents tampering with sensitive logic (like cryptography keys or credential validators). 3. Design simplicity: Follows Joshua Bloch's principle: 'Design and document for inheritance or else prohibit it'.",
+      "keyPoints": [
+        "Enforces immutability",
+        "Protects security-sensitive logic",
+        "Prohibits unintended inheritance"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-fmc-2",
+      "question": "Can a final class contain non-final fields?",
+      "expectedAnswer": "Yes! Marking a class final only prevents other classes from inheriting from it. It does not automatically make the class's fields final. Fields can still be mutable unless explicitly declared final.",
+      "keyPoints": [
+        "final class != immutable fields",
+        "Fields must be explicitly final for immutability"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-fmc-3",
+      "question": "What is JIT method inlining, and how do final methods facilitate it?",
+      "expectedAnswer": "Normally, non-final instance methods require dynamic dispatch via the virtual method table (vtable). When a method is final, the JIT compiler knows definitively that no subclass overrides it, allowing it to eliminate the dispatch overhead and inline the method body directly into the caller's code.",
+      "keyPoints": [
+        "Eliminates vtable lookup",
+        "Enables JIT compiler inlining"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-fmc-4",
+      "question": "Can a constructor be declared final?",
+      "expectedAnswer": "No. Constructors are never inherited by subclasses; each class has its own constructors. Because overriding constructors is impossible by definition, marking a constructor final is a syntax error.",
+      "keyPoints": [
+        "Constructors cannot be final",
+        "Constructors are never inherited or overridden"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-fmc-5",
+      "question": "Why is 'abstract final' illegal on both classes and methods in Java?",
+      "expectedAnswer": "'abstract' means 'incomplete, must be extended/overridden'. 'final' means 'complete, cannot be extended/overridden'. They are polar opposites, so combining them causes an immediate compiler error.",
+      "keyPoints": [
+        "Direct logical contradiction",
+        "abstract requires extension, final forbids it"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-fmc-6",
+      "question": "How does marking a class final impact testing frameworks like Mockito?",
+      "expectedAnswer": "Historically, Mockito created dynamic subclasses at runtime to mock behavior; final classes could not be mocked without special bytecode plugins (like mockito-inline). Modern Mockito handles final classes transparently via instrumentation, but design-wise, composition is preferred over inheritance.",
+      "keyPoints": [
+        "Historically prevented subclass mocking",
+        "Modern Mockito handles via agent instrumentation"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

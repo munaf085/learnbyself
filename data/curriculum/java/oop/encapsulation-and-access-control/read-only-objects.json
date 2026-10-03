@@ -1,0 +1,869 @@
+{
+  "id": "les-enc-5",
+  "slug": "read-only-objects",
+  "title": "Read-Only Objects",
+  "summary": "Design tamper-proof immutable data structures by omitting setters and providing initialized read-only properties.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "prerequisites": [
+    "validating-object-state"
+  ],
+  "learningOutcomes": [
+    "Create read-only objects using private fields and getter-only access",
+    "Understand why immutability eliminates concurrency bugs and side-effect mutations",
+    "Initialize all state exclusively via the constructor at object birth"
+  ],
+  "activities": [
+    {
+      "id": "act-roo-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Museum Glass Display Case",
+      "analogy": {
+        "story": "When you visit a history museum to view ancient gold artifacts or an original constitution document, it is placed behind bulletproof glass.\n\nYou can look closely at it, read every word, take photographs, and show your friends (Read access / Getter). But there is no slot, knob, or drawer for you to reach in with a pen and scribble corrections or rearrange the pages (No Write access / No Setter).\n\nA read-only object in Java is that museum display case: it is fully observable by the world, but impossible to modify once sealed by the constructor.",
+        "takeaway": "Omitting setters creates read-only objects. Once born via the constructor, their state is locked forever, making them immune to accidental tampering.",
+        "headline": "Everyday Analogy: The Museum Glass Display Case",
+        "keyTakeaway": "Omitting setters creates read-only objects. Once born via the constructor, their state is locked forever, making them immune to accidental tampering."
+      }
+    },
+    {
+      "id": "act-roo-2",
+      "type": "concept",
+      "title": "Read-Only Design and Immutability Benefits",
+      "concept": {
+        "explanation": "In software development, objects that can be freely mutated at any time by different parts of an application are a major source of elusive bugs (called 'action at a distance'). If Component A passes an object to Component B, and Component B secretly modifies a field, Component A will subsequently behave unpredictably.\n\nHow to design a Read-Only Object:\n1. All fields are marked private.\n2. All fields are initialized once during constructor execution.\n3. Only getter methods are exposed; absolutely no setter methods are provided.\n4. If fields contain primitive values (int, double, boolean) or immutable objects (String), the object is completely tamper-proof.\n\nBenefits:\n- Thread-Safety: Multiple threads can read simultaneously without data race conditions.\n- Predictability: You can pass the object into third-party libraries knowing it cannot be altered.\n- Cacheability: Hash codes and calculated representations can be safely cached.",
+        "codeIllustration": "public class TransactionReceipt {\n    private String transactionId;\n    private double amount;\n    private String timestamp;\n\n    public TransactionReceipt(String id, double amount, String timestamp) {\n        this.transactionId = id;\n        this.amount = amount;\n        this.timestamp = timestamp;\n    }\n\n    // ONLY GETTERS - NO SETTERS!\n    public String getTransactionId() { return transactionId; }\n    public double getAmount() { return amount; }\n    public String getTimestamp() { return timestamp; }\n}",
+        "rules": [
+          "Rule 1: Never provide a setter on a read-only object.",
+          "Rule 2: Pass all required data into the constructor at creation time.",
+          "Rule 3: Read-only objects are inherently safe to share across multiple classes."
+        ]
+      },
+      "content": "In software development, objects that can be freely mutated at any time by different parts of an application are a major source of elusive bugs (called 'action at a distance'). If Component A passes an object to Component B, and Component B secretly modifies a field, Component A will subsequently behave unpredictably.\n\nHow to design a Read-Only Object:\n1. All fields are marked private.\n2. All fields are initialized once during constructor execution.\n3. Only getter methods are exposed; absolutely no setter methods are provided.\n4. If fields contain primitive values (int, double, boolean) or immutable objects (String), the object is completely tamper-proof.\n\nBenefits:\n- Thread-Safety: Multiple threads can read simultaneously without data race conditions.\n- Predictability: You can pass the object into third-party libraries knowing it cannot be altered.\n- Cacheability: Hash codes and calculated representations can be safely cached.\n\n\n### Code Illustration:\n```java\npublic class TransactionReceipt {\n    private String transactionId;\n    private double amount;\n    private String timestamp;\n\n    public TransactionReceipt(String id, double amount, String timestamp) {\n        this.transactionId = id;\n        this.amount = amount;\n        this.timestamp = timestamp;\n    }\n\n    // ONLY GETTERS - NO SETTERS!\n    public String getTransactionId() { return transactionId; }\n    public double getAmount() { return amount; }\n    public String getTimestamp() { return timestamp; }\n}\n```\n\n\n### Core Rules:\n- Rule 1: Never provide a setter on a read-only object.\n- Rule 2: Pass all required data into the constructor at creation time.\n- Rule 3: Read-only objects are inherently safe to share across multiple classes.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Never provide a setter on a read-only object.",
+          "Rule 2: Pass all required data into the constructor at creation time.",
+          "Rule 3: Read-only objects are inherently safe to share across multiple classes."
+        ]
+      }
+    },
+    {
+      "id": "act-roo-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Tamper-Proof Audit Transaction Record",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class AuditLogEntry {\n    private String logId;\n    private String userAction;\n    private String operatorId;\n    private long epochSeconds;\n\n    public AuditLogEntry(String logId, String action, String operator, long timestamp) {\n        this.logId = logId;\n        this.userAction = action;\n        this.operatorId = operator;\n        this.epochSeconds = timestamp;\n    }\n\n    public String getLogId() { return logId; }\n    public String getUserAction() { return userAction; }\n    public String getOperatorId() { return operatorId; }\n    public long getEpochSeconds() { return epochSeconds; }\n\n    public void printAuditSummary() {\n        System.out.println(\"LOG [\" + logId + \"] Operator: \" + operatorId + \" performed '\" + userAction + \"' at \" + epochSeconds);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        AuditLogEntry entry = new AuditLogEntry(\"TX-9901\", \"DATABASE_EXPORT\", \"admin_sam\", 1740000000L);\n        entry.printAuditSummary();\n\n        // Outside code CANNOT change entry.userAction or call setUserAction()!\n        // The audit record is completely immutable and trustworthy.\n        System.out.println(\"Verified Action: \" + entry.getUserAction());\n    }\n}",
+        "explanation": "Notice there are zero mutators. Once the constructor runs, the record is locked. No malicious or buggy code can rewrite who performed the database export."
+      },
+      "codeSnippet": "class AuditLogEntry {\n    private String logId;\n    private String userAction;\n    private String operatorId;\n    private long epochSeconds;\n\n    public AuditLogEntry(String logId, String action, String operator, long timestamp) {\n        this.logId = logId;\n        this.userAction = action;\n        this.operatorId = operator;\n        this.epochSeconds = timestamp;\n    }\n\n    public String getLogId() { return logId; }\n    public String getUserAction() { return userAction; }\n    public String getOperatorId() { return operatorId; }\n    public long getEpochSeconds() { return epochSeconds; }\n\n    public void printAuditSummary() {\n        System.out.println(\"LOG [\" + logId + \"] Operator: \" + operatorId + \" performed '\" + userAction + \"' at \" + epochSeconds);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        AuditLogEntry entry = new AuditLogEntry(\"TX-9901\", \"DATABASE_EXPORT\", \"admin_sam\", 1740000000L);\n        entry.printAuditSummary();\n\n        // Outside code CANNOT change entry.userAction or call setUserAction()!\n        // The audit record is completely immutable and trustworthy.\n        System.out.println(\"Verified Action: \" + entry.getUserAction());\n    }\n}",
+      "description": "Notice there are zero mutators. Once the constructor runs, the record is locked. No malicious or buggy code can rewrite who performed the database export."
+    },
+    {
+      "id": "act-roo-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Mixing Read-Only Fields with Controlled Mutable Fields",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class BankCustomer {\n    // Permanently immutable field (Read-Only)\n    private String panNumber;\n    private String accountId;\n\n    // Controlled mutable field\n    private String homeAddress;\n\n    public BankCustomer(String pan, String accId, String address) {\n        this.panNumber = pan;\n        this.accountId = accId;\n        this.homeAddress = address;\n    }\n\n    // Read-only getters: NO SETTERS for PAN or Account ID\n    public String getPanNumber() { return panNumber; }\n    public String getAccountId() { return accountId; }\n\n    // Mutable getter & setter for address only\n    public String getHomeAddress() { return homeAddress; }\n    public void setHomeAddress(String newAddress) {\n        if (newAddress != null && !newAddress.trim().isEmpty()) {\n            this.homeAddress = newAddress.trim();\n        }\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankCustomer cust = new BankCustomer(\"ABCDE1234F\", \"ACC-00192\", \"12 MG Road\");\n        System.out.println(\"Customer ID: \" + cust.getAccountId() + \" (Permanent)\");\n\n        // Moving homes: address can change, identity cannot!\n        cust.setHomeAddress(\"45 Park Avenue\");\n        System.out.println(\"New Address: \" + cust.getHomeAddress());\n    }\n}",
+        "explanation": "Not all fields in an object need to be mutable. By omitting setters for panNumber and accountId while providing one for homeAddress, we guarantee identity immutability while allowing relocations."
+      },
+      "codeSnippet": "class BankCustomer {\n    // Permanently immutable field (Read-Only)\n    private String panNumber;\n    private String accountId;\n\n    // Controlled mutable field\n    private String homeAddress;\n\n    public BankCustomer(String pan, String accId, String address) {\n        this.panNumber = pan;\n        this.accountId = accId;\n        this.homeAddress = address;\n    }\n\n    // Read-only getters: NO SETTERS for PAN or Account ID\n    public String getPanNumber() { return panNumber; }\n    public String getAccountId() { return accountId; }\n\n    // Mutable getter & setter for address only\n    public String getHomeAddress() { return homeAddress; }\n    public void setHomeAddress(String newAddress) {\n        if (newAddress != null && !newAddress.trim().isEmpty()) {\n            this.homeAddress = newAddress.trim();\n        }\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankCustomer cust = new BankCustomer(\"ABCDE1234F\", \"ACC-00192\", \"12 MG Road\");\n        System.out.println(\"Customer ID: \" + cust.getAccountId() + \" (Permanent)\");\n\n        // Moving homes: address can change, identity cannot!\n        cust.setHomeAddress(\"45 Park Avenue\");\n        System.out.println(\"New Address: \" + cust.getHomeAddress());\n    }\n}",
+      "description": "Not all fields in an object need to be mutable. By omitting setters for panNumber and accountId while providing one for homeAddress, we guarantee identity immutability while allowing relocations."
+    },
+    {
+      "id": "act-roo-5",
+      "type": "mcq",
+      "title": "Interactive Read-Only Objects Quiz",
+      "questions": [
+        {
+          "id": "q-roo-1",
+          "type": "mcq",
+          "prompt": "How do you design a read-only property in a Java class using encapsulation?",
+          "question": "How do you design a read-only property in a Java class using encapsulation?",
+          "options": [
+            "Mark the field public static",
+            "Make the field private and provide a public getter, but provide NO setter",
+            "Declare the class as abstract",
+            "Use a while loop inside the constructor"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "A private field with a getter and no setter allows the value to be inspected but never modified after construction.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-2",
+          "type": "mcq",
+          "prompt": "When is the state of a read-only object assigned?",
+          "question": "When is the state of a read-only object assigned?",
+          "options": [
+            "At runtime whenever the garbage collector runs",
+            "Exclusively during constructor execution at object birth",
+            "Whenever a getter is invoked",
+            "During class compilation"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Read-only objects receive all their initial data through constructor parameters at instantiation time.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-3",
+          "type": "mcq",
+          "prompt": "What is 'action at a distance' bug in software engineering?",
+          "question": "What is 'action at a distance' bug in software engineering?",
+          "options": [
+            "A bug caused by slow internet connections",
+            "A bug where passing a mutable object to another method causes that method to unexpectedly alter the object's state, corrupting the caller's logic",
+            "A syntax error in remote Java servers",
+            "A memory leak in the JVM"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Action at a distance occurs when mutable shared objects are altered unexpectedly by external components.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-4",
+          "type": "mcq",
+          "prompt": "Why are read-only objects inherently thread-safe?",
+          "question": "Why are read-only objects inherently thread-safe?",
+          "options": [
+            "Because the CPU automatically stops all other threads",
+            "Because their state never changes after construction, so concurrent reader threads can never observe conflicting writes",
+            "Because Java duplicates the object for every thread",
+            "Because they do not allocate heap memory"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Thread-safety issues arise from concurrent writes; if an object is read-only, writers do not exist, eliminating race conditions.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-5",
+          "type": "mcq",
+          "prompt": "Which standard Java class is a famous example of an immutable read-only object?",
+          "question": "Which standard Java class is a famous example of an immutable read-only object?",
+          "options": [
+            "java.lang.String",
+            "java.util.ArrayList",
+            "java.lang.StringBuilder",
+            "java.util.Scanner"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "String in Java is completely immutable; once created, its character contents can never be changed.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-6",
+          "type": "mcq",
+          "prompt": "Can a class have some fields that are read-only and other fields that are mutable?",
+          "question": "Can a class have some fields that are read-only and other fields that are mutable?",
+          "options": [
+            "No, a class must be 100% mutable or 100% read-only",
+            "Yes, by providing setters only for the mutable fields and omitting setters for the read-only fields",
+            "Only if the read-only fields are static",
+            "Only if the class has two constructors"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Selective encapsulation allows permanent fields (like ID or PAN) to be read-only while dynamic fields (like address) remain mutable.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-7",
+          "type": "mcq",
+          "prompt": "If you need to change the data represented by a read-only object, what is the standard idiomatic OOP pattern?",
+          "question": "If you need to change the data represented by a read-only object, what is the standard idiomatic OOP pattern?",
+          "options": [
+            "Use reflection to force overwrite private fields",
+            "Instantiate a new object with the updated values",
+            "Call the destructor and recreate the heap",
+            "Set the object reference to 0"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "With immutable objects, modifications produce a fresh new object holding the revised values (just like String.replace() does).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-8",
+          "type": "mcq",
+          "prompt": "In our museum analogy, what represents the absence of setters?",
+          "question": "In our museum analogy, what represents the absence of setters?",
+          "options": [
+            "The museum ticket counter",
+            "The sealed glass case with no opening for visitors to reach inside",
+            "The museum gift shop",
+            "The security guards walking outside"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The sealed glass case represents private fields exposed via getters only with no setters.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-9",
+          "type": "mcq",
+          "prompt": "Why are database primary keys and transaction IDs almost always modeled as read-only fields?",
+          "question": "Why are database primary keys and transaction IDs almost always modeled as read-only fields?",
+          "options": [
+            "Because changing identity keys breaks data integrity and relational mapping across systems",
+            "Because Java integers cannot be changed once created",
+            "Because databases reject objects with setters",
+            "To reduce disk space"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Identity keys must never change once assigned; changing an entity's ID corrupts logs, relations, and caches.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-roo-10",
+          "type": "mcq",
+          "prompt": "What is the best way to ensure an object's read-only fields are never left uninitialized or null?",
+          "question": "What is the best way to ensure an object's read-only fields are never left uninitialized or null?",
+          "options": [
+            "Provide a no-arg constructor that does nothing",
+            "Require all mandatory read-only fields as parameters in the constructor and validate them",
+            "Set all fields to public",
+            "Declare fields as static"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Requiring all read-only fields as constructor parameters guarantees that every instance is fully and validly populated at creation.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-roo-1",
+            "type": "mcq",
+            "prompt": "How do you design a read-only property in a Java class using encapsulation?",
+            "question": "How do you design a read-only property in a Java class using encapsulation?",
+            "options": [
+              "Mark the field public static",
+              "Make the field private and provide a public getter, but provide NO setter",
+              "Declare the class as abstract",
+              "Use a while loop inside the constructor"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "A private field with a getter and no setter allows the value to be inspected but never modified after construction.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-2",
+            "type": "mcq",
+            "prompt": "When is the state of a read-only object assigned?",
+            "question": "When is the state of a read-only object assigned?",
+            "options": [
+              "At runtime whenever the garbage collector runs",
+              "Exclusively during constructor execution at object birth",
+              "Whenever a getter is invoked",
+              "During class compilation"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Read-only objects receive all their initial data through constructor parameters at instantiation time.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-3",
+            "type": "mcq",
+            "prompt": "What is 'action at a distance' bug in software engineering?",
+            "question": "What is 'action at a distance' bug in software engineering?",
+            "options": [
+              "A bug caused by slow internet connections",
+              "A bug where passing a mutable object to another method causes that method to unexpectedly alter the object's state, corrupting the caller's logic",
+              "A syntax error in remote Java servers",
+              "A memory leak in the JVM"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Action at a distance occurs when mutable shared objects are altered unexpectedly by external components.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-4",
+            "type": "mcq",
+            "prompt": "Why are read-only objects inherently thread-safe?",
+            "question": "Why are read-only objects inherently thread-safe?",
+            "options": [
+              "Because the CPU automatically stops all other threads",
+              "Because their state never changes after construction, so concurrent reader threads can never observe conflicting writes",
+              "Because Java duplicates the object for every thread",
+              "Because they do not allocate heap memory"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Thread-safety issues arise from concurrent writes; if an object is read-only, writers do not exist, eliminating race conditions.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-5",
+            "type": "mcq",
+            "prompt": "Which standard Java class is a famous example of an immutable read-only object?",
+            "question": "Which standard Java class is a famous example of an immutable read-only object?",
+            "options": [
+              "java.lang.String",
+              "java.util.ArrayList",
+              "java.lang.StringBuilder",
+              "java.util.Scanner"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "String in Java is completely immutable; once created, its character contents can never be changed.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-6",
+            "type": "mcq",
+            "prompt": "Can a class have some fields that are read-only and other fields that are mutable?",
+            "question": "Can a class have some fields that are read-only and other fields that are mutable?",
+            "options": [
+              "No, a class must be 100% mutable or 100% read-only",
+              "Yes, by providing setters only for the mutable fields and omitting setters for the read-only fields",
+              "Only if the read-only fields are static",
+              "Only if the class has two constructors"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Selective encapsulation allows permanent fields (like ID or PAN) to be read-only while dynamic fields (like address) remain mutable.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-7",
+            "type": "mcq",
+            "prompt": "If you need to change the data represented by a read-only object, what is the standard idiomatic OOP pattern?",
+            "question": "If you need to change the data represented by a read-only object, what is the standard idiomatic OOP pattern?",
+            "options": [
+              "Use reflection to force overwrite private fields",
+              "Instantiate a new object with the updated values",
+              "Call the destructor and recreate the heap",
+              "Set the object reference to 0"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "With immutable objects, modifications produce a fresh new object holding the revised values (just like String.replace() does).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-8",
+            "type": "mcq",
+            "prompt": "In our museum analogy, what represents the absence of setters?",
+            "question": "In our museum analogy, what represents the absence of setters?",
+            "options": [
+              "The museum ticket counter",
+              "The sealed glass case with no opening for visitors to reach inside",
+              "The museum gift shop",
+              "The security guards walking outside"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The sealed glass case represents private fields exposed via getters only with no setters.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-9",
+            "type": "mcq",
+            "prompt": "Why are database primary keys and transaction IDs almost always modeled as read-only fields?",
+            "question": "Why are database primary keys and transaction IDs almost always modeled as read-only fields?",
+            "options": [
+              "Because changing identity keys breaks data integrity and relational mapping across systems",
+              "Because Java integers cannot be changed once created",
+              "Because databases reject objects with setters",
+              "To reduce disk space"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Identity keys must never change once assigned; changing an entity's ID corrupts logs, relations, and caches.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-roo-10",
+            "type": "mcq",
+            "prompt": "What is the best way to ensure an object's read-only fields are never left uninitialized or null?",
+            "question": "What is the best way to ensure an object's read-only fields are never left uninitialized or null?",
+            "options": [
+              "Provide a no-arg constructor that does nothing",
+              "Require all mandatory read-only fields as parameters in the constructor and validate them",
+              "Set all fields to public",
+              "Declare fields as static"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Requiring all read-only fields as constructor parameters guarantees that every instance is fully and validly populated at creation.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-roo-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: Read-Only Objects",
+      "questions": [
+        {
+          "id": "i-roo-1",
+          "question": "How do you implement a read-only or immutable object in Java without using the 'final' keyword?",
+          "answer": "Make all instance variables private, initialize them completely through constructor arguments, and provide only getter methods without providing any setters or state-modifying methods. (Adding 'final' is a best practice we study in Module 4, but encapsulation alone establishes read-only access).",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Private fields + Constructor initialization + Getters only = Read-only"
+          ]
+        },
+        {
+          "id": "i-roo-2",
+          "question": "What are the primary architectural benefits of immutability in enterprise backends?",
+          "answer": "1. Thread safety with zero synchronization overhead. 2. Failure atomicity (an immutable object never exists in a corrupt intermediate state). 3. Safe sharing as Map keys or Cache entries without fear of hashcode alteration.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Thread-safety",
+            "Failure atomicity",
+            "Safe caching"
+          ]
+        },
+        {
+          "id": "i-roo-3",
+          "question": "What is the Copy-on-Write (or functional update) pattern?",
+          "answer": "Instead of mutating an existing object, a method returns a brand new instance containing the altered value while leaving the original instance untouched. A classic example is 'String s2 = s1.toUpperCase();'.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Returns new instance instead of modifying current",
+            "Preserves original state"
+          ]
+        },
+        {
+          "id": "i-roo-4",
+          "question": "Why is an immutable object safer as a HashMap key than a mutable object?",
+          "answer": "A HashMap calculates a bucket location using the key's hashCode(). If the key is mutable and its fields change after being placed in the map, its hashCode changes, making it impossible to locate or retrieve the key from the map later.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Mutable keys break HashMap hash contracts",
+            "Immutable keys guarantee stable hash codes"
+          ]
+        },
+        {
+          "id": "i-roo-5",
+          "question": "Can a class with only getters still be accidentally mutable?",
+          "answer": "Yes! If a getter returns a direct reference to a mutable internal object (such as a Date or an int[] array), external code can mutate the contents through that reference even without a setter. Defensive copies are required for mutable field types.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Returning mutable references breaks immutability",
+            "Defensive copies are necessary"
+          ]
+        },
+        {
+          "id": "i-roo-6",
+          "question": "When would you prefer a mutable object over a read-only object?",
+          "answer": "When frequent, high-volume state modifications occur in performance-critical loops (e.g., appending characters in StringBuilder or updating high-frequency gaming coordinates) where creating millions of short-lived objects would cause excessive garbage collection pressure.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Mutable for high-frequency in-place mutations",
+            "Avoid GC pressure in hot loops"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-roo-1",
+          "question": "How do you implement a read-only or immutable object in Java without using the 'final' keyword?",
+          "expectedAnswer": "Make all instance variables private, initialize them completely through constructor arguments, and provide only getter methods without providing any setters or state-modifying methods. (Adding 'final' is a best practice we study in Module 4, but encapsulation alone establishes read-only access).",
+          "keyPoints": [
+            "Private fields + Constructor initialization + Getters only = Read-only"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-roo-2",
+          "question": "What are the primary architectural benefits of immutability in enterprise backends?",
+          "expectedAnswer": "1. Thread safety with zero synchronization overhead. 2. Failure atomicity (an immutable object never exists in a corrupt intermediate state). 3. Safe sharing as Map keys or Cache entries without fear of hashcode alteration.",
+          "keyPoints": [
+            "Thread-safety",
+            "Failure atomicity",
+            "Safe caching"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-roo-3",
+          "question": "What is the Copy-on-Write (or functional update) pattern?",
+          "expectedAnswer": "Instead of mutating an existing object, a method returns a brand new instance containing the altered value while leaving the original instance untouched. A classic example is 'String s2 = s1.toUpperCase();'.",
+          "keyPoints": [
+            "Returns new instance instead of modifying current",
+            "Preserves original state"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-roo-4",
+          "question": "Why is an immutable object safer as a HashMap key than a mutable object?",
+          "expectedAnswer": "A HashMap calculates a bucket location using the key's hashCode(). If the key is mutable and its fields change after being placed in the map, its hashCode changes, making it impossible to locate or retrieve the key from the map later.",
+          "keyPoints": [
+            "Mutable keys break HashMap hash contracts",
+            "Immutable keys guarantee stable hash codes"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-roo-5",
+          "question": "Can a class with only getters still be accidentally mutable?",
+          "expectedAnswer": "Yes! If a getter returns a direct reference to a mutable internal object (such as a Date or an int[] array), external code can mutate the contents through that reference even without a setter. Defensive copies are required for mutable field types.",
+          "keyPoints": [
+            "Returning mutable references breaks immutability",
+            "Defensive copies are necessary"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-roo-6",
+          "question": "When would you prefer a mutable object over a read-only object?",
+          "expectedAnswer": "When frequent, high-volume state modifications occur in performance-critical loops (e.g., appending characters in StringBuilder or updating high-frequency gaming coordinates) where creating millions of short-lived objects would cause excessive garbage collection pressure.",
+          "keyPoints": [
+            "Mutable for high-frequency in-place mutations",
+            "Avoid GC pressure in hot loops"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-roo-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I understand that omitting setters produces a read-only object.",
+        "I know how to mix read-only identity fields with mutable data fields.",
+        "I understand how functional copy-on-write methods produce updated copies safely."
+      ],
+      "checklist": [
+        "I understand that omitting setters produces a read-only object.",
+        "I know how to mix read-only identity fields with mutable data fields.",
+        "I understand how functional copy-on-write methods produce updated copies safely."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "encapsulation-and-access-control",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-roo-1",
+      "title": "Warmup: Seal the Receipt",
+      "difficulty": "easy",
+      "description": "Convert PaymentReceipt into a read-only object by making 'receiptNumber' and 'amountPaid' private, removing any setter methods, and providing only getters. In Main, create a receipt for #1092 with $45.50 and print 'Receipt #1092: $45.5'.",
+      "problemStatement": "Convert PaymentReceipt into a read-only object by making 'receiptNumber' and 'amountPaid' private, removing any setter methods, and providing only getters. In Main, create a receipt for #1092 with $45.50 and print 'Receipt #1092: $45.5'.",
+      "expectedOutput": "Receipt #1092: $45.5",
+      "hint": "Mark fields private",
+      "hints": [
+        "Mark fields private",
+        "Add getters only",
+        "Remove any setters"
+      ],
+      "solutionCode": "class PaymentReceipt {\n    private int receiptNumber;\n    private double amountPaid;\n\n    public PaymentReceipt(int num, double amount) {\n        this.receiptNumber = num;\n        this.amountPaid = amount;\n    }\n\n    public int getReceiptNumber() {\n        return receiptNumber;\n    }\n\n    public double getAmountPaid() {\n        return amountPaid;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        PaymentReceipt r = new PaymentReceipt(1092, 45.50);\n        System.out.println(\"Receipt #\" + r.getReceiptNumber() + \": $\" + r.getAmountPaid());\n    }\n}",
+      "initialCode": "class PaymentReceipt {\n    public int receiptNumber;\n    public double amountPaid;\n\n    public PaymentReceipt(int num, double amount) {\n        this.receiptNumber = num;\n        this.amountPaid = amount;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-roo-2",
+      "title": "Code from Scratch: Read-Only GPS Coordinate",
+      "difficulty": "easy",
+      "description": "Write a complete GeoPoint class from scratch with private double latitude and private double longitude. Both are initialized in the constructor. Provide only getLatitude() and getLongitude() with NO setters. In Main, create a point at 37.7749, -122.4194 and print 'Location: 37.7749, -122.4194'.",
+      "problemStatement": "Write a complete GeoPoint class from scratch with private double latitude and private double longitude. Both are initialized in the constructor. Provide only getLatitude() and getLongitude() with NO setters. In Main, create a point at 37.7749, -122.4194 and print 'Location: 37.7749, -122.4194'.",
+      "expectedOutput": "Location: 37.7749, -122.4194",
+      "hint": "Write GeoPoint from scratch",
+      "hints": [
+        "Write GeoPoint from scratch",
+        "Private lat and lon",
+        "Only getters, no setters"
+      ],
+      "solutionCode": "class GeoPoint {\n    private double latitude;\n    private double longitude;\n\n    public GeoPoint(double lat, double lon) {\n        this.latitude = lat;\n        this.longitude = lon;\n    }\n\n    public double getLatitude() { return latitude; }\n    public double getLongitude() { return longitude; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        GeoPoint pt = new GeoPoint(37.7749, -122.4194);\n        System.out.println(\"Location: \" + pt.getLatitude() + \", \" + pt.getLongitude());\n    }\n}"
+    },
+    {
+      "id": "p-roo-3",
+      "title": "Code from Scratch: Flight Ticket with Mixed Mutability",
+      "difficulty": "medium",
+      "description": "Write a complete FlightTicket class from scratch. It has read-only fields pnrNumber (String) and passengerName (String) which can NEVER be altered after creation. It has a mutable seatNumber (String) which CAN be updated via setSeatNumber(String seat). Provide getters for all 3. In Main, create ticket for 'XYZ889', 'Deepak', seat '12A'. Change seat to '14C'. Print 'Ticket XYZ889 for Deepak: Seat 14C'.",
+      "problemStatement": "Write a complete FlightTicket class from scratch. It has read-only fields pnrNumber (String) and passengerName (String) which can NEVER be altered after creation. It has a mutable seatNumber (String) which CAN be updated via setSeatNumber(String seat). Provide getters for all 3. In Main, create ticket for 'XYZ889', 'Deepak', seat '12A'. Change seat to '14C'. Print 'Ticket XYZ889 for Deepak: Seat 14C'.",
+      "expectedOutput": "Ticket XYZ889 for Deepak: Seat 14C",
+      "hint": "No setters for pnrNumber or passengerName",
+      "hints": [
+        "No setters for pnrNumber or passengerName",
+        "Provide setSeatNumber",
+        "Print exact output format"
+      ],
+      "solutionCode": "class FlightTicket {\n    private String pnrNumber;\n    private String passengerName;\n    private String seatNumber;\n\n    public FlightTicket(String pnr, String name, String seat) {\n        this.pnrNumber = pnr;\n        this.passengerName = name;\n        this.seatNumber = seat;\n    }\n\n    public String getPnrNumber() { return pnrNumber; }\n    public String getPassengerName() { return passengerName; }\n    public String getSeatNumber() { return seatNumber; }\n\n    public void setSeatNumber(String newSeat) {\n        if (newSeat != null && !newSeat.trim().isEmpty()) {\n            this.seatNumber = newSeat.trim();\n        }\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        FlightTicket t = new FlightTicket(\"XYZ889\", \"Deepak\", \"12A\");\n        t.setSeatNumber(\"14C\");\n        System.out.println(\"Ticket \" + t.getPnrNumber() + \" for \" + t.getPassengerName() + \": Seat \" + t.getSeatNumber());\n    }\n}"
+    },
+    {
+      "id": "p-roo-4",
+      "title": "Fix Broken Code: Accidental Mutator on Read-Only Record",
+      "difficulty": "easy",
+      "description": "A developer accidentally left a setTransactionId() method on an immutable TransactionRecord, allowing outside code to corrupt the audit trail. Remove the setter, verify constructor initialization, and run Main to print 'Immutable TX: TX-7001 ($120.0)'.",
+      "problemStatement": "A developer accidentally left a setTransactionId() method on an immutable TransactionRecord, allowing outside code to corrupt the audit trail. Remove the setter, verify constructor initialization, and run Main to print 'Immutable TX: TX-7001 ($120.0)'.",
+      "expectedOutput": "Immutable TX: TX-7001 ($120.0)",
+      "hint": "Delete setTxId method",
+      "hints": [
+        "Delete setTxId method",
+        "Rely purely on getTxId and getAmount"
+      ],
+      "solutionCode": "class TransactionRecord {\n    private String txId;\n    private double amount;\n\n    public TransactionRecord(String id, double amount) {\n        this.txId = id;\n        this.amount = amount;\n    }\n\n    public String getTxId() { return txId; }\n    public double getAmount() { return amount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TransactionRecord r = new TransactionRecord(\"TX-7001\", 120.0);\n        System.out.println(\"Immutable TX: \" + r.getTxId() + \" ($\" + r.getAmount() + \")\");\n    }\n}",
+      "initialCode": "class TransactionRecord {\n    private String txId;\n    private double amount;\n\n    public TransactionRecord(String id, double amount) {\n        this.txId = id;\n        this.amount = amount;\n    }\n\n    // Bug: Exposes identity to tampering!\n    public void setTxId(String id) {\n        this.txId = id;\n    }\n\n    public String getTxId() { return txId; }\n    public double getAmount() { return amount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TransactionRecord r = new TransactionRecord(\"TX-7001\", 120.0);\n        // r.setTxId(\"HACKED\"); // Remove setter!\n        System.out.println(\"Immutable TX: \" + r.getTxId() + \" ($\" + r.getAmount() + \")\");\n    }\n}"
+    },
+    {
+      "id": "p-roo-5",
+      "title": "Challenge: Functional Copy-on-Write Color Palette",
+      "difficulty": "medium",
+      "description": "Write a complete ReadOnlyColor class from scratch with private int red, private int green, private int blue (0 to 255). Provide a constructor setting all 3 (clamp 0-255). Provide only getters. Provide a functional method withRed(int newRed) that does NOT mutate this object, but returns a BRAND NEW ReadOnlyColor instance with updated red and the same green and blue. In Main, create color (100, 150, 200), call withRed(255) into a new variable, and print 'Original: 100, 150, 200 | Revised: 255, 150, 200'.",
+      "problemStatement": "Write a complete ReadOnlyColor class from scratch with private int red, private int green, private int blue (0 to 255). Provide a constructor setting all 3 (clamp 0-255). Provide only getters. Provide a functional method withRed(int newRed) that does NOT mutate this object, but returns a BRAND NEW ReadOnlyColor instance with updated red and the same green and blue. In Main, create color (100, 150, 200), call withRed(255) into a new variable, and print 'Original: 100, 150, 200 | Revised: 255, 150, 200'.",
+      "expectedOutput": "Original: 100, 150, 200 | Revised: 255, 150, 200",
+      "hint": "withRed returns new ReadOnlyColor(newRed, green, blue)",
+      "hints": [
+        "withRed returns new ReadOnlyColor(newRed, green, blue)",
+        "Original color is unchanged"
+      ],
+      "solutionCode": "class ReadOnlyColor {\n    private int red;\n    private int green;\n    private int blue;\n\n    public ReadOnlyColor(int r, int g, int b) {\n        this.red = clamp(r);\n        this.green = clamp(g);\n        this.blue = clamp(b);\n    }\n\n    private int clamp(int val) {\n        if (val < 0) return 0;\n        if (val > 255) return 255;\n        return val;\n    }\n\n    public int getRed() { return red; }\n    public int getGreen() { return green; }\n    public int getBlue() { return blue; }\n\n    public ReadOnlyColor withRed(int newRed) {\n        return new ReadOnlyColor(newRed, this.green, this.blue);\n    }\n\n    public String toRgbString() {\n        return red + \", \" + green + \", \" + blue;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ReadOnlyColor c1 = new ReadOnlyColor(100, 150, 200);\n        ReadOnlyColor c2 = c1.withRed(255);\n        System.out.println(\"Original: \" + c1.toRgbString() + \" | Revised: \" + c2.toRgbString());\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-roo-1",
+      "question": "How do you implement a read-only or immutable object in Java without using the 'final' keyword?",
+      "expectedAnswer": "Make all instance variables private, initialize them completely through constructor arguments, and provide only getter methods without providing any setters or state-modifying methods. (Adding 'final' is a best practice we study in Module 4, but encapsulation alone establishes read-only access).",
+      "keyPoints": [
+        "Private fields + Constructor initialization + Getters only = Read-only"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-roo-2",
+      "question": "What are the primary architectural benefits of immutability in enterprise backends?",
+      "expectedAnswer": "1. Thread safety with zero synchronization overhead. 2. Failure atomicity (an immutable object never exists in a corrupt intermediate state). 3. Safe sharing as Map keys or Cache entries without fear of hashcode alteration.",
+      "keyPoints": [
+        "Thread-safety",
+        "Failure atomicity",
+        "Safe caching"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-roo-3",
+      "question": "What is the Copy-on-Write (or functional update) pattern?",
+      "expectedAnswer": "Instead of mutating an existing object, a method returns a brand new instance containing the altered value while leaving the original instance untouched. A classic example is 'String s2 = s1.toUpperCase();'.",
+      "keyPoints": [
+        "Returns new instance instead of modifying current",
+        "Preserves original state"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-roo-4",
+      "question": "Why is an immutable object safer as a HashMap key than a mutable object?",
+      "expectedAnswer": "A HashMap calculates a bucket location using the key's hashCode(). If the key is mutable and its fields change after being placed in the map, its hashCode changes, making it impossible to locate or retrieve the key from the map later.",
+      "keyPoints": [
+        "Mutable keys break HashMap hash contracts",
+        "Immutable keys guarantee stable hash codes"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-roo-5",
+      "question": "Can a class with only getters still be accidentally mutable?",
+      "expectedAnswer": "Yes! If a getter returns a direct reference to a mutable internal object (such as a Date or an int[] array), external code can mutate the contents through that reference even without a setter. Defensive copies are required for mutable field types.",
+      "keyPoints": [
+        "Returning mutable references breaks immutability",
+        "Defensive copies are necessary"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-roo-6",
+      "question": "When would you prefer a mutable object over a read-only object?",
+      "expectedAnswer": "When frequent, high-volume state modifications occur in performance-critical loops (e.g., appending characters in StringBuilder or updating high-frequency gaming coordinates) where creating millions of short-lived objects would cause excessive garbage collection pressure.",
+      "keyPoints": [
+        "Mutable for high-frequency in-place mutations",
+        "Avoid GC pressure in hot loops"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

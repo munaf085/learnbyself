@@ -1,0 +1,881 @@
+{
+  "id": "les-enc-1",
+  "slug": "why-encapsulation",
+  "title": "Why Encapsulation?",
+  "summary": "Why public fields invite catastrophic bugs and how encapsulation acts as a protective shield around an object's data.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [
+    "what-is-a-constructor",
+    "default-constructors"
+  ],
+  "learningOutcomes": [
+    "Explain the vulnerability of public mutable fields",
+    "Define encapsulation as bundling data with methods and hiding internal state",
+    "Demonstrate how encapsulated classes protect business rules from external corruption"
+  ],
+  "activities": [
+    {
+      "id": "act-we-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Medicine Capsule & Bank Vault",
+      "analogy": {
+        "story": "Imagine a medicinal capsule. The delicate chemical powder inside is completely encased in a dissolvable gelatin shell. You don't scoop powder with your dirty fingers or alter the chemical ratio; you take the capsule as an intact unit.\n\nNow consider a bank vault. Customers never walk directly into the vault to grab bundles of cash from the shelves. Instead, they stand at the teller counter or use an ATM. The teller verifies identity, validates the balance, records the transaction, and only then updates the cash balance. Encapsulation is the protective shell and the bank teller: it shields an object's sensitive data from direct, unfiltered outside tampering.",
+        "takeaway": "Direct field access invites accidental or malicious data corruption. Encapsulation wraps internal variables in a protective wall and forces all interactions through verified, controlled methods.",
+        "headline": "Everyday Analogy: The Medicine Capsule & Bank Vault",
+        "keyTakeaway": "Direct field access invites accidental or malicious data corruption. Encapsulation wraps internal variables in a protective wall and forces all interactions through verified, controlled methods."
+      }
+    },
+    {
+      "id": "act-we-2",
+      "type": "concept",
+      "title": "The Dangers of Direct Field Access vs Encapsulation",
+      "concept": {
+        "explanation": "When fields in a class are declared without protection (or as public), any external class can modify them at any time to invalid or impossible values. For example, an external caller could set a BankAccount balance to -999999, set a Person's age to -50, or change an Order total without recalculating sales tax.\n\nEncapsulation solves this by applying two essential rules:\n1. Hide Data: Mark instance variables as private so no external code can read or overwrite them directly.\n2. Expose Controlled Operations: Provide public methods (getters, setters, or business action methods) that validate inputs, enforce business logic, and maintain consistent internal state at all times.",
+        "codeIllustration": "// The Unprotected Hazard:\nclass UnsafeAccount {\n    public double balance; // Anyone can tamper with this!\n}\n// In Main: account.balance = -50000; // Catastrophic!\n\n// The Encapsulated Solution:\nclass SafeAccount {\n    private double balance; // Inaccessible from outside\n\n    public void deposit(double amount) {\n        if (amount > 0) { balance += amount; }\n    }\n}",
+        "rules": [
+          "Rule 1: Always declare fields with the most restrictive visibility possible (default to private).",
+          "Rule 2: Never allow outside code to assign arbitrary values directly into fields.",
+          "Rule 3: Encapsulation is not just hiding variables; it is actively defending the class's integrity and invariants."
+        ]
+      },
+      "content": "When fields in a class are declared without protection (or as public), any external class can modify them at any time to invalid or impossible values. For example, an external caller could set a BankAccount balance to -999999, set a Person's age to -50, or change an Order total without recalculating sales tax.\n\nEncapsulation solves this by applying two essential rules:\n1. Hide Data: Mark instance variables as private so no external code can read or overwrite them directly.\n2. Expose Controlled Operations: Provide public methods (getters, setters, or business action methods) that validate inputs, enforce business logic, and maintain consistent internal state at all times.\n\n\n### Code Illustration:\n```java\n// The Unprotected Hazard:\nclass UnsafeAccount {\n    public double balance; // Anyone can tamper with this!\n}\n// In Main: account.balance = -50000; // Catastrophic!\n\n// The Encapsulated Solution:\nclass SafeAccount {\n    private double balance; // Inaccessible from outside\n\n    public void deposit(double amount) {\n        if (amount > 0) { balance += amount; }\n    }\n}\n```\n\n\n### Core Rules:\n- Rule 1: Always declare fields with the most restrictive visibility possible (default to private).\n- Rule 2: Never allow outside code to assign arbitrary values directly into fields.\n- Rule 3: Encapsulation is not just hiding variables; it is actively defending the class's integrity and invariants.\n\n**Principle of Least Privilege**: Expose only what is strictly necessary; keep all other internal object state private.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Always declare fields with the most restrictive visibility possible (default to private).",
+          "Rule 2: Never allow outside code to assign arbitrary values directly into fields.",
+          "Rule 3: Encapsulation is not just hiding variables; it is actively defending the class's integrity and invariants."
+        ]
+      }
+    },
+    {
+      "id": "act-we-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: The Broken Bank Account vs The Protected Bank Account",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class UnsafeBankAccount {\n    public String accountHolder;\n    public double balance;\n}\n\nclass SafeBankAccount {\n    private String accountHolder;\n    private double balance;\n\n    public SafeBankAccount(String holder, double initialBalance) {\n        this.accountHolder = holder;\n        if (initialBalance >= 0) {\n            this.balance = initialBalance;\n        } else {\n            this.balance = 0.0;\n        }\n    }\n\n    public void withdraw(double amount) {\n        if (amount <= 0) {\n            System.out.println(\"Withdrawal amount must be positive.\");\n        } else if (amount > balance) {\n            System.out.println(\"Insufficient funds. Withdrawal rejected.\");\n        } else {\n            balance -= amount;\n            System.out.println(\"Withdrew $\" + amount + \". Remaining: $\" + balance);\n        }\n    }\n\n    public double getBalance() {\n        return balance;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Unsafe version - data corrupted easily\n        UnsafeBankAccount unsafe = new UnsafeBankAccount();\n        unsafe.balance = -99999.0; // Disaster! No validation!\n        System.out.println(\"Unsafe Balance: $\" + unsafe.balance);\n\n        // Safe encapsulated version - guards in place\n        SafeBankAccount safe = new SafeBankAccount(\"Amina\", 500.0);\n        safe.withdraw(1000.0); // Safely rejected!\n        safe.withdraw(150.0);  // Approved!\n        System.out.println(\"Final Safe Balance: $\" + safe.getBalance());\n    }\n}",
+        "explanation": "Notice how UnsafeBankAccount allowed balance to become -$99,999 without any warning. In contrast, SafeBankAccount locks balance behind private, forcing all changes through withdraw(), where business guards prevent overdrafts."
+      },
+      "codeSnippet": "class UnsafeBankAccount {\n    public String accountHolder;\n    public double balance;\n}\n\nclass SafeBankAccount {\n    private String accountHolder;\n    private double balance;\n\n    public SafeBankAccount(String holder, double initialBalance) {\n        this.accountHolder = holder;\n        if (initialBalance >= 0) {\n            this.balance = initialBalance;\n        } else {\n            this.balance = 0.0;\n        }\n    }\n\n    public void withdraw(double amount) {\n        if (amount <= 0) {\n            System.out.println(\"Withdrawal amount must be positive.\");\n        } else if (amount > balance) {\n            System.out.println(\"Insufficient funds. Withdrawal rejected.\");\n        } else {\n            balance -= amount;\n            System.out.println(\"Withdrew $\" + amount + \". Remaining: $\" + balance);\n        }\n    }\n\n    public double getBalance() {\n        return balance;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Unsafe version - data corrupted easily\n        UnsafeBankAccount unsafe = new UnsafeBankAccount();\n        unsafe.balance = -99999.0; // Disaster! No validation!\n        System.out.println(\"Unsafe Balance: $\" + unsafe.balance);\n\n        // Safe encapsulated version - guards in place\n        SafeBankAccount safe = new SafeBankAccount(\"Amina\", 500.0);\n        safe.withdraw(1000.0); // Safely rejected!\n        safe.withdraw(150.0);  // Approved!\n        System.out.println(\"Final Safe Balance: $\" + safe.getBalance());\n    }\n}",
+      "description": "Notice how UnsafeBankAccount allowed balance to become -$99,999 without any warning. In contrast, SafeBankAccount locks balance behind private, forcing all changes through withdraw(), where business guards prevent overdrafts."
+    },
+    {
+      "id": "act-we-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Real-World Inventory Guard with Stock Bounds",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class ProductInventory {\n    private String productName;\n    private int stockCount;\n\n    public ProductInventory(String name, int initialStock) {\n        this.productName = name;\n        this.stockCount = Math.max(0, initialStock);\n    }\n\n    public void purchase(int quantity) {\n        if (quantity <= 0) {\n            System.out.println(\"Invalid order quantity: \" + quantity);\n            return;\n        }\n        if (quantity > stockCount) {\n            System.out.println(\"Order failed: Only \" + stockCount + \" \" + productName + \" available.\");\n            return;\n        }\n        stockCount -= quantity;\n        System.out.println(\"Purchased \" + quantity + \"x \" + productName + \". In stock: \" + stockCount);\n    }\n\n    public void restock(int quantity) {\n        if (quantity > 0) {\n            stockCount += quantity;\n            System.out.println(\"Restocked \" + quantity + \" units. Total stock: \" + stockCount);\n        }\n    }\n\n    public int getStockCount() {\n        return stockCount;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ProductInventory item = new ProductInventory(\"Mechanical Keyboard\", 5);\n        item.purchase(2);\n        item.purchase(10); // Attempting to purchase more than available\n        item.restock(8);\n        System.out.println(\"Verified stock count: \" + item.getStockCount());\n    }\n}",
+        "explanation": "This real-world e-commerce example guarantees stockCount will never become negative under concurrent or sequential sales. Because stockCount is private, outside code cannot set item.stockCount = -10."
+      },
+      "codeSnippet": "class ProductInventory {\n    private String productName;\n    private int stockCount;\n\n    public ProductInventory(String name, int initialStock) {\n        this.productName = name;\n        this.stockCount = Math.max(0, initialStock);\n    }\n\n    public void purchase(int quantity) {\n        if (quantity <= 0) {\n            System.out.println(\"Invalid order quantity: \" + quantity);\n            return;\n        }\n        if (quantity > stockCount) {\n            System.out.println(\"Order failed: Only \" + stockCount + \" \" + productName + \" available.\");\n            return;\n        }\n        stockCount -= quantity;\n        System.out.println(\"Purchased \" + quantity + \"x \" + productName + \". In stock: \" + stockCount);\n    }\n\n    public void restock(int quantity) {\n        if (quantity > 0) {\n            stockCount += quantity;\n            System.out.println(\"Restocked \" + quantity + \" units. Total stock: \" + stockCount);\n        }\n    }\n\n    public int getStockCount() {\n        return stockCount;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ProductInventory item = new ProductInventory(\"Mechanical Keyboard\", 5);\n        item.purchase(2);\n        item.purchase(10); // Attempting to purchase more than available\n        item.restock(8);\n        System.out.println(\"Verified stock count: \" + item.getStockCount());\n    }\n}",
+      "description": "This real-world e-commerce example guarantees stockCount will never become negative under concurrent or sequential sales. Because stockCount is private, outside code cannot set item.stockCount = -10."
+    },
+    {
+      "id": "act-we-5",
+      "type": "mcq",
+      "title": "Interactive Concept Quiz",
+      "questions": [
+        {
+          "id": "q-we-1",
+          "type": "mcq",
+          "prompt": "What is the primary definition of encapsulation in Object-Oriented Programming?",
+          "question": "What is the primary definition of encapsulation in Object-Oriented Programming?",
+          "options": [
+            "Converting high-level Java code into machine bytecode",
+            "Bundling data with methods and restricting direct outside access to internal state",
+            "Creating multiple objects using the new keyword",
+            "Inheriting behavior from a parent class"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Encapsulation bundles fields with their manipulating methods and hides sensitive internal state from unauthorized external tampering.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-2",
+          "type": "mcq",
+          "prompt": "What catastrophic issue occurs when instance fields are left public?",
+          "question": "What catastrophic issue occurs when instance fields are left public?",
+          "options": [
+            "The compiler refuses to compile the class file",
+            "Objects consume double the heap memory",
+            "Any external class can write invalid, corrupted, or negative values into the fields",
+            "Constructors cannot be declared in the class"
+          ],
+          "correctAnswer": 2,
+          "correctAnswerIndex": 2,
+          "explanation": "Public fields allow arbitrary outside code to assign invalid data (such as negative balances or empty names) without validation.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-3",
+          "type": "mcq",
+          "prompt": "Which access modifier is the primary tool used to hide instance fields in Java?",
+          "question": "Which access modifier is the primary tool used to hide instance fields in Java?",
+          "options": [
+            "public",
+            "private",
+            "protected",
+            "static"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The 'private' keyword ensures that the field is accessible ONLY within the class that declared it.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-4",
+          "type": "mcq",
+          "prompt": "If an external class attempts to read a 'private' field directly (e.g. account.balance), what happens?",
+          "question": "If an external class attempts to read a 'private' field directly (e.g. account.balance), what happens?",
+          "options": [
+            "The program crashes with a NullPointerException at runtime",
+            "The Java compiler produces a compile-time error: 'balance has private access'",
+            "The field returns a default value of 0.0 silently",
+            "The JVM allows it if the file is in the same directory"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Private fields are enforced at compile time; attempting to access them from outside causes a compiler error.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-5",
+          "type": "mcq",
+          "prompt": "What is an invariant in software engineering?",
+          "question": "What is an invariant in software engineering?",
+          "options": [
+            "A variable whose value can never be read",
+            "A condition or rule that must always remain true for an object to be valid",
+            "A method that has no return type",
+            "A loop that executes indefinitely"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "An invariant is a core business truth (such as 'balance >= 0' or 'stock >= 0') that encapsulation strictly guarantees throughout the object's lifetime.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-6",
+          "type": "mcq",
+          "prompt": "How does an outside class safely retrieve data from a private field?",
+          "question": "How does an outside class safely retrieve data from a private field?",
+          "options": [
+            "By using the dot operator directly",
+            "Through a public accessor method (commonly known as a getter)",
+            "By casting the object into an Object type",
+            "By calling System.out.println() on the class name"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Getters provide controlled, read-only windows to internal state without exposing the underlying field to mutation.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-7",
+          "type": "mcq",
+          "prompt": "Is encapsulation merely creating getters and setters for every single variable?",
+          "question": "Is encapsulation merely creating getters and setters for every single variable?",
+          "options": [
+            "Yes, encapsulation is simply writing getX() and setX() for all fields",
+            "No, exposing uncontrolled setters for every field can be just as hazardous as public fields",
+            "Yes, Java requires every private variable to have both a getter and setter",
+            "No, getters and setters are forbidden in true OOP"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Blindly generating setters without validation merely creates pseudo-encapsulation. Real encapsulation enforces business rules and protects invariants.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-8",
+          "type": "mcq",
+          "prompt": "In our medicine capsule analogy, what does the outer shell represent?",
+          "question": "In our medicine capsule analogy, what does the outer shell represent?",
+          "options": [
+            "The operating system kernel",
+            "The class boundary and its public methods",
+            "The JVM Garbage Collector",
+            "The compiler bytecode"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The capsule shell represents the class barrier and public methods controlling access to the internal chemical ingredients (private state).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-9",
+          "type": "mcq",
+          "prompt": "What happens if a developer later changes the internal data structure of an encapsulated class?",
+          "question": "What happens if a developer later changes the internal data structure of an encapsulated class?",
+          "options": [
+            "All external client code in the entire project breaks",
+            "External client code continues working normally because public method signatures remain unchanged",
+            "The class becomes abstract automatically",
+            "Java requires the class to be deleted and rewritten"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Encapsulation decouples internal storage from external usage, allowing developers to refactor internal data structures without breaking callers.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-we-10",
+          "type": "mcq",
+          "prompt": "Which principle describes providing only the minimum necessary visibility to class members?",
+          "question": "Which principle describes providing only the minimum necessary visibility to class members?",
+          "options": [
+            "Principle of Maximum Exposure",
+            "Principle of Least Privilege",
+            "Dynamic Method Dispatch",
+            "Recursive Decomposition"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The Principle of Least Privilege states that every component should have access to only the information and resources necessary for its legitimate purpose.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-we-1",
+            "type": "mcq",
+            "prompt": "What is the primary definition of encapsulation in Object-Oriented Programming?",
+            "question": "What is the primary definition of encapsulation in Object-Oriented Programming?",
+            "options": [
+              "Converting high-level Java code into machine bytecode",
+              "Bundling data with methods and restricting direct outside access to internal state",
+              "Creating multiple objects using the new keyword",
+              "Inheriting behavior from a parent class"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Encapsulation bundles fields with their manipulating methods and hides sensitive internal state from unauthorized external tampering.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-2",
+            "type": "mcq",
+            "prompt": "What catastrophic issue occurs when instance fields are left public?",
+            "question": "What catastrophic issue occurs when instance fields are left public?",
+            "options": [
+              "The compiler refuses to compile the class file",
+              "Objects consume double the heap memory",
+              "Any external class can write invalid, corrupted, or negative values into the fields",
+              "Constructors cannot be declared in the class"
+            ],
+            "correctAnswer": 2,
+            "correctAnswerIndex": 2,
+            "explanation": "Public fields allow arbitrary outside code to assign invalid data (such as negative balances or empty names) without validation.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-3",
+            "type": "mcq",
+            "prompt": "Which access modifier is the primary tool used to hide instance fields in Java?",
+            "question": "Which access modifier is the primary tool used to hide instance fields in Java?",
+            "options": [
+              "public",
+              "private",
+              "protected",
+              "static"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The 'private' keyword ensures that the field is accessible ONLY within the class that declared it.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-4",
+            "type": "mcq",
+            "prompt": "If an external class attempts to read a 'private' field directly (e.g. account.balance), what happens?",
+            "question": "If an external class attempts to read a 'private' field directly (e.g. account.balance), what happens?",
+            "options": [
+              "The program crashes with a NullPointerException at runtime",
+              "The Java compiler produces a compile-time error: 'balance has private access'",
+              "The field returns a default value of 0.0 silently",
+              "The JVM allows it if the file is in the same directory"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Private fields are enforced at compile time; attempting to access them from outside causes a compiler error.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-5",
+            "type": "mcq",
+            "prompt": "What is an invariant in software engineering?",
+            "question": "What is an invariant in software engineering?",
+            "options": [
+              "A variable whose value can never be read",
+              "A condition or rule that must always remain true for an object to be valid",
+              "A method that has no return type",
+              "A loop that executes indefinitely"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "An invariant is a core business truth (such as 'balance >= 0' or 'stock >= 0') that encapsulation strictly guarantees throughout the object's lifetime.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-6",
+            "type": "mcq",
+            "prompt": "How does an outside class safely retrieve data from a private field?",
+            "question": "How does an outside class safely retrieve data from a private field?",
+            "options": [
+              "By using the dot operator directly",
+              "Through a public accessor method (commonly known as a getter)",
+              "By casting the object into an Object type",
+              "By calling System.out.println() on the class name"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Getters provide controlled, read-only windows to internal state without exposing the underlying field to mutation.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-7",
+            "type": "mcq",
+            "prompt": "Is encapsulation merely creating getters and setters for every single variable?",
+            "question": "Is encapsulation merely creating getters and setters for every single variable?",
+            "options": [
+              "Yes, encapsulation is simply writing getX() and setX() for all fields",
+              "No, exposing uncontrolled setters for every field can be just as hazardous as public fields",
+              "Yes, Java requires every private variable to have both a getter and setter",
+              "No, getters and setters are forbidden in true OOP"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Blindly generating setters without validation merely creates pseudo-encapsulation. Real encapsulation enforces business rules and protects invariants.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-8",
+            "type": "mcq",
+            "prompt": "In our medicine capsule analogy, what does the outer shell represent?",
+            "question": "In our medicine capsule analogy, what does the outer shell represent?",
+            "options": [
+              "The operating system kernel",
+              "The class boundary and its public methods",
+              "The JVM Garbage Collector",
+              "The compiler bytecode"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The capsule shell represents the class barrier and public methods controlling access to the internal chemical ingredients (private state).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-9",
+            "type": "mcq",
+            "prompt": "What happens if a developer later changes the internal data structure of an encapsulated class?",
+            "question": "What happens if a developer later changes the internal data structure of an encapsulated class?",
+            "options": [
+              "All external client code in the entire project breaks",
+              "External client code continues working normally because public method signatures remain unchanged",
+              "The class becomes abstract automatically",
+              "Java requires the class to be deleted and rewritten"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Encapsulation decouples internal storage from external usage, allowing developers to refactor internal data structures without breaking callers.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-we-10",
+            "type": "mcq",
+            "prompt": "Which principle describes providing only the minimum necessary visibility to class members?",
+            "question": "Which principle describes providing only the minimum necessary visibility to class members?",
+            "options": [
+              "Principle of Maximum Exposure",
+              "Principle of Least Privilege",
+              "Dynamic Method Dispatch",
+              "Recursive Decomposition"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The Principle of Least Privilege states that every component should have access to only the information and resources necessary for its legitimate purpose.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-we-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: Why Encapsulation",
+      "questions": [
+        {
+          "id": "i-we-1",
+          "question": "What is encapsulation, and why is it considered the first pillar of OOP?",
+          "answer": "Encapsulation is the bundling of data (fields) and the methods that operate on that data into a single cohesive unit, while restricting direct access to internal details. It is the first pillar because without data protection, objects cannot maintain reliable state, making higher-level concepts like inheritance and polymorphism unsafe.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Bundles state with behavior",
+            "Enforces class invariants",
+            "Protects against accidental corruption"
+          ]
+        },
+        {
+          "id": "i-we-2",
+          "question": "What is the difference between data hiding and encapsulation?",
+          "answer": "Data hiding focuses specifically on security and privacy\u2014making fields private so outside classes cannot inspect or tamper with them. Encapsulation is the broader architectural concept that combines data hiding with public operations, validation boundaries, and cohesive state management.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Data hiding = private fields",
+            "Encapsulation = hiding + cohesive operations + validation"
+          ]
+        },
+        {
+          "id": "i-we-3",
+          "question": "Why is declaring all fields as 'public' considered an anti-pattern in commercial Java software?",
+          "answer": "Public fields eliminate all control over how and when state changes. Any part of the codebase can assign corrupted values, bypass business rules, create hard-to-reproduce bugs, and make future refactoring nearly impossible because outside code directly depends on exact variable names.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Bypasses validation",
+            "Creates tight coupling",
+            "Makes refactoring impossible"
+          ]
+        },
+        {
+          "id": "i-we-4",
+          "question": "Does providing a getter and setter for every private field truly achieve encapsulation?",
+          "answer": "Often called 'pseudo-encapsulation', blindly generating public getters and setters for all fields is almost as dangerous as public fields if the setters lack validation or expose mutable internal references. True encapsulation exposes business behaviors (e.g. withdraw, deposit, changePassword) rather than raw setters.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Prefer domain methods over raw setters",
+            "Always validate in setters",
+            "Avoid leaking mutable references"
+          ]
+        },
+        {
+          "id": "i-we-5",
+          "question": "How does encapsulation improve maintainability and flexibility in large codebases?",
+          "answer": "Because external callers interact only with public method contracts, the class author is free to modify internal representation (e.g., changing a double balance to a BigDecimal or caching values) without modifying a single line of caller code.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Decouples interface from implementation",
+            "Enables safe internal refactoring"
+          ]
+        },
+        {
+          "id": "i-we-6",
+          "question": "What compile-time error occurs when accessing a private field from another class?",
+          "answer": "The Java compiler emits: 'field has private access in ClassName'. This confirms that privacy in Java is strictly enforced at compile time, eliminating runtime overhead.",
+          "company": "Cognizant",
+          "keyTakeaways": [
+            "Enforced at compile time",
+            "Zero runtime performance penalty"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-we-1",
+          "question": "What is encapsulation, and why is it considered the first pillar of OOP?",
+          "expectedAnswer": "Encapsulation is the bundling of data (fields) and the methods that operate on that data into a single cohesive unit, while restricting direct access to internal details. It is the first pillar because without data protection, objects cannot maintain reliable state, making higher-level concepts like inheritance and polymorphism unsafe.",
+          "keyPoints": [
+            "Bundles state with behavior",
+            "Enforces class invariants",
+            "Protects against accidental corruption"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-we-2",
+          "question": "What is the difference between data hiding and encapsulation?",
+          "expectedAnswer": "Data hiding focuses specifically on security and privacy\u2014making fields private so outside classes cannot inspect or tamper with them. Encapsulation is the broader architectural concept that combines data hiding with public operations, validation boundaries, and cohesive state management.",
+          "keyPoints": [
+            "Data hiding = private fields",
+            "Encapsulation = hiding + cohesive operations + validation"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-we-3",
+          "question": "Why is declaring all fields as 'public' considered an anti-pattern in commercial Java software?",
+          "expectedAnswer": "Public fields eliminate all control over how and when state changes. Any part of the codebase can assign corrupted values, bypass business rules, create hard-to-reproduce bugs, and make future refactoring nearly impossible because outside code directly depends on exact variable names.",
+          "keyPoints": [
+            "Bypasses validation",
+            "Creates tight coupling",
+            "Makes refactoring impossible"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        },
+        {
+          "id": "i-we-4",
+          "question": "Does providing a getter and setter for every private field truly achieve encapsulation?",
+          "expectedAnswer": "Often called 'pseudo-encapsulation', blindly generating public getters and setters for all fields is almost as dangerous as public fields if the setters lack validation or expose mutable internal references. True encapsulation exposes business behaviors (e.g. withdraw, deposit, changePassword) rather than raw setters.",
+          "keyPoints": [
+            "Prefer domain methods over raw setters",
+            "Always validate in setters",
+            "Avoid leaking mutable references"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-we-5",
+          "question": "How does encapsulation improve maintainability and flexibility in large codebases?",
+          "expectedAnswer": "Because external callers interact only with public method contracts, the class author is free to modify internal representation (e.g., changing a double balance to a BigDecimal or caching values) without modifying a single line of caller code.",
+          "keyPoints": [
+            "Decouples interface from implementation",
+            "Enables safe internal refactoring"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-we-6",
+          "question": "What compile-time error occurs when accessing a private field from another class?",
+          "expectedAnswer": "The Java compiler emits: 'field has private access in ClassName'. This confirms that privacy in Java is strictly enforced at compile time, eliminating runtime overhead.",
+          "keyPoints": [
+            "Enforced at compile time",
+            "Zero runtime performance penalty"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Cognizant"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-we-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I can articulate why public fields allow hazardous data corruption.",
+        "I know how to mark fields private and provide controlled public methods.",
+        "I understand that encapsulation enforces class invariants and protects business rules."
+      ],
+      "checklist": [
+        "I can articulate why public fields allow hazardous data corruption.",
+        "I know how to mark fields private and provide controlled public methods.",
+        "I understand that encapsulation enforces class invariants and protects business rules."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "encapsulation-and-access-control",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-we-1",
+      "title": "Warmup: Lock Down the Student Age",
+      "difficulty": "easy",
+      "description": "Convert the unsafe Student class by making 'age' private. Add a constructor and a safe setAge(int age) method that only accepts ages between 5 and 100. In Main, instantiate a student, attempt to set age to -10, then set age to 21 and print 'Verified age: 21'.",
+      "problemStatement": "Convert the unsafe Student class by making 'age' private. Add a constructor and a safe setAge(int age) method that only accepts ages between 5 and 100. In Main, instantiate a student, attempt to set age to -10, then set age to 21 and print 'Verified age: 21'.",
+      "expectedOutput": "Verified age: 21",
+      "hint": "Mark 'age' private",
+      "hints": [
+        "Mark 'age' private",
+        "Check 'age >= 5 && age <= 100' inside setAge",
+        "Provide getAge() to return age"
+      ],
+      "solutionCode": "class Student {\n    private int age;\n\n    public Student(int age) {\n        setAge(age);\n    }\n\n    public void setAge(int age) {\n        if (age >= 5 && age <= 100) {\n            this.age = age;\n        }\n    }\n\n    public int getAge() {\n        return this.age;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Student s = new Student(18);\n        s.setAge(-10); // Ignored due to validation\n        s.setAge(21);  // Accepted\n        System.out.println(\"Verified age: \" + s.getAge());\n    }\n}",
+      "initialCode": "class Student {\n    public int age; // Make this private and encapsulate!\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your test code here\n    }\n}"
+    },
+    {
+      "id": "p-we-2",
+      "title": "Code from Scratch: Encapsulated Temperature Sensor",
+      "difficulty": "easy",
+      "description": "Write a complete class TemperatureSensor from scratch with private double celsius. Provide a constructor setting the initial temperature, a setCelsius(double temp) method that rejects temperatures below absolute zero (-273.15 C), and a getCelsius() method. In Main, create a sensor at 25.0 C, attempt to set -300.0 C (which must be rejected), then set 36.6 C and print 'Current temp: 36.6 C'.",
+      "problemStatement": "Write a complete class TemperatureSensor from scratch with private double celsius. Provide a constructor setting the initial temperature, a setCelsius(double temp) method that rejects temperatures below absolute zero (-273.15 C), and a getCelsius() method. In Main, create a sensor at 25.0 C, attempt to set -300.0 C (which must be rejected), then set 36.6 C and print 'Current temp: 36.6 C'.",
+      "expectedOutput": "Current temp: 36.6 C",
+      "hint": "Write class TemperatureSensor without starter code",
+      "hints": [
+        "Write class TemperatureSensor without starter code",
+        "Declare private double celsius",
+        "Use -273.15 as the minimum boundary"
+      ],
+      "solutionCode": "class TemperatureSensor {\n    private double celsius;\n\n    public TemperatureSensor(double initialCelsius) {\n        if (initialCelsius >= -273.15) {\n            this.celsius = initialCelsius;\n        } else {\n            this.celsius = 0.0;\n        }\n    }\n\n    public void setCelsius(double temp) {\n        if (temp >= -273.15) {\n            this.celsius = temp;\n        }\n    }\n\n    public double getCelsius() {\n        return this.celsius;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TemperatureSensor sensor = new TemperatureSensor(25.0);\n        sensor.setCelsius(-300.0); // Rejected\n        sensor.setCelsius(36.6);   // Accepted\n        System.out.println(\"Current temp: \" + sensor.getCelsius() + \" C\");\n    }\n}"
+    },
+    {
+      "id": "p-we-3",
+      "title": "Code from Scratch: Digital Wallet with Balance Protection",
+      "difficulty": "medium",
+      "description": "Write a complete DigitalWallet class from scratch with private String ownerName and private double balance. Provide a constructor initializing ownerName and balance (balance cannot be negative). Provide addFunds(double amount) that only accepts positive amounts, and pay(double amount) that checks for sufficient balance. In Main, create a wallet for 'Kavita' with $100.0, add $50.0, pay $70.0, and print 'Wallet owner: Kavita | Balance: $80.0'.",
+      "problemStatement": "Write a complete DigitalWallet class from scratch with private String ownerName and private double balance. Provide a constructor initializing ownerName and balance (balance cannot be negative). Provide addFunds(double amount) that only accepts positive amounts, and pay(double amount) that checks for sufficient balance. In Main, create a wallet for 'Kavita' with $100.0, add $50.0, pay $70.0, and print 'Wallet owner: Kavita | Balance: $80.0'.",
+      "expectedOutput": "Wallet owner: Kavita | Balance: $80.0",
+      "hint": "Keep balance private",
+      "hints": [
+        "Keep balance private",
+        "In addFunds, check amount > 0",
+        "In pay, ensure amount <= balance"
+      ],
+      "solutionCode": "class DigitalWallet {\n    private String ownerName;\n    private double balance;\n\n    public DigitalWallet(String ownerName, double initialBalance) {\n        this.ownerName = ownerName;\n        this.balance = initialBalance >= 0 ? initialBalance : 0.0;\n    }\n\n    public void addFunds(double amount) {\n        if (amount > 0) {\n            balance += amount;\n        }\n    }\n\n    public boolean pay(double amount) {\n        if (amount > 0 && amount <= balance) {\n            balance -= amount;\n            return true;\n        }\n        return false;\n    }\n\n    public String getOwnerName() {\n        return ownerName;\n    }\n\n    public double getBalance() {\n        return balance;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        DigitalWallet wallet = new DigitalWallet(\"Kavita\", 100.0);\n        wallet.addFunds(50.0);\n        wallet.pay(70.0);\n        System.out.println(\"Wallet owner: \" + wallet.getOwnerName() + \" | Balance: $\" + wallet.getBalance());\n    }\n}"
+    },
+    {
+      "id": "p-we-4",
+      "title": "Fix Broken Code: Leaky Bank Account",
+      "difficulty": "easy",
+      "description": "A novice developer wrote the code below where balance is public and deposit accepts negative numbers. Fix the class so balance is private, deposit rejects negative amounts, and getBalance() returns the balance. In Main, deposit $200.0 and print 'Secure balance: $200.0'.",
+      "problemStatement": "A novice developer wrote the code below where balance is public and deposit accepts negative numbers. Fix the class so balance is private, deposit rejects negative amounts, and getBalance() returns the balance. In Main, deposit $200.0 and print 'Secure balance: $200.0'.",
+      "expectedOutput": "Secure balance: $200.0",
+      "hint": "Change public double balance to private double balance",
+      "hints": [
+        "Change public double balance to private double balance",
+        "Add amount > 0 guard in deposit",
+        "Provide public double getBalance()"
+      ],
+      "solutionCode": "class LeakyAccount {\n    private double balance;\n\n    public void deposit(double amount) {\n        if (amount > 0) {\n            balance += amount;\n        }\n    }\n\n    public double getBalance() {\n        return balance;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        LeakyAccount a = new LeakyAccount();\n        a.deposit(-500); // Properly rejected\n        a.deposit(200.0); // Accepted\n        System.out.println(\"Secure balance: $\" + a.getBalance());\n    }\n}",
+      "initialCode": "class LeakyAccount {\n    public double balance;\n    void deposit(double amount) {\n        balance += amount;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        LeakyAccount a = new LeakyAccount();\n        a.deposit(-500); // Bug: Accepted negative deposit!\n        a.balance = 200;\n        System.out.println(\"Secure balance: $\" + a.balance);\n    }\n}"
+    },
+    {
+      "id": "p-we-5",
+      "title": "Challenge: Encapsulated Game Character Health",
+      "difficulty": "medium",
+      "description": "Write a complete GameHero class from scratch with private String name and private int health (0 to 100). Provide a constructor setting name and full health (100). Provide takeDamage(int damage) which reduces health but never drops below 0, and heal(int points) which increases health but never exceeds 100. In Main, create 'Ares', apply 40 damage, apply 20 heal, apply 150 damage, and print 'Ares health: 0 (Defeated)'.",
+      "problemStatement": "Write a complete GameHero class from scratch with private String name and private int health (0 to 100). Provide a constructor setting name and full health (100). Provide takeDamage(int damage) which reduces health but never drops below 0, and heal(int points) which increases health but never exceeds 100. In Main, create 'Ares', apply 40 damage, apply 20 heal, apply 150 damage, and print 'Ares health: 0 (Defeated)'.",
+      "expectedOutput": "Ares health: 0 (Defeated)",
+      "hint": "Use Math.max(0, health - damage)",
+      "hints": [
+        "Use Math.max(0, health - damage)",
+        "Use Math.min(100, health + points)",
+        "Keep fields private"
+      ],
+      "solutionCode": "class GameHero {\n    private String name;\n    private int health;\n\n    public GameHero(String name) {\n        this.name = name;\n        this.health = 100;\n    }\n\n    public void takeDamage(int damage) {\n        if (damage > 0) {\n            health = Math.max(0, health - damage);\n        }\n    }\n\n    public void heal(int points) {\n        if (points > 0 && health > 0) {\n            health = Math.min(100, health + points);\n        }\n    }\n\n    public int getHealth() {\n        return health;\n    }\n\n    public String getName() {\n        return name;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        GameHero hero = new GameHero(\"Ares\");\n        hero.takeDamage(40);\n        hero.heal(20);\n        hero.takeDamage(150);\n        System.out.println(hero.getName() + \" health: \" + hero.getHealth() + \" (Defeated)\");\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-we-1",
+      "question": "What is encapsulation, and why is it considered the first pillar of OOP?",
+      "expectedAnswer": "Encapsulation is the bundling of data (fields) and the methods that operate on that data into a single cohesive unit, while restricting direct access to internal details. It is the first pillar because without data protection, objects cannot maintain reliable state, making higher-level concepts like inheritance and polymorphism unsafe.",
+      "keyPoints": [
+        "Bundles state with behavior",
+        "Enforces class invariants",
+        "Protects against accidental corruption"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-we-2",
+      "question": "What is the difference between data hiding and encapsulation?",
+      "expectedAnswer": "Data hiding focuses specifically on security and privacy\u2014making fields private so outside classes cannot inspect or tamper with them. Encapsulation is the broader architectural concept that combines data hiding with public operations, validation boundaries, and cohesive state management.",
+      "keyPoints": [
+        "Data hiding = private fields",
+        "Encapsulation = hiding + cohesive operations + validation"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-we-3",
+      "question": "Why is declaring all fields as 'public' considered an anti-pattern in commercial Java software?",
+      "expectedAnswer": "Public fields eliminate all control over how and when state changes. Any part of the codebase can assign corrupted values, bypass business rules, create hard-to-reproduce bugs, and make future refactoring nearly impossible because outside code directly depends on exact variable names.",
+      "keyPoints": [
+        "Bypasses validation",
+        "Creates tight coupling",
+        "Makes refactoring impossible"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    },
+    {
+      "id": "i-we-4",
+      "question": "Does providing a getter and setter for every private field truly achieve encapsulation?",
+      "expectedAnswer": "Often called 'pseudo-encapsulation', blindly generating public getters and setters for all fields is almost as dangerous as public fields if the setters lack validation or expose mutable internal references. True encapsulation exposes business behaviors (e.g. withdraw, deposit, changePassword) rather than raw setters.",
+      "keyPoints": [
+        "Prefer domain methods over raw setters",
+        "Always validate in setters",
+        "Avoid leaking mutable references"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-we-5",
+      "question": "How does encapsulation improve maintainability and flexibility in large codebases?",
+      "expectedAnswer": "Because external callers interact only with public method contracts, the class author is free to modify internal representation (e.g., changing a double balance to a BigDecimal or caching values) without modifying a single line of caller code.",
+      "keyPoints": [
+        "Decouples interface from implementation",
+        "Enables safe internal refactoring"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-we-6",
+      "question": "What compile-time error occurs when accessing a private field from another class?",
+      "expectedAnswer": "The Java compiler emits: 'field has private access in ClassName'. This confirms that privacy in Java is strictly enforced at compile time, eliminating runtime overhead.",
+      "keyPoints": [
+        "Enforced at compile time",
+        "Zero runtime performance penalty"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Cognizant"
+      ]
+    }
+  ]
+}

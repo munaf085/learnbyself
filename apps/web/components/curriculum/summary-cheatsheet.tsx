@@ -13,7 +13,10 @@ import {
   Sparkles,
   ShieldCheck,
   AlertTriangle,
-  Lightbulb
+  Lightbulb,
+  Lock,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface SummaryCheatSheetProps {
@@ -796,6 +799,553 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">withdraw(amount) guards against overdrafts</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Independent heap state verified across 3 distinct customer accounts</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Zero premature Module 3 concepts (no private, getters, setters)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+
+      {/* ======================================================== */}
+      {/* MODULE 3: ENCAPSULATION & ACCESS CONTROL CHEAT SHEETS    */}
+      {/* ======================================================== */}
+
+      {/* Lesson 1: Why Encapsulation */}
+      {(slug === 'why-encapsulation') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Direct Field Access vs Encapsulation Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Public Unprotected Fields</th>
+                  <th className="p-2.5 rounded-r-lg">Encapsulated Design (Private + Guards)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Data Integrity</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">Zero protection; outside code can set negative/corrupt values</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">100% enforced; invalid data intercepted by perimeter guards</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Refactoring Safety</td>
+                  <td className="p-2.5 text-rose-700">Changing a field name breaks all callers across the entire codebase</td>
+                  <td className="p-2.5 text-emerald-700">Internal representation can change freely without altering public contracts</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Debugging &amp; Breakpoints</td>
+                  <td className="p-2.5 text-slate-600">Impossible to place breakpoints on direct variable writes</td>
+                  <td className="p-2.5 text-emerald-700">Breakpoints in setters intercept every mutation instantly</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Read-Only Control</td>
+                  <td className="p-2.5 text-slate-600">Impossible; public fields can always be written to</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Trivial; provide getters without setters</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: Access Modifiers */}
+      {(slug === 'access-modifiers') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Lock className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 4 Visibility Levels Scoping Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Access Modifier</th>
+                  <th className="p-2.5">Same Class</th>
+                  <th className="p-2.5">Same Package</th>
+                  <th className="p-2.5">Subclass (Different Pkg)</th>
+                  <th className="p-2.5 rounded-r-lg">World (Anywhere)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">private</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-rose-500">NO</td>
+                  <td className="p-2.5 text-rose-500">NO</td>
+                  <td className="p-2.5 text-rose-500">NO</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">default (package-private)</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-rose-500">NO</td>
+                  <td className="p-2.5 text-rose-500">NO</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">protected</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-rose-500">NO</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">public</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">YES</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: Getters and Setters */}
+      {(slug === 'getters-and-setters') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              JavaBeans Accessor &amp; Mutator Conventions
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+              <span className="font-bold text-blue-900 block">Standard Naming Rules</span>
+              <ul className="text-slate-700 space-y-1 list-disc pl-4 text-[11px]">
+                <li><strong>Getter:</strong> <code>get + PropertyName</code> (e.g. <code>getName()</code>)</li>
+                <li><strong>Boolean Getter:</strong> <code>is + PropertyName</code> (e.g. <code>isActive()</code>)</li>
+                <li><strong>Setter:</strong> <code>set + PropertyName</code> (e.g. <code>setName(String name)</code>)</li>
+                <li><strong>Setter Return:</strong> Always returns <code>void</code></li>
+              </ul>
+            </div>
+            <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-2">
+              <span className="font-bold text-emerald-900 block">Computed / Virtual Getters</span>
+              <p className="text-slate-700 text-[11px] leading-relaxed">
+                Derives values dynamically from existing fields (e.g. <code>getFullName()</code> returning <code>firstName + &quot; &quot; + lastName</code>). Eliminates redundant variables and prevents out-of-sync bugs.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: Validating Object State */}
+      {(slug === 'validating-object-state') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertCircle className="w-4 h-4 text-amber-500" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Guard Clauses &amp; Fail-Fast Perimeter Defense
+            </h4>
+          </div>
+
+          <div className="p-3.5 bg-slate-950 font-mono text-xs text-emerald-300 rounded-xl space-y-2 border border-slate-800">
+            <div className="text-slate-400">{'// Golden Pattern: Fail-Fast Guard Clause at the Top'}</div>
+            <div>public void setAge(int age) &#123;</div>
+            <div className="pl-4 text-rose-400">if (age &lt; 0 || age &gt; 120) &#123;</div>
+            <div className="pl-8 text-slate-400">{'// Reject invalid state immediately'}</div>
+            <div className="pl-8 text-rose-300">return;</div>
+            <div className="pl-4 text-rose-400">&#125;</div>
+            <div className="pl-4 text-emerald-400">this.age = age; {'// Safe assignment'}</div>
+            <div>&#125;</div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: Read-Only Objects */}
+      {(slug === 'read-only-objects') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Read-Only Pattern vs Mutable Objects Architecture
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Read-Only Object</th>
+                  <th className="p-2.5 rounded-r-lg">Standard Mutable Bean</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-sans">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Setters Excluded?</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">YES — zero setters provided</td>
+                  <td className="p-2.5 text-slate-600">NO — setters exposed for all fields</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">State Assignment</td>
+                  <td className="p-2.5 text-indigo-700 font-semibold">Exclusively during constructor birth</td>
+                  <td className="p-2.5 text-slate-600">Anytime throughout application lifetime</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Concurrency Safety</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Inherently thread-safe (readers only)</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">Prone to race conditions without locks</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: Encapsulation in Real Applications */}
+      {(slug === 'encapsulation-in-real-applications') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Rich Domain Models vs Anemic Data Holders
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-3.5 bg-rose-50/60 rounded-xl border border-rose-200/80 space-y-1.5">
+              <span className="font-bold text-rose-900 block font-mono">❌ Anemic Data Bag</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                Naked setters allow inconsistent states: calling <code>setItemCount(5)</code> while leaving <code>setTotal(0.0)</code> creates contradictory business data.
+              </p>
+            </div>
+            <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-1.5">
+              <span className="font-bold text-emerald-900 block font-mono">✓ Rich Domain Method</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                Calling <code>cart.addItem(price)</code> atomically increments count, updates subtotal, and recalculates tax together in one safe operation.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: Common Encapsulation Mistakes */}
+      {(slug === 'common-encapsulation-mistakes') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertCircle className="w-4 h-4 text-rose-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Mutable Reference Leaks &amp; Defensive Copying Checklist
+            </h4>
+          </div>
+
+          <div className="p-3.5 bg-slate-950 font-mono text-xs rounded-xl space-y-2 border border-slate-800 text-slate-100">
+            <div className="text-rose-400 font-bold">{'// Trap: Leaking direct reference to private array'}</div>
+            <div className="text-slate-400">public int[] getScores() &#123; return this.scores; &#125; {'// DANGER!'}</div>
+            <div className="text-emerald-400 font-bold pt-2">{'// Fix: Defensive clone preserves encapsulation'}</div>
+            <div className="text-emerald-300">public int[] getScores() &#123; return this.scores.clone(); &#125;</div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: Employee Profile Mini Project */}
+      {(slug === 'employee-profile-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Employee Profile Guided Architecture &amp; 10-Point Production Checklist
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Architecture Requirement</th>
+                  <th className="p-2.5 rounded-r-lg">Implementation Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">All 5 fields (id, name, department, salary, rating) strictly private</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">employeeId is permanently read-only (getter only, no setter)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Constructor delegates to setters to enforce validation at birth</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">baseSalary clamps minimum $1,000 and maximum $50,000 bounds</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">giveRaise(percent) rejects negative or raises above 30.0%</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">calculateAnnualBonus() derives bonus dynamically from rating</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">calculateAnnualGrossPay() reuses bonus without duplicate logic</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">Strings sanitized against null and blank spaces</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Independent heap state verified across distinct employee instances</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Zero premature Module 4/5 concepts (no static, final, extends)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODULE 4: INSTANCE, STATIC & FINAL CHEAT SHEETS          */}
+      {/* ======================================================== */}
+
+      {/* Lesson 1: Instance vs Class Members */}
+      {(slug === 'instance-vs-class-members') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Instance Members (Heap) vs Class Members (Metaspace)
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Instance Member (Non-Static)</th>
+                  <th className="p-2.5 rounded-r-lg">Class Member (Static)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Memory Location</td>
+                  <td className="p-2.5 text-indigo-700 font-mono">Heap Memory (per object)</td>
+                  <td className="p-2.5 text-emerald-700 font-mono">Metaspace (Class Metadata)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Copies in Memory</td>
+                  <td className="p-2.5 text-slate-700">N copies (one per object instance)</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Exactly 1 shared copy per class</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Access Syntax</td>
+                  <td className="p-2.5 font-mono text-brand-700">objectReference.member</td>
+                  <td className="p-2.5 font-mono text-emerald-700 font-bold">ClassName.member</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Existence without Objects</td>
+                  <td className="p-2.5 text-rose-600">Does not exist until &apos;new&apos; is called</td>
+                  <td className="p-2.5 text-emerald-600 font-semibold">Exists as soon as class is loaded</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: Static Variables */}
+      {(slug === 'static-variables') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Static Variable Lifecycle &amp; Counter Architecture
+            </h4>
+          </div>
+
+          <div className="p-4 bg-slate-950 rounded-xl font-mono text-xs text-amber-200 space-y-2 border border-slate-800">
+            <div className="text-slate-400">{'// Auto-incrementing sequential ID generator architecture'}</div>
+            <div>class BankAccount &#123;</div>
+            <div className="pl-4 text-emerald-300">private static int nextId = 1000; {'// 1 shared counter'}</div>
+            <div className="pl-4 text-indigo-300">private int accountId;            {'// Unique per instance'}</div>
+            <div className="pl-4 pt-1">public BankAccount() &#123;</div>
+            <div className="pl-8 text-amber-300">this.accountId = ++nextId; {'// 1001, 1002, 1003...'}</div>
+            <div className="pl-4">&#125;</div>
+            <div>&#125;</div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: Static Methods */}
+      {(slug === 'static-methods') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Static Methods Rules &amp; The Absence of &apos;this&apos;
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-200 space-y-1">
+              <span className="font-bold text-rose-800 font-mono">❌ Forbidden in Static Methods</span>
+              <ul className="text-slate-600 text-[11px] list-disc pl-4 space-y-1">
+                <li>Using <code>this</code> or <code>super</code> keywords</li>
+                <li>Accessing non-static instance fields directly</li>
+                <li>Invoking non-static instance methods directly</li>
+              </ul>
+            </div>
+            <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-1">
+              <span className="font-bold text-emerald-800 font-mono">✓ Permitted in Static Methods</span>
+              <ul className="text-slate-600 text-[11px] list-disc pl-4 space-y-1">
+                <li>Reading and mutating static variables</li>
+                <li>Calling other static methods in the class</li>
+                <li>Operating on arguments passed into parameters</li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: Static Initialization */}
+      {(slug === 'static-initialization') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Execution Sequence: Class Load vs Object Instantiation
+            </h4>
+          </div>
+
+          <div className="p-3.5 bg-slate-950 font-mono text-xs text-slate-200 rounded-xl space-y-2 border border-slate-800">
+            <div className="text-amber-300 font-bold">[Phase 1: Class Loaded by JVM (Runs ONCE)]</div>
+            <div className="pl-4 text-slate-300">1. Static variables initialized to default values</div>
+            <div className="pl-4 text-slate-300">2. Static blocks <code className="text-emerald-400">static &#123; ... &#125;</code> execute top-to-bottom</div>
+            <div className="text-indigo-300 font-bold pt-2">[Phase 2: Object Creation &apos;new&apos; (Runs on EVERY instance)]</div>
+            <div className="pl-4 text-slate-300">3. Heap memory allocated; instance fields default-initialized</div>
+            <div className="pl-4 text-slate-300">4. Instance initializers execute</div>
+            <div className="pl-4 text-slate-300">5. Constructor body executes</div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: Why main() Is Static */}
+      {(slug === 'why-main-is-static') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Deconstructing &apos;public static void main(String[] args)&apos;
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Keyword</th>
+                  <th className="p-2.5">Architectural Role</th>
+                  <th className="p-2.5 rounded-r-lg">What happens if omitted / changed?</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-sans">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold font-mono text-purple-700">public</td><td className="p-2.5">Accessible by the JVM runtime outside the application package</td><td className="p-2.5 text-rose-600">JVM cannot invoke entry point; launch fails</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold font-mono text-emerald-700">static</td><td className="p-2.5">Allows execution before any object of the class exists on the heap</td><td className="p-2.5 text-rose-600">JVM doesn&apos;t know which constructor to call; rejects launch</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold font-mono text-indigo-700">void</td><td className="p-2.5">Entry point returns no value to Java (OS exit codes use System.exit)</td><td className="p-2.5 text-rose-600">Signature mismatch; JVM refuses to start</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold font-mono text-amber-700">String[] args</td><td className="p-2.5">Accepts command-line configuration arguments from operating system</td><td className="p-2.5 text-rose-600">Must be String array (or String... varargs)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: final Variables */}
+      {(slug === 'final-variables') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Lock className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 3 Scopes of &apos;final&apos; Variables in Java
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Scope</th>
+                  <th className="p-2.5">Declaration Example</th>
+                  <th className="p-2.5">Where Initialized</th>
+                  <th className="p-2.5 rounded-r-lg">Purpose</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-sans">Local Final</td>
+                  <td className="p-2.5 text-brand-700">final int x = 10;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Inside method body</td>
+                  <td className="p-2.5 font-sans text-slate-600">Prevents accidental variable reassignment in algorithms</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-sans">Blank Final Instance</td>
+                  <td className="p-2.5 text-purple-700">private final String ssn;</td>
+                  <td className="p-2.5 font-sans text-slate-600">In EVERY constructor</td>
+                  <td className="p-2.5 font-sans text-slate-600">Enforces permanent, immutable per-object identity</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-sans">Static Final Constant</td>
+                  <td className="p-2.5 text-emerald-700">public static final double PI;</td>
+                  <td className="p-2.5 font-sans text-slate-600">At declaration or static block</td>
+                  <td className="p-2.5 font-sans text-slate-600">Universal compile-time constants (ALL_CAPS naming)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: final Methods & Classes */}
+      {(slug === 'final-methods-and-classes') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              final Method vs final Class Architectural Matrix
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-3.5 bg-indigo-50/60 rounded-xl border border-indigo-200 space-y-2">
+              <span className="font-bold text-indigo-900 block font-mono">final Method</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                Prevents subclasses from <strong>overriding</strong> the method. Used for critical security checks, encryption routines, and template algorithms that must not be altered.
+              </p>
+            </div>
+            <div className="p-3.5 bg-purple-50/60 rounded-xl border border-purple-200 space-y-2">
+              <span className="font-bold text-purple-900 block font-mono">final Class</span>
+              <p className="text-slate-600 text-[11px] leading-relaxed">
+                Prevents the class from being <strong>extended (inherited)</strong> by any other class. Used for immutable types like <code>java.lang.String</code> and value objects.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: ID Generator Mini Project */}
+      {(slug === 'id-generator-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              ID Generator Guided Architecture &amp; 10-Point Production Checklist
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Architecture Requirement</th>
+                  <th className="p-2.5 rounded-r-lg">Implementation Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">Universal constant prefix (public static final String PREFIX = &quot;TX-&quot;)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Private static sequence counter prevents duplicate or manual IDs</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Private constructor enforces usage of static factory methods</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">Entity ID is declared private final String to guarantee immutability</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">Static factory method create() validates inputs and generates monotonic IDs</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">Captures creation epoch timestamp in private final long field</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">Static query method getTotalTransactionsIssued() inspects volume</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">All getters exposed with ZERO setters provided (tamper-proof)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Independent heap state verified across multiple transactions</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Zero premature Module 5 concepts (no extends or super)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
               </tbody>
             </table>
           </div>

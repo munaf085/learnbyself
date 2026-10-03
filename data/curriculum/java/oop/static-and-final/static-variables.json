@@ -1,0 +1,872 @@
+{
+  "id": "les-sf-2",
+  "slug": "static-variables",
+  "title": "Static Variables",
+  "summary": "Master shared class-level variables: lifecycle, memory allocation, global counters, and shared configuration flags.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "instance-vs-class-members"
+  ],
+  "learningOutcomes": [
+    "Declare and use static variables for shared state and application-wide counters",
+    "Understand the static variable lifecycle from class load to JVM termination",
+    "Avoid common static variable concurrency and shared-state pitfalls"
+  ],
+  "activities": [
+    {
+      "id": "act-sv-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Building Electricity Meter",
+      "analogy": {
+        "story": "Imagine an apartment building with 20 flats.\n\nInside Flat 4B, the resident turns on their television. Inside Flat 2A, the resident turns on the air conditioning. Each flat has its own light switches and furniture (Instance variables).\n\nHowever, in the basement of the building sits the Main Water and Electricity Meter (Static Variable). Every single apartment draws from the exact same water reservoir and main electrical line. When Flat 4B runs water, the main meter spins. When Flat 2A runs water, the exact same meter spins faster. There is only ONE meter for the entire building.\n\nA static variable is that utility meter: a single, shared resource that all individual instances share and update together.",
+        "takeaway": "Static variables provide a single source of shared truth for all instances of a class.",
+        "headline": "Everyday Analogy: The Building Electricity Meter",
+        "keyTakeaway": "Static variables provide a single source of shared truth for all instances of a class."
+      }
+    },
+    {
+      "id": "act-sv-2",
+      "type": "concept",
+      "title": "Static Variable Lifecycle & Common Use Cases",
+      "concept": {
+        "explanation": "A static variable (also known as a class variable) is declared using the 'static' keyword inside a class definition but outside any method.\n\nLifecycle:\n1. Creation: Allocated in memory when the JVM first loads the class file into Metaspace.\n2. Default Value: Primitives default to 0/0.0/false; object references default to null if not initialized explicitly.\n3. Mutation: Any instance or static method can read or write to it. A change made anywhere is immediately visible to all instances everywhere.\n4. Destruction: Reclaimed only when the ClassLoader unloads the class, which typically occurs when the JVM process shuts down.\n\nTop 3 Practical Uses for Static Variables:\n1. Object Counters: Counting how many instances of a class have been created.\n2. Universal Constants: (When paired with 'final', which we cover in lesson 6) such as Math.PI.\n3. Shared Configuration: Feature flags, database URLs, or default system currency.",
+        "codeIllustration": "public class BankAccount {\n    private int accountNumber; // Instance\n    private static int nextAccountNumber = 1001; // Shared generator counter\n\n    public BankAccount() {\n        this.accountNumber = nextAccountNumber++; // Automatically generates 1001, 1002, 1003...\n    }\n}",
+        "rules": [
+          "Rule 1: Use static variables when data is a property of the whole concept, not an individual entity.",
+          "Rule 2: Be cautious with mutable static variables in multi-threaded environments, as they can cause race conditions.",
+          "Rule 3: Static variables should rarely be declared public unless paired with 'final' to prevent rogue overwriting."
+        ]
+      },
+      "content": "A static variable (also known as a class variable) is declared using the 'static' keyword inside a class definition but outside any method.\n\nLifecycle:\n1. Creation: Allocated in memory when the JVM first loads the class file into Metaspace.\n2. Default Value: Primitives default to 0/0.0/false; object references default to null if not initialized explicitly.\n3. Mutation: Any instance or static method can read or write to it. A change made anywhere is immediately visible to all instances everywhere.\n4. Destruction: Reclaimed only when the ClassLoader unloads the class, which typically occurs when the JVM process shuts down.\n\nTop 3 Practical Uses for Static Variables:\n1. Object Counters: Counting how many instances of a class have been created.\n2. Universal Constants: (When paired with 'final', which we cover in lesson 6) such as Math.PI.\n3. Shared Configuration: Feature flags, database URLs, or default system currency.\n\n\n### Code Illustration:\n```java\npublic class BankAccount {\n    private int accountNumber; // Instance\n    private static int nextAccountNumber = 1001; // Shared generator counter\n\n    public BankAccount() {\n        this.accountNumber = nextAccountNumber++; // Automatically generates 1001, 1002, 1003...\n    }\n}\n```\n\n\n### Core Rules:\n- Rule 1: Use static variables when data is a property of the whole concept, not an individual entity.\n- Rule 2: Be cautious with mutable static variables in multi-threaded environments, as they can cause race conditions.\n- Rule 3: Static variables should rarely be declared public unless paired with 'final' to prevent rogue overwriting.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Use static variables when data is a property of the whole concept, not an individual entity.",
+          "Rule 2: Be cautious with mutable static variables in multi-threaded environments, as they can cause race conditions.",
+          "Rule 3: Static variables should rarely be declared public unless paired with 'final' to prevent rogue overwriting."
+        ]
+      }
+    },
+    {
+      "id": "act-sv-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Auto-Incrementing Sequential ID Sequence",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class CustomerAccount {\n    private int accountId;\n    private String customerName;\n\n    // Private static counter ensures IDs cannot be spoofed or duplicated\n    private static int idSequence = 1000;\n\n    public CustomerAccount(String name) {\n        this.customerName = name;\n        this.accountId = ++idSequence; // 1001, 1002, 1003...\n    }\n\n    public int getAccountId() { return accountId; }\n    public String getCustomerName() { return customerName; }\n\n    public static int getLastIssuedId() {\n        return idSequence;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        CustomerAccount c1 = new CustomerAccount(\"Amit\");\n        CustomerAccount c2 = new CustomerAccount(\"Deepa\");\n        CustomerAccount c3 = new CustomerAccount(\"Esha\");\n\n        System.out.println(c1.getCustomerName() + \" ID: \" + c1.getAccountId());\n        System.out.println(c2.getCustomerName() + \" ID: \" + c2.getAccountId());\n        System.out.println(c3.getCustomerName() + \" ID: \" + c3.getAccountId());\n        System.out.println(\"Last issued ID across system: \" + CustomerAccount.getLastIssuedId());\n    }\n}",
+        "explanation": "Because idSequence is static and private, each new CustomerAccount automatically receives a strictly ascending, unique account ID without manual coordination."
+      },
+      "codeSnippet": "class CustomerAccount {\n    private int accountId;\n    private String customerName;\n\n    // Private static counter ensures IDs cannot be spoofed or duplicated\n    private static int idSequence = 1000;\n\n    public CustomerAccount(String name) {\n        this.customerName = name;\n        this.accountId = ++idSequence; // 1001, 1002, 1003...\n    }\n\n    public int getAccountId() { return accountId; }\n    public String getCustomerName() { return customerName; }\n\n    public static int getLastIssuedId() {\n        return idSequence;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        CustomerAccount c1 = new CustomerAccount(\"Amit\");\n        CustomerAccount c2 = new CustomerAccount(\"Deepa\");\n        CustomerAccount c3 = new CustomerAccount(\"Esha\");\n\n        System.out.println(c1.getCustomerName() + \" ID: \" + c1.getAccountId());\n        System.out.println(c2.getCustomerName() + \" ID: \" + c2.getAccountId());\n        System.out.println(c3.getCustomerName() + \" ID: \" + c3.getAccountId());\n        System.out.println(\"Last issued ID across system: \" + CustomerAccount.getLastIssuedId());\n    }\n}",
+      "description": "Because idSequence is static and private, each new CustomerAccount automatically receives a strictly ascending, unique account ID without manual coordination."
+    },
+    {
+      "id": "act-sv-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Shared App Configuration and Maintenance Mode Flag",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class AppConfig {\n    public static String defaultCurrency = \"USD\";\n    public static boolean maintenanceMode = false;\n\n    public static void enableMaintenance() {\n        maintenanceMode = true;\n        System.out.println(\"SYSTEM ALERT: Maintenance mode engaged. All transactions paused.\");\n    }\n}\n\nclass PaymentTransaction {\n    private double amount;\n\n    public PaymentTransaction(double amount) {\n        this.amount = amount;\n    }\n\n    public void process() {\n        if (AppConfig.maintenanceMode) {\n            System.out.println(\"Payment rejected: System in maintenance.\");\n            return;\n        }\n        System.out.println(\"Processed payment of \" + AppConfig.defaultCurrency + \" \" + amount);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        PaymentTransaction tx1 = new PaymentTransaction(150.0);\n        tx1.process();\n\n        // Toggle global configuration:\n        AppConfig.enableMaintenance();\n\n        PaymentTransaction tx2 = new PaymentTransaction(75.0);\n        tx2.process(); // Safely paused\n    }\n}",
+        "explanation": "Demonstrates how static configuration flags broadcast system-wide status changes to all transactions instantly without needing to pass config references around."
+      },
+      "codeSnippet": "class AppConfig {\n    public static String defaultCurrency = \"USD\";\n    public static boolean maintenanceMode = false;\n\n    public static void enableMaintenance() {\n        maintenanceMode = true;\n        System.out.println(\"SYSTEM ALERT: Maintenance mode engaged. All transactions paused.\");\n    }\n}\n\nclass PaymentTransaction {\n    private double amount;\n\n    public PaymentTransaction(double amount) {\n        this.amount = amount;\n    }\n\n    public void process() {\n        if (AppConfig.maintenanceMode) {\n            System.out.println(\"Payment rejected: System in maintenance.\");\n            return;\n        }\n        System.out.println(\"Processed payment of \" + AppConfig.defaultCurrency + \" \" + amount);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        PaymentTransaction tx1 = new PaymentTransaction(150.0);\n        tx1.process();\n\n        // Toggle global configuration:\n        AppConfig.enableMaintenance();\n\n        PaymentTransaction tx2 = new PaymentTransaction(75.0);\n        tx2.process(); // Safely paused\n    }\n}",
+      "description": "Demonstrates how static configuration flags broadcast system-wide status changes to all transactions instantly without needing to pass config references around."
+    },
+    {
+      "id": "act-sv-5",
+      "type": "mcq",
+      "title": "Interactive Static Variables Quiz",
+      "questions": [
+        {
+          "id": "q-sv-1",
+          "type": "mcq",
+          "prompt": "What is the scope and lifetime of a static variable in Java?",
+          "question": "What is the scope and lifetime of a static variable in Java?",
+          "options": [
+            "Created when a method is called; destroyed when the method returns",
+            "Created when 'new' is called; destroyed when the object is garbage-collected",
+            "Created when the class is loaded by the JVM; persists until the JVM shuts down",
+            "Created on every loop iteration"
+          ],
+          "correctAnswer": 2,
+          "correctAnswerIndex": 2,
+          "explanation": "Static variables have class lifetime: born upon class loading, living until JVM process shutdown.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-2",
+          "type": "mcq",
+          "prompt": "What is the default value of an uninitialized static int variable in Java?",
+          "question": "What is the default value of an uninitialized static int variable in Java?",
+          "options": [
+            "null",
+            "0",
+            "undefined",
+            "-1"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Like instance numeric variables, static numeric primitives default automatically to 0.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-3",
+          "type": "mcq",
+          "prompt": "Why should mutable static variables almost always be marked 'private'?",
+          "question": "Why should mutable static variables almost always be marked 'private'?",
+          "options": [
+            "Because public mutable static variables act as dangerous global variables that any class can corrupt without validation",
+            "Because the compiler rejects public static variables",
+            "Because private variables run faster",
+            "To make them available to all threads"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Public mutable static variables are essentially uncontrolled global variables, which are prone to bugs and hard to trace.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-4",
+          "type": "mcq",
+          "prompt": "How can a class guarantee that each instantiated object receives a unique, sequential serial number?",
+          "question": "How can a class guarantee that each instantiated object receives a unique, sequential serial number?",
+          "options": [
+            "By generating a random number in the constructor",
+            "By maintaining a private static counter and incrementing it inside the constructor",
+            "By asking the user to type in an ID",
+            "By using an instance variable"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "A private static counter incremented in the constructor guarantees continuous sequential numbering across all instances.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-5",
+          "type": "mcq",
+          "prompt": "What is a 'race condition' when dealing with static variables in multi-threaded programs?",
+          "question": "What is a 'race condition' when dealing with static variables in multi-threaded programs?",
+          "options": [
+            "When the CPU runs at maximum clock speed",
+            "When two or more threads attempt to read and write to the same shared static variable simultaneously, leading to corrupted data",
+            "When an object is deleted faster than expected",
+            "When a method returns before executing"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Race conditions occur when concurrent unsynchronized threads interleave reads and writes to shared memory.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-6",
+          "type": "mcq",
+          "prompt": "In our building utility meter analogy, what do individual apartments represent?",
+          "question": "In our building utility meter analogy, what do individual apartments represent?",
+          "options": [
+            "Static variables",
+            "Instance variables and individual object instances",
+            "Static blocks",
+            "The operating system"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Each apartment is an individual object instance with its own private furniture (instance variables).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-7",
+          "type": "mcq",
+          "prompt": "If Class A has 'static int count = 0;' and 5 instances are created, each doing 'count++', what is count?",
+          "question": "If Class A has 'static int count = 0;' and 5 instances are created, each doing 'count++', what is count?",
+          "options": [
+            "1",
+            "5",
+            "0",
+            "10"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Because count is static and shared, all 5 constructors increment the same counter, resulting in 5.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-8",
+          "type": "mcq",
+          "prompt": "Can a static variable be initialized with a complex expression or method call at declaration time?",
+          "question": "Can a static variable be initialized with a complex expression or method call at declaration time?",
+          "options": [
+            "No, only constant literals (like 0 or 10) are allowed",
+            "Yes, you can initialize a static variable using any valid static expression or static method call",
+            "Only if the method is marked private",
+            "Only inside the main method"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static variables can be initialized with static method calls or expressions (e.g. static long startTime = System.currentTimeMillis();).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-9",
+          "type": "mcq",
+          "prompt": "What happens if you try to use the 'this' keyword when initializing a static variable at class level?",
+          "question": "What happens if you try to use the 'this' keyword when initializing a static variable at class level?",
+          "options": [
+            "It returns null",
+            "The compiler emits an error: 'cannot use this in a static context'",
+            "It defaults to the first object created",
+            "It creates an infinite loop"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "'this' represents the current heap instance, which does not exist in a static context.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-sv-10",
+          "type": "mcq",
+          "prompt": "Which of the following is an example of a static variable in Java's standard library?",
+          "question": "Which of the following is an example of a static variable in Java's standard library?",
+          "options": [
+            "System.out",
+            "Scanner.nextLine",
+            "String.substring",
+            "Math.random()"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "System.out is a public static PrintStream field defined on the java.lang.System class.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-sv-1",
+            "type": "mcq",
+            "prompt": "What is the scope and lifetime of a static variable in Java?",
+            "question": "What is the scope and lifetime of a static variable in Java?",
+            "options": [
+              "Created when a method is called; destroyed when the method returns",
+              "Created when 'new' is called; destroyed when the object is garbage-collected",
+              "Created when the class is loaded by the JVM; persists until the JVM shuts down",
+              "Created on every loop iteration"
+            ],
+            "correctAnswer": 2,
+            "correctAnswerIndex": 2,
+            "explanation": "Static variables have class lifetime: born upon class loading, living until JVM process shutdown.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-2",
+            "type": "mcq",
+            "prompt": "What is the default value of an uninitialized static int variable in Java?",
+            "question": "What is the default value of an uninitialized static int variable in Java?",
+            "options": [
+              "null",
+              "0",
+              "undefined",
+              "-1"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Like instance numeric variables, static numeric primitives default automatically to 0.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-3",
+            "type": "mcq",
+            "prompt": "Why should mutable static variables almost always be marked 'private'?",
+            "question": "Why should mutable static variables almost always be marked 'private'?",
+            "options": [
+              "Because public mutable static variables act as dangerous global variables that any class can corrupt without validation",
+              "Because the compiler rejects public static variables",
+              "Because private variables run faster",
+              "To make them available to all threads"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Public mutable static variables are essentially uncontrolled global variables, which are prone to bugs and hard to trace.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-4",
+            "type": "mcq",
+            "prompt": "How can a class guarantee that each instantiated object receives a unique, sequential serial number?",
+            "question": "How can a class guarantee that each instantiated object receives a unique, sequential serial number?",
+            "options": [
+              "By generating a random number in the constructor",
+              "By maintaining a private static counter and incrementing it inside the constructor",
+              "By asking the user to type in an ID",
+              "By using an instance variable"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "A private static counter incremented in the constructor guarantees continuous sequential numbering across all instances.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-5",
+            "type": "mcq",
+            "prompt": "What is a 'race condition' when dealing with static variables in multi-threaded programs?",
+            "question": "What is a 'race condition' when dealing with static variables in multi-threaded programs?",
+            "options": [
+              "When the CPU runs at maximum clock speed",
+              "When two or more threads attempt to read and write to the same shared static variable simultaneously, leading to corrupted data",
+              "When an object is deleted faster than expected",
+              "When a method returns before executing"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Race conditions occur when concurrent unsynchronized threads interleave reads and writes to shared memory.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-6",
+            "type": "mcq",
+            "prompt": "In our building utility meter analogy, what do individual apartments represent?",
+            "question": "In our building utility meter analogy, what do individual apartments represent?",
+            "options": [
+              "Static variables",
+              "Instance variables and individual object instances",
+              "Static blocks",
+              "The operating system"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Each apartment is an individual object instance with its own private furniture (instance variables).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-7",
+            "type": "mcq",
+            "prompt": "If Class A has 'static int count = 0;' and 5 instances are created, each doing 'count++', what is count?",
+            "question": "If Class A has 'static int count = 0;' and 5 instances are created, each doing 'count++', what is count?",
+            "options": [
+              "1",
+              "5",
+              "0",
+              "10"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Because count is static and shared, all 5 constructors increment the same counter, resulting in 5.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-8",
+            "type": "mcq",
+            "prompt": "Can a static variable be initialized with a complex expression or method call at declaration time?",
+            "question": "Can a static variable be initialized with a complex expression or method call at declaration time?",
+            "options": [
+              "No, only constant literals (like 0 or 10) are allowed",
+              "Yes, you can initialize a static variable using any valid static expression or static method call",
+              "Only if the method is marked private",
+              "Only inside the main method"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static variables can be initialized with static method calls or expressions (e.g. static long startTime = System.currentTimeMillis();).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-9",
+            "type": "mcq",
+            "prompt": "What happens if you try to use the 'this' keyword when initializing a static variable at class level?",
+            "question": "What happens if you try to use the 'this' keyword when initializing a static variable at class level?",
+            "options": [
+              "It returns null",
+              "The compiler emits an error: 'cannot use this in a static context'",
+              "It defaults to the first object created",
+              "It creates an infinite loop"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "'this' represents the current heap instance, which does not exist in a static context.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-sv-10",
+            "type": "mcq",
+            "prompt": "Which of the following is an example of a static variable in Java's standard library?",
+            "question": "Which of the following is an example of a static variable in Java's standard library?",
+            "options": [
+              "System.out",
+              "Scanner.nextLine",
+              "String.substring",
+              "Math.random()"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "System.out is a public static PrintStream field defined on the java.lang.System class.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-sv-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: Static Variables",
+      "questions": [
+        {
+          "id": "i-sv-1",
+          "question": "What is the difference between a static variable and an instance variable in Java?",
+          "answer": "An instance variable belongs to an individual object instance on the heap; each instance has its own copy. A static variable belongs to the class as a whole and exists as a single shared copy in Metaspace, accessible to all instances.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Instance = 1 copy per object in Heap",
+            "Static = 1 copy per class in Metaspace"
+          ]
+        },
+        {
+          "id": "i-sv-2",
+          "question": "Why are public mutable static variables considered a major code smell?",
+          "answer": "Public mutable static variables are globally accessible mutable state. Any method anywhere in the application can overwrite their values without validation or audit trails, causing unpredictable side effects and making unit testing nearly impossible.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Uncontrolled global state",
+            "Breaks test isolation",
+            "Prone to thread race conditions"
+          ]
+        },
+        {
+          "id": "i-sv-3",
+          "question": "How are static variables handled when a class is loaded by multiple ClassLoaders?",
+          "answer": "Static variables are scoped to the java.lang.Class object created by a specific ClassLoader. If two different ClassLoaders load the same class file, each ClassLoader creates its own distinct Class object and its own independent set of static variables.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Static state is scoped to the ClassLoader",
+            "Multiple ClassLoaders create multiple static copies"
+          ]
+        },
+        {
+          "id": "i-sv-4",
+          "question": "Are static variables garbage collected in Java?",
+          "answer": "Static variables are referenced by their java.lang.Class object, which is referenced by its ClassLoader. As long as the ClassLoader remains reachable (which is true for system and application ClassLoaders throughout JVM execution), static variables are NOT garbage collected. Only if a custom ClassLoader itself becomes unreachable can its loaded classes and static variables be collected.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Persist as long as ClassLoader is active",
+            "Rarely collected in standard apps"
+          ]
+        },
+        {
+          "id": "i-sv-5",
+          "question": "What is the thread-safety risk associated with 'count++' on a static variable?",
+          "answer": "The expression 'count++' is not atomic: it consists of three separate CPU operations (Read count, Add 1, Write back). If two threads execute this simultaneously, an interleaved read can cause one increment to be lost, resulting in incorrect counts.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "count++ is not atomic (read-modify-write)",
+            "Requires synchronization or AtomicInteger in concurrency"
+          ]
+        },
+        {
+          "id": "i-sv-6",
+          "question": "Can a static variable be declared inside a local method in Java?",
+          "answer": "No. In Java, local variables inside methods cannot be marked static. The 'static' modifier is only valid for class-level members (fields, methods, blocks, nested classes).",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "No local static variables in Java",
+            "Only valid at class scope"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-sv-1",
+          "question": "What is the difference between a static variable and an instance variable in Java?",
+          "expectedAnswer": "An instance variable belongs to an individual object instance on the heap; each instance has its own copy. A static variable belongs to the class as a whole and exists as a single shared copy in Metaspace, accessible to all instances.",
+          "keyPoints": [
+            "Instance = 1 copy per object in Heap",
+            "Static = 1 copy per class in Metaspace"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-sv-2",
+          "question": "Why are public mutable static variables considered a major code smell?",
+          "expectedAnswer": "Public mutable static variables are globally accessible mutable state. Any method anywhere in the application can overwrite their values without validation or audit trails, causing unpredictable side effects and making unit testing nearly impossible.",
+          "keyPoints": [
+            "Uncontrolled global state",
+            "Breaks test isolation",
+            "Prone to thread race conditions"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-sv-3",
+          "question": "How are static variables handled when a class is loaded by multiple ClassLoaders?",
+          "expectedAnswer": "Static variables are scoped to the java.lang.Class object created by a specific ClassLoader. If two different ClassLoaders load the same class file, each ClassLoader creates its own distinct Class object and its own independent set of static variables.",
+          "keyPoints": [
+            "Static state is scoped to the ClassLoader",
+            "Multiple ClassLoaders create multiple static copies"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-sv-4",
+          "question": "Are static variables garbage collected in Java?",
+          "expectedAnswer": "Static variables are referenced by their java.lang.Class object, which is referenced by its ClassLoader. As long as the ClassLoader remains reachable (which is true for system and application ClassLoaders throughout JVM execution), static variables are NOT garbage collected. Only if a custom ClassLoader itself becomes unreachable can its loaded classes and static variables be collected.",
+          "keyPoints": [
+            "Persist as long as ClassLoader is active",
+            "Rarely collected in standard apps"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-sv-5",
+          "question": "What is the thread-safety risk associated with 'count++' on a static variable?",
+          "expectedAnswer": "The expression 'count++' is not atomic: it consists of three separate CPU operations (Read count, Add 1, Write back). If two threads execute this simultaneously, an interleaved read can cause one increment to be lost, resulting in incorrect counts.",
+          "keyPoints": [
+            "count++ is not atomic (read-modify-write)",
+            "Requires synchronization or AtomicInteger in concurrency"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-sv-6",
+          "question": "Can a static variable be declared inside a local method in Java?",
+          "expectedAnswer": "No. In Java, local variables inside methods cannot be marked static. The 'static' modifier is only valid for class-level members (fields, methods, blocks, nested classes).",
+          "keyPoints": [
+            "No local static variables in Java",
+            "Only valid at class scope"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-sv-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I know how to implement an auto-incrementing ID generator using a static counter.",
+        "I understand the static variable lifecycle from class loading to JVM shutdown.",
+        "I keep mutable static variables private to prevent rogue modifications."
+      ],
+      "checklist": [
+        "I know how to implement an auto-incrementing ID generator using a static counter.",
+        "I understand the static variable lifecycle from class loading to JVM shutdown.",
+        "I keep mutable static variables private to prevent rogue modifications."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "static-and-final",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-sv-1",
+      "title": "Warmup: Auto-Incrementing Ticket Number",
+      "difficulty": "easy",
+      "description": "Add a private static int nextTicket = 500 to SupportTicket. In the constructor, assign ticketId = nextTicket++ and store caller name. In Main, create two tickets ('Network down', 'Printer jam'). Print 'Ticket #500: Network down | Ticket #501: Printer jam'.",
+      "problemStatement": "Add a private static int nextTicket = 500 to SupportTicket. In the constructor, assign ticketId = nextTicket++ and store caller name. In Main, create two tickets ('Network down', 'Printer jam'). Print 'Ticket #500: Network down | Ticket #501: Printer jam'.",
+      "expectedOutput": "Ticket #500: Network down | Ticket #501: Printer jam",
+      "hint": "Declare private static int nextTicket = 500",
+      "hints": [
+        "Declare private static int nextTicket = 500",
+        "Assign this.ticketId = nextTicket++ in constructor"
+      ],
+      "solutionCode": "class SupportTicket {\n    private int ticketId;\n    private String issue;\n    private static int nextTicket = 500;\n\n    public SupportTicket(String issue) {\n        this.ticketId = nextTicket++;\n        this.issue = issue;\n    }\n\n    public int getTicketId() { return ticketId; }\n    public String getIssue() { return issue; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SupportTicket t1 = new SupportTicket(\"Network down\");\n        SupportTicket t2 = new SupportTicket(\"Printer jam\");\n        System.out.println(\"Ticket #\" + t1.getTicketId() + \": \" + t1.getIssue() + \" | Ticket #\" + t2.getTicketId() + \": \" + t2.getIssue());\n    }\n}",
+      "initialCode": "class SupportTicket {\n    private int ticketId;\n    private String issue;\n    // Add static counter here\n\n    public SupportTicket(String issue) {\n        this.issue = issue;\n    }\n\n    public int getTicketId() { return ticketId; }\n    public String getIssue() { return issue; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-sv-2",
+      "title": "Code from Scratch: Bank Vault Combined Reserves",
+      "difficulty": "easy",
+      "description": "Write a complete BankBranch class from scratch with private String branchName (instance), private double branchCash (instance), and private static double totalNetworkReserves (shared, initialized to 0.0). When a branch receives cash via depositBranchCash(double amt), both branchCash and totalNetworkReserves increase. Provide static getTotalNetworkReserves(). In Main, create branch 'Downtown' (deposit $2000.0) and 'Airport' (deposit $3500.0). Print 'Total network reserves: $5500.0'.",
+      "problemStatement": "Write a complete BankBranch class from scratch with private String branchName (instance), private double branchCash (instance), and private static double totalNetworkReserves (shared, initialized to 0.0). When a branch receives cash via depositBranchCash(double amt), both branchCash and totalNetworkReserves increase. Provide static getTotalNetworkReserves(). In Main, create branch 'Downtown' (deposit $2000.0) and 'Airport' (deposit $3500.0). Print 'Total network reserves: $5500.0'.",
+      "expectedOutput": "Total network reserves: $5500.0",
+      "hint": "Write BankBranch from scratch",
+      "hints": [
+        "Write BankBranch from scratch",
+        "Increment static totalNetworkReserves on deposit",
+        "Print via BankBranch.getTotalNetworkReserves()"
+      ],
+      "solutionCode": "class BankBranch {\n    private String branchName;\n    private double branchCash;\n    private static double totalNetworkReserves = 0.0;\n\n    public BankBranch(String name) {\n        this.branchName = name;\n        this.branchCash = 0.0;\n    }\n\n    public void depositBranchCash(double amount) {\n        if (amount > 0) {\n            branchCash += amount;\n            totalNetworkReserves += amount;\n        }\n    }\n\n    public static double getTotalNetworkReserves() {\n        return totalNetworkReserves;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankBranch b1 = new BankBranch(\"Downtown\");\n        BankBranch b2 = new BankBranch(\"Airport\");\n        b1.depositBranchCash(2000.0);\n        b2.depositBranchCash(3500.0);\n        System.out.println(\"Total network reserves: $\" + BankBranch.getTotalNetworkReserves());\n    }\n}"
+    },
+    {
+      "id": "p-sv-3",
+      "title": "Code from Scratch: Global Feature Flag Manager",
+      "difficulty": "medium",
+      "description": "Write a complete FeatureFlags class from scratch with private static boolean darkMode = false and private static boolean betaFeatures = false. Provide static setters and getters for both. Provide static printStatus() which prints 'Dark mode: [val] | Beta: [val]'. In Main, enable dark mode, leave beta false, and print the status.",
+      "problemStatement": "Write a complete FeatureFlags class from scratch with private static boolean darkMode = false and private static boolean betaFeatures = false. Provide static setters and getters for both. Provide static printStatus() which prints 'Dark mode: [val] | Beta: [val]'. In Main, enable dark mode, leave beta false, and print the status.",
+      "expectedOutput": "Dark mode: true | Beta: false",
+      "hint": "Keep flags private static boolean",
+      "hints": [
+        "Keep flags private static boolean",
+        "Provide static methods only",
+        "No instantiation needed"
+      ],
+      "solutionCode": "class FeatureFlags {\n    private static boolean darkMode = false;\n    private static boolean betaFeatures = false;\n\n    public static void setDarkMode(boolean enabled) {\n        darkMode = enabled;\n    }\n    public static boolean isDarkMode() {\n        return darkMode;\n    }\n\n    public static void setBetaFeatures(boolean enabled) {\n        betaFeatures = enabled;\n    }\n    public static boolean isBetaFeatures() {\n        return betaFeatures;\n    }\n\n    public static void printStatus() {\n        System.out.println(\"Dark mode: \" + darkMode + \" | Beta: \" + betaFeatures);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        FeatureFlags.setDarkMode(true);\n        FeatureFlags.printStatus();\n    }\n}"
+    },
+    {
+      "id": "p-sv-4",
+      "title": "Fix Broken Code: Counter Reset Bug",
+      "difficulty": "easy",
+      "description": "The class below intended to count total user signups, but accidentally declared 'userCount' as an instance variable, causing userCount to always output 1 instead of counting. Fix the variable declaration to static. In Main, instantiate 3 users and print 'Total registered users: 3'.",
+      "problemStatement": "The class below intended to count total user signups, but accidentally declared 'userCount' as an instance variable, causing userCount to always output 1 instead of counting. Fix the variable declaration to static. In Main, instantiate 3 users and print 'Total registered users: 3'.",
+      "expectedOutput": "Total registered users: 3",
+      "hint": "Add static to userCount",
+      "hints": [
+        "Add static to userCount",
+        "Make getUserCount static",
+        "Access via UserSignup.getUserCount()"
+      ],
+      "solutionCode": "class UserSignup {\n    private static int userCount = 0;\n\n    public UserSignup() {\n        userCount++;\n    }\n\n    public static int getUserCount() { return userCount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UserSignup u1 = new UserSignup();\n        UserSignup u2 = new UserSignup();\n        UserSignup u3 = new UserSignup();\n        System.out.println(\"Total registered users: \" + UserSignup.getUserCount());\n    }\n}",
+      "initialCode": "class UserSignup {\n    // Bug: Declared as instance variable!\n    private int userCount = 0;\n\n    public UserSignup() {\n        userCount++;\n    }\n\n    public int getUserCount() { return userCount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UserSignup u1 = new UserSignup();\n        UserSignup u2 = new UserSignup();\n        UserSignup u3 = new UserSignup();\n        // Fix so we can report total registered users = 3\n        System.out.println(\"Total registered users: \" + u3.getUserCount());\n    }\n}"
+    },
+    {
+      "id": "p-sv-5",
+      "title": "Challenge: Autonomous Vehicle Fleet Dispatcher",
+      "difficulty": "medium",
+      "description": "Write a complete AutonomousFleet class from scratch. Each vehicle has private int vehicleId (instance, auto-assigned starting at 101) and private String status (instance, default 'AVAILABLE'). The class tracks private static int availableCount and private static int onMissionCount. When dispatchVehicle() is called on an instance, if its status is 'AVAILABLE', change status to 'DISPATCHED', decrement availableCount, and increment onMissionCount. In Main, create 3 vehicles (all initially available). Dispatch vehicle 1. Print 'Available: 2, On Mission: 1'.",
+      "problemStatement": "Write a complete AutonomousFleet class from scratch. Each vehicle has private int vehicleId (instance, auto-assigned starting at 101) and private String status (instance, default 'AVAILABLE'). The class tracks private static int availableCount and private static int onMissionCount. When dispatchVehicle() is called on an instance, if its status is 'AVAILABLE', change status to 'DISPATCHED', decrement availableCount, and increment onMissionCount. In Main, create 3 vehicles (all initially available). Dispatch vehicle 1. Print 'Available: 2, On Mission: 1'.",
+      "expectedOutput": "Available: 2, On Mission: 1",
+      "hint": "Track availableCount and onMissionCount with static ints",
+      "hints": [
+        "Track availableCount and onMissionCount with static ints",
+        "Update counts atomically inside dispatchVehicle()"
+      ],
+      "solutionCode": "class AutonomousFleet {\n    private int vehicleId;\n    private String status;\n\n    private static int idSequence = 100;\n    private static int availableCount = 0;\n    private static int onMissionCount = 0;\n\n    public AutonomousFleet() {\n        this.vehicleId = ++idSequence;\n        this.status = \"AVAILABLE\";\n        availableCount++;\n    }\n\n    public void dispatchVehicle() {\n        if (\"AVAILABLE\".equals(status)) {\n            this.status = \"DISPATCHED\";\n            availableCount--;\n            onMissionCount++;\n        }\n    }\n\n    public static int getAvailableCount() { return availableCount; }\n    public static int getOnMissionCount() { return onMissionCount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        AutonomousFleet v1 = new AutonomousFleet();\n        AutonomousFleet v2 = new AutonomousFleet();\n        AutonomousFleet v3 = new AutonomousFleet();\n        v1.dispatchVehicle();\n        System.out.println(\"Available: \" + AutonomousFleet.getAvailableCount() + \", On Mission: \" + AutonomousFleet.getOnMissionCount());\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-sv-1",
+      "question": "What is the difference between a static variable and an instance variable in Java?",
+      "expectedAnswer": "An instance variable belongs to an individual object instance on the heap; each instance has its own copy. A static variable belongs to the class as a whole and exists as a single shared copy in Metaspace, accessible to all instances.",
+      "keyPoints": [
+        "Instance = 1 copy per object in Heap",
+        "Static = 1 copy per class in Metaspace"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-sv-2",
+      "question": "Why are public mutable static variables considered a major code smell?",
+      "expectedAnswer": "Public mutable static variables are globally accessible mutable state. Any method anywhere in the application can overwrite their values without validation or audit trails, causing unpredictable side effects and making unit testing nearly impossible.",
+      "keyPoints": [
+        "Uncontrolled global state",
+        "Breaks test isolation",
+        "Prone to thread race conditions"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-sv-3",
+      "question": "How are static variables handled when a class is loaded by multiple ClassLoaders?",
+      "expectedAnswer": "Static variables are scoped to the java.lang.Class object created by a specific ClassLoader. If two different ClassLoaders load the same class file, each ClassLoader creates its own distinct Class object and its own independent set of static variables.",
+      "keyPoints": [
+        "Static state is scoped to the ClassLoader",
+        "Multiple ClassLoaders create multiple static copies"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-sv-4",
+      "question": "Are static variables garbage collected in Java?",
+      "expectedAnswer": "Static variables are referenced by their java.lang.Class object, which is referenced by its ClassLoader. As long as the ClassLoader remains reachable (which is true for system and application ClassLoaders throughout JVM execution), static variables are NOT garbage collected. Only if a custom ClassLoader itself becomes unreachable can its loaded classes and static variables be collected.",
+      "keyPoints": [
+        "Persist as long as ClassLoader is active",
+        "Rarely collected in standard apps"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-sv-5",
+      "question": "What is the thread-safety risk associated with 'count++' on a static variable?",
+      "expectedAnswer": "The expression 'count++' is not atomic: it consists of three separate CPU operations (Read count, Add 1, Write back). If two threads execute this simultaneously, an interleaved read can cause one increment to be lost, resulting in incorrect counts.",
+      "keyPoints": [
+        "count++ is not atomic (read-modify-write)",
+        "Requires synchronization or AtomicInteger in concurrency"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-sv-6",
+      "question": "Can a static variable be declared inside a local method in Java?",
+      "expectedAnswer": "No. In Java, local variables inside methods cannot be marked static. The 'static' modifier is only valid for class-level members (fields, methods, blocks, nested classes).",
+      "keyPoints": [
+        "No local static variables in Java",
+        "Only valid at class scope"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

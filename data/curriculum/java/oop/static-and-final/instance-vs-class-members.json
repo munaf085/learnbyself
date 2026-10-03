@@ -1,0 +1,868 @@
+{
+  "id": "les-sf-1",
+  "slug": "instance-vs-class-members",
+  "title": "Instance Members vs Class Members",
+  "summary": "Clear up one of Java's biggest beginner hurdles: heap memory per object vs Metaspace class-level shared storage.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [
+    "employee-profile-project"
+  ],
+  "learningOutcomes": [
+    "Distinguish instance members (owned by each object) from class members (shared by the whole class)",
+    "Understand the memory split: Heap (objects) vs Metaspace (class-level static members)",
+    "Explain why modifying a class member immediately impacts all instances"
+  ],
+  "activities": [
+    {
+      "id": "act-ivc-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: Personal Notebook vs Classroom Whiteboard",
+      "analogy": {
+        "story": "Imagine a university classroom with 30 students.\n\n- Each student has their own Personal Notebook (Instance Member). When Student A writes notes or doodles on page 5 of their notebook, Student B's notebook is completely untouched. Every student possesses their own distinct, private copy.\n\n- In the front of the room is the Classroom Whiteboard (Class / Static Member). When the professor writes 'Exam on Friday' on the whiteboard, there is only ONE whiteboard in the room. Every single student in the class sees that exact same message simultaneously. If one student walks up and erases it, it is gone for everyone.\n\nInstance members belong to individual objects. Class (static) members belong to the single class blueprint and are shared universally across all instances.",
+        "takeaway": "Instance members are cloned per object in the heap. Static class members exist as a single shared copy in Metaspace for the entire class.",
+        "headline": "Everyday Analogy: Personal Notebook vs Classroom Whiteboard",
+        "keyTakeaway": "Instance members are cloned per object in the heap. Static class members exist as a single shared copy in Metaspace for the entire class."
+      }
+    },
+    {
+      "id": "act-ivc-2",
+      "type": "concept",
+      "title": "Memory Architecture: Heap vs Metaspace",
+      "concept": {
+        "explanation": "Understanding the difference between instance and static members requires understanding where the JVM stores them:\n\n1. Instance Members (Non-Static):\n   - Allocated in Heap memory every time 'new' is called.\n   - Each object gets its own completely separate storage for fields.\n   - Accessed via object references: 'student1.name'.\n   - Lifecycle: Born when 'new' executes; destroyed by Garbage Collector when no references remain.\n\n2. Class Members (Static):\n   - Allocated in Metaspace (part of JVM memory reserved for class metadata).\n   - Created exactly ONCE when the class is loaded by the JVM, before any object is created.\n   - Shared across all instances of the class.\n   - Accessed ideally via the Class Name: 'Student.schoolName'.\n   - Lifecycle: Persists for the lifetime of the application.",
+        "codeIllustration": "class Student {\n    // Instance field: Each student has their own unique name\n    String name;\n\n    // Class field: One single shared whiteboard for all students\n    static String schoolName = \"Stanford University\";\n}\n\n// Accessing:\nStudent s1 = new Student();\ns1.name = \"Alice\"; // Instance\n\nSystem.out.println(Student.schoolName); // Class-level access!",
+        "rules": [
+          "Rule 1: Always access static members using the Class Name (e.g. Student.schoolName), NOT an instance reference.",
+          "Rule 2: Never use static for data that must vary from one object to another.",
+          "Rule 3: Static members exist even if zero objects of the class have been created."
+        ]
+      },
+      "content": "Understanding the difference between instance and static members requires understanding where the JVM stores them:\n\n1. Instance Members (Non-Static):\n   - Allocated in Heap memory every time 'new' is called.\n   - Each object gets its own completely separate storage for fields.\n   - Accessed via object references: 'student1.name'.\n   - Lifecycle: Born when 'new' executes; destroyed by Garbage Collector when no references remain.\n\n2. Class Members (Static):\n   - Allocated in Metaspace (part of JVM memory reserved for class metadata).\n   - Created exactly ONCE when the class is loaded by the JVM, before any object is created.\n   - Shared across all instances of the class.\n   - Accessed ideally via the Class Name: 'Student.schoolName'.\n   - Lifecycle: Persists for the lifetime of the application.\n\n\n### Code Illustration:\n```java\nclass Student {\n    // Instance field: Each student has their own unique name\n    String name;\n\n    // Class field: One single shared whiteboard for all students\n    static String schoolName = \"Stanford University\";\n}\n\n// Accessing:\nStudent s1 = new Student();\ns1.name = \"Alice\"; // Instance\n\nSystem.out.println(Student.schoolName); // Class-level access!\n```\n\n\n### Core Rules:\n- Rule 1: Always access static members using the Class Name (e.g. Student.schoolName), NOT an instance reference.\n- Rule 2: Never use static for data that must vary from one object to another.\n- Rule 3: Static members exist even if zero objects of the class have been created.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: Always access static members using the Class Name (e.g. Student.schoolName), NOT an instance reference.",
+          "Rule 2: Never use static for data that must vary from one object to another.",
+          "Rule 3: Static members exist even if zero objects of the class have been created."
+        ]
+      }
+    },
+    {
+      "id": "act-ivc-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Demonstrating Independent Heap vs Shared Metaspace",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class UniversityStudent {\n    // Instance variable: independent for every student\n    private String studentName;\n    private int rollNumber;\n\n    // Static class variable: shared by every student\n    public static String universityName = \"Global Tech Institute\";\n\n    public UniversityStudent(String name, int roll) {\n        this.studentName = name;\n        this.rollNumber = roll;\n    }\n\n    public void displayStudentInfo() {\n        System.out.println(studentName + \" [Roll: \" + rollNumber + \"] @ \" + universityName);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UniversityStudent s1 = new UniversityStudent(\"Aarav\", 101);\n        UniversityStudent s2 = new UniversityStudent(\"Bhavna\", 102);\n\n        s1.displayStudentInfo();\n        s2.displayStudentInfo();\n\n        // Changing the single shared whiteboard:\n        System.out.println(\"\\n--- University rebrands ---\");\n        UniversityStudent.universityName = \"Apex University of Technology\";\n\n        // Both students instantly reflect the updated shared name!\n        s1.displayStudentInfo();\n        s2.displayStudentInfo();\n    }\n}",
+        "explanation": "Notice how altering UniversityStudent.universityName a single time automatically updated the university name seen by both s1 and s2, while their individual names and roll numbers remained completely distinct."
+      },
+      "codeSnippet": "class UniversityStudent {\n    // Instance variable: independent for every student\n    private String studentName;\n    private int rollNumber;\n\n    // Static class variable: shared by every student\n    public static String universityName = \"Global Tech Institute\";\n\n    public UniversityStudent(String name, int roll) {\n        this.studentName = name;\n        this.rollNumber = roll;\n    }\n\n    public void displayStudentInfo() {\n        System.out.println(studentName + \" [Roll: \" + rollNumber + \"] @ \" + universityName);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UniversityStudent s1 = new UniversityStudent(\"Aarav\", 101);\n        UniversityStudent s2 = new UniversityStudent(\"Bhavna\", 102);\n\n        s1.displayStudentInfo();\n        s2.displayStudentInfo();\n\n        // Changing the single shared whiteboard:\n        System.out.println(\"\\n--- University rebrands ---\");\n        UniversityStudent.universityName = \"Apex University of Technology\";\n\n        // Both students instantly reflect the updated shared name!\n        s1.displayStudentInfo();\n        s2.displayStudentInfo();\n    }\n}",
+      "description": "Notice how altering UniversityStudent.universityName a single time automatically updated the university name seen by both s1 and s2, while their individual names and roll numbers remained completely distinct."
+    },
+    {
+      "id": "act-ivc-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Static Counter Tracking Live Object Creation Count",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class ServerNode {\n    private String serverId;\n    private static int totalActiveServers = 0; // Shared counter\n\n    public ServerNode(String id) {\n        this.serverId = id;\n        totalActiveServers++; // Increment shared whiteboard every time a server is born\n        System.out.println(\"Booted node \" + serverId + \". Total nodes: \" + totalActiveServers);\n    }\n\n    public static int getTotalActiveServers() {\n        return totalActiveServers;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Initial servers: \" + ServerNode.getTotalActiveServers());\n\n        ServerNode n1 = new ServerNode(\"us-east-1a\");\n        ServerNode n2 = new ServerNode(\"us-east-1b\");\n        ServerNode n3 = new ServerNode(\"eu-central-1\");\n\n        System.out.println(\"Final fleet count: \" + ServerNode.getTotalActiveServers());\n    }\n}",
+        "explanation": "Because totalActiveServers is static, all 3 server objects increment the same single memory location, providing a live registry of how many instances exist."
+      },
+      "codeSnippet": "class ServerNode {\n    private String serverId;\n    private static int totalActiveServers = 0; // Shared counter\n\n    public ServerNode(String id) {\n        this.serverId = id;\n        totalActiveServers++; // Increment shared whiteboard every time a server is born\n        System.out.println(\"Booted node \" + serverId + \". Total nodes: \" + totalActiveServers);\n    }\n\n    public static int getTotalActiveServers() {\n        return totalActiveServers;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Initial servers: \" + ServerNode.getTotalActiveServers());\n\n        ServerNode n1 = new ServerNode(\"us-east-1a\");\n        ServerNode n2 = new ServerNode(\"us-east-1b\");\n        ServerNode n3 = new ServerNode(\"eu-central-1\");\n\n        System.out.println(\"Final fleet count: \" + ServerNode.getTotalActiveServers());\n    }\n}",
+      "description": "Because totalActiveServers is static, all 3 server objects increment the same single memory location, providing a live registry of how many instances exist."
+    },
+    {
+      "id": "act-ivc-5",
+      "type": "mcq",
+      "title": "Interactive Instance vs Class Members Quiz",
+      "questions": [
+        {
+          "id": "q-ivc-1",
+          "type": "mcq",
+          "prompt": "Where are instance variables stored in JVM memory?",
+          "question": "Where are instance variables stored in JVM memory?",
+          "options": [
+            "Inside CPU registers",
+            "In Heap memory, inside each individual object instance",
+            "In the operating system swap file",
+            "In the Metaspace area"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Each object created with 'new' is allocated on the Heap and contains its own copy of all instance variables.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-2",
+          "type": "mcq",
+          "prompt": "Where does the JVM store static class variables?",
+          "question": "Where does the JVM store static class variables?",
+          "options": [
+            "In the Metaspace (class metadata memory)",
+            "On the thread execution stack",
+            "Inside the CPU cache only",
+            "On the hard drive"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Static members belong to the class blueprint and reside in Metaspace, shared across the entire JVM process.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-3",
+          "type": "mcq",
+          "prompt": "What is the recommended, idiomatic way to access a static variable in Java?",
+          "question": "What is the recommended, idiomatic way to access a static variable in Java?",
+          "options": [
+            "Through any object reference (e.g. s1.schoolName)",
+            "Through the Class name directly (e.g. Student.schoolName)",
+            "By instantiating a new Thread",
+            "Using the super keyword"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Accessing static members via the Class Name makes it immediately obvious that the variable is shared and does not belong to a specific instance.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-4",
+          "type": "mcq",
+          "prompt": "If you have 100 objects of class 'Car', how many copies of an instance variable 'color' exist?",
+          "question": "If you have 100 objects of class 'Car', how many copies of an instance variable 'color' exist?",
+          "options": [
+            "1 copy",
+            "100 copies (one per object)",
+            "0 copies",
+            "2 copies"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Instance variables are duplicated for every single object instance created on the heap.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-5",
+          "type": "mcq",
+          "prompt": "If you have 100 objects of class 'Car', how many copies of a static variable 'totalCarsManufactured' exist?",
+          "question": "If you have 100 objects of class 'Car', how many copies of a static variable 'totalCarsManufactured' exist?",
+          "options": [
+            "100 copies",
+            "1 shared copy for the entire class",
+            "10 copies",
+            "0 copies"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static variables exist exactly ONCE per class, regardless of how many instances are instantiated.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-6",
+          "type": "mcq",
+          "prompt": "Can you access a static variable before creating any objects of that class?",
+          "question": "Can you access a static variable before creating any objects of that class?",
+          "options": [
+            "No, at least one object must be created first",
+            "Yes, static variables are initialized when the class is loaded, before any instance is created",
+            "Only if the variable is marked private",
+            "Only from inside a constructor"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static members exist independently of instances. They are ready as soon as the class is loaded by the JVM.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-7",
+          "type": "mcq",
+          "prompt": "In our classroom analogy, what does the student's personal notebook represent?",
+          "question": "In our classroom analogy, what does the student's personal notebook represent?",
+          "options": [
+            "A static variable",
+            "An instance variable",
+            "A bytecode class file",
+            "The garbage collector"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The personal notebook is an instance variable: each student has their own private copy that others cannot alter.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-8",
+          "type": "mcq",
+          "prompt": "What happens if you write 's1.schoolName = \"MIT\";' where schoolName is static?",
+          "question": "What happens if you write 's1.schoolName = \"MIT\";' where schoolName is static?",
+          "options": [
+            "The compiler blocks it with an error",
+            "It compiles (with a warning), but mutates schoolName for ALL students because schoolName is shared",
+            "It creates a private copy of schoolName for s1 only",
+            "It deletes the variable from memory"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Accessing static variables via an instance compiles but is misleading; it mutates the single shared copy for all instances.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-9",
+          "type": "mcq",
+          "prompt": "When are static variables initialized in Java?",
+          "question": "When are static variables initialized in Java?",
+          "options": [
+            "When the operating system boots",
+            "When the class is first loaded into memory by the JVM ClassLoader",
+            "Every time 'new' is called",
+            "When the garbage collector sweeps memory"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static initialization occurs once when the JVM ClassLoader first encounters and loads the class into memory.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-ivc-10",
+          "type": "mcq",
+          "prompt": "Which of the following scenarios is an ideal candidate for an instance variable?",
+          "question": "Which of the following scenarios is an ideal candidate for an instance variable?",
+          "options": [
+            "A bank's interest rate for standard savings accounts",
+            "A customer's account balance",
+            "The maximum allowed length for user passwords",
+            "A count of total registered users"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "A customer's balance is distinct and private to each customer, making it an instance variable.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-ivc-1",
+            "type": "mcq",
+            "prompt": "Where are instance variables stored in JVM memory?",
+            "question": "Where are instance variables stored in JVM memory?",
+            "options": [
+              "Inside CPU registers",
+              "In Heap memory, inside each individual object instance",
+              "In the operating system swap file",
+              "In the Metaspace area"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Each object created with 'new' is allocated on the Heap and contains its own copy of all instance variables.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-2",
+            "type": "mcq",
+            "prompt": "Where does the JVM store static class variables?",
+            "question": "Where does the JVM store static class variables?",
+            "options": [
+              "In the Metaspace (class metadata memory)",
+              "On the thread execution stack",
+              "Inside the CPU cache only",
+              "On the hard drive"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Static members belong to the class blueprint and reside in Metaspace, shared across the entire JVM process.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-3",
+            "type": "mcq",
+            "prompt": "What is the recommended, idiomatic way to access a static variable in Java?",
+            "question": "What is the recommended, idiomatic way to access a static variable in Java?",
+            "options": [
+              "Through any object reference (e.g. s1.schoolName)",
+              "Through the Class name directly (e.g. Student.schoolName)",
+              "By instantiating a new Thread",
+              "Using the super keyword"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Accessing static members via the Class Name makes it immediately obvious that the variable is shared and does not belong to a specific instance.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-4",
+            "type": "mcq",
+            "prompt": "If you have 100 objects of class 'Car', how many copies of an instance variable 'color' exist?",
+            "question": "If you have 100 objects of class 'Car', how many copies of an instance variable 'color' exist?",
+            "options": [
+              "1 copy",
+              "100 copies (one per object)",
+              "0 copies",
+              "2 copies"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Instance variables are duplicated for every single object instance created on the heap.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-5",
+            "type": "mcq",
+            "prompt": "If you have 100 objects of class 'Car', how many copies of a static variable 'totalCarsManufactured' exist?",
+            "question": "If you have 100 objects of class 'Car', how many copies of a static variable 'totalCarsManufactured' exist?",
+            "options": [
+              "100 copies",
+              "1 shared copy for the entire class",
+              "10 copies",
+              "0 copies"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static variables exist exactly ONCE per class, regardless of how many instances are instantiated.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-6",
+            "type": "mcq",
+            "prompt": "Can you access a static variable before creating any objects of that class?",
+            "question": "Can you access a static variable before creating any objects of that class?",
+            "options": [
+              "No, at least one object must be created first",
+              "Yes, static variables are initialized when the class is loaded, before any instance is created",
+              "Only if the variable is marked private",
+              "Only from inside a constructor"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static members exist independently of instances. They are ready as soon as the class is loaded by the JVM.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-7",
+            "type": "mcq",
+            "prompt": "In our classroom analogy, what does the student's personal notebook represent?",
+            "question": "In our classroom analogy, what does the student's personal notebook represent?",
+            "options": [
+              "A static variable",
+              "An instance variable",
+              "A bytecode class file",
+              "The garbage collector"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The personal notebook is an instance variable: each student has their own private copy that others cannot alter.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-8",
+            "type": "mcq",
+            "prompt": "What happens if you write 's1.schoolName = \"MIT\";' where schoolName is static?",
+            "question": "What happens if you write 's1.schoolName = \"MIT\";' where schoolName is static?",
+            "options": [
+              "The compiler blocks it with an error",
+              "It compiles (with a warning), but mutates schoolName for ALL students because schoolName is shared",
+              "It creates a private copy of schoolName for s1 only",
+              "It deletes the variable from memory"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Accessing static variables via an instance compiles but is misleading; it mutates the single shared copy for all instances.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-9",
+            "type": "mcq",
+            "prompt": "When are static variables initialized in Java?",
+            "question": "When are static variables initialized in Java?",
+            "options": [
+              "When the operating system boots",
+              "When the class is first loaded into memory by the JVM ClassLoader",
+              "Every time 'new' is called",
+              "When the garbage collector sweeps memory"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static initialization occurs once when the JVM ClassLoader first encounters and loads the class into memory.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ivc-10",
+            "type": "mcq",
+            "prompt": "Which of the following scenarios is an ideal candidate for an instance variable?",
+            "question": "Which of the following scenarios is an ideal candidate for an instance variable?",
+            "options": [
+              "A bank's interest rate for standard savings accounts",
+              "A customer's account balance",
+              "The maximum allowed length for user passwords",
+              "A count of total registered users"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "A customer's balance is distinct and private to each customer, making it an instance variable.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-ivc-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: Instance vs Class Members",
+      "questions": [
+        {
+          "id": "i-ivc-1",
+          "question": "Explain the architectural difference between heap memory and Metaspace regarding instance and static variables.",
+          "answer": "Instance variables live inside individual object memory blocks on the Heap. They are created whenever 'new' is evaluated and reclaimed when the object is garbage-collected. Static variables reside in Metaspace (formerly PermGen) associated with the java.lang.Class object; they exist once per loaded class and persist for the application lifecycle.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Instance = Heap per object",
+            "Static = Metaspace once per class"
+          ]
+        },
+        {
+          "id": "i-ivc-2",
+          "question": "Why is accessing static variables via object references (e.g. obj.staticVar) considered bad practice?",
+          "answer": "Because it creates the false illusion that the variable belongs to that individual object instance. It obscures the fact that modifying it mutates shared state across all other instances, which leads to subtle concurrency and logic bugs. Standard code analyzers flag this with a warning.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Misleads developers into assuming instance state",
+            "Always use ClassName.variableName"
+          ]
+        },
+        {
+          "id": "i-ivc-3",
+          "question": "Can an instance method read or modify a static variable?",
+          "answer": "Yes. An instance method executes within the context of an existing object, and since static members belong to the class, they are fully accessible to all instance methods. For example, a constructor (an instance context) frequently increments a static counter.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Instance methods CAN access static members freely",
+            "Objects know their class"
+          ]
+        },
+        {
+          "id": "i-ivc-4",
+          "question": "Can a static method access an instance variable directly by name?",
+          "answer": "No. A static method belongs to the class as a whole and can be executed when zero objects exist. Therefore, there is no 'this' pointer and no heap object to read from. Attempting to access an instance field directly from a static method produces a compile-time error: 'non-static variable cannot be referenced from a static context'.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Static methods have no 'this'",
+            "Cannot reference instance fields without an explicit object instance"
+          ]
+        },
+        {
+          "id": "i-ivc-5",
+          "question": "What is the memory footprint impact of declaring a variable static vs instance?",
+          "answer": "If you have 1,000,000 objects and a field is an instance variable, 1,000,000 copies of that field exist in heap memory. If the value is identical across all objects (e.g., a company name or configuration string) and marked static, only ONE single copy exists in Metaspace, saving massive amounts of RAM.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "1 copy vs N copies",
+            "Saves significant heap memory for shared constants/configs"
+          ]
+        },
+        {
+          "id": "i-ivc-6",
+          "question": "What is the relationship between java.lang.Class and static variables?",
+          "answer": "When the JVM loads a class file, it instantiates an instance of java.lang.Class on the heap representing that type. Static fields are stored in memory associated with that Class object instance in Metaspace.",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Class object holds static metadata",
+            "Loaded once per ClassLoader"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-ivc-1",
+          "question": "Explain the architectural difference between heap memory and Metaspace regarding instance and static variables.",
+          "expectedAnswer": "Instance variables live inside individual object memory blocks on the Heap. They are created whenever 'new' is evaluated and reclaimed when the object is garbage-collected. Static variables reside in Metaspace (formerly PermGen) associated with the java.lang.Class object; they exist once per loaded class and persist for the application lifecycle.",
+          "keyPoints": [
+            "Instance = Heap per object",
+            "Static = Metaspace once per class"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-ivc-2",
+          "question": "Why is accessing static variables via object references (e.g. obj.staticVar) considered bad practice?",
+          "expectedAnswer": "Because it creates the false illusion that the variable belongs to that individual object instance. It obscures the fact that modifying it mutates shared state across all other instances, which leads to subtle concurrency and logic bugs. Standard code analyzers flag this with a warning.",
+          "keyPoints": [
+            "Misleads developers into assuming instance state",
+            "Always use ClassName.variableName"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-ivc-3",
+          "question": "Can an instance method read or modify a static variable?",
+          "expectedAnswer": "Yes. An instance method executes within the context of an existing object, and since static members belong to the class, they are fully accessible to all instance methods. For example, a constructor (an instance context) frequently increments a static counter.",
+          "keyPoints": [
+            "Instance methods CAN access static members freely",
+            "Objects know their class"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-ivc-4",
+          "question": "Can a static method access an instance variable directly by name?",
+          "expectedAnswer": "No. A static method belongs to the class as a whole and can be executed when zero objects exist. Therefore, there is no 'this' pointer and no heap object to read from. Attempting to access an instance field directly from a static method produces a compile-time error: 'non-static variable cannot be referenced from a static context'.",
+          "keyPoints": [
+            "Static methods have no 'this'",
+            "Cannot reference instance fields without an explicit object instance"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-ivc-5",
+          "question": "What is the memory footprint impact of declaring a variable static vs instance?",
+          "expectedAnswer": "If you have 1,000,000 objects and a field is an instance variable, 1,000,000 copies of that field exist in heap memory. If the value is identical across all objects (e.g., a company name or configuration string) and marked static, only ONE single copy exists in Metaspace, saving massive amounts of RAM.",
+          "keyPoints": [
+            "1 copy vs N copies",
+            "Saves significant heap memory for shared constants/configs"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-ivc-6",
+          "question": "What is the relationship between java.lang.Class and static variables?",
+          "expectedAnswer": "When the JVM loads a class file, it instantiates an instance of java.lang.Class on the heap representing that type. Static fields are stored in memory associated with that Class object instance in Metaspace.",
+          "keyPoints": [
+            "Class object holds static metadata",
+            "Loaded once per ClassLoader"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-ivc-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I know the difference between heap memory for instances and Metaspace for static members.",
+        "I always access static members using ClassName.member syntax.",
+        "I understand why static methods cannot touch instance fields without an object reference."
+      ],
+      "checklist": [
+        "I know the difference between heap memory for instances and Metaspace for static members.",
+        "I always access static members using ClassName.member syntax.",
+        "I understand why static methods cannot touch instance fields without an object reference."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "static-and-final",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-ivc-1",
+      "title": "Warmup: Shared Library Name",
+      "difficulty": "easy",
+      "description": "Convert libraryName in BookItem to a static class variable with default value 'Central City Library'. Give each book an instance field 'title'. In Main, create two books ('Java 101' and 'Clean Code'). Print 'Book 1: Java 101 @ Central City Library' using BookItem.libraryName.",
+      "problemStatement": "Convert libraryName in BookItem to a static class variable with default value 'Central City Library'. Give each book an instance field 'title'. In Main, create two books ('Java 101' and 'Clean Code'). Print 'Book 1: Java 101 @ Central City Library' using BookItem.libraryName.",
+      "expectedOutput": "Book 1: Java 101 @ Central City Library",
+      "hint": "Add static keyword to libraryName",
+      "hints": [
+        "Add static keyword to libraryName",
+        "Access it as BookItem.libraryName"
+      ],
+      "solutionCode": "class BookItem {\n    public String title;\n    public static String libraryName = \"Central City Library\";\n\n    public BookItem(String t) {\n        this.title = t;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BookItem b1 = new BookItem(\"Java 101\");\n        BookItem b2 = new BookItem(\"Clean Code\");\n        System.out.println(\"Book 1: \" + b1.title + \" @ \" + BookItem.libraryName);\n    }\n}",
+      "initialCode": "class BookItem {\n    public String title;\n    public String libraryName = \"Central City Library\"; // Make this static!\n\n    public BookItem(String t) {\n        this.title = t;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-ivc-2",
+      "title": "Code from Scratch: Instance Tracker Counter",
+      "difficulty": "easy",
+      "description": "Write a complete Device class from scratch with private String deviceName (instance) and private static int activeCount (shared, initialized to 0). Constructor takes deviceName and increments activeCount. Provide getDeviceName() and a static getActiveCount(). In Main, create 3 devices, then print 'Total active devices: 3'.",
+      "problemStatement": "Write a complete Device class from scratch with private String deviceName (instance) and private static int activeCount (shared, initialized to 0). Constructor takes deviceName and increments activeCount. Provide getDeviceName() and a static getActiveCount(). In Main, create 3 devices, then print 'Total active devices: 3'.",
+      "expectedOutput": "Total active devices: 3",
+      "hint": "Declare private static int activeCount = 0",
+      "hints": [
+        "Declare private static int activeCount = 0",
+        "Increment in constructor",
+        "Provide static getActiveCount()"
+      ],
+      "solutionCode": "class Device {\n    private String deviceName;\n    private static int activeCount = 0;\n\n    public Device(String name) {\n        this.deviceName = name;\n        activeCount++;\n    }\n\n    public String getDeviceName() { return deviceName; }\n    public static int getActiveCount() { return activeCount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Device d1 = new Device(\"Phone\");\n        Device d2 = new Device(\"Tablet\");\n        Device d3 = new Device(\"Laptop\");\n        System.out.println(\"Total active devices: \" + Device.getActiveCount());\n    }\n}"
+    },
+    {
+      "id": "p-ivc-3",
+      "title": "Code from Scratch: Global Tax Rate Modifier",
+      "difficulty": "medium",
+      "description": "Write a complete ProductPrice class from scratch with private double basePrice (instance) and private static double taxRate (shared, default 0.05). Provide static setTaxRate(double rate) and static getTaxRate(). Provide calculateTotalPrice() = basePrice + (basePrice * taxRate). In Main, create product with base 100.0, print initial total ($105.0), change taxRate to 0.10 via ProductPrice.setTaxRate(0.10), and print 'Updated price with 10% tax: $110.0'.",
+      "problemStatement": "Write a complete ProductPrice class from scratch with private double basePrice (instance) and private static double taxRate (shared, default 0.05). Provide static setTaxRate(double rate) and static getTaxRate(). Provide calculateTotalPrice() = basePrice + (basePrice * taxRate). In Main, create product with base 100.0, print initial total ($105.0), change taxRate to 0.10 via ProductPrice.setTaxRate(0.10), and print 'Updated price with 10% tax: $110.0'.",
+      "expectedOutput": "Updated price with 10% tax: $110.0",
+      "hint": "taxRate is static",
+      "hints": [
+        "taxRate is static",
+        "calculateTotalPrice uses basePrice and taxRate",
+        "ProductPrice.setTaxRate(0.10) alters it globally"
+      ],
+      "solutionCode": "class ProductPrice {\n    private double basePrice;\n    private static double taxRate = 0.05;\n\n    public ProductPrice(double price) {\n        this.basePrice = price;\n    }\n\n    public static void setTaxRate(double rate) {\n        if (rate >= 0.0) {\n            taxRate = rate;\n        }\n    }\n\n    public static double getTaxRate() {\n        return taxRate;\n    }\n\n    public double calculateTotalPrice() {\n        return basePrice + (basePrice * taxRate);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ProductPrice p = new ProductPrice(100.0);\n        ProductPrice.setTaxRate(0.10);\n        System.out.println(\"Updated price with 10% tax: $\" + p.calculateTotalPrice());\n    }\n}"
+    },
+    {
+      "id": "p-ivc-4",
+      "title": "Fix Broken Code: Static Context Error",
+      "difficulty": "easy",
+      "description": "The developer below tried to access an instance variable 'studentName' inside a static method printGreeting(), causing a compile-time error. Fix the code so studentName is accessed properly by making printGreeting() an instance method. In Main, instantiate student 'Kunal' and call printGreeting() to print 'Hello, Kunal!'.",
+      "problemStatement": "The developer below tried to access an instance variable 'studentName' inside a static method printGreeting(), causing a compile-time error. Fix the code so studentName is accessed properly by making printGreeting() an instance method. In Main, instantiate student 'Kunal' and call printGreeting() to print 'Hello, Kunal!'.",
+      "expectedOutput": "Hello, Kunal!",
+      "hint": "Remove 'static' keyword from printGreeting",
+      "hints": [
+        "Remove 'static' keyword from printGreeting",
+        "Call s.printGreeting() on the instance"
+      ],
+      "solutionCode": "class StudentGreeting {\n    private String studentName;\n\n    public StudentGreeting(String name) {\n        this.studentName = name;\n    }\n\n    public void printGreeting() {\n        System.out.println(\"Hello, \" + studentName + \"!\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        StudentGreeting s = new StudentGreeting(\"Kunal\");\n        s.printGreeting();\n    }\n}",
+      "initialCode": "class StudentGreeting {\n    private String studentName;\n\n    public StudentGreeting(String name) {\n        this.studentName = name;\n    }\n\n    // Bug: Cannot reference non-static field from static context!\n    public static void printGreeting() {\n        // System.out.println(\"Hello, \" + studentName + \"!\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        StudentGreeting s = new StudentGreeting(\"Kunal\");\n        // Fix and invoke greeting\n    }\n}"
+    },
+    {
+      "id": "p-ivc-5",
+      "title": "Challenge: Multi-Company Payroll Aggregator",
+      "difficulty": "medium",
+      "description": "Write a complete EmployeeCounter class from scratch with private String empName, private double salary, and private static double totalCompanyPayroll. Every time an employee is created, their salary is added to totalCompanyPayroll. Provide a static resetPayroll() that resets it to 0.0, and static getTotalPayroll(). In Main, create employees with salaries $3000.0 and $4500.0. Print 'Total company payroll: $7500.0'.",
+      "problemStatement": "Write a complete EmployeeCounter class from scratch with private String empName, private double salary, and private static double totalCompanyPayroll. Every time an employee is created, their salary is added to totalCompanyPayroll. Provide a static resetPayroll() that resets it to 0.0, and static getTotalPayroll(). In Main, create employees with salaries $3000.0 and $4500.0. Print 'Total company payroll: $7500.0'.",
+      "expectedOutput": "Total company payroll: $7500.0",
+      "hint": "Accumulate salary into static totalCompanyPayroll",
+      "hints": [
+        "Accumulate salary into static totalCompanyPayroll",
+        "Access via EmployeeCounter.getTotalPayroll()"
+      ],
+      "solutionCode": "class EmployeeCounter {\n    private String empName;\n    private double salary;\n    private static double totalCompanyPayroll = 0.0;\n\n    public EmployeeCounter(String name, double sal) {\n        this.empName = name;\n        this.salary = sal;\n        totalCompanyPayroll += sal;\n    }\n\n    public static void resetPayroll() {\n        totalCompanyPayroll = 0.0;\n    }\n\n    public static double getTotalPayroll() {\n        return totalCompanyPayroll;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        EmployeeCounter e1 = new EmployeeCounter(\"A\", 3000.0);\n        EmployeeCounter e2 = new EmployeeCounter(\"B\", 4500.0);\n        System.out.println(\"Total company payroll: $\" + EmployeeCounter.getTotalPayroll());\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-ivc-1",
+      "question": "Explain the architectural difference between heap memory and Metaspace regarding instance and static variables.",
+      "expectedAnswer": "Instance variables live inside individual object memory blocks on the Heap. They are created whenever 'new' is evaluated and reclaimed when the object is garbage-collected. Static variables reside in Metaspace (formerly PermGen) associated with the java.lang.Class object; they exist once per loaded class and persist for the application lifecycle.",
+      "keyPoints": [
+        "Instance = Heap per object",
+        "Static = Metaspace once per class"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-ivc-2",
+      "question": "Why is accessing static variables via object references (e.g. obj.staticVar) considered bad practice?",
+      "expectedAnswer": "Because it creates the false illusion that the variable belongs to that individual object instance. It obscures the fact that modifying it mutates shared state across all other instances, which leads to subtle concurrency and logic bugs. Standard code analyzers flag this with a warning.",
+      "keyPoints": [
+        "Misleads developers into assuming instance state",
+        "Always use ClassName.variableName"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-ivc-3",
+      "question": "Can an instance method read or modify a static variable?",
+      "expectedAnswer": "Yes. An instance method executes within the context of an existing object, and since static members belong to the class, they are fully accessible to all instance methods. For example, a constructor (an instance context) frequently increments a static counter.",
+      "keyPoints": [
+        "Instance methods CAN access static members freely",
+        "Objects know their class"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-ivc-4",
+      "question": "Can a static method access an instance variable directly by name?",
+      "expectedAnswer": "No. A static method belongs to the class as a whole and can be executed when zero objects exist. Therefore, there is no 'this' pointer and no heap object to read from. Attempting to access an instance field directly from a static method produces a compile-time error: 'non-static variable cannot be referenced from a static context'.",
+      "keyPoints": [
+        "Static methods have no 'this'",
+        "Cannot reference instance fields without an explicit object instance"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-ivc-5",
+      "question": "What is the memory footprint impact of declaring a variable static vs instance?",
+      "expectedAnswer": "If you have 1,000,000 objects and a field is an instance variable, 1,000,000 copies of that field exist in heap memory. If the value is identical across all objects (e.g., a company name or configuration string) and marked static, only ONE single copy exists in Metaspace, saving massive amounts of RAM.",
+      "keyPoints": [
+        "1 copy vs N copies",
+        "Saves significant heap memory for shared constants/configs"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-ivc-6",
+      "question": "What is the relationship between java.lang.Class and static variables?",
+      "expectedAnswer": "When the JVM loads a class file, it instantiates an instance of java.lang.Class on the heap representing that type. Static fields are stored in memory associated with that Class object instance in Metaspace.",
+      "keyPoints": [
+        "Class object holds static metadata",
+        "Loaded once per ClassLoader"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

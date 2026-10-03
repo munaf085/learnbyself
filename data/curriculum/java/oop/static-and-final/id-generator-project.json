@@ -1,0 +1,889 @@
+{
+  "id": "les-sf-8",
+  "slug": "id-generator-project",
+  "title": "Mini Project: ID Generator",
+  "summary": "Build an enterprise auto-incrementing transaction and user ID generation engine leveraging static counters and final tracking fields.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 30,
+  "orderIndex": 8,
+  "isMiniProject": true,
+  "prerequisites": [
+    "final-methods-and-classes"
+  ],
+  "learningOutcomes": [
+    "Combine static counters with final instance fields to build unique, tamper-proof entity IDs",
+    "Implement prefix-based routing (e.g. 'TX-1001', 'USR-2001', 'ORD-3001') using static factory methods",
+    "Enforce thread-safe, monotonic ID generation principles",
+    "Demonstrate complete mastery of instance, static, and final modifiers in a cohesive portfolio project"
+  ],
+  "activities": [
+    {
+      "id": "act-idg-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Bank Token Dispenser Machine",
+      "analogy": {
+        "story": "When you walk into a busy bank branch, the first machine you approach is the Ticket / Token Dispenser.\n\nThere is only ONE physical token dispenser machine in the lobby (Static Counter). Every customer who presses the button causes the internal machine counter to increment by 1: Token #101, Token #102, Token #103.\n\nWhen the machine prints out your paper slip, your token number (#102) is inked permanently onto the paper (Final Instance Field). You can walk around the bank, sit in different chairs, or change your mind about what service you need, but your ticket number remains permanently #102. Nobody else will ever receive #102 today.\n\nThis ID Generator project combines that shared lobby dispenser (static) with the permanently printed paper ticket (final).",
+        "takeaway": "Static counters ensure uniqueness across all instances; blank final fields ensure that once an ID is assigned to an object, it can never be altered.",
+        "headline": "Everyday Analogy: The Bank Token Dispenser Machine",
+        "keyTakeaway": "Static counters ensure uniqueness across all instances; blank final fields ensure that once an ID is assigned to an object, it can never be altered."
+      }
+    },
+    {
+      "id": "act-idg-2",
+      "type": "concept",
+      "title": "Architecture & 10-Point Production Specification",
+      "concept": {
+        "explanation": "You will build a robust EntityIdGenerator and UniqueEntity domain model adhering to 10 strict enterprise requirements:\n\n1. Universal ID Prefixing:\n   - Supports configurable entity prefixes (e.g., 'TX-', 'USR-', 'ORD-').\n\n2. Private Static Sequences:\n   - Maintained privately inside the class: 'private static int transactionSequence = 1000;'.\n   - Guaranteed strictly monotonic (always increasing, never repeating).\n\n3. Final Tracking Fields:\n   - 'private final String entityId;'\n   - 'private final long createdAtEpoch;'\n   - Once born, an entity's ID and timestamp are permanently read-only.\n\n4. Static Factory Generation:\n   - 'public static UniqueTransaction createTransaction(double amount, String description)'\n   - Automatically generates the next unique ID (e.g., 'TX-1001') and captures timestamp.\n\n5. Static Sequence Inspection:\n   - 'public static int getTotalTransactionsIssued()'\n   - Allows monitoring system volume without needing an object instance.",
+        "codeIllustration": "UniqueTransaction tx1 = UniqueTransaction.create(150.0, \"Groceries\");\nSystem.out.println(\"Generated: \" + tx1.getId()); // TX-1001\n\nUniqueTransaction tx2 = UniqueTransaction.create(85.0, \"Fuel\");\nSystem.out.println(\"Generated: \" + tx2.getId()); // TX-1002",
+        "rules": [
+          "Requirement 1: Counters must be private static to prevent external tampering.",
+          "Requirement 2: Entity ID must be private final (immutable).",
+          "Requirement 3: Sequential IDs must be strictly unique across all calls.",
+          "Requirement 4: Provide static inspection queries for total issued IDs."
+        ]
+      },
+      "content": "You will build a robust EntityIdGenerator and UniqueEntity domain model adhering to 10 strict enterprise requirements:\n\n1. Universal ID Prefixing:\n   - Supports configurable entity prefixes (e.g., 'TX-', 'USR-', 'ORD-').\n\n2. Private Static Sequences:\n   - Maintained privately inside the class: 'private static int transactionSequence = 1000;'.\n   - Guaranteed strictly monotonic (always increasing, never repeating).\n\n3. Final Tracking Fields:\n   - 'private final String entityId;'\n   - 'private final long createdAtEpoch;'\n   - Once born, an entity's ID and timestamp are permanently read-only.\n\n4. Static Factory Generation:\n   - 'public static UniqueTransaction createTransaction(double amount, String description)'\n   - Automatically generates the next unique ID (e.g., 'TX-1001') and captures timestamp.\n\n5. Static Sequence Inspection:\n   - 'public static int getTotalTransactionsIssued()'\n   - Allows monitoring system volume without needing an object instance.\n\n\n### Code Illustration:\n```java\nUniqueTransaction tx1 = UniqueTransaction.create(150.0, \"Groceries\");\nSystem.out.println(\"Generated: \" + tx1.getId()); // TX-1001\n\nUniqueTransaction tx2 = UniqueTransaction.create(85.0, \"Fuel\");\nSystem.out.println(\"Generated: \" + tx2.getId()); // TX-1002\n```\n\n\n### Core Rules:\n- Requirement 1: Counters must be private static to prevent external tampering.\n- Requirement 2: Entity ID must be private final (immutable).\n- Requirement 3: Sequential IDs must be strictly unique across all calls.\n- Requirement 4: Provide static inspection queries for total issued IDs.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Requirement 1: Counters must be private static to prevent external tampering.",
+          "Requirement 2: Entity ID must be private final (immutable).",
+          "Requirement 3: Sequential IDs must be strictly unique across all calls.",
+          "Requirement 4: Provide static inspection queries for total issued IDs."
+        ]
+      }
+    },
+    {
+      "id": "act-idg-3",
+      "type": "code_walkthrough",
+      "title": "Guided Implementation: The UniqueTransaction Engine",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "public class UniqueTransaction {\n    // Universal constant prefix\n    public static final String PREFIX = \"TX-\";\n\n    // Private static counter - shared lobby dispenser\n    private static int sequenceCounter = 1000;\n\n    // Final instance fields - permanent paper slip\n    private final String transactionId;\n    private final double amount;\n    private final String description;\n    private final long timestamp;\n\n    // Private constructor forces usage of static factory method\n    private UniqueTransaction(String id, double amount, String desc, long time) {\n        this.transactionId = id;\n        this.amount = amount;\n        this.description = desc;\n        this.timestamp = time;\n    }\n\n    // Static Factory Method\n    public static UniqueTransaction create(double amount, String desc) {\n        if (amount < 0.0) amount = 0.0;\n        String cleanDesc = (desc != null && !desc.trim().isEmpty()) ? desc.trim() : \"Unspecified\";\n        \n        // Atomic sequence increment\n        sequenceCounter++;\n        String generatedId = PREFIX + sequenceCounter;\n        long currentTime = System.currentTimeMillis();\n\n        return new UniqueTransaction(generatedId, amount, cleanDesc, currentTime);\n    }\n\n    // Getters for final fields (NO SETTERS!)\n    public String getTransactionId() { return transactionId; }\n    public double getAmount() { return amount; }\n    public String getDescription() { return description; }\n    public long getTimestamp() { return timestamp; }\n\n    // Static query for system volume\n    public static int getTotalTransactionsIssued() {\n        return sequenceCounter - 1000;\n    }\n\n    public void printReceipt() {\n        System.out.println(\"[\" + transactionId + \"] $\" + amount + \" - \" + description);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UniqueTransaction t1 = UniqueTransaction.create(120.50, \"Cloud Hosting\");\n        UniqueTransaction t2 = UniqueTransaction.create(45.00, \"Domain Registration\");\n        UniqueTransaction t3 = UniqueTransaction.create(300.00, \"SSL Certificate\");\n\n        t1.printReceipt();\n        t2.printReceipt();\n        t3.printReceipt();\n\n        System.out.println(\"Total transactions issued: \" + UniqueTransaction.getTotalTransactionsIssued());\n    }\n}",
+        "explanation": "Notice how all three concepts come together: sequenceCounter is static (shared), transactionId is final (immutable), and create() is a static factory method that shields the private constructor."
+      },
+      "codeSnippet": "public class UniqueTransaction {\n    // Universal constant prefix\n    public static final String PREFIX = \"TX-\";\n\n    // Private static counter - shared lobby dispenser\n    private static int sequenceCounter = 1000;\n\n    // Final instance fields - permanent paper slip\n    private final String transactionId;\n    private final double amount;\n    private final String description;\n    private final long timestamp;\n\n    // Private constructor forces usage of static factory method\n    private UniqueTransaction(String id, double amount, String desc, long time) {\n        this.transactionId = id;\n        this.amount = amount;\n        this.description = desc;\n        this.timestamp = time;\n    }\n\n    // Static Factory Method\n    public static UniqueTransaction create(double amount, String desc) {\n        if (amount < 0.0) amount = 0.0;\n        String cleanDesc = (desc != null && !desc.trim().isEmpty()) ? desc.trim() : \"Unspecified\";\n        \n        // Atomic sequence increment\n        sequenceCounter++;\n        String generatedId = PREFIX + sequenceCounter;\n        long currentTime = System.currentTimeMillis();\n\n        return new UniqueTransaction(generatedId, amount, cleanDesc, currentTime);\n    }\n\n    // Getters for final fields (NO SETTERS!)\n    public String getTransactionId() { return transactionId; }\n    public double getAmount() { return amount; }\n    public String getDescription() { return description; }\n    public long getTimestamp() { return timestamp; }\n\n    // Static query for system volume\n    public static int getTotalTransactionsIssued() {\n        return sequenceCounter - 1000;\n    }\n\n    public void printReceipt() {\n        System.out.println(\"[\" + transactionId + \"] $\" + amount + \" - \" + description);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UniqueTransaction t1 = UniqueTransaction.create(120.50, \"Cloud Hosting\");\n        UniqueTransaction t2 = UniqueTransaction.create(45.00, \"Domain Registration\");\n        UniqueTransaction t3 = UniqueTransaction.create(300.00, \"SSL Certificate\");\n\n        t1.printReceipt();\n        t2.printReceipt();\n        t3.printReceipt();\n\n        System.out.println(\"Total transactions issued: \" + UniqueTransaction.getTotalTransactionsIssued());\n    }\n}",
+      "description": "Notice how all three concepts come together: sequenceCounter is static (shared), transactionId is final (immutable), and create() is a static factory method that shields the private constructor."
+    },
+    {
+      "id": "act-idg-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Multi-Type ID Dispatcher (Users, Orders, Transactions)",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class MasterIdEngine {\n    private static int userSeq = 100;\n    private static int orderSeq = 500;\n    private static int txSeq = 9000;\n\n    public static String nextUserId() {\n        return \"USR-\" + (++userSeq);\n    }\n\n    public static String nextOrderId() {\n        return \"ORD-\" + (++orderSeq);\n    }\n\n    public static String nextTxId() {\n        return \"TX-\" + (++txSeq);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"New User: \" + MasterIdEngine.nextUserId());\n        System.out.println(\"New Order: \" + MasterIdEngine.nextOrderId());\n        System.out.println(\"New Tx: \" + MasterIdEngine.nextTxId());\n    }\n}",
+        "explanation": "Illustrates how enterprise backends partition sequences across distinct domain entity types using static utility engines."
+      },
+      "codeSnippet": "class MasterIdEngine {\n    private static int userSeq = 100;\n    private static int orderSeq = 500;\n    private static int txSeq = 9000;\n\n    public static String nextUserId() {\n        return \"USR-\" + (++userSeq);\n    }\n\n    public static String nextOrderId() {\n        return \"ORD-\" + (++orderSeq);\n    }\n\n    public static String nextTxId() {\n        return \"TX-\" + (++txSeq);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"New User: \" + MasterIdEngine.nextUserId());\n        System.out.println(\"New Order: \" + MasterIdEngine.nextOrderId());\n        System.out.println(\"New Tx: \" + MasterIdEngine.nextTxId());\n    }\n}",
+      "description": "Illustrates how enterprise backends partition sequences across distinct domain entity types using static utility engines."
+    },
+    {
+      "id": "act-idg-5",
+      "type": "mcq",
+      "title": "Interactive ID Generator Capstone Quiz",
+      "questions": [
+        {
+          "id": "q-idg-1",
+          "type": "mcq",
+          "prompt": "Why is the sequence counter in an ID generator declared 'static'?",
+          "question": "Why is the sequence counter in an ID generator declared 'static'?",
+          "options": [
+            "Because instance counters reset back to initial value on every 'new' object created, failing to generate unique IDs",
+            "Because static counters take less RAM",
+            "To make the IDs negative",
+            "Because Java forbids instance counters"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "If the counter were an instance variable, every new object would get the same starting number. Static ensures a single shared sequence across all instances.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-2",
+          "type": "mcq",
+          "prompt": "Why is the generated transactionId declared 'final' on the transaction object?",
+          "question": "Why is the generated transactionId declared 'final' on the transaction object?",
+          "options": [
+            "To make the class abstract",
+            "To guarantee that once an ID is assigned to an object, it can never be mutated, hijacked, or reassigned throughout the object's life",
+            "To print it in capital letters",
+            "To convert it into an integer"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Identity keys must be immutable; declaring transactionId final enforces write-once permanence at compile time.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-3",
+          "type": "mcq",
+          "prompt": "Why should the constructor of UniqueTransaction be marked 'private' when using a static factory method?",
+          "question": "Why should the constructor of UniqueTransaction be marked 'private' when using a static factory method?",
+          "options": [
+            "To prevent external callers from creating unnumbered or unvalidated objects with arbitrary manual IDs",
+            "Because constructors cannot take parameters",
+            "To speed up compilation",
+            "Because private constructors run on separate threads"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "A private constructor forces callers through the factory method, ensuring every object is assigned a valid auto-generated ID.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-4",
+          "type": "mcq",
+          "prompt": "What is the role of PREFIX in 'public static final String PREFIX = \"TX-\";'?",
+          "question": "What is the role of PREFIX in 'public static final String PREFIX = \"TX-\";'?",
+          "options": [
+            "It is a universal compile-time constant that ensures all transaction IDs share the same standard prefix",
+            "It is an instance variable",
+            "It deletes old transactions",
+            "It counts how many transactions exist"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "'public static final' defines a universal constant shared across all instances and classes.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-5",
+          "type": "mcq",
+          "prompt": "How can outside code check how many total IDs have been generated without creating a dummy object?",
+          "question": "How can outside code check how many total IDs have been generated without creating a dummy object?",
+          "options": [
+            "It cannot be done in Java",
+            "By calling a public static getter method (e.g. UniqueTransaction.getTotalTransactionsIssued())",
+            "By reading heap memory using C++",
+            "By restarting the JVM"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static query methods operate at the class level without requiring any instance to exist.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-6",
+          "type": "mcq",
+          "prompt": "What does 'monotonic sequence' mean in computer science?",
+          "question": "What does 'monotonic sequence' mean in computer science?",
+          "options": [
+            "A sequence of numbers that only uses the digit 1",
+            "A sequence that always moves in one consistent direction (e.g. strictly increasing: 1001, 1002, 1003)",
+            "A sequence of random numbers",
+            "A sequence that repeats every 10 elements"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Monotonic increasing sequences guarantee that every generated ID is strictly greater than the preceding ID.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-7",
+          "type": "mcq",
+          "prompt": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'sequenceCounter' exist?",
+          "question": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'sequenceCounter' exist?",
+          "options": [
+            "500 copies",
+            "1 copy in Metaspace",
+            "0 copies",
+            "250 copies"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Static variables exist exactly ONCE per class in Metaspace, shared by all 500 objects.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-8",
+          "type": "mcq",
+          "prompt": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'transactionId' exist?",
+          "question": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'transactionId' exist?",
+          "options": [
+            "1 copy",
+            "500 copies (one per object instance on the heap)",
+            "0 copies",
+            "10 copies"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Each instance has its own final instance field 'transactionId' on the heap.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-9",
+          "type": "mcq",
+          "prompt": "Can the static factory method 'create()' access the private constructor of the same class?",
+          "question": "Can the static factory method 'create()' access the private constructor of the same class?",
+          "options": [
+            "No, private constructors cannot be called by anyone",
+            "Yes, private members of a class are fully accessible anywhere inside that class definition, including in static methods",
+            "Only if the method returns void",
+            "Only if the class is public"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Private members are fully accessible anywhere inside the declaring class body.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-idg-10",
+          "type": "mcq",
+          "prompt": "Which combination of Java modifiers enables the robust ID generation pattern built in this project?",
+          "question": "Which combination of Java modifiers enables the robust ID generation pattern built in this project?",
+          "options": [
+            "transient and volatile",
+            "static for the shared counter, and final for the immutable instance ID",
+            "abstract and native",
+            "default and protected"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The synergy of static (class-wide shared sequence) and final (per-instance permanent immutability) is the core pattern.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-idg-1",
+            "type": "mcq",
+            "prompt": "Why is the sequence counter in an ID generator declared 'static'?",
+            "question": "Why is the sequence counter in an ID generator declared 'static'?",
+            "options": [
+              "Because instance counters reset back to initial value on every 'new' object created, failing to generate unique IDs",
+              "Because static counters take less RAM",
+              "To make the IDs negative",
+              "Because Java forbids instance counters"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "If the counter were an instance variable, every new object would get the same starting number. Static ensures a single shared sequence across all instances.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-2",
+            "type": "mcq",
+            "prompt": "Why is the generated transactionId declared 'final' on the transaction object?",
+            "question": "Why is the generated transactionId declared 'final' on the transaction object?",
+            "options": [
+              "To make the class abstract",
+              "To guarantee that once an ID is assigned to an object, it can never be mutated, hijacked, or reassigned throughout the object's life",
+              "To print it in capital letters",
+              "To convert it into an integer"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Identity keys must be immutable; declaring transactionId final enforces write-once permanence at compile time.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-3",
+            "type": "mcq",
+            "prompt": "Why should the constructor of UniqueTransaction be marked 'private' when using a static factory method?",
+            "question": "Why should the constructor of UniqueTransaction be marked 'private' when using a static factory method?",
+            "options": [
+              "To prevent external callers from creating unnumbered or unvalidated objects with arbitrary manual IDs",
+              "Because constructors cannot take parameters",
+              "To speed up compilation",
+              "Because private constructors run on separate threads"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "A private constructor forces callers through the factory method, ensuring every object is assigned a valid auto-generated ID.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-4",
+            "type": "mcq",
+            "prompt": "What is the role of PREFIX in 'public static final String PREFIX = \"TX-\";'?",
+            "question": "What is the role of PREFIX in 'public static final String PREFIX = \"TX-\";'?",
+            "options": [
+              "It is a universal compile-time constant that ensures all transaction IDs share the same standard prefix",
+              "It is an instance variable",
+              "It deletes old transactions",
+              "It counts how many transactions exist"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "'public static final' defines a universal constant shared across all instances and classes.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-5",
+            "type": "mcq",
+            "prompt": "How can outside code check how many total IDs have been generated without creating a dummy object?",
+            "question": "How can outside code check how many total IDs have been generated without creating a dummy object?",
+            "options": [
+              "It cannot be done in Java",
+              "By calling a public static getter method (e.g. UniqueTransaction.getTotalTransactionsIssued())",
+              "By reading heap memory using C++",
+              "By restarting the JVM"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static query methods operate at the class level without requiring any instance to exist.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-6",
+            "type": "mcq",
+            "prompt": "What does 'monotonic sequence' mean in computer science?",
+            "question": "What does 'monotonic sequence' mean in computer science?",
+            "options": [
+              "A sequence of numbers that only uses the digit 1",
+              "A sequence that always moves in one consistent direction (e.g. strictly increasing: 1001, 1002, 1003)",
+              "A sequence of random numbers",
+              "A sequence that repeats every 10 elements"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Monotonic increasing sequences guarantee that every generated ID is strictly greater than the preceding ID.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-7",
+            "type": "mcq",
+            "prompt": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'sequenceCounter' exist?",
+            "question": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'sequenceCounter' exist?",
+            "options": [
+              "500 copies",
+              "1 copy in Metaspace",
+              "0 copies",
+              "250 copies"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Static variables exist exactly ONCE per class in Metaspace, shared by all 500 objects.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-8",
+            "type": "mcq",
+            "prompt": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'transactionId' exist?",
+            "question": "If you have 500 UniqueTransaction objects on the heap, how many copies of 'transactionId' exist?",
+            "options": [
+              "1 copy",
+              "500 copies (one per object instance on the heap)",
+              "0 copies",
+              "10 copies"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Each instance has its own final instance field 'transactionId' on the heap.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-9",
+            "type": "mcq",
+            "prompt": "Can the static factory method 'create()' access the private constructor of the same class?",
+            "question": "Can the static factory method 'create()' access the private constructor of the same class?",
+            "options": [
+              "No, private constructors cannot be called by anyone",
+              "Yes, private members of a class are fully accessible anywhere inside that class definition, including in static methods",
+              "Only if the method returns void",
+              "Only if the class is public"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Private members are fully accessible anywhere inside the declaring class body.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-idg-10",
+            "type": "mcq",
+            "prompt": "Which combination of Java modifiers enables the robust ID generation pattern built in this project?",
+            "question": "Which combination of Java modifiers enables the robust ID generation pattern built in this project?",
+            "options": [
+              "transient and volatile",
+              "static for the shared counter, and final for the immutable instance ID",
+              "abstract and native",
+              "default and protected"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The synergy of static (class-wide shared sequence) and final (per-instance permanent immutability) is the core pattern.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-idg-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: ID Generator Project",
+      "questions": [
+        {
+          "id": "i-idg-1",
+          "question": "Walk me through how you architected your ID Generator project using static and final.",
+          "answer": "I used a private static integer sequence counter to maintain class-level shared state across all creations. I created a static factory method that atomically increments the counter and prefixes the ID string. The entity itself has a private final String entityId field and a private constructor, guaranteeing that the entity can only be instantiated with a valid auto-generated ID that can never be modified after creation.",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "Private static counter for shared sequence",
+            "Static factory method for controlled instantiation",
+            "Private final field for immutable identity"
+          ]
+        },
+        {
+          "id": "i-idg-2",
+          "question": "In a high-concurrency multi-threaded system, what would be the danger of using 'sequenceCounter++'?",
+          "answer": "In multi-threaded environments, 'sequenceCounter++' is not atomic. Two concurrent threads could read the same sequence value simultaneously and generate duplicate IDs. In production multi-threaded systems, java.util.concurrent.atomic.AtomicInteger or database sequences/UUIDs are used to guarantee thread-safe atomicity.",
+          "company": "Google",
+          "keyTakeaways": [
+            "count++ is not thread-safe",
+            "Can produce duplicate IDs under concurrency",
+            "AtomicInteger or UUIDs used in high-concurrency"
+          ]
+        },
+        {
+          "id": "i-idg-3",
+          "question": "Why did you use a static factory method instead of putting the auto-increment logic inside a public constructor?",
+          "answer": "While placing the logic in a constructor works, a static factory method provides several advantages: 1. It gives the creation operation an expressive domain name (e.g. createTransaction). 2. It can validate or preprocess arguments before calling the constructor. 3. It prevents callers from creating unnumbered instances by keeping the constructor private.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Expressive domain naming",
+            "Pre-construction validation",
+            "Enforces non-instantiability of invalid states"
+          ]
+        },
+        {
+          "id": "i-idg-4",
+          "question": "How does the memory footprint of this pattern compare to generating random UUID strings?",
+          "answer": "A sequential integer-based ID uses a single 4-byte static int in Metaspace and short prefixed Strings (e.g. 'TX-1001'). UUIDs require 128-bit numbers or 36-character Strings ('550e8400-e29b-41d4-a716-446655440000'), consuming more memory and causing database B-tree index fragmentation due to non-sequential inserts.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Lower memory footprint",
+            "Sequential IDs prevent B-tree database index fragmentation"
+          ]
+        },
+        {
+          "id": "i-idg-5",
+          "question": "Can this ID generator be reset during testing? How would you design a reset mechanism?",
+          "answer": "In test harnesses, we can provide a package-private or protected static resetSequenceForTesting() method that resets the sequence counter back to its starting base. It should not be public in production APIs to prevent accidental production resets.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Controlled test reset method",
+            "Restrict access modifier to prevent accidental production use"
+          ]
+        },
+        {
+          "id": "i-idg-6",
+          "question": "What is the difference between an entity's identity and an entity's state?",
+          "answer": "Identity is the permanent unique key that distinguishes this specific object from all other objects in the universe (modeled here as a final String ID). State is the set of mutable properties associated with that entity at any point in time (such as status, description, or amount).",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Identity = permanent unique identifier (final)",
+            "State = dynamic mutable attributes"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-idg-1",
+          "question": "Walk me through how you architected your ID Generator project using static and final.",
+          "expectedAnswer": "I used a private static integer sequence counter to maintain class-level shared state across all creations. I created a static factory method that atomically increments the counter and prefixes the ID string. The entity itself has a private final String entityId field and a private constructor, guaranteeing that the entity can only be instantiated with a valid auto-generated ID that can never be modified after creation.",
+          "keyPoints": [
+            "Private static counter for shared sequence",
+            "Static factory method for controlled instantiation",
+            "Private final field for immutable identity"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-idg-2",
+          "question": "In a high-concurrency multi-threaded system, what would be the danger of using 'sequenceCounter++'?",
+          "expectedAnswer": "In multi-threaded environments, 'sequenceCounter++' is not atomic. Two concurrent threads could read the same sequence value simultaneously and generate duplicate IDs. In production multi-threaded systems, java.util.concurrent.atomic.AtomicInteger or database sequences/UUIDs are used to guarantee thread-safe atomicity.",
+          "keyPoints": [
+            "count++ is not thread-safe",
+            "Can produce duplicate IDs under concurrency",
+            "AtomicInteger or UUIDs used in high-concurrency"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-idg-3",
+          "question": "Why did you use a static factory method instead of putting the auto-increment logic inside a public constructor?",
+          "expectedAnswer": "While placing the logic in a constructor works, a static factory method provides several advantages: 1. It gives the creation operation an expressive domain name (e.g. createTransaction). 2. It can validate or preprocess arguments before calling the constructor. 3. It prevents callers from creating unnumbered instances by keeping the constructor private.",
+          "keyPoints": [
+            "Expressive domain naming",
+            "Pre-construction validation",
+            "Enforces non-instantiability of invalid states"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-idg-4",
+          "question": "How does the memory footprint of this pattern compare to generating random UUID strings?",
+          "expectedAnswer": "A sequential integer-based ID uses a single 4-byte static int in Metaspace and short prefixed Strings (e.g. 'TX-1001'). UUIDs require 128-bit numbers or 36-character Strings ('550e8400-e29b-41d4-a716-446655440000'), consuming more memory and causing database B-tree index fragmentation due to non-sequential inserts.",
+          "keyPoints": [
+            "Lower memory footprint",
+            "Sequential IDs prevent B-tree database index fragmentation"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-idg-5",
+          "question": "Can this ID generator be reset during testing? How would you design a reset mechanism?",
+          "expectedAnswer": "In test harnesses, we can provide a package-private or protected static resetSequenceForTesting() method that resets the sequence counter back to its starting base. It should not be public in production APIs to prevent accidental production resets.",
+          "keyPoints": [
+            "Controlled test reset method",
+            "Restrict access modifier to prevent accidental production use"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-idg-6",
+          "question": "What is the difference between an entity's identity and an entity's state?",
+          "expectedAnswer": "Identity is the permanent unique key that distinguishes this specific object from all other objects in the universe (modeled here as a final String ID). State is the set of mutable properties associated with that entity at any point in time (such as status, description, or amount).",
+          "keyPoints": [
+            "Identity = permanent unique identifier (final)",
+            "State = dynamic mutable attributes"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-idg-8",
+      "type": "self_evaluation",
+      "title": "Capstone Self-Evaluation Checklist",
+      "items": [
+        "Sequence counter is private static to prevent duplicate or spoofed IDs.",
+        "Entity ID is declared private final to guarantee lifelong immutability.",
+        "Static factory method create() validates input and encapsulates the private constructor.",
+        "Static query methods allow inspecting total issued volume without creating instances.",
+        "Sequential IDs are strictly monotonic and guaranteed unique.",
+        "The class demonstrates mastery of instance, static, and final modifiers."
+      ],
+      "checklist": [
+        "Configured PREFIX as static final constant with proper naming convention",
+        "Entity ID is declared private final to guarantee lifelong immutability.",
+        "Static factory method create() validates input and encapsulates the private constructor.",
+        "Static query methods allow inspecting total issued volume without creating instances.",
+        "Sequential IDs are strictly monotonic and guaranteed unique.",
+        "The class demonstrates mastery of instance, static, and final modifiers.",
+        "Ensured static counter is private and accessed through encapsulated logic",
+        "Configured prefix as static final constant with naming convention",
+        "Implemented custom formatting with padded sequence numbers",
+        "Wrote comprehensive validation against counter reset or tampering"
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "static-and-final",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-idg-1",
+      "title": "Warmup: Order ID Auto-Generator",
+      "difficulty": "easy",
+      "description": "Complete OrderEntity by adding private static int orderSeq = 5000 and private final String orderId. In constructor, assign orderId = 'ORD-' + (++orderSeq). Provide getOrderId(). In Main, create two orders and print 'First: ORD-5001 | Second: ORD-5002'.",
+      "problemStatement": "Complete OrderEntity by adding private static int orderSeq = 5000 and private final String orderId. In constructor, assign orderId = 'ORD-' + (++orderSeq). Provide getOrderId(). In Main, create two orders and print 'First: ORD-5001 | Second: ORD-5002'.",
+      "expectedOutput": "First: ORD-5001 | Second: ORD-5002",
+      "hint": "Declare private static int orderSeq = 5000",
+      "hints": [
+        "Declare private static int orderSeq = 5000",
+        "Assign this.orderId = \"ORD-\" + (++orderSeq)"
+      ],
+      "solutionCode": "class OrderEntity {\n    private static int orderSeq = 5000;\n    private final String orderId;\n\n    public OrderEntity() {\n        this.orderId = \"ORD-\" + (++orderSeq);\n    }\n\n    public String getOrderId() {\n        return orderId;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        OrderEntity o1 = new OrderEntity();\n        OrderEntity o2 = new OrderEntity();\n        System.out.println(\"First: \" + o1.getOrderId() + \" | Second: \" + o2.getOrderId());\n    }\n}",
+      "initialCode": "class OrderEntity {\n    // Add private static counter and private final orderId\n\n    public OrderEntity() {\n        // Initialize orderId\n    }\n\n    public String getOrderId() {\n        return \"\";\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-idg-2",
+      "title": "Code from Scratch: Complete Student Roll Number Generator",
+      "difficulty": "medium",
+      "description": "Write a complete StudentRecordGenerator class from scratch. It contains private static int rollSeq = 202600. It has private final int rollNumber and private final String studentName. Constructor takes studentName and assigns rollNumber = ++rollSeq. Provide getRollNumber() and getStudentName(). Provide static int getTotalEnrolled() returning total enrolled students. In Main, create students 'Amina' and 'Bikram'. Print 'Amina: 202601 | Bikram: 202602 | Total: 2'.",
+      "problemStatement": "Write a complete StudentRecordGenerator class from scratch. It contains private static int rollSeq = 202600. It has private final int rollNumber and private final String studentName. Constructor takes studentName and assigns rollNumber = ++rollSeq. Provide getRollNumber() and getStudentName(). Provide static int getTotalEnrolled() returning total enrolled students. In Main, create students 'Amina' and 'Bikram'. Print 'Amina: 202601 | Bikram: 202602 | Total: 2'.",
+      "expectedOutput": "Amina: 202601 | Bikram: 202602 | Total: 2",
+      "hint": "Write StudentRecordGenerator from scratch",
+      "hints": [
+        "Write StudentRecordGenerator from scratch",
+        "Keep rollSeq static",
+        "Keep rollNumber final"
+      ],
+      "solutionCode": "class StudentRecordGenerator {\n    private static int rollSeq = 202600;\n    private static int count = 0;\n    private final int rollNumber;\n    private final String studentName;\n\n    public StudentRecordGenerator(String name) {\n        this.studentName = name;\n        this.rollNumber = ++rollSeq;\n        count++;\n    }\n\n    public int getRollNumber() { return rollNumber; }\n    public String getStudentName() { return studentName; }\n    public static int getTotalEnrolled() { return count; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        StudentRecordGenerator s1 = new StudentRecordGenerator(\"Amina\");\n        StudentRecordGenerator s2 = new StudentRecordGenerator(\"Bikram\");\n        System.out.println(s1.getStudentName() + \": \" + s1.getRollNumber() + \" | \" + s2.getStudentName() + \": \" + s2.getRollNumber() + \" | Total: \" + StudentRecordGenerator.getTotalEnrolled());\n    }\n}"
+    },
+    {
+      "id": "p-idg-3",
+      "title": "Code from Scratch: Multi-Channel Event Dispatcher",
+      "difficulty": "medium",
+      "description": "Write a complete SystemEvent class from scratch with public static final String SOURCE = 'SYSTEM_BUS'. It has private static int eventSeq = 0. It has private final String eventId (e.g. 'EVT-001'), private final String eventType, and private final long timestamp. Provide static SystemEvent createEvent(String type). In Main, create event 'USER_LOGIN' and print 'Event EVT-1 [USER_LOGIN] on SYSTEM_BUS'.",
+      "problemStatement": "Write a complete SystemEvent class from scratch with public static final String SOURCE = 'SYSTEM_BUS'. It has private static int eventSeq = 0. It has private final String eventId (e.g. 'EVT-001'), private final String eventType, and private final long timestamp. Provide static SystemEvent createEvent(String type). In Main, create event 'USER_LOGIN' and print 'Event EVT-1 [USER_LOGIN] on SYSTEM_BUS'.",
+      "expectedOutput": "Event EVT-1 [USER_LOGIN] on SYSTEM_BUS",
+      "hint": "Use static factory method createEvent",
+      "hints": [
+        "Use static factory method createEvent",
+        "Private constructor ensures valid IDs"
+      ],
+      "solutionCode": "class SystemEvent {\n    public static final String SOURCE = \"SYSTEM_BUS\";\n    private static int eventSeq = 0;\n\n    private final String eventId;\n    private final String eventType;\n    private final long timestamp;\n\n    private SystemEvent(String id, String type, long time) {\n        this.eventId = id;\n        this.eventType = type;\n        this.timestamp = time;\n    }\n\n    public static SystemEvent createEvent(String type) {\n        eventSeq++;\n        String id = \"EVT-\" + eventSeq;\n        return new SystemEvent(id, type, System.currentTimeMillis());\n    }\n\n    public String getEventId() { return eventId; }\n    public String getEventType() { return eventType; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SystemEvent e = SystemEvent.createEvent(\"USER_LOGIN\");\n        System.out.println(\"Event \" + e.getEventId() + \" [\" + e.getEventType() + \"] on \" + SystemEvent.SOURCE);\n    }\n}"
+    },
+    {
+      "id": "p-idg-4",
+      "title": "Fix Broken Code: Counter Non-Static Bug Causing Duplicate IDs",
+      "difficulty": "easy",
+      "description": "The UserRegistration class below intended to generate unique IDs 'USR-101', 'USR-102', etc., but because idCounter was declared as an instance variable, every user receives 'USR-101'. Fix the declaration to static so IDs increment properly. In Main, print 'User 1: USR-101 | User 2: USR-102'.",
+      "problemStatement": "The UserRegistration class below intended to generate unique IDs 'USR-101', 'USR-102', etc., but because idCounter was declared as an instance variable, every user receives 'USR-101'. Fix the declaration to static so IDs increment properly. In Main, print 'User 1: USR-101 | User 2: USR-102'.",
+      "expectedOutput": "User 1: USR-101 | User 2: USR-102",
+      "hint": "Add static: private static int idCounter = 100;",
+      "hints": [
+        "Add static: private static int idCounter = 100;"
+      ],
+      "solutionCode": "class UserRegistration {\n    private static int idCounter = 100;\n    private final String userId;\n\n    public UserRegistration() {\n        this.userId = \"USR-\" + (++idCounter);\n    }\n    public String getUserId() { return userId; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UserRegistration u1 = new UserRegistration();\n        UserRegistration u2 = new UserRegistration();\n        System.out.println(\"User 1: \" + u1.getUserId() + \" | User 2: \" + u2.getUserId());\n    }\n}",
+      "initialCode": "class UserRegistration {\n    // Bug: Declared as instance variable!\n    private int idCounter = 100;\n    private final String userId;\n\n    public UserRegistration() {\n        this.userId = \"USR-\" + (++idCounter);\n    }\n    public String getUserId() { return userId; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        UserRegistration u1 = new UserRegistration();\n        UserRegistration u2 = new UserRegistration();\n        // Fix so u2 receives USR-102\n        System.out.println(\"User 1: \" + u1.getUserId() + \" | User 2: \" + u2.getUserId());\n    }\n}"
+    },
+    {
+      "id": "p-idg-5",
+      "title": "Challenge: Tiered Transaction ID Generator with Total Volume Query",
+      "difficulty": "hard",
+      "description": "Write a complete SecureTransactionEngine class from scratch. Provide static int txCounter = 1000. It has private final String txId and private final double amount. Provide static SecureTransactionEngine create(double amount). If amount > 10,000, prefix with 'TX-PRIORITY-', otherwise 'TX-STD-'. In Main, create standard transaction ($500.0) and priority transaction ($25000.0). Print 'STD: TX-STD-1001 | PRIORITY: TX-PRIORITY-1002'.",
+      "problemStatement": "Write a complete SecureTransactionEngine class from scratch. Provide static int txCounter = 1000. It has private final String txId and private final double amount. Provide static SecureTransactionEngine create(double amount). If amount > 10,000, prefix with 'TX-PRIORITY-', otherwise 'TX-STD-'. In Main, create standard transaction ($500.0) and priority transaction ($25000.0). Print 'STD: TX-STD-1001 | PRIORITY: TX-PRIORITY-1002'.",
+      "expectedOutput": "STD: TX-STD-1001 | PRIORITY: TX-PRIORITY-1002",
+      "hint": "Static factory inspects amount > 10000.0 for prefix",
+      "hints": [
+        "Static factory inspects amount > 10000.0 for prefix",
+        "Increment shared static txCounter"
+      ],
+      "solutionCode": "class SecureTransactionEngine {\n    private static int txCounter = 1000;\n    private final String txId;\n    private final double amount;\n\n    private SecureTransactionEngine(String id, double amt) {\n        this.txId = id;\n        this.amount = amt;\n    }\n\n    public static SecureTransactionEngine create(double amount) {\n        txCounter++;\n        String prefix = amount > 10000.0 ? \"TX-PRIORITY-\" : \"TX-STD-\";\n        return new SecureTransactionEngine(prefix + txCounter, amount);\n    }\n\n    public String getTxId() { return txId; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecureTransactionEngine t1 = SecureTransactionEngine.create(500.0);\n        SecureTransactionEngine t2 = SecureTransactionEngine.create(25000.0);\n        System.out.println(\"STD: \" + t1.getTxId() + \" | PRIORITY: \" + t2.getTxId());\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-idg-1",
+      "question": "Walk me through how you architected your ID Generator project using static and final.",
+      "expectedAnswer": "I used a private static integer sequence counter to maintain class-level shared state across all creations. I created a static factory method that atomically increments the counter and prefixes the ID string. The entity itself has a private final String entityId field and a private constructor, guaranteeing that the entity can only be instantiated with a valid auto-generated ID that can never be modified after creation.",
+      "keyPoints": [
+        "Private static counter for shared sequence",
+        "Static factory method for controlled instantiation",
+        "Private final field for immutable identity"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-idg-2",
+      "question": "In a high-concurrency multi-threaded system, what would be the danger of using 'sequenceCounter++'?",
+      "expectedAnswer": "In multi-threaded environments, 'sequenceCounter++' is not atomic. Two concurrent threads could read the same sequence value simultaneously and generate duplicate IDs. In production multi-threaded systems, java.util.concurrent.atomic.AtomicInteger or database sequences/UUIDs are used to guarantee thread-safe atomicity.",
+      "keyPoints": [
+        "count++ is not thread-safe",
+        "Can produce duplicate IDs under concurrency",
+        "AtomicInteger or UUIDs used in high-concurrency"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-idg-3",
+      "question": "Why did you use a static factory method instead of putting the auto-increment logic inside a public constructor?",
+      "expectedAnswer": "While placing the logic in a constructor works, a static factory method provides several advantages: 1. It gives the creation operation an expressive domain name (e.g. createTransaction). 2. It can validate or preprocess arguments before calling the constructor. 3. It prevents callers from creating unnumbered instances by keeping the constructor private.",
+      "keyPoints": [
+        "Expressive domain naming",
+        "Pre-construction validation",
+        "Enforces non-instantiability of invalid states"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-idg-4",
+      "question": "How does the memory footprint of this pattern compare to generating random UUID strings?",
+      "expectedAnswer": "A sequential integer-based ID uses a single 4-byte static int in Metaspace and short prefixed Strings (e.g. 'TX-1001'). UUIDs require 128-bit numbers or 36-character Strings ('550e8400-e29b-41d4-a716-446655440000'), consuming more memory and causing database B-tree index fragmentation due to non-sequential inserts.",
+      "keyPoints": [
+        "Lower memory footprint",
+        "Sequential IDs prevent B-tree database index fragmentation"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-idg-5",
+      "question": "Can this ID generator be reset during testing? How would you design a reset mechanism?",
+      "expectedAnswer": "In test harnesses, we can provide a package-private or protected static resetSequenceForTesting() method that resets the sequence counter back to its starting base. It should not be public in production APIs to prevent accidental production resets.",
+      "keyPoints": [
+        "Controlled test reset method",
+        "Restrict access modifier to prevent accidental production use"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-idg-6",
+      "question": "What is the difference between an entity's identity and an entity's state?",
+      "expectedAnswer": "Identity is the permanent unique key that distinguishes this specific object from all other objects in the universe (modeled here as a final String ID). State is the set of mutable properties associated with that entity at any point in time (such as status, description, or amount).",
+      "keyPoints": [
+        "Identity = permanent unique identifier (final)",
+        "State = dynamic mutable attributes"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}

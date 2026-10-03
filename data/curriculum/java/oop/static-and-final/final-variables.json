@@ -1,0 +1,870 @@
+{
+  "id": "les-sf-6",
+  "slug": "final-variables",
+  "title": "final Variables",
+  "summary": "Master write-once immutability in Java: local constants, blank final instance fields, and public static final constants.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "why-main-is-static"
+  ],
+  "learningOutcomes": [
+    "Use the 'final' keyword to create write-once variables and compile-time constants",
+    "Differentiate local finals, blank final instance variables, and static final constants",
+    "Understand that 'final' on object references locks the pointer, not the internal state"
+  ],
+  "activities": [
+    {
+      "id": "act-fv-1",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Engraved Stone Tablet vs Erasable Whiteboard",
+      "analogy": {
+        "story": "Think of a normal variable like an erasable dry-erase whiteboard. You can write '50' on it, wipe it off with a cloth a minute later, write '75', wipe it off again, and write '100'. It is fully mutable.\n\nA final variable is words chiselled into solid granite stone. Once the stone carver strikes the chisel and engraves '3.14159', the inscription is permanent. No eraser, chemical solvent, or cloth can wipe it away. If you try to carve a new number over it, the stone rejects it.\n\nThe final keyword in Java transforms any variable from an erasable whiteboard into an engraved granite stone.",
+        "takeaway": "A final variable can be assigned a value exactly ONCE. Once initialized, attempting to reassign it causes a compile-time error.",
+        "headline": "Everyday Analogy: The Engraved Stone Tablet vs Erasable Whiteboard",
+        "keyTakeaway": "A final variable can be assigned a value exactly ONCE. Once initialized, attempting to reassign it causes a compile-time error."
+      }
+    },
+    {
+      "id": "act-fv-2",
+      "type": "concept",
+      "title": "The 3 Scopes of final Variables in Java",
+      "concept": {
+        "explanation": "The 'final' modifier can be applied to variables across three distinct scopes:\n\n1. Local final Variables (inside a method):\n   - 'final int maxAttempts = 3;'\n   - Once initialized, cannot be reassigned within that method execution.\n\n2. Blank final Instance Variables (inside an object):\n   - 'private final String ssn;'\n   - Declared without an initial value, BUT must be assigned in EVERY constructor.\n   - Each object can have a different value (Object A has SSN-1, Object B has SSN-2), but once an object's constructor finishes, its value is locked forever.\n\n3. public static final Constants (Universal Class Constants):\n   - 'public static final double PI = 3.141592653589793;'\n   - Naming convention: ALL_UPPERCASE_WITH_UNDERSCORES.\n   - Stored in Metaspace, shared by all instances, inlined at compile time.\n\nCRITICAL CAVEAT: Final Reference vs Object Mutability\nMarking an object reference final ('final Person p = new Person();') means the reference pointer 'p' cannot point to a different object. However, the internal fields of the person object can still be mutated unless the Person class itself is immutable!",
+        "codeIllustration": "// 1. Static Final Constant (Universal)\npublic static final int MAX_CONNECTIONS = 50;\n\n// 2. Blank Final Instance Field (Per-object locked state)\nprivate final String accountId;\npublic BankAccount(String id) {\n    this.accountId = id; // Assigned once in constructor!\n}\n\n// 3. Local Final Variable\nfinal double taxRate = 0.08;",
+        "rules": [
+          "Rule 1: A final variable can only be assigned once.",
+          "Rule 2: A blank final instance field must be initialized in all constructors, or the compiler will fail.",
+          "Rule 3: 'final' on a reference variable prevents reassignment of the pointer, NOT mutation of the object's internal fields."
+        ]
+      },
+      "content": "The 'final' modifier can be applied to variables across three distinct scopes:\n\n1. Local final Variables (inside a method):\n   - 'final int maxAttempts = 3;'\n   - Once initialized, cannot be reassigned within that method execution.\n\n2. Blank final Instance Variables (inside an object):\n   - 'private final String ssn;'\n   - Declared without an initial value, BUT must be assigned in EVERY constructor.\n   - Each object can have a different value (Object A has SSN-1, Object B has SSN-2), but once an object's constructor finishes, its value is locked forever.\n\n3. public static final Constants (Universal Class Constants):\n   - 'public static final double PI = 3.141592653589793;'\n   - Naming convention: ALL_UPPERCASE_WITH_UNDERSCORES.\n   - Stored in Metaspace, shared by all instances, inlined at compile time.\n\nCRITICAL CAVEAT: Final Reference vs Object Mutability\nMarking an object reference final ('final Person p = new Person();') means the reference pointer 'p' cannot point to a different object. However, the internal fields of the person object can still be mutated unless the Person class itself is immutable!\n\n\n### Code Illustration:\n```java\n// 1. Static Final Constant (Universal)\npublic static final int MAX_CONNECTIONS = 50;\n\n// 2. Blank Final Instance Field (Per-object locked state)\nprivate final String accountId;\npublic BankAccount(String id) {\n    this.accountId = id; // Assigned once in constructor!\n}\n\n// 3. Local Final Variable\nfinal double taxRate = 0.08;\n```\n\n\n### Core Rules:\n- Rule 1: A final variable can only be assigned once.\n- Rule 2: A blank final instance field must be initialized in all constructors, or the compiler will fail.\n- Rule 3: 'final' on a reference variable prevents reassignment of the pointer, NOT mutation of the object's internal fields.",
+      "breakdown": {
+        "keyTakeaways": [
+          "Rule 1: A final variable can only be assigned once.",
+          "Rule 2: A blank final instance field must be initialized in all constructors, or the compiler will fail.",
+          "Rule 3: 'final' on a reference variable prevents reassignment of the pointer, NOT mutation of the object's internal fields."
+        ]
+      }
+    },
+    {
+      "id": "act-fv-3",
+      "type": "code_walkthrough",
+      "title": "Code Example 1: Blank Final Instance Fields Enforcing Permanent Identity",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class NationalIdentityCard {\n    // Blank final fields: Assigned in constructor, then permanently locked\n    private final String idNumber;\n    private final String nationality;\n\n    // Normal mutable field\n    private String residentialAddress;\n\n    public NationalIdentityCard(String id, String nation, String address) {\n        this.idNumber = id;         // Locked forever!\n        this.nationality = nation;   // Locked forever!\n        this.residentialAddress = address;\n    }\n\n    public String getIdNumber() { return idNumber; }\n    public String getNationality() { return nationality; }\n    public String getAddress() { return residentialAddress; }\n\n    public void updateAddress(String newAddress) {\n        this.residentialAddress = newAddress;\n    }\n\n    // Attempting to reassign idNumber anywhere else fails compilation:\n    // public void setId(String id) { this.idNumber = id; } -> COMPILE ERROR!\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        NationalIdentityCard card = new NationalIdentityCard(\"NAT-9012\", \"India\", \"New Delhi\");\n        System.out.println(\"ID: \" + card.getIdNumber() + \" (\" + card.getNationality() + \")\");\n\n        // Address can change, ID can never change\n        card.updateAddress(\"Mumbai\");\n        System.out.println(\"Updated Address: \" + card.getAddress());\n    }\n}",
+        "explanation": "Because idNumber and nationality are declared 'final', the Java compiler guarantees they cannot be modified anywhere outside the constructor, even by private methods within the class."
+      },
+      "codeSnippet": "class NationalIdentityCard {\n    // Blank final fields: Assigned in constructor, then permanently locked\n    private final String idNumber;\n    private final String nationality;\n\n    // Normal mutable field\n    private String residentialAddress;\n\n    public NationalIdentityCard(String id, String nation, String address) {\n        this.idNumber = id;         // Locked forever!\n        this.nationality = nation;   // Locked forever!\n        this.residentialAddress = address;\n    }\n\n    public String getIdNumber() { return idNumber; }\n    public String getNationality() { return nationality; }\n    public String getAddress() { return residentialAddress; }\n\n    public void updateAddress(String newAddress) {\n        this.residentialAddress = newAddress;\n    }\n\n    // Attempting to reassign idNumber anywhere else fails compilation:\n    // public void setId(String id) { this.idNumber = id; } -> COMPILE ERROR!\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        NationalIdentityCard card = new NationalIdentityCard(\"NAT-9012\", \"India\", \"New Delhi\");\n        System.out.println(\"ID: \" + card.getIdNumber() + \" (\" + card.getNationality() + \")\");\n\n        // Address can change, ID can never change\n        card.updateAddress(\"Mumbai\");\n        System.out.println(\"Updated Address: \" + card.getAddress());\n    }\n}",
+      "description": "Because idNumber and nationality are declared 'final', the Java compiler guarantees they cannot be modified anywhere outside the constructor, even by private methods within the class."
+    },
+    {
+      "id": "act-fv-4",
+      "type": "code_walkthrough",
+      "title": "Code Example 2: Final Reference vs Object State Mutation",
+      "codeWalkthrough": {
+        "language": "java",
+        "code": "class MutableBox {\n    public int value;\n    public MutableBox(int v) { this.value = v; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Final reference variable:\n        final MutableBox box = new MutableBox(10);\n\n        // 1. CAN we mutate the internal state of the box? YES!\n        box.value = 25;\n        System.out.println(\"Mutated box value: \" + box.value); // 25\n\n        // 2. CAN we reassign the reference 'box' to point to a new object? NO!\n        // box = new MutableBox(50); // COMPILE ERROR: cannot assign a value to final variable box\n    }\n}",
+        "explanation": "This is a classic interview question: 'final' on an object variable only locks the arrow (the pointer address); it does NOT automatically make the object itself immutable."
+      },
+      "codeSnippet": "class MutableBox {\n    public int value;\n    public MutableBox(int v) { this.value = v; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Final reference variable:\n        final MutableBox box = new MutableBox(10);\n\n        // 1. CAN we mutate the internal state of the box? YES!\n        box.value = 25;\n        System.out.println(\"Mutated box value: \" + box.value); // 25\n\n        // 2. CAN we reassign the reference 'box' to point to a new object? NO!\n        // box = new MutableBox(50); // COMPILE ERROR: cannot assign a value to final variable box\n    }\n}",
+      "description": "This is a classic interview question: 'final' on an object variable only locks the arrow (the pointer address); it does NOT automatically make the object itself immutable."
+    },
+    {
+      "id": "act-fv-5",
+      "type": "mcq",
+      "title": "Interactive final Variables Quiz",
+      "questions": [
+        {
+          "id": "q-fv-1",
+          "type": "mcq",
+          "prompt": "What happens if you attempt to reassign a final variable in Java after it has been initialized?",
+          "question": "What happens if you attempt to reassign a final variable in Java after it has been initialized?",
+          "options": [
+            "The JVM throws a NullPointerException at runtime",
+            "The Java compiler produces a compile-time error: 'cannot assign a value to final variable'",
+            "The previous value is moved to the garbage collector silently",
+            "The operating system closes the application"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "The 'final' modifier is strictly enforced at compile time, preventing any second assignment.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-2",
+          "type": "mcq",
+          "prompt": "What is a 'blank final' instance variable?",
+          "question": "What is a 'blank final' instance variable?",
+          "options": [
+            "A variable with an empty String value (\"\")",
+            "A final instance field that is declared without an immediate initial value and must be assigned in the constructor",
+            "A variable whose value is deleted when the method returns",
+            "A variable declared in an interface"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "A blank final field is uninitialized at declaration, but must be assigned in every constructor.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-3",
+          "type": "mcq",
+          "prompt": "What is the standard Java naming convention for 'public static final' constants?",
+          "question": "What is the standard Java naming convention for 'public static final' constants?",
+          "options": [
+            "camelCase (e.g. maxConnections)",
+            "PascalCase (e.g. MaxConnections)",
+            "ALL_UPPERCASE_WITH_UNDERSCORES (e.g. MAX_CONNECTIONS)",
+            "kebab-case (e.g. max-connections)"
+          ],
+          "correctAnswer": 2,
+          "correctAnswerIndex": 2,
+          "explanation": "Java naming conventions require universal constants to be all-caps with underscores (e.g. Math.PI, Integer.MAX_VALUE).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-4",
+          "type": "mcq",
+          "prompt": "If you declare 'final int[] numbers = {1, 2, 3};', can you do 'numbers[0] = 99;'?",
+          "question": "If you declare 'final int[] numbers = {1, 2, 3};', can you do 'numbers[0] = 99;'?",
+          "options": [
+            "No, the compiler blocks it because numbers is final",
+            "Yes, 'final' locks the reference to the array on the heap, but elements inside the array remain mutable",
+            "Only if the array is static",
+            "It compiles with a warning"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Final locks the reference address. Elements inside the array can still be altered unless wrapped in an immutable container.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-5",
+          "type": "mcq",
+          "prompt": "What must happen if a class defines a blank final instance variable 'private final int code;'?",
+          "question": "What must happen if a class defines a blank final instance variable 'private final int code;'?",
+          "options": [
+            "It must be assigned a value in every single constructor of that class",
+            "It can be assigned in a setter later",
+            "It defaults to 0 automatically and cannot be changed",
+            "It can only be modified in a static block"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Every constructor branch must definitively initialize blank final fields; otherwise compilation fails.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-6",
+          "type": "mcq",
+          "prompt": "In our stone tablet analogy, what does the stone inscription represent?",
+          "question": "In our stone tablet analogy, what does the stone inscription represent?",
+          "options": [
+            "A normal mutable variable",
+            "A final variable that cannot be erased or overwritten",
+            "A garbage collection cycle",
+            "A runtime exception"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Chiselling words into stone represents write-once final immutability.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-7",
+          "type": "mcq",
+          "prompt": "Why does the compiler optimize 'public static final int DAYS_IN_WEEK = 7;' by inlining it?",
+          "question": "Why does the compiler optimize 'public static final int DAYS_IN_WEEK = 7;' by inlining it?",
+          "options": [
+            "Because it is a compile-time constant, the compiler replaces uses of DAYS_IN_WEEK with the literal number 7 directly in bytecode",
+            "To make the class abstract",
+            "Because integers cannot be loaded into Metaspace",
+            "To make the code multi-threaded"
+          ],
+          "correctAnswer": 0,
+          "correctAnswerIndex": 0,
+          "explanation": "Compile-time constants are inlined directly into call-site bytecode for maximum execution performance.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-8",
+          "type": "mcq",
+          "prompt": "Can method parameters be declared with the 'final' keyword (e.g. void compute(final int x))?",
+          "question": "Can method parameters be declared with the 'final' keyword (e.g. void compute(final int x))?",
+          "options": [
+            "No, final is forbidden on parameters",
+            "Yes, marking a parameter final prevents accidental reassignment of the parameter variable inside the method body",
+            "Only in constructors",
+            "Only if the return type is void"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Declaring parameters as final ensures the method author does not accidentally overwrite input parameters.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-9",
+          "type": "mcq",
+          "prompt": "If 'final String s = \"Hello\";', can you call s.toUpperCase()?",
+          "question": "If 'final String s = \"Hello\";', can you call s.toUpperCase()?",
+          "options": [
+            "No, final objects have no methods",
+            "Yes, s.toUpperCase() returns a new String and does not mutate 's'",
+            "Only inside a static block",
+            "It throws an exception"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "Calling methods on final objects is completely legal; s.toUpperCase() creates a new string without mutating s.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-fv-10",
+          "type": "mcq",
+          "prompt": "Can a final variable be initialized inside a loop repeatedly?",
+          "question": "Can a final variable be initialized inside a loop repeatedly?",
+          "options": [
+            "Yes, as long as the loop runs less than 10 times",
+            "No, in each iteration where the scope encounters the same variable, reassigning it triggers a compiler error",
+            "Only if the variable is boolean",
+            "Only if declared static"
+          ],
+          "correctAnswer": 1,
+          "correctAnswerIndex": 1,
+          "explanation": "A final variable inside a loop cannot be reassigned; declaring a new local final inside the loop block is valid per iteration.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Review the core concept section."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 40
+        }
+      ],
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-fv-1",
+            "type": "mcq",
+            "prompt": "What happens if you attempt to reassign a final variable in Java after it has been initialized?",
+            "question": "What happens if you attempt to reassign a final variable in Java after it has been initialized?",
+            "options": [
+              "The JVM throws a NullPointerException at runtime",
+              "The Java compiler produces a compile-time error: 'cannot assign a value to final variable'",
+              "The previous value is moved to the garbage collector silently",
+              "The operating system closes the application"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "The 'final' modifier is strictly enforced at compile time, preventing any second assignment.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-2",
+            "type": "mcq",
+            "prompt": "What is a 'blank final' instance variable?",
+            "question": "What is a 'blank final' instance variable?",
+            "options": [
+              "A variable with an empty String value (\"\")",
+              "A final instance field that is declared without an immediate initial value and must be assigned in the constructor",
+              "A variable whose value is deleted when the method returns",
+              "A variable declared in an interface"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "A blank final field is uninitialized at declaration, but must be assigned in every constructor.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-3",
+            "type": "mcq",
+            "prompt": "What is the standard Java naming convention for 'public static final' constants?",
+            "question": "What is the standard Java naming convention for 'public static final' constants?",
+            "options": [
+              "camelCase (e.g. maxConnections)",
+              "PascalCase (e.g. MaxConnections)",
+              "ALL_UPPERCASE_WITH_UNDERSCORES (e.g. MAX_CONNECTIONS)",
+              "kebab-case (e.g. max-connections)"
+            ],
+            "correctAnswer": 2,
+            "correctAnswerIndex": 2,
+            "explanation": "Java naming conventions require universal constants to be all-caps with underscores (e.g. Math.PI, Integer.MAX_VALUE).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-4",
+            "type": "mcq",
+            "prompt": "If you declare 'final int[] numbers = {1, 2, 3};', can you do 'numbers[0] = 99;'?",
+            "question": "If you declare 'final int[] numbers = {1, 2, 3};', can you do 'numbers[0] = 99;'?",
+            "options": [
+              "No, the compiler blocks it because numbers is final",
+              "Yes, 'final' locks the reference to the array on the heap, but elements inside the array remain mutable",
+              "Only if the array is static",
+              "It compiles with a warning"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Final locks the reference address. Elements inside the array can still be altered unless wrapped in an immutable container.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-5",
+            "type": "mcq",
+            "prompt": "What must happen if a class defines a blank final instance variable 'private final int code;'?",
+            "question": "What must happen if a class defines a blank final instance variable 'private final int code;'?",
+            "options": [
+              "It must be assigned a value in every single constructor of that class",
+              "It can be assigned in a setter later",
+              "It defaults to 0 automatically and cannot be changed",
+              "It can only be modified in a static block"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Every constructor branch must definitively initialize blank final fields; otherwise compilation fails.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-6",
+            "type": "mcq",
+            "prompt": "In our stone tablet analogy, what does the stone inscription represent?",
+            "question": "In our stone tablet analogy, what does the stone inscription represent?",
+            "options": [
+              "A normal mutable variable",
+              "A final variable that cannot be erased or overwritten",
+              "A garbage collection cycle",
+              "A runtime exception"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Chiselling words into stone represents write-once final immutability.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-7",
+            "type": "mcq",
+            "prompt": "Why does the compiler optimize 'public static final int DAYS_IN_WEEK = 7;' by inlining it?",
+            "question": "Why does the compiler optimize 'public static final int DAYS_IN_WEEK = 7;' by inlining it?",
+            "options": [
+              "Because it is a compile-time constant, the compiler replaces uses of DAYS_IN_WEEK with the literal number 7 directly in bytecode",
+              "To make the class abstract",
+              "Because integers cannot be loaded into Metaspace",
+              "To make the code multi-threaded"
+            ],
+            "correctAnswer": 0,
+            "correctAnswerIndex": 0,
+            "explanation": "Compile-time constants are inlined directly into call-site bytecode for maximum execution performance.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-8",
+            "type": "mcq",
+            "prompt": "Can method parameters be declared with the 'final' keyword (e.g. void compute(final int x))?",
+            "question": "Can method parameters be declared with the 'final' keyword (e.g. void compute(final int x))?",
+            "options": [
+              "No, final is forbidden on parameters",
+              "Yes, marking a parameter final prevents accidental reassignment of the parameter variable inside the method body",
+              "Only in constructors",
+              "Only if the return type is void"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Declaring parameters as final ensures the method author does not accidentally overwrite input parameters.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-9",
+            "type": "mcq",
+            "prompt": "If 'final String s = \"Hello\";', can you call s.toUpperCase()?",
+            "question": "If 'final String s = \"Hello\";', can you call s.toUpperCase()?",
+            "options": [
+              "No, final objects have no methods",
+              "Yes, s.toUpperCase() returns a new String and does not mutate 's'",
+              "Only inside a static block",
+              "It throws an exception"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "Calling methods on final objects is completely legal; s.toUpperCase() creates a new string without mutating s.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-fv-10",
+            "type": "mcq",
+            "prompt": "Can a final variable be initialized inside a loop repeatedly?",
+            "question": "Can a final variable be initialized inside a loop repeatedly?",
+            "options": [
+              "Yes, as long as the loop runs less than 10 times",
+              "No, in each iteration where the scope encounters the same variable, reassigning it triggers a compiler error",
+              "Only if the variable is boolean",
+              "Only if declared static"
+            ],
+            "correctAnswer": 1,
+            "correctAnswerIndex": 1,
+            "explanation": "A final variable inside a loop cannot be reassigned; declaring a new local final inside the loop block is valid per iteration.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Review the core concept section."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-fv-6",
+      "type": "interview_qa",
+      "title": "Interview Questions: final Variables",
+      "questions": [
+        {
+          "id": "i-fv-1",
+          "question": "What is the difference between a final variable, a final method, and a final class?",
+          "answer": "1. final variable: Value/reference cannot be reassigned once initialized. 2. final method: Cannot be overridden by any subclass. 3. final class: Cannot be extended/subclassed at all (e.g. java.lang.String).",
+          "company": "Amazon",
+          "keyTakeaways": [
+            "final var = cannot reassign",
+            "final method = cannot override",
+            "final class = cannot inherit"
+          ]
+        },
+        {
+          "id": "i-fv-2",
+          "question": "Does marking an object reference 'final' make the referenced object immutable?",
+          "answer": "No. The 'final' modifier applies strictly to the reference variable itself (the pointer address), meaning you cannot reassign it to point to a different heap location. However, the internal fields of the referenced object can still be mutated if the class provides mutators or public fields.",
+          "company": "Google",
+          "keyTakeaways": [
+            "Locks pointer address only",
+            "Does NOT freeze internal object state"
+          ]
+        },
+        {
+          "id": "i-fv-3",
+          "question": "What is a 'compile-time constant' in Java and how does inlining affect maintenance?",
+          "answer": "A compile-time constant is a 'static final' primitive or String initialized with a constant expression. The javac compiler inlines the literal value directly into referencing classes' bytecode. If the constant value changes in Class A, all dependent classes must be recompiled, otherwise they continue using the old inlined value.",
+          "company": "Oracle",
+          "keyTakeaways": [
+            "Inlined into bytecode directly",
+            "Requires recompilation of dependent classes if changed"
+          ]
+        },
+        {
+          "id": "i-fv-4",
+          "question": "Why must every constructor initialize a blank final field?",
+          "answer": "Because the Java language specification guarantees that a final variable is never left in an uninitialized state. If a constructor omitted the assignment, the final field would remain stuck at its default 0/null value forever with no possibility of later initialization.",
+          "company": "Microsoft",
+          "keyTakeaways": [
+            "Prevents permanently uninitialized finals",
+            "Enforced across all constructor branches"
+          ]
+        },
+        {
+          "id": "i-fv-5",
+          "question": "Can a final variable be assigned inside a static block?",
+          "answer": "Yes, if the variable is declared as a blank static final variable (e.g. 'private static final int MAX;'). It must be assigned exactly once inside a static initialization block.",
+          "company": "TCS",
+          "keyTakeaways": [
+            "Blank static final assigned in static block",
+            "Must be initialized before class loading completes"
+          ]
+        },
+        {
+          "id": "i-fv-6",
+          "question": "How does the Java Memory Model treat final fields with regard to multi-threading?",
+          "answer": "The Java Memory Model provides special thread-safety guarantees for final fields: once an object's constructor finishes executing, all final fields are guaranteed to be visible to all other threads in their fully initialized state without needing explicit synchronization (safe publication).",
+          "company": "Infosys",
+          "keyTakeaways": [
+            "Guarantees safe publication",
+            "Thread-safe visibility after constructor finishes"
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "i-fv-1",
+          "question": "What is the difference between a final variable, a final method, and a final class?",
+          "expectedAnswer": "1. final variable: Value/reference cannot be reassigned once initialized. 2. final method: Cannot be overridden by any subclass. 3. final class: Cannot be extended/subclassed at all (e.g. java.lang.String).",
+          "keyPoints": [
+            "final var = cannot reassign",
+            "final method = cannot override",
+            "final class = cannot inherit"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Amazon"
+          ]
+        },
+        {
+          "id": "i-fv-2",
+          "question": "Does marking an object reference 'final' make the referenced object immutable?",
+          "expectedAnswer": "No. The 'final' modifier applies strictly to the reference variable itself (the pointer address), meaning you cannot reassign it to point to a different heap location. However, the internal fields of the referenced object can still be mutated if the class provides mutators or public fields.",
+          "keyPoints": [
+            "Locks pointer address only",
+            "Does NOT freeze internal object state"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Google"
+          ]
+        },
+        {
+          "id": "i-fv-3",
+          "question": "What is a 'compile-time constant' in Java and how does inlining affect maintenance?",
+          "expectedAnswer": "A compile-time constant is a 'static final' primitive or String initialized with a constant expression. The javac compiler inlines the literal value directly into referencing classes' bytecode. If the constant value changes in Class A, all dependent classes must be recompiled, otherwise they continue using the old inlined value.",
+          "keyPoints": [
+            "Inlined into bytecode directly",
+            "Requires recompilation of dependent classes if changed"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Oracle"
+          ]
+        },
+        {
+          "id": "i-fv-4",
+          "question": "Why must every constructor initialize a blank final field?",
+          "expectedAnswer": "Because the Java language specification guarantees that a final variable is never left in an uninitialized state. If a constructor omitted the assignment, the final field would remain stuck at its default 0/null value forever with no possibility of later initialization.",
+          "keyPoints": [
+            "Prevents permanently uninitialized finals",
+            "Enforced across all constructor branches"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Microsoft"
+          ]
+        },
+        {
+          "id": "i-fv-5",
+          "question": "Can a final variable be assigned inside a static block?",
+          "expectedAnswer": "Yes, if the variable is declared as a blank static final variable (e.g. 'private static final int MAX;'). It must be assigned exactly once inside a static initialization block.",
+          "keyPoints": [
+            "Blank static final assigned in static block",
+            "Must be initialized before class loading completes"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "TCS"
+          ]
+        },
+        {
+          "id": "i-fv-6",
+          "question": "How does the Java Memory Model treat final fields with regard to multi-threading?",
+          "expectedAnswer": "The Java Memory Model provides special thread-safety guarantees for final fields: once an object's constructor finishes executing, all final fields are guaranteed to be visible to all other threads in their fully initialized state without needing explicit synchronization (safe publication).",
+          "keyPoints": [
+            "Guarantees safe publication",
+            "Thread-safe visibility after constructor finishes"
+          ],
+          "commonMistakes": [],
+          "companyTags": [
+            "Infosys"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-fv-8",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "items": [
+        "I know the 3 scopes of final variables: local, blank final instance, and static final constants.",
+        "I understand that every constructor must initialize all blank final instance fields.",
+        "I know that 'final' on an object reference locks the pointer, not the internal contents."
+      ],
+      "checklist": [
+        "I know the 3 scopes of final variables: local, blank final instance, and static final constants.",
+        "I understand that every constructor must initialize all blank final instance fields.",
+        "I know that 'final' on an object reference locks the pointer, not the internal contents."
+      ]
+    }
+  ],
+  "sectionSlug": "oop",
+  "moduleSlug": "static-and-final",
+  "languageSlug": "java",
+  "practiceProblems": [
+    {
+      "id": "p-fv-1",
+      "title": "Warmup: Lock Down Account Number",
+      "difficulty": "easy",
+      "description": "In SecureUser, declare 'userId' as a blank final String. Initialize it in the constructor and provide a getter. In Main, create user with ID 'USR-770' and print 'Locked User ID: USR-770'.",
+      "problemStatement": "In SecureUser, declare 'userId' as a blank final String. Initialize it in the constructor and provide a getter. In Main, create user with ID 'USR-770' and print 'Locked User ID: USR-770'.",
+      "expectedOutput": "Locked User ID: USR-770",
+      "hint": "Add final: private final String userId;",
+      "hints": [
+        "Add final: private final String userId;",
+        "Initialize in constructor"
+      ],
+      "solutionCode": "class SecureUser {\n    private final String userId;\n\n    public SecureUser(String id) {\n        this.userId = id;\n    }\n\n    public String getUserId() { return userId; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecureUser u = new SecureUser(\"USR-770\");\n        System.out.println(\"Locked User ID: \" + u.getUserId());\n    }\n}",
+      "initialCode": "class SecureUser {\n    // Make userId a blank final String\n    private String userId;\n\n    public SecureUser(String id) {\n        this.userId = id;\n    }\n\n    public String getUserId() { return userId; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your code here\n    }\n}"
+    },
+    {
+      "id": "p-fv-2",
+      "title": "Code from Scratch: Mathematical Circle Calculator",
+      "difficulty": "easy",
+      "description": "Write a complete CircleCalculator class from scratch. Provide public static final double PI = 3.14159. Provide a blank final double radius in each instance, set via constructor. Provide calculateArea() = PI * radius * radius, and calculateCircumference() = 2 * PI * radius. In Main, create circle with radius 5.0. Print 'Area: 78.53975'.",
+      "problemStatement": "Write a complete CircleCalculator class from scratch. Provide public static final double PI = 3.14159. Provide a blank final double radius in each instance, set via constructor. Provide calculateArea() = PI * radius * radius, and calculateCircumference() = 2 * PI * radius. In Main, create circle with radius 5.0. Print 'Area: 78.53975'.",
+      "expectedOutput": "Area: 78.53975",
+      "hint": "Declare public static final double PI = 3.14159",
+      "hints": [
+        "Declare public static final double PI = 3.14159",
+        "radius is private final double"
+      ],
+      "solutionCode": "class CircleCalculator {\n    public static final double PI = 3.14159;\n    private final double radius;\n\n    public CircleCalculator(double r) {\n        this.radius = r > 0 ? r : 1.0;\n    }\n\n    public double calculateArea() {\n        return PI * radius * radius;\n    }\n\n    public double calculateCircumference() {\n        return 2 * PI * radius;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        CircleCalculator c = new CircleCalculator(5.0);\n        System.out.println(\"Area: \" + c.calculateArea());\n    }\n}"
+    },
+    {
+      "id": "p-fv-3",
+      "title": "Code from Scratch: Immutable Transaction Token",
+      "difficulty": "medium",
+      "description": "Write a complete TransactionToken class from scratch with private final String tokenString, private final long createdAt, and private final double authorizedAmount. All 3 are initialized in constructor. Provide getters for all 3 (no setters!). In Main, create token ('TKN-ABC', 1000L, 250.0). Print 'Token TKN-ABC authorized for $250.0'.",
+      "problemStatement": "Write a complete TransactionToken class from scratch with private final String tokenString, private final long createdAt, and private final double authorizedAmount. All 3 are initialized in constructor. Provide getters for all 3 (no setters!). In Main, create token ('TKN-ABC', 1000L, 250.0). Print 'Token TKN-ABC authorized for $250.0'.",
+      "expectedOutput": "Token TKN-ABC authorized for $250.0",
+      "hint": "Mark all 3 fields private final",
+      "hints": [
+        "Mark all 3 fields private final",
+        "Initialize all in constructor",
+        "Provide getters only"
+      ],
+      "solutionCode": "class TransactionToken {\n    private final String tokenString;\n    private final long createdAt;\n    private final double authorizedAmount;\n\n    public TransactionToken(String token, long time, double amount) {\n        this.tokenString = token;\n        this.createdAt = time;\n        this.authorizedAmount = amount;\n    }\n\n    public String getTokenString() { return tokenString; }\n    public long getCreatedAt() { return createdAt; }\n    public double getAuthorizedAmount() { return authorizedAmount; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        TransactionToken t = new TransactionToken(\"TKN-ABC\", 1000L, 250.0);\n        System.out.println(\"Token \" + t.getTokenString() + \" authorized for $\" + t.getAuthorizedAmount());\n    }\n}"
+    },
+    {
+      "id": "p-fv-4",
+      "title": "Fix Broken Code: Illegal Reassignment of Final Variable",
+      "difficulty": "easy",
+      "description": "The class below fails compilation because it tries to reassign the final variable 'APP_VERSION'. Fix it by removing the invalid reassignment and keeping APP_VERSION as 1.0. In Main, print 'App version: 1.0'.",
+      "problemStatement": "The class below fails compilation because it tries to reassign the final variable 'APP_VERSION'. Fix it by removing the invalid reassignment and keeping APP_VERSION as 1.0. In Main, print 'App version: 1.0'.",
+      "expectedOutput": "App version: 1.0",
+      "hint": "Remove invalid reassignment statement",
+      "hints": [
+        "Remove invalid reassignment statement",
+        "Print AppMetadata.APP_VERSION"
+      ],
+      "solutionCode": "class AppMetadata {\n    public static final double APP_VERSION = 1.0;\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"App version: \" + AppMetadata.APP_VERSION);\n    }\n}",
+      "initialCode": "class AppMetadata {\n    public static final double APP_VERSION = 1.0;\n\n    public void upgrade() {\n        // Bug: Cannot assign value to final variable!\n        // APP_VERSION = 2.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"App version: \" + AppMetadata.APP_VERSION);\n    }\n}"
+    },
+    {
+      "id": "p-fv-5",
+      "title": "Challenge: Locked Configuration Envelope",
+      "difficulty": "medium",
+      "description": "Write a complete ServerConfig class from scratch with public static final int DEFAULT_PORT = 8080. It has private final String host and private final int port. Provide two constructors: 1-arg ServerConfig(String host) which chains to this(host, DEFAULT_PORT), and 2-arg ServerConfig(String host, int port) which initializes both blank finals. In Main, instantiate server with host 'localhost'. Print 'Server running at localhost:8080'.",
+      "problemStatement": "Write a complete ServerConfig class from scratch with public static final int DEFAULT_PORT = 8080. It has private final String host and private final int port. Provide two constructors: 1-arg ServerConfig(String host) which chains to this(host, DEFAULT_PORT), and 2-arg ServerConfig(String host, int port) which initializes both blank finals. In Main, instantiate server with host 'localhost'. Print 'Server running at localhost:8080'.",
+      "expectedOutput": "Server running at localhost:8080",
+      "hint": "Chain constructors using this(host, DEFAULT_PORT)",
+      "hints": [
+        "Chain constructors using this(host, DEFAULT_PORT)",
+        "Initialize blank final fields host and port in master constructor"
+      ],
+      "solutionCode": "class ServerConfig {\n    public static final int DEFAULT_PORT = 8080;\n    private final String host;\n    private final int port;\n\n    public ServerConfig(String host) {\n        this(host, DEFAULT_PORT);\n    }\n\n    public ServerConfig(String host, int port) {\n        this.host = host;\n        this.port = port;\n    }\n\n    public String getAddress() {\n        return host + \":\" + port;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ServerConfig s = new ServerConfig(\"localhost\");\n        System.out.println(\"Server running at \" + s.getAddress());\n    }\n}"
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "i-fv-1",
+      "question": "What is the difference between a final variable, a final method, and a final class?",
+      "expectedAnswer": "1. final variable: Value/reference cannot be reassigned once initialized. 2. final method: Cannot be overridden by any subclass. 3. final class: Cannot be extended/subclassed at all (e.g. java.lang.String).",
+      "keyPoints": [
+        "final var = cannot reassign",
+        "final method = cannot override",
+        "final class = cannot inherit"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Amazon"
+      ]
+    },
+    {
+      "id": "i-fv-2",
+      "question": "Does marking an object reference 'final' make the referenced object immutable?",
+      "expectedAnswer": "No. The 'final' modifier applies strictly to the reference variable itself (the pointer address), meaning you cannot reassign it to point to a different heap location. However, the internal fields of the referenced object can still be mutated if the class provides mutators or public fields.",
+      "keyPoints": [
+        "Locks pointer address only",
+        "Does NOT freeze internal object state"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Google"
+      ]
+    },
+    {
+      "id": "i-fv-3",
+      "question": "What is a 'compile-time constant' in Java and how does inlining affect maintenance?",
+      "expectedAnswer": "A compile-time constant is a 'static final' primitive or String initialized with a constant expression. The javac compiler inlines the literal value directly into referencing classes' bytecode. If the constant value changes in Class A, all dependent classes must be recompiled, otherwise they continue using the old inlined value.",
+      "keyPoints": [
+        "Inlined into bytecode directly",
+        "Requires recompilation of dependent classes if changed"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Oracle"
+      ]
+    },
+    {
+      "id": "i-fv-4",
+      "question": "Why must every constructor initialize a blank final field?",
+      "expectedAnswer": "Because the Java language specification guarantees that a final variable is never left in an uninitialized state. If a constructor omitted the assignment, the final field would remain stuck at its default 0/null value forever with no possibility of later initialization.",
+      "keyPoints": [
+        "Prevents permanently uninitialized finals",
+        "Enforced across all constructor branches"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Microsoft"
+      ]
+    },
+    {
+      "id": "i-fv-5",
+      "question": "Can a final variable be assigned inside a static block?",
+      "expectedAnswer": "Yes, if the variable is declared as a blank static final variable (e.g. 'private static final int MAX;'). It must be assigned exactly once inside a static initialization block.",
+      "keyPoints": [
+        "Blank static final assigned in static block",
+        "Must be initialized before class loading completes"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "TCS"
+      ]
+    },
+    {
+      "id": "i-fv-6",
+      "question": "How does the Java Memory Model treat final fields with regard to multi-threading?",
+      "expectedAnswer": "The Java Memory Model provides special thread-safety guarantees for final fields: once an object's constructor finishes executing, all final fields are guaranteed to be visible to all other threads in their fully initialized state without needing explicit synchronization (safe publication).",
+      "keyPoints": [
+        "Guarantees safe publication",
+        "Thread-safe visibility after constructor finishes"
+      ],
+      "commonMistakes": [],
+      "companyTags": [
+        "Infosys"
+      ]
+    }
+  ]
+}
