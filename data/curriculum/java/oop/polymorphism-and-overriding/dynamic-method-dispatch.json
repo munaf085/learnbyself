@@ -1,0 +1,331 @@
+{
+  "id": "java-oop-mod6-les7",
+  "slug": "dynamic-method-dispatch",
+  "sectionSlug": "oop",
+  "moduleSlug": "polymorphism-and-overriding",
+  "languageSlug": "java",
+  "title": "Dynamic Method Dispatch",
+  "summary": "Unravel the internal JVM engine of runtime polymorphism: Dynamic Method Dispatch, invokevirtual bytecode instruction, Virtual Method Tables (v-tables), and late binding.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "upcasting"
+  ],
+  "learningObjectives": [
+    "Understand the exact mechanism of Dynamic Method Dispatch in the Java Virtual Machine",
+    "Analyze how Virtual Method Tables (v-tables) resolve overridden methods at runtime",
+    "Trace the bytecode instruction 'invokevirtual' and how it differs from 'invokestatic' and 'invokespecial'",
+    "Explain late binding (dynamic binding) versus early binding (static binding)"
+  ],
+  "expectedOutcomes": [
+    "Deep conceptual mastery of JVM internal dispatch mechanisms for high-performance systems",
+    "Confidence acing senior-level Java interview questions on v-tables and method resolution"
+  ],
+  "activities": [
+    {
+      "id": "act-dmd-1",
+      "type": "analogy",
+      "title": "The Automated Telephone Call Router",
+      "content": "Imagine you call a corporation's centralized customer service number: 1-800-ENTERPRISE.\n\n- The phone system does not connect you directly to an employee's physical desk at dialing time (that would be early/static binding).\n- Instead, when the call arrives, an automated telephone switchboard checks your caller profile, determines your account tier, and **dynamically routes** your call to the appropriate department desk at that exact moment.\n\nIn Java, **Dynamic Method Dispatch** is that automated switchboard: when your code executes `ref.method()`, the JVM inspects the object's memory tag at runtime and dynamically routes execution to the overridden method of that specific object."
+    },
+    {
+      "id": "act-dmd-2",
+      "type": "concept",
+      "title": "The JVM Under the Hood: V-Tables and invokevirtual",
+      "content": "Dynamic Method Dispatch is the mechanism by which a call to an overridden method is resolved at **runtime** rather than compile time.\n\n### 1. How the JVM Implements Dynamic Dispatch:\nWhen a class is loaded into the JVM Metaspace, the JVM constructs a **Virtual Method Table (v-table)** for it:\n- A v-table is an internal array of pointers pointing to the executable machine code of each instance method.\n- If a subclass **does not override** a method, its v-table entry points directly to the superclass method address.\n- If a subclass **overrides** a method, its v-table entry is overwritten with the pointer to the subclass's own method implementation!\n\n```\n  [Animal v-table]                      [Dog v-table]\n  +-----------------+                 +-----------------+\n  | 0: toString()   |---> Object      | 0: toString()   |---> Object\n  | 1: makeSound()  |---> Animal      | 1: makeSound()  |---> Dog (Overridden!)\n  +-----------------+                 +-----------------+\n```\n\n### 2. The Bytecode Instructions:\n- **`invokevirtual`**: Used for normal public/protected instance methods. Triggers dynamic method dispatch using the object's v-table.\n- **`invokestatic`**: Used for static methods. Resolved at compile time without any v-table lookup.\n- **`invokespecial`**: Used for private methods, constructors, and `super` calls. Bound statically at compile time.\n\n### 3. Why This Matters for Performance:\nModern HotSpot JVMs use **Monomorphic Inlining**: if the JIT compiler notices that a call site almost always invokes the same subclass implementation, it removes the v-table lookup entirely and inlines the machine code directly, matching C++ speed!"
+    },
+    {
+      "id": "act-dmd-3",
+      "type": "code_walkthrough",
+      "title": "Simulating Dynamic Dispatch and V-Table Resolution",
+      "description": "Trace how the JVM resolves method pointers across an inheritance hierarchy.",
+      "codeSnippet": "class SuperVTable {\n    public void methodA() { System.out.println(\"Super: methodA()\"); }\n    public void methodB() { System.out.println(\"Super: methodB()\"); }\n}\n\nclass SubVTable extends SuperVTable {\n    // Overrides methodB only\n    @Override\n    public void methodB() {\n        System.out.println(\"Sub: methodB() [Overridden v-table pointer]\");\n    }\n    \n    // Subclass addition\n    public void methodC() {\n        System.out.println(\"Sub: methodC()\");\n    }\n}\n\npublic class VTableSimulationDemo {\n    public static void main(String[] args) {\n        SuperVTable ref = new SubVTable();\n        \n        // 1. methodA: Un-overridden -> v-table points to SuperVTable.methodA\n        ref.methodA();\n        \n        // 2. methodB: Overridden -> v-table points to SubVTable.methodB\n        ref.methodB();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "When ref.methodA() is called, JVM inspects SubVTable's v-table; slot A points to SuperVTable.methodA."
+        },
+        {
+          "step": 2,
+          "description": "When ref.methodB() is called, slot B in SubVTable's v-table points to SubVTable.methodB."
+        },
+        {
+          "step": 3,
+          "description": "Execution branches dynamically without any if-else conditional instructions in bytecode."
+        }
+      ],
+      "code": "class SuperVTable {\n    public void methodA() { System.out.println(\"Super: methodA()\"); }\n    public void methodB() { System.out.println(\"Super: methodB()\"); }\n}\n\nclass SubVTable extends SuperVTable {\n    // Overrides methodB only\n    @Override\n    public void methodB() {\n        System.out.println(\"Sub: methodB() [Overridden v-table pointer]\");\n    }\n    \n    // Subclass addition\n    public void methodC() {\n        System.out.println(\"Sub: methodC()\");\n    }\n}\n\npublic class VTableSimulationDemo {\n    public static void main(String[] args) {\n        SuperVTable ref = new SubVTable();\n        \n        // 1. methodA: Un-overridden -> v-table points to SuperVTable.methodA\n        ref.methodA();\n        \n        // 2. methodB: Overridden -> v-table points to SubVTable.methodB\n        ref.methodB();\n    }\n}"
+    },
+    {
+      "id": "act-dmd-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Dynamic Dispatch in Heterogeneous Loops",
+      "description": "Observe late binding executing across an array of diverse objects.",
+      "codeSnippet": "class Worker {\n    public void clockIn() { System.out.println(\"Worker clocked in\"); }\n}\nclass Surgeon extends Worker {\n    @Override public void clockIn() { System.out.println(\"Surgeon sanitizing for OR at 06:00\"); }\n}\nclass Pilot extends Worker {\n    @Override public void clockIn() { System.out.println(\"Pilot completing pre-flight checklist\"); }\n}\nclass Chef extends Worker {\n    @Override public void clockIn() { System.out.println(\"Chef prepping kitchen mise en place\"); }\n}\n\npublic class LateBindingArrayDemo {\n    public static void main(String[] args) {\n        Worker[] shift = new Worker[] { new Surgeon(), new Pilot(), new Chef() };\n        \n        // At each iteration, invokevirtual inspects the heap object and dispatches\n        for (Worker w : shift) {\n            w.clockIn();\n        }\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "A single loop invokes w.clockIn() on an array of Worker references."
+        },
+        {
+          "step": 2,
+          "description": "The JVM dynamic dispatch switchboard routes each call to the correct subclass at runtime."
+        }
+      ],
+      "code": "class Worker {\n    public void clockIn() { System.out.println(\"Worker clocked in\"); }\n}\nclass Surgeon extends Worker {\n    @Override public void clockIn() { System.out.println(\"Surgeon sanitizing for OR at 06:00\"); }\n}\nclass Pilot extends Worker {\n    @Override public void clockIn() { System.out.println(\"Pilot completing pre-flight checklist\"); }\n}\nclass Chef extends Worker {\n    @Override public void clockIn() { System.out.println(\"Chef prepping kitchen mise en place\"); }\n}\n\npublic class LateBindingArrayDemo {\n    public static void main(String[] args) {\n        Worker[] shift = new Worker[] { new Surgeon(), new Pilot(), new Chef() };\n        \n        // At each iteration, invokevirtual inspects the heap object and dispatches\n        for (Worker w : shift) {\n            w.clockIn();\n        }\n    }\n}"
+    },
+    {
+      "id": "act-dmd-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Dynamic Method Dispatch (10 Questions)",
+      "questions": [
+        {
+          "id": "q-dmd-1",
+          "question": "What is Dynamic Method Dispatch in Java?",
+          "options": [
+            "Running multiple methods simultaneously on background threads",
+            "The runtime mechanism by which an overridden method call is resolved based on the actual heap object",
+            "Allocating memory dynamically using malloc",
+            "Loading classes over a network socket"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Dynamic Method Dispatch resolves overridden method calls at runtime according to the instance's type."
+        },
+        {
+          "id": "q-dmd-2",
+          "question": "What internal data structure does the JVM use to enable fast dynamic method dispatch?",
+          "options": [
+            "B-Tree",
+            "Virtual Method Table (v-table)",
+            "Circular Linked List",
+            "Hash Ring"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The JVM maintains a virtual method table (v-table) containing method pointers for each class."
+        },
+        {
+          "id": "q-dmd-3",
+          "question": "Which JVM bytecode instruction is emitted for invoking a standard overridden public instance method?",
+          "options": [
+            "invokestatic",
+            "invokevirtual",
+            "invokespecial",
+            "invokedynamic"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "'invokevirtual' is the standard bytecode instruction for virtual/dynamic method dispatch."
+        },
+        {
+          "id": "q-dmd-4",
+          "question": "Which bytecode instruction is used to invoke a static method?",
+          "options": [
+            "invokevirtual",
+            "invokestatic",
+            "invokespecial",
+            "invokeinterface"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "'invokestatic' binds static methods at compile time without any v-table lookup."
+        },
+        {
+          "id": "q-dmd-5",
+          "question": "Which bytecode instruction is used to invoke constructors, private methods, and super calls?",
+          "options": [
+            "invokespecial",
+            "invokevirtual",
+            "invokestatic",
+            "invokebase"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "'invokespecial' is used for non-virtual methods: private methods, constructors, and super calls."
+        },
+        {
+          "id": "q-dmd-6",
+          "question": "What happens if a subclass does NOT override a method in its v-table?",
+          "options": [
+            "The slot in the v-table is null",
+            "The v-table slot points to the superclass implementation",
+            "The method cannot be called",
+            "The JVM throws a NullPointerException"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The subclass v-table simply retains the pointer to the superclass method implementation."
+        },
+        {
+          "id": "q-dmd-7",
+          "question": "What is the difference between early binding and late binding?",
+          "options": [
+            "Early binding occurs before lunch; late binding occurs in the afternoon",
+            "Early binding resolves methods at compile time; late binding resolves methods at runtime by inspecting the heap object",
+            "Early binding is used for loops; late binding is used for arrays",
+            "Early binding is in C; late binding is in Python"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Early binding (static binding) is resolved during compilation; late binding (dynamic binding) is resolved during execution."
+        },
+        {
+          "id": "q-dmd-8",
+          "question": "How does the JIT compiler optimize dynamic method dispatch when a call site repeatedly calls the same subclass?",
+          "options": [
+            "By converting the class to C code",
+            "Through monomorphic inlining, bypassing the v-table lookup entirely",
+            "By deleting the subclass",
+            "By running the code on a different server"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Monomorphic inlining replaces the v-table lookup with direct inlined machine code."
+        },
+        {
+          "id": "q-dmd-9",
+          "question": "Does dynamic method dispatch apply to private methods?",
+          "options": [
+            "Yes, private methods are dynamically dispatched",
+            "No, private methods are bound statically at compile time using invokespecial",
+            "Only in Java 17+",
+            "Only if annotated with @Override"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Private methods are not virtual and use invokespecial (static binding)."
+        },
+        {
+          "id": "q-dmd-10",
+          "question": "Does dynamic method dispatch apply to instance variables (fields)?",
+          "options": [
+            "Yes, fields use field-tables in heap memory",
+            "No, fields are resolved at compile time based strictly on the reference type (no dynamic dispatch for fields)",
+            "Only protected fields",
+            "Only final fields"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Fields are never dynamically dispatched. Variable access is bound statically to the reference type."
+        }
+      ]
+    },
+    {
+      "id": "act-dmd-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Dynamic Method Dispatch",
+      "interviewQA": [
+        {
+          "question": "What is Dynamic Method Dispatch and how does it work under the hood in the JVM?",
+          "answer": "Dynamic Method Dispatch is the mechanism by which a call to an overridden method is resolved at runtime rather than compile time. When a method is called on a reference ('ref.method()'), the JVM bytecode verifier emits 'invokevirtual'. At runtime, the JVM inspects the object header of the instance in the heap to locate its Virtual Method Table (v-table). It reads the function pointer from the v-table offset and branches directly to the subclass implementation.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "What is a v-table (Virtual Method Table) and how is it structured in memory?",
+          "answer": "A v-table is an internal data structure created in Metaspace for every class loaded by the JVM. It contains an ordered array of method pointers. Subclasses inherit the layout of their parent's v-table. If a subclass overrides a method, its entry in the table is overwritten with the address of the subclass's code; if not, it retains the pointer to the parent's code. This allows method dispatch in O(1) time.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "Explain the difference between invokevirtual, invokestatic, and invokespecial.",
+          "answer": "1. invokevirtual: Used for normal instance methods; performs dynamic method lookup via v-tables. 2. invokestatic: Used for static methods; bound at compile time to a specific class. 3. invokespecial: Used for non-virtual instance methods: constructors (<init>), private methods, and superclass method calls (super.method()), bypassing v-table lookup.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "What is Monomorphic Call Site Inlining in HotSpot JIT?",
+          "answer": "Monomorphic inlining is an advanced JIT compiler optimization. If profiling indicates that an 'invokevirtual' call site always encounters the same concrete class at runtime (monomorphic), the JIT compiler removes the v-table lookup and inlines the target method body directly into the caller, achieving near-zero overhead.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Can final methods be optimized differently by the compiler regarding dispatch?",
+          "answer": "Yes. Because a final method can never be overridden by any subclass, the compiler and JIT know at compile time that no alternative implementation can ever exist. The compiler can generate direct calls or inline the method immediately without worrying about polymorphic invalidation.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "Why does 'System.out.println(card.type)' access the parent field while 'card.getType()' executes the child method?",
+          "answer": "In Java, instance variables do not participate in dynamic method dispatch; they are resolved statically at compile time based on the declared reference type. Methods participate in dynamic dispatch via invokevirtual, inspecting the actual heap object. Therefore, card.type reads the parent's field, while card.getType() calls the child's method.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-dmd-7",
+      "type": "self_evaluation",
+      "title": "Module 6 Lesson 7 Mastery Checkpoint",
+      "checklist": [
+        "I can explain Dynamic Method Dispatch and its role in runtime polymorphism",
+        "I understand how the JVM creates and queries v-tables in Metaspace",
+        "I know the difference between invokevirtual, invokestatic, and invokespecial",
+        "I understand why private methods and constructors use invokespecial (static binding)",
+        "I know why fields are never dynamically dispatched (variable hiding)",
+        "I understand late binding vs early binding in Java execution",
+        "I understand how JIT monomorphic inlining optimizes dynamic method dispatch",
+        "I know why final methods allow the compiler to bypass v-table lookups",
+        "I can trace O(1) v-table indexing across multi-tier inheritance trees",
+        "I can answer senior-level Java interview questions on JVM dispatch internals"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-dmd-1",
+      "title": "Warmup: Simulate Dynamic Method Dispatch across Animals",
+      "difficulty": "easy",
+      "description": "Demonstrate invokevirtual dispatch by iterating over an Animal[] array calling vocalize().",
+      "problemStatement": "Class Animal has vocalize(). Subclasses Lion ('Roar!'), Wolf ('Howl!'), and Eagle ('Screech!') override vocalize(). Store one of each in an Animal[] array and call vocalize().",
+      "initialCode": "class Animal {\n    public void vocalize() { System.out.println(\"Generic sound\"); }\n}\n\nclass Lion extends Animal {\n    @Override public void vocalize() { System.out.println(\"Lion: Roar!\"); }\n}\n\nclass Wolf extends Animal {\n    @Override public void vocalize() { System.out.println(\"Wolf: Howl!\"); }\n}\n\nclass Eagle extends Animal {\n    @Override public void vocalize() { System.out.println(\"Eagle: Screech!\"); }\n}",
+      "expectedOutput": "Lion: Roar!\nWolf: Howl!\nEagle: Screech!",
+      "hints": [
+        "Iterate with: for (Animal a : animals) a.vocalize();",
+        "Witness dynamic dispatch at each step."
+      ],
+      "solutionCode": "class Animal {\n    public void vocalize() { System.out.println(\"Generic sound\"); }\n}\n\nclass Lion extends Animal {\n    @Override public void vocalize() { System.out.println(\"Lion: Roar!\"); }\n}\n\nclass Wolf extends Animal {\n    @Override public void vocalize() { System.out.println(\"Wolf: Howl!\"); }\n}\n\nclass Eagle extends Animal {\n    @Override public void vocalize() { System.out.println(\"Eagle: Screech!\"); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Animal[] animals = new Animal[] { new Lion(), new Wolf(), new Eagle() };\n        for (Animal a : animals) {\n            a.vocalize();\n        }\n    }\n}"
+    },
+    {
+      "id": "prob-dmd-2",
+      "title": "Code from Scratch: V-Table Simulator with Selective Overrides",
+      "difficulty": "medium",
+      "description": "Construct BaseService with methods start(), healthCheck(), stop(), where MicroService overrides only healthCheck.",
+      "problemStatement": "Create BaseService with start(), healthCheck(), stop(). Create MicroService extending BaseService and overriding ONLY healthCheck(). Run all three through a BaseService reference. From scratch.",
+      "expectedOutput": "Base service started\nMicroservice health: 100% OK (Latency: 2ms)\nBase service stopped",
+      "hints": [
+        "BaseService defines all three methods.",
+        "MicroService overrides only healthCheck().",
+        "start() and stop() use parent v-table pointers; healthCheck() uses child pointer."
+      ],
+      "solutionCode": "class BaseService {\n    public void start() {\n        System.out.println(\"Base service started\");\n    }\n    public void healthCheck() {\n        System.out.println(\"Base service health check OK\");\n    }\n    public void stop() {\n        System.out.println(\"Base service stopped\");\n    }\n}\n\nclass MicroService extends BaseService {\n    @Override\n    public void healthCheck() {\n        System.out.println(\"Microservice health: 100% OK (Latency: 2ms)\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BaseService svc = new MicroService();\n        svc.start();\n        svc.healthCheck();\n        svc.stop();\n    }\n}"
+    },
+    {
+      "id": "prob-dmd-3",
+      "title": "Code from Scratch: Financial Instrument Yield Dispatch",
+      "difficulty": "medium",
+      "description": "Build Asset with computeYield() and TreasuryBond / GrowthStock overrides.",
+      "problemStatement": "Create Asset with computeYield(double principal). Subclass TreasuryBond overrides returning principal * 0.045 (fixed coupon). Subclass GrowthStock overrides returning principal * 0.14 (equity return). Process an Asset[] portfolio. From scratch.",
+      "expectedOutput": "Bond Yield: $450.0\nStock Yield: $1400.0",
+      "hints": [
+        "Asset defines computeYield(double principal).",
+        "Subclasses override with respective yield calculations.",
+        "Print yields for $10,000 principal."
+      ],
+      "solutionCode": "class Asset {\n    public double computeYield(double principal) {\n        return 0.0;\n    }\n}\n\nclass TreasuryBond extends Asset {\n    @Override\n    public double computeYield(double principal) {\n        return principal * 0.045;\n    }\n}\n\nclass GrowthStock extends Asset {\n    @Override\n    public double computeYield(double principal) {\n        return principal * 0.14;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Asset a1 = new TreasuryBond();\n        Asset a2 = new GrowthStock();\n        System.out.println(\"Bond Yield: $\" + a1.computeYield(10000.0));\n        System.out.println(\"Stock Yield: $\" + a2.computeYield(10000.0));\n    }\n}"
+    },
+    {
+      "id": "prob-dmd-4",
+      "title": "Fix Broken Code: Static Binding Confusion in Dynamic Dispatch",
+      "difficulty": "easy",
+      "description": "Fix a bug where a static method was used expecting dynamic method dispatch.",
+      "problemStatement": "The code fails to exhibit dynamic dispatch because renderUI() was declared static. Remove static so renderUI() dispatches dynamically based on the MobileScreen object.",
+      "initialCode": "class Screen {\n    // BUG: Static method cannot use dynamic dispatch!\n    public static void renderUI() {\n        System.out.println(\"Rendering standard desktop screen layout\");\n    }\n}\n\nclass MobileScreen extends Screen {\n    public static void renderUI() {\n        System.out.println(\"Rendering responsive touch mobile layout\");\n    }\n}\n\npublic class BrokenDispatchDemo {\n    public static void main(String[] args) {\n        Screen scr = new MobileScreen();\n        // Expectation: \"Rendering responsive touch mobile layout\"\n        // Reality: Prints desktop because static methods bind to reference Screen!\n        scr.renderUI();\n    }\n}",
+      "expectedOutput": "Rendering responsive touch mobile layout",
+      "hints": [
+        "Remove 'static' from both Screen and MobileScreen renderUI() methods.",
+        "Add @Override in MobileScreen."
+      ],
+      "solutionCode": "class Screen {\n    public void renderUI() {\n        System.out.println(\"Rendering standard desktop screen layout\");\n    }\n}\n\nclass MobileScreen extends Screen {\n    @Override\n    public void renderUI() {\n        System.out.println(\"Rendering responsive touch mobile layout\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Screen scr = new MobileScreen();\n        scr.renderUI();\n    }\n}"
+    },
+    {
+      "id": "prob-dmd-5",
+      "title": "Challenge: Multi-Format Graphic Rendering Pipeline",
+      "difficulty": "hard",
+      "description": "Architect a GraphicRenderer engine dispatching vector draw operations across SVG, Canvas, and WebGL.",
+      "problemStatement": "Create GraphicElement with render(). Subclasses SvgElement, CanvasElement, and WebGlElement override render(). Create RenderPipeline with drawScene(GraphicElement[] scene).",
+      "expectedOutput": "Rendering SVG: <polygon points=\"10,10 50,50\" />\nRendering Canvas: ctx.beginPath(); ctx.arc(100, 100, 50, 0, Math.PI*2);\nRendering WebGL: gl.drawArrays(gl.TRIANGLES, 0, 3);",
+      "hints": [
+        "GraphicElement defines public void render().",
+        "RenderPipeline loops over elements invoking render() dynamically.",
+        "Print outputs matching test expectation."
+      ],
+      "solutionCode": "class GraphicElement {\n    public void render() {\n        System.out.println(\"Rendering generic element\");\n    }\n}\n\nclass SvgElement extends GraphicElement {\n    @Override\n    public void render() {\n        System.out.println(\"Rendering SVG: <polygon points=\\\"10,10 50,50\\\" />\");\n    }\n}\n\nclass CanvasElement extends GraphicElement {\n    @Override\n    public void render() {\n        System.out.println(\"Rendering Canvas: ctx.beginPath(); ctx.arc(100, 100, 50, 0, Math.PI*2);\");\n    }\n}\n\nclass WebGlElement extends GraphicElement {\n    @Override\n    public void render() {\n        System.out.println(\"Rendering WebGL: gl.drawArrays(gl.TRIANGLES, 0, 3);\");\n    }\n}\n\npublic class Main {\n    public static void drawScene(GraphicElement[] scene) {\n        for (GraphicElement elem : scene) {\n            elem.render();\n        }\n    }\n    \n    public static void main(String[] args) {\n        GraphicElement[] scene = new GraphicElement[] {\n            new SvgElement(),\n            new CanvasElement(),\n            new WebGlElement()\n        };\n        drawScene(scene);\n    }\n}"
+    }
+  ]
+}

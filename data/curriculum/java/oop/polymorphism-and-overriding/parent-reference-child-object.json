@@ -1,0 +1,335 @@
+{
+  "id": "java-oop-mod6-les5",
+  "slug": "parent-reference-child-object",
+  "sectionSlug": "oop",
+  "moduleSlug": "polymorphism-and-overriding",
+  "languageSlug": "java",
+  "title": "Parent Reference \u2192 Child Object",
+  "summary": "Master the core idiom of runtime polymorphism: Parent p = new Child(). Understand what the reference type controls versus what the runtime object controls.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "overloading-vs-overriding"
+  ],
+  "learningObjectives": [
+    "Understand the distinction between compile-time reference type and runtime object type",
+    "Identify which methods can be invoked through a parent reference (compile-time accessibility)",
+    "Understand how overridden methods resolve to the child's implementation at runtime",
+    "Learn why a parent reference cannot directly access child-specific methods without casting"
+  ],
+  "expectedOutcomes": [
+    "Mastery in reasoning about 'Parent p = new Child()' in complex code tracing",
+    "Understanding the exact mechanics of compiler checks versus JVM runtime execution"
+  ],
+  "activities": [
+    {
+      "id": "act-prc-1",
+      "type": "analogy",
+      "title": "The General Doctor vs Specialist Surgeon Analogy",
+      "content": "Imagine you walk into a hospital and ask to speak with a **Doctor** (the reference type).\n\nThe hospital administrator introduces you to Dr. Sarah, who is formally a Doctor, but specifically a specialized **Neurosurgeon** (the runtime object).\n\n- Because your appointment is scheduled under the general title 'Doctor', the hospital reception system only allows standard medical inquiries: checkPulse(), takeBloodPressure(), checkTemperature().\n- You cannot directly book a complex craniotomy through standard reception without specific referral procedures (downcasting).\n- However, when Dr. Sarah executes checkPulse(), she applies the elite, ultra-specialized technique of a Neurosurgeon.\n\nIn Java, `Doctor d = new Neurosurgeon()`: the reference type determines **what you are allowed to call**, while the runtime object determines **how it actually executes**."
+    },
+    {
+      "id": "act-prc-2",
+      "type": "concept",
+      "title": "Reference Type vs Object Type: The Two Worlds of Java",
+      "content": "In Java, every object variable involves two distinct types: the **Compile-Time Reference Type** and the **Runtime Object Type**.\n\n```java\nVehicle v = new SportsCar();\n// ^               ^\n// Reference Type  Actual Object Type (in Heap)\n```\n\n### 1. The Two Rules That Govern Everything:\n- **Rule 1 (The Compiler's Rule)**: The **Reference Type** (`Vehicle`) decides **WHAT** methods you are allowed to call. The compiler inspects the `Vehicle` class; if `Vehicle` does not declare `openSunroof()`, writing `v.openSunroof()` is a **compile-time error**, even though the object in the heap is a `SportsCar`!\n- **Rule 2 (The JVM's Rule)**: The **Actual Object Type** (`SportsCar`) decides **HOW** the method executes. When `v.accelerate()` is invoked, the JVM looks at the heap, finds the `SportsCar` instance, and executes `SportsCar`'s overridden `accelerate()` method!\n\n### 2. Summary Table:\n\n| Action | Decided by Reference Type (`Parent`) | Decided by Object Type (`Child`) |\n| :--- | :--- | :--- |\n| **Method Visibility** | YES (must exist in Parent) | NO |\n| **Field Access** | YES (resolved by Reference) | NO (fields are not polymorphic) |\n| **Method Execution** | NO | YES (overridden child method runs) |\n| **Compile Safety** | YES | NO |"
+    },
+    {
+      "id": "act-prc-3",
+      "type": "code_walkthrough",
+      "title": "Vehicle Reference Holding SportsCar Object",
+      "description": "Trace method accessibility and execution behavior using a parent reference.",
+      "codeSnippet": "class Vehicle {\n    protected String brand = \"Generic Vehicle\";\n    \n    public void start() {\n        System.out.println(\"Vehicle ignition initiated\");\n    }\n    \n    public void accelerate() {\n        System.out.println(\"Vehicle accelerating at 10 km/h/s\");\n    }\n}\n\nclass SportsCar extends Vehicle {\n    protected String brand = \"Ferrari Turbo\"; // Shadows parent field\n    \n    @Override\n    public void accelerate() {\n        System.out.println(\"SportsCar launching: 0-100 in 2.9 seconds!\");\n    }\n    \n    // Child-specific method\n    public void activateDriftMode() {\n        System.out.println(\"Drift mode engaged on SportsCar\");\n    }\n}\n\npublic class ParentRefChildObjDemo {\n    public static void main(String[] args) {\n        // Parent Reference -> Child Object\n        Vehicle v = new SportsCar();\n        \n        // 1. Inherited method: legal\n        v.start();\n        \n        // 2. Overridden method: dispatches to SportsCar's version!\n        v.accelerate();\n        \n        // 3. Child-specific method: COMPILE ERROR if uncommented!\n        // v.activateDriftMode(); // Error: cannot find symbol in Vehicle\n        \n        // 4. Field access: resolved by Reference Type (not polymorphic!)\n        System.out.println(\"Brand via v: \" + v.brand); // Prints 'Generic Vehicle'\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Vehicle reference 'v' can invoke start() and accelerate() because they exist in Vehicle."
+        },
+        {
+          "step": 2,
+          "description": "v.accelerate() dispatches dynamically to SportsCar's overridden method at runtime."
+        },
+        {
+          "step": 3,
+          "description": "v.activateDriftMode() fails compilation because activateDriftMode is not declared in Vehicle."
+        },
+        {
+          "step": 4,
+          "description": "v.brand resolves to Vehicle's field; instance variables do not participate in polymorphism."
+        }
+      ],
+      "code": "class Vehicle {\n    protected String brand = \"Generic Vehicle\";\n    \n    public void start() {\n        System.out.println(\"Vehicle ignition initiated\");\n    }\n    \n    public void accelerate() {\n        System.out.println(\"Vehicle accelerating at 10 km/h/s\");\n    }\n}\n\nclass SportsCar extends Vehicle {\n    protected String brand = \"Ferrari Turbo\"; // Shadows parent field\n    \n    @Override\n    public void accelerate() {\n        System.out.println(\"SportsCar launching: 0-100 in 2.9 seconds!\");\n    }\n    \n    // Child-specific method\n    public void activateDriftMode() {\n        System.out.println(\"Drift mode engaged on SportsCar\");\n    }\n}\n\npublic class ParentRefChildObjDemo {\n    public static void main(String[] args) {\n        // Parent Reference -> Child Object\n        Vehicle v = new SportsCar();\n        \n        // 1. Inherited method: legal\n        v.start();\n        \n        // 2. Overridden method: dispatches to SportsCar's version!\n        v.accelerate();\n        \n        // 3. Child-specific method: COMPILE ERROR if uncommented!\n        // v.activateDriftMode(); // Error: cannot find symbol in Vehicle\n        \n        // 4. Field access: resolved by Reference Type (not polymorphic!)\n        System.out.println(\"Brand via v: \" + v.brand); // Prints 'Generic Vehicle'\n    }\n}"
+    },
+    {
+      "id": "act-prc-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Method Parameters Accepting Parent References",
+      "description": "See how parent references enable generic processing methods.",
+      "codeSnippet": "class Account {\n    public void processMonthlyMaintenance() {\n        System.out.println(\"Deducting standard maintenance fee: $5.00\");\n    }\n}\n\nclass StudentAccount extends Account {\n    @Override\n    public void processMonthlyMaintenance() {\n        System.out.println(\"Student Account: Maintenance fee waived ($0.00)\");\n    }\n}\n\nclass EnterpriseAccount extends Account {\n    @Override\n    public void processMonthlyMaintenance() {\n        System.out.println(\"Enterprise Account: Maintenance fee $50.00 with dedicated support\");\n    }\n}\n\npublic class GenericProcessorDemo {\n    // Method accepts the generic parent type\n    public static void runAudit(Account acc) {\n        acc.processMonthlyMaintenance(); // Polymorphic dispatch!\n    }\n    \n    public static void main(String[] args) {\n        runAudit(new StudentAccount());\n        runAudit(new EnterpriseAccount());\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "runAudit receives an Account reference."
+        },
+        {
+          "step": 2,
+          "description": "Passing StudentAccount or EnterpriseAccount works seamlessly without casting."
+        },
+        {
+          "step": 3,
+          "description": "The exact appropriate maintenance logic executes for each account type."
+        }
+      ],
+      "code": "class Account {\n    public void processMonthlyMaintenance() {\n        System.out.println(\"Deducting standard maintenance fee: $5.00\");\n    }\n}\n\nclass StudentAccount extends Account {\n    @Override\n    public void processMonthlyMaintenance() {\n        System.out.println(\"Student Account: Maintenance fee waived ($0.00)\");\n    }\n}\n\nclass EnterpriseAccount extends Account {\n    @Override\n    public void processMonthlyMaintenance() {\n        System.out.println(\"Enterprise Account: Maintenance fee $50.00 with dedicated support\");\n    }\n}\n\npublic class GenericProcessorDemo {\n    // Method accepts the generic parent type\n    public static void runAudit(Account acc) {\n        acc.processMonthlyMaintenance(); // Polymorphic dispatch!\n    }\n    \n    public static void main(String[] args) {\n        runAudit(new StudentAccount());\n        runAudit(new EnterpriseAccount());\n    }\n}"
+    },
+    {
+      "id": "act-prc-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Parent Reference -> Child Object (10 Questions)",
+      "questions": [
+        {
+          "id": "q-prc-1",
+          "question": "In 'Animal a = new Dog();', what is Animal called and what is Dog called?",
+          "options": [
+            "Animal is the object type; Dog is the reference type",
+            "Animal is the compile-time reference type; Dog is the runtime object type",
+            "Both are reference types",
+            "Animal is the child; Dog is the parent"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Animal is the compile-time reference type; Dog is the runtime object instantiated in the heap."
+        },
+        {
+          "id": "q-prc-2",
+          "question": "If class Dog extends Animal and adds a new method bark(), can we call 'a.bark()' on 'Animal a = new Dog();'?",
+          "options": [
+            "Yes, because the object in memory is a Dog",
+            "No, a compile-time error occurs because bark() is not declared in Animal",
+            "Yes, if Animal is abstract",
+            "Only at runtime"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The compiler checks the reference type (Animal). If Animal doesn't declare bark(), compilation fails."
+        },
+        {
+          "id": "q-prc-3",
+          "question": "If Dog overrides Animal's makeSound() method, which version runs for 'Animal a = new Dog(); a.makeSound();'?",
+          "options": [
+            "Animal's makeSound()",
+            "Dog's overridden makeSound()",
+            "Both execute in sequence",
+            "java.lang.Object's method"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Overridden methods are dispatched dynamically at runtime based on the actual object (Dog)."
+        },
+        {
+          "id": "q-prc-4",
+          "question": "Are instance variables in Java polymorphic when accessed via a parent reference?",
+          "options": [
+            "Yes, variables are overridden just like methods",
+            "No, variables are resolved at compile time based on the reference type (Variable Hiding)",
+            "Only static variables are polymorphic",
+            "Only public variables are polymorphic"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Instance variables are NOT polymorphic. Variable access is determined strictly by the reference type at compile time."
+        },
+        {
+          "id": "q-prc-5",
+          "question": "Given Parent p = new Child(); where both declare 'int x = 10' and 'int x = 20' respectively. What does p.x evaluate to?",
+          "options": [
+            "20",
+            "10",
+            "0",
+            "Compilation error"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "p is of type Parent, so p.x accesses Parent's field (10). Fields do not participate in dynamic dispatch."
+        },
+        {
+          "id": "q-prc-6",
+          "question": "Why is 'Parent p = new Child()' legal in Java without an explicit cast?",
+          "options": [
+            "Because Child IS-A Parent (Upcasting is safe and implicit)",
+            "Because the compiler deletes the Child class",
+            "Because both classes have the same size in memory",
+            "It is only legal if Child has no methods"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "A child class is guaranteed to fulfill all contracts of its parent class, making upcasting implicit and 100% safe."
+        },
+        {
+          "id": "q-prc-7",
+          "question": "What happens if you write 'Child c = new Parent();'?",
+          "options": [
+            "It compiles normally",
+            "Compile-time error: Type mismatch (cannot convert Parent to Child)",
+            "Runtime NullPointerException",
+            "Parent becomes a subclass of Child"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "A Parent is NOT necessarily a Child. Downcasting without an explicit cast is rejected by the compiler."
+        },
+        {
+          "id": "q-prc-8",
+          "question": "What is the primary benefit of declaring method parameters as parent types (e.g. 'void process(Vehicle v)')?",
+          "options": [
+            "The method can accept any subclass of Vehicle (Car, Truck, Motorcycle) without code changes",
+            "The method runs on a GPU",
+            "It eliminates all need for object instantiation",
+            "It prevents memory garbage collection"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Programming to parent types makes methods polymorphic and open to any future subclasses."
+        },
+        {
+          "id": "q-prc-9",
+          "question": "Which of the following is true about 'Parent p = new Child()'? ",
+          "options": [
+            "p can access all private child fields",
+            "p is limited to members declared in Parent, but executes overridden child methods",
+            "p cannot invoke any methods",
+            "p creates two distinct objects in the heap"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The reference type restricts visible members, while the heap object provides the runtime implementation."
+        },
+        {
+          "id": "q-prc-10",
+          "question": "How can you invoke a child-specific method on a Parent reference holding a Child object?",
+          "options": [
+            "Using super.childMethod()",
+            "By explicitly downcasting the reference: ((Child) p).childMethod()",
+            "By declaring the method static in Parent",
+            "Child-specific methods can never be called"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Downcasting ((Child) p).childMethod() allows access to child-specific methods."
+        }
+      ]
+    },
+    {
+      "id": "act-prc-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Parent Reference -> Child Object",
+      "interviewQA": [
+        {
+          "question": "In 'Parent p = new Child();', explain what the compiler does versus what the JVM does.",
+          "answer": "The compiler checks the reference type (Parent). It verifies that any method invoked on 'p' exists in the Parent class and that arguments match its signature. At runtime, the JVM inspects the actual object created in the heap (Child). If the method is overridden in Child, the JVM dynamically dispatches and executes Child's implementation.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "Why aren't instance variables polymorphic in Java? What is variable shadowing/hiding?",
+          "answer": "Method overriding relies on the virtual method table (v-table) in heap memory. Instance variables do not use v-tables; variable references are resolved at compile time based strictly on the declared reference type. If a child defines a field with the same name as a parent field, the child field hides the parent field, but both exist in memory.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "If you have 'Object obj = new String(\"Hello\");', why can't you write 'obj.length()'?",
+          "answer": "Because the compile-time reference type is java.lang.Object. The Object class does not define a length() method. Even though the object in the heap is a String that has length(), the compiler blocks the call for type safety. You must cast it: '((String) obj).length()'.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "What is the architectural purpose of programming to a parent reference rather than a concrete subclass?",
+          "answer": "Programming to parent types (or interfaces) decouples client code from specific implementations. For example, a method accepting 'PaymentGateway' can process CreditCard, PayPal, or Crypto without modifying a single line of client code when new gateways are added in the future.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Given Parent p = new Child();, what will 'System.out.println(p);' output?",
+          "answer": "It calls p.toString(). Because toString() is defined in Object and inherited by Parent, if Child overrides toString(), the JVM dynamically invokes Child's toString() method, printing Child's formatted representation.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "What happens if a parent class constructor calls an overridden method when instantiated via 'Parent p = new Child()'?",
+          "answer": "The Child's overridden method executes while Child's instance variables are still uninitialized (default 0 or null). This is a dangerous OOP pitfall that can cause subtle bugs or NullPointerExceptions, which is why calling overridable methods in constructors is an anti-pattern.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-prc-7",
+      "type": "self_evaluation",
+      "title": "Module 6 Lesson 5 Mastery Checkpoint",
+      "checklist": [
+        "I understand what the reference type controls (compile-time member visibility)",
+        "I understand what the runtime object controls (actual method execution)",
+        "I know why p.childMethod() causes a compilation error without casting",
+        "I know that instance variables are NOT polymorphic (variable hiding)",
+        "I understand why Parent p = new Child() is safe and implicit (Upcasting)",
+        "I can predict method vs field resolution in tricky tracing puzzles",
+        "I understand how parent parameters allow generic, extensible APIs",
+        "I know how toString() dispatches dynamically on Object references",
+        "I understand why calling overridden methods in constructors is dangerous",
+        "I can explain the difference between compiler checks and JVM runtime dispatch"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-prc-1",
+      "title": "Warmup: Polymorphic Device Power Dispatch",
+      "difficulty": "easy",
+      "description": "Demonstrate that calling powerOn() on a Device reference executes Laptop's overridden implementation.",
+      "problemStatement": "Class Device has powerOn() and getVoltage() [110V]. Subclass Laptop overrides powerOn() to print 'Laptop booting via 65W USB-C' and adds child-specific foldScreen(). Call powerOn() via Device reference.",
+      "initialCode": "class Device {\n    public void powerOn() {\n        System.out.println(\"Device powering on\");\n    }\n}\n\n// Complete Laptop\nclass Laptop extends Device {\n    @Override\n    public void powerOn() {\n        System.out.println(\"Laptop booting via 65W USB-C\");\n    }\n    \n    public void foldScreen() {\n        System.out.println(\"Screen folded\");\n    }\n}",
+      "expectedOutput": "Laptop booting via 65W USB-C",
+      "hints": [
+        "Declare reference: Device d = new Laptop();",
+        "Call d.powerOn(); to observe dynamic dispatch."
+      ],
+      "solutionCode": "class Device {\n    public void powerOn() {\n        System.out.println(\"Device powering on\");\n    }\n}\n\nclass Laptop extends Device {\n    @Override\n    public void powerOn() {\n        System.out.println(\"Laptop booting via 65W USB-C\");\n    }\n    \n    public void foldScreen() {\n        System.out.println(\"Screen folded\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Device d = new Laptop();\n        d.powerOn();\n    }\n}"
+    },
+    {
+      "id": "prob-prc-2",
+      "title": "Code from Scratch: Variable Hiding vs Method Overriding",
+      "difficulty": "medium",
+      "description": "Construct an exercise proving that fields are resolved by reference while methods are resolved by object.",
+      "problemStatement": "Create BaseCard with String type = 'STANDARD' and getCardInfo() returning 'BaseCard: ' + type. Create GoldCard extending BaseCard with String type = 'GOLD' and overriding getCardInfo() returning 'GoldCard: ' + type. Hold GoldCard in BaseCard reference and print both field and method. From scratch.",
+      "expectedOutput": "Field via BaseCard ref: STANDARD\nMethod via BaseCard ref: GoldCard: GOLD",
+      "hints": [
+        "BaseCard ref.type accesses BaseCard's field ('STANDARD').",
+        "BaseCard ref.getCardInfo() dynamically dispatches to GoldCard's method ('GoldCard: GOLD')."
+      ],
+      "solutionCode": "class BaseCard {\n    public String type = \"STANDARD\";\n    public String getCardInfo() {\n        return \"BaseCard: \" + type;\n    }\n}\n\nclass GoldCard extends BaseCard {\n    public String type = \"GOLD\";\n    @Override\n    public String getCardInfo() {\n        return \"GoldCard: \" + type;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BaseCard card = new GoldCard();\n        System.out.println(\"Field via BaseCard ref: \" + card.type);\n        System.out.println(\"Method via BaseCard ref: \" + card.getCardInfo());\n    }\n}"
+    },
+    {
+      "id": "prob-prc-3",
+      "title": "Code from Scratch: Generic Database Query Engine",
+      "difficulty": "medium",
+      "description": "Build DatabaseConnection with executeQuery() and specialized Postgres / Mongo overrides.",
+      "problemStatement": "Create DatabaseConnection with executeQuery(String sql). Subclass PostgresConnection overrides printing SQL execution. Subclass MongoConnection overrides printing BSON query execution. Write a static executeBatch(DatabaseConnection db, String q).",
+      "expectedOutput": "Postgres executing relational SQL: SELECT * FROM users\nMongoDB executing document query: db.users.find()",
+      "hints": [
+        "executeBatch(DatabaseConnection conn, String query) calls conn.executeQuery(query).",
+        "Pass instances of PostgresConnection and MongoConnection to executeBatch."
+      ],
+      "solutionCode": "class DatabaseConnection {\n    public void executeQuery(String query) {\n        System.out.println(\"Executing query: \" + query);\n    }\n}\n\nclass PostgresConnection extends DatabaseConnection {\n    @Override\n    public void executeQuery(String query) {\n        System.out.println(\"Postgres executing relational SQL: \" + query);\n    }\n}\n\nclass MongoConnection extends DatabaseConnection {\n    @Override\n    public void executeQuery(String query) {\n        System.out.println(\"MongoDB executing document query: \" + query);\n    }\n}\n\npublic class Main {\n    public static void executeBatch(DatabaseConnection db, String query) {\n        db.executeQuery(query);\n    }\n    \n    public static void main(String[] args) {\n        executeBatch(new PostgresConnection(), \"SELECT * FROM users\");\n        executeBatch(new MongoConnection(), \"db.users.find()\");\n    }\n}"
+    },
+    {
+      "id": "prob-prc-4",
+      "title": "Fix Broken Code: Attempted Access to Child-Specific Method",
+      "difficulty": "easy",
+      "description": "Fix a compilation failure caused by calling a child-specific method on a parent reference.",
+      "problemStatement": "The code fails to compile because openSunroof() is called on a Vehicle reference that doesn't declare it. Fix by declaring openSunroof in Vehicle or downcasting to Convertible.",
+      "initialCode": "class Vehicle {\n    public void drive() {\n        System.out.println(\"Vehicle driving\");\n    }\n}\n\nclass Convertible extends Vehicle {\n    public void openSunroof() {\n        System.out.println(\"Sunroof opened\");\n    }\n}\n\npublic class BrokenRefDemo {\n    public static void main(String[] args) {\n        Vehicle v = new Convertible();\n        v.drive();\n        // BUG: v is of type Vehicle! Cannot call child-specific openSunroof without cast!\n        // v.openSunroof();\n        ((Convertible) v).openSunroof();\n    }\n}",
+      "expectedOutput": "Vehicle driving\nSunroof opened",
+      "hints": [
+        "Downcast v to Convertible before calling openSunroof(): ((Convertible) v).openSunroof();"
+      ],
+      "solutionCode": "class Vehicle {\n    public void drive() {\n        System.out.println(\"Vehicle driving\");\n    }\n}\n\nclass Convertible extends Vehicle {\n    public void openSunroof() {\n        System.out.println(\"Sunroof opened\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Vehicle v = new Convertible();\n        v.drive();\n        ((Convertible) v).openSunroof();\n    }\n}"
+    },
+    {
+      "id": "prob-prc-5",
+      "title": "Challenge: Multi-Format Report Exporter Service",
+      "difficulty": "hard",
+      "description": "Architect a ReportExporter service processing CsvExporter, JsonExporter, and XmlExporter polymorphically.",
+      "problemStatement": "Build ReportExporter with exportData(String data). Subclasses CsvExporter, JsonExporter, and XmlExporter override exportData formatting data. Create ReportService with publishReport(ReportExporter exporter, String rawData).",
+      "expectedOutput": "CSV Export: id,name,data\nJSON Export: {\"report\": \"Q3_Financials\"}\nXML Export: <report>Q3_Financials</report>",
+      "hints": [
+        "ReportService.publishReport takes generic ReportExporter.",
+        "Pass instances of CsvExporter, JsonExporter, XmlExporter."
+      ],
+      "solutionCode": "class ReportExporter {\n    public void exportData(String data) {\n        System.out.println(\"Exporting generic data: \" + data);\n    }\n}\n\nclass CsvExporter extends ReportExporter {\n    @Override\n    public void exportData(String data) {\n        System.out.println(\"CSV Export: \" + data);\n    }\n}\n\nclass JsonExporter extends ReportExporter {\n    @Override\n    public void exportData(String data) {\n        System.out.println(\"JSON Export: {\\\"report\\\": \\\"\" + data + \"\\\"}\");\n    }\n}\n\nclass XmlExporter extends ReportExporter {\n    @Override\n    public void exportData(String data) {\n        System.out.println(\"XML Export: <report>\" + data + \"</report>\");\n    }\n}\n\nclass ReportService {\n    public void publishReport(ReportExporter exporter, String data) {\n        exporter.exportData(data);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ReportService service = new ReportService();\n        service.publishReport(new CsvExporter(), \"id,name,data\");\n        service.publishReport(new JsonExporter(), \"Q3_Financials\");\n        service.publishReport(new XmlExporter(), \"Q3_Financials\");\n    }\n}"
+    }
+  ]
+}

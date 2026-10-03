@@ -1,0 +1,327 @@
+{
+  "id": "java-oop-mod6-les3",
+  "slug": "the-override-annotation",
+  "sectionSlug": "oop",
+  "moduleSlug": "polymorphism-and-overriding",
+  "languageSlug": "java",
+  "title": "The @Override Annotation",
+  "summary": "Discover why the @Override annotation is an indispensable engineering safety net in Java: catching typo bugs, signature mismatches, and maintenance regressions at compile time.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "method-overriding"
+  ],
+  "learningObjectives": [
+    "Understand the purpose and compilation semantics of the @Override annotation",
+    "Identify silent typo bugs that occur when omitting @Override",
+    "Learn how @Override protects codebases when superclass method signatures are refactored",
+    "Recognize that @Override is a compiler directive with SOURCE retention"
+  ],
+  "expectedOutcomes": [
+    "Ability to always write @Override on overridden methods for bulletproof compiler verification",
+    "Confidence explaining the difference between an accidental overload and an intended override"
+  ],
+  "activities": [
+    {
+      "id": "act-oa-1",
+      "type": "analogy",
+      "title": "The Legal Contract Signature Validator",
+      "content": "Imagine you are signing an amendment to an existing corporate contract. You must adhere to the exact terms of Clause 4.2.\n\nWithout an automated validator, if you accidentally mistype the title as 'Clause 4.20', the legal department might accept the document as a brand-new, unrelated clause instead of modifying the existing one! The old Clause 4.2 remains active without you knowing, causing catastrophic legal disputes later.\n\nThe `@Override` annotation is an automated legal compliance validator: it explicitly tells the Java compiler: *'I intend to modify an existing parent method. If this method does not exactly match a method in my superclass, immediately halt and reject the code with an error!'*"
+    },
+    {
+      "id": "act-oa-2",
+      "type": "concept",
+      "title": "Why @Override is an Indispensable Safety Shield",
+      "content": "In Java, `@Override` is a built-in annotation introduced in Java 5. It informs the compiler that the annotated method is intended to override a method declared in a superclass or interface.\n\n### 1. The Catastrophic Silent Bug Without `@Override`:\nConsider this classic typo disaster:\n```java\nclass Account {\n    public void displayAccountInfo() { ... }\n}\n\nclass SavingsAccount extends Account {\n    // TYPO: Mistyped 'displayAcountInfo' (single 'c')\n    public void displayAcountInfo() { ... }\n}\n```\n- Without `@Override`, the compiler considers `displayAcountInfo()` to be a **brand-new method**!\n- At runtime, calling `acc.displayAccountInfo()` executes the parent's generic method instead of the child's specialized method. The bug is completely silent!\n\n### 2. The Compiler Safeguard With `@Override`:\n```java\nclass SavingsAccount extends Account {\n    @Override\n    public void displayAcountInfo() { ... } // COMPILE ERROR!\n}\n```\n- The compiler immediately catches the typo: *\"The method displayAcountInfo() of type SavingsAccount must override or implement a supertype method\"*.\n- The bug is killed before the code ever reaches production!\n\n### 3. Protection During Superclass Refactoring:\n- If an engineer renames a superclass method or changes its parameter list, any subclass using `@Override` immediately lights up red in the IDE.\n- You never have to fear breaking subclass contracts during architectural refactoring."
+    },
+    {
+      "id": "act-oa-3",
+      "type": "code_walkthrough",
+      "title": "Preventing Accidental Overloading with @Override",
+      "description": "See how a parameter mismatch creates an accidental overload instead of an override.",
+      "codeSnippet": "class SecurityToken {\n    public boolean validateToken(String token) {\n        System.out.println(\"Validating String token in parent: \" + token);\n        return token != null && token.length() > 5;\n    }\n}\n\nclass AdvancedSecurityToken extends SecurityToken {\n    // ACCIDENTAL OVERLOAD (Without @Override):\n    // Parameter is CharSequence, not String! This overloads instead of overrides!\n    public boolean validateToken(CharSequence token) {\n        System.out.println(\"Advanced validation\");\n        return true;\n    }\n    \n    // CORRECT OVERRIDE (Protected by @Override):\n    @Override\n    public boolean validateToken(String token) {\n        System.out.println(\"AdvancedSecurityToken validating exact String: \" + token);\n        return token != null && token.startsWith(\"SEC-\");\n    }\n}\n\npublic class OverrideAnnotationDemo {\n    public static void main(String[] args) {\n        SecurityToken token = new AdvancedSecurityToken();\n        // Dispatches to the correctly overridden method\n        token.validateToken(\"SEC-9988\");\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "SecurityToken defines validateToken(String token)."
+        },
+        {
+          "step": 2,
+          "description": "Writing validateToken(CharSequence) creates an accidental overload with different parameter types."
+        },
+        {
+          "step": 3,
+          "description": "Adding @Override on validateToken(String) ensures the compiler verifies the exact override contract."
+        }
+      ],
+      "code": "class SecurityToken {\n    public boolean validateToken(String token) {\n        System.out.println(\"Validating String token in parent: \" + token);\n        return token != null && token.length() > 5;\n    }\n}\n\nclass AdvancedSecurityToken extends SecurityToken {\n    // ACCIDENTAL OVERLOAD (Without @Override):\n    // Parameter is CharSequence, not String! This overloads instead of overrides!\n    public boolean validateToken(CharSequence token) {\n        System.out.println(\"Advanced validation\");\n        return true;\n    }\n    \n    // CORRECT OVERRIDE (Protected by @Override):\n    @Override\n    public boolean validateToken(String token) {\n        System.out.println(\"AdvancedSecurityToken validating exact String: \" + token);\n        return token != null && token.startsWith(\"SEC-\");\n    }\n}\n\npublic class OverrideAnnotationDemo {\n    public static void main(String[] args) {\n        SecurityToken token = new AdvancedSecurityToken();\n        // Dispatches to the correctly overridden method\n        token.validateToken(\"SEC-9988\");\n    }\n}"
+    },
+    {
+      "id": "act-oa-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Compiler Error Triggered by @Override",
+      "description": "Observe how the compiler prevents broken overrides.",
+      "codeSnippet": "class BaseService {\n    public void startService(int timeoutSeconds) {\n        System.out.println(\"Base service started with timeout: \" + timeoutSeconds);\n    }\n}\n\nclass CloudService extends BaseService {\n    // COMPILER ERROR if uncommented:\n    // @Override\n    // public void startService(double timeout) { }\n    // Error: Method does not override method from its superclass\n    \n    @Override\n    public void startService(int timeoutSeconds) {\n        System.out.println(\"Cloud service initialized with timeout: \" + timeoutSeconds);\n    }\n}\n\npublic class CompilerErrorDemo {\n    public static void main(String[] args) {\n        BaseService svc = new CloudService();\n        svc.startService(30);\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "The compiler checks the method signature against all superclasses."
+        },
+        {
+          "step": 2,
+          "description": "If no exact match exists, compilation immediately fails."
+        }
+      ],
+      "code": "class BaseService {\n    public void startService(int timeoutSeconds) {\n        System.out.println(\"Base service started with timeout: \" + timeoutSeconds);\n    }\n}\n\nclass CloudService extends BaseService {\n    // COMPILER ERROR if uncommented:\n    // @Override\n    // public void startService(double timeout) { }\n    // Error: Method does not override method from its superclass\n    \n    @Override\n    public void startService(int timeoutSeconds) {\n        System.out.println(\"Cloud service initialized with timeout: \" + timeoutSeconds);\n    }\n}\n\npublic class CompilerErrorDemo {\n    public static void main(String[] args) {\n        BaseService svc = new CloudService();\n        svc.startService(30);\n    }\n}"
+    },
+    {
+      "id": "act-oa-5",
+      "type": "mcq",
+      "title": "Mastery Verification: The @Override Annotation (10 Questions)",
+      "questions": [
+        {
+          "id": "q-oa-1",
+          "question": "What is the primary purpose of the @Override annotation in Java?",
+          "options": [
+            "To tell the JVM to run the method on a separate background thread",
+            "To instruct the compiler to verify that the method actually overrides a superclass or interface method",
+            "To make private methods accessible to subclasses",
+            "To force the method to be static"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "@Override directs the compiler to check that the method matches an existing superclass or interface signature."
+        },
+        {
+          "id": "q-oa-2",
+          "question": "Is the @Override annotation strictly required for method overriding to work in Java?",
+          "options": [
+            "Yes, without @Override the compiler ignores the method",
+            "No, method overriding works without it, but @Override is strongly recommended to catch silent bugs",
+            "Only required in Java 8 and earlier",
+            "Only required for abstract methods"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Overriding works without @Override, but omitting it risks silent bugs from typos or accidental overloading."
+        },
+        {
+          "id": "q-oa-3",
+          "question": "What happens if you annotate a method with @Override and mistype its name (e.g. 'toSting()' instead of 'toString()')?",
+          "options": [
+            "The program compiles with a warning and creates an alias",
+            "A compile-time error occurs immediately",
+            "The JVM fixes the spelling error at runtime",
+            "The method is ignored"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The compiler immediately flags an error because no method named toSting() exists in any superclass."
+        },
+        {
+          "id": "q-oa-4",
+          "question": "What happens if you place @Override on a method whose parameter list does not match the superclass method?",
+          "options": [
+            "The method automatically overloads the parent method",
+            "A compile-time error occurs: Method does not override or implement a method from a supertype",
+            "The parameters are coerced into matching types",
+            "The superclass method is deleted"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "@Override forces signature verification; any parameter mismatch causes compilation failure."
+        },
+        {
+          "id": "q-oa-5",
+          "question": "What is the retention policy of the @Override annotation?",
+          "options": [
+            "RUNTIME (preserved in bytecode and inspectable via reflection)",
+            "SOURCE (discarded by the compiler; does not exist in the .class file)",
+            "CLASS (retained in .class file but not loaded into JVM)",
+            "SYSTEM"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "@Override has SOURCE retention; it exists solely for compiler verification and adds zero runtime overhead."
+        },
+        {
+          "id": "q-oa-6",
+          "question": "Can you use the @Override annotation when implementing an interface method in Java 6 and later?",
+          "options": [
+            "No, @Override can only be used on class inheritance",
+            "Yes, since Java 6, @Override is fully supported and recommended on interface method implementations",
+            "Only for functional interfaces",
+            "Only for default methods"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java 6 expanded @Override to apply to interface method implementations as well as class overrides."
+        },
+        {
+          "id": "q-oa-7",
+          "question": "What happens if a parent class method is renamed during refactoring, but subclasses have @Override on their implementations?",
+          "options": [
+            "The subclasses silently break at runtime",
+            "The compiler immediately flags errors on all subclass methods, alerting engineers to update them",
+            "The JVM continues running the old method name",
+            "The refactoring tool deletes the subclasses"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "@Override serves as an instant refactoring alarm, catching orphaned methods at compile time."
+        },
+        {
+          "id": "q-oa-8",
+          "question": "Can @Override be applied to a static method?",
+          "options": [
+            "Yes, if the static method has identical parameters",
+            "No, static methods cannot be overridden in Java, so applying @Override produces a compile error",
+            "Only in utility classes",
+            "Only if the method is public"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Static methods are hidden, not overridden. Applying @Override to a static method fails compilation."
+        },
+        {
+          "id": "q-oa-9",
+          "question": "Can @Override be applied to a constructor?",
+          "options": [
+            "Yes, to override the parent constructor",
+            "No, constructors cannot be overridden and cannot have @Override",
+            "Only default constructors",
+            "Only private constructors"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors are never inherited or overridden, so @Override cannot be used on constructors."
+        },
+        {
+          "id": "q-oa-10",
+          "question": "Which of the following is the most compelling reason to use @Override on every overridden method?",
+          "options": [
+            "It makes the program run 50% faster",
+            "It prevents subtle, silent runtime bugs by turning accidental overloads into immediate compile errors",
+            "It is required by the JVM bytecode verifier",
+            "It allows methods to be called without an object"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The safety net of catching typos and signature mismatches at compile time is the primary benefit."
+        }
+      ]
+    },
+    {
+      "id": "act-oa-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: The @Override Annotation",
+      "interviewQA": [
+        {
+          "question": "What is the purpose of the @Override annotation and why should you always use it?",
+          "answer": "The @Override annotation is a compiler directive instructing the Java compiler to verify that the annotated method correctly overrides a method in a superclass or interface. It should always be used because it prevents catastrophic silent bugs caused by misspelled method names or accidental parameter mismatches, converting potential runtime disasters into immediate compile-time errors.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "What happens under the hood with @Override during compilation and runtime?",
+          "answer": "The @Override annotation has a retention policy of RetentionPolicy.SOURCE. During compilation, the Java compiler verifies that the method matches a supertype signature. Once compilation succeeds, the annotation is discarded; it is not stored in the .class bytecode file and incurs zero memory or runtime performance cost.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "Can @Override be placed on static or private methods? Why?",
+          "answer": "No. In Java, static methods are hidden rather than overridden, and private methods are not visible outside their declaring class. Attempting to place @Override on a static or private method results in a compilation error: 'The method must override or implement a supertype method'.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "Can @Override be used when implementing methods from an interface?",
+          "answer": "Yes. While Java 5 originally restricted @Override to class-to-class overrides, Java 6 expanded the annotation to cover interface implementations as well. In modern Java, it is best practice to annotate both class overrides and interface implementations with @Override.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "How does @Override assist during large-scale enterprise refactoring?",
+          "answer": "In large enterprise microservices or monolithic libraries, modifying a base class method signature can silently break dozens of downstream subclasses if they don't use @Override (they turn into unused overloads). With @Override, the compiler immediately flags every impacted subclass, allowing developers to refactor with complete confidence.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "Give an example of a common bug caused by omitting @Override.",
+          "answer": "A classic example is overriding equals(). The Object class declares 'public boolean equals(Object obj)'. If a developer writes 'public boolean equals(Employee e)' without @Override, this is an overload, not an override. Collections like HashSet and ArrayList still call equals(Object), resulting in broken duplicate detection and elusive bugs.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-oa-7",
+      "type": "self_evaluation",
+      "title": "Module 6 Lesson 3 Mastery Checkpoint",
+      "checklist": [
+        "I understand the compilation check performed by the @Override annotation",
+        "I know that @Override catches spelling typos and parameter mismatches immediately",
+        "I know that @Override has RetentionPolicy.SOURCE and zero runtime cost",
+        "I understand why equals(Object) vs equals(MyType) is a classic bug without @Override",
+        "I know that @Override can be used on interface method implementations",
+        "I know that applying @Override to static, private, or final methods causes compile errors",
+        "I understand how @Override protects code during superclass refactorings",
+        "I always annotate every overridden method with @Override as an industry best practice",
+        "I can explain accidental overloading vs intentional overriding in interview problems",
+        "I can fix compiler errors triggered by broken @Override annotations"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-oa-1",
+      "title": "Warmup: Catch Typo Bug with @Override",
+      "difficulty": "easy",
+      "description": "Annotate overridden methods with @Override and fix a spelling typo in displayStatus.",
+      "problemStatement": "Class Service has displayStatus(). Subclass CloudService had a typo 'displayStats()'. Add @Override and fix the method name to displayStatus().",
+      "initialCode": "class Service {\n    public void displayStatus() {\n        System.out.println(\"Service running normally\");\n    }\n}\n\n// Add @Override and fix method name\nclass CloudService extends Service {\n    @Override\n    public void displayStatus() {\n        System.out.println(\"Cloud service running with 99.99% uptime\");\n    }\n}",
+      "expectedOutput": "Cloud service running with 99.99% uptime",
+      "hints": [
+        "Ensure method name is exactly displayStatus() to match Service.",
+        "Add @Override above the method declaration."
+      ],
+      "solutionCode": "class Service {\n    public void displayStatus() {\n        System.out.println(\"Service running normally\");\n    }\n}\n\nclass CloudService extends Service {\n    @Override\n    public void displayStatus() {\n        System.out.println(\"Cloud service running with 99.99% uptime\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Service svc = new CloudService();\n        svc.displayStatus();\n    }\n}"
+    },
+    {
+      "id": "prob-oa-2",
+      "title": "Code from Scratch: Bank Account Format Audit with @Override",
+      "difficulty": "medium",
+      "description": "Implement Account with formatSummary() and PremiumAccount overriding it using @Override.",
+      "problemStatement": "Create Account with accountId (String), balance (double), and formatSummary() returning 'Account [id] Balance: $balance'. Create PremiumAccount extending Account adding tier (String) and overriding formatSummary() using @Override. From scratch.",
+      "expectedOutput": "Standard: Account ACC-10 Balance: $500.0\nPremium: Premium Account ACC-20 [Platinum] Balance: $25000.0",
+      "hints": [
+        "Use @Override on formatSummary() in PremiumAccount.",
+        "Format strings matching test expectation."
+      ],
+      "solutionCode": "class Account {\n    protected String accountId;\n    protected double balance;\n    \n    public Account(String id, double balance) {\n        this.accountId = id;\n        this.balance = balance;\n    }\n    \n    public String formatSummary() {\n        return \"Account \" + accountId + \" Balance: $\" + balance;\n    }\n}\n\nclass PremiumAccount extends Account {\n    private String tier;\n    \n    public PremiumAccount(String id, double balance, String tier) {\n        super(id, balance);\n        this.tier = tier;\n    }\n    \n    @Override\n    public String formatSummary() {\n        return \"Premium Account \" + accountId + \" [\" + tier + \"] Balance: $\" + balance;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Account a1 = new Account(\"ACC-10\", 500.0);\n        Account a2 = new PremiumAccount(\"ACC-20\", 25000.0, \"Platinum\");\n        System.out.println(\"Standard: \" + a1.formatSummary());\n        System.out.println(\"Premium: \" + a2.formatSummary());\n    }\n}"
+    },
+    {
+      "id": "prob-oa-3",
+      "title": "Code from Scratch: Sensor Telemetry with @Override Validation",
+      "difficulty": "medium",
+      "description": "Build Sensor with readTelemetry() and calibrateSensor() overridden in PressureSensor.",
+      "problemStatement": "Build Sensor with readTelemetry() returning 0.0. Build PressureSensor extending Sensor with currentPressure (double) and overriding readTelemetry() using @Override. Test with Sensor reference.",
+      "expectedOutput": "Sensor Telemetry Reading: 1013.25 hPa",
+      "hints": [
+        "In PressureSensor, annotate readTelemetry() with @Override.",
+        "Return the current pressure value."
+      ],
+      "solutionCode": "class Sensor {\n    public double readTelemetry() {\n        return 0.0;\n    }\n}\n\nclass PressureSensor extends Sensor {\n    private double currentPressure;\n    \n    public PressureSensor(double pressure) {\n        this.currentPressure = pressure;\n    }\n    \n    @Override\n    public double readTelemetry() {\n        return this.currentPressure;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Sensor s = new PressureSensor(1013.25);\n        System.out.println(\"Sensor Telemetry Reading: \" + s.readTelemetry() + \" hPa\");\n    }\n}"
+    },
+    {
+      "id": "prob-oa-4",
+      "title": "Fix Broken Code: Parameter Type Mismatch with @Override",
+      "difficulty": "easy",
+      "description": "Fix a compile error caused by @Override detecting a parameter type discrepancy.",
+      "problemStatement": "The code fails to compile because Calculator has add(int, int) and PrecisionCalculator annotated @Override on add(double, double). Change the superclass to double or fix the method signature.",
+      "initialCode": "class Calculator {\n    public double add(double a, double b) {\n        return a + b;\n    }\n}\n\nclass PrecisionCalculator extends Calculator {\n    // Fix the method signature to match Calculator\n    @Override\n    public double add(double a, double b) {\n        return Math.round((a + b) * 100.0) / 100.0;\n    }\n}",
+      "expectedOutput": "Precision Sum: 7.78",
+      "hints": [
+        "Ensure both parameters in PrecisionCalculator are double."
+      ],
+      "solutionCode": "class Calculator {\n    public double add(double a, double b) {\n        return a + b;\n    }\n}\n\nclass PrecisionCalculator extends Calculator {\n    @Override\n    public double add(double a, double b) {\n        return Math.round((a + b) * 100.0) / 100.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Calculator calc = new PrecisionCalculator();\n        System.out.println(\"Precision Sum: \" + calc.add(3.333, 4.444));\n    }\n}"
+    },
+    {
+      "id": "prob-oa-5",
+      "title": "Challenge: Multi-Stage Task Pipeline Verification",
+      "difficulty": "hard",
+      "description": "Architect PipelineTask base class with SecurityAuditTask and DataTransformTask using @Override.",
+      "problemStatement": "Create PipelineTask with executeTask(). Subclasses SecurityAuditTask and DataTransformTask override executeTask() with verified @Override annotations. Process a PipelineTask[] array.",
+      "expectedOutput": "PIPELINE TASK: Scanning vulnerabilities... Zero threats found.\nPIPELINE TASK: Transforming CSV records into compressed Parquet format.",
+      "hints": [
+        "Ensure all subclass methods use @Override.",
+        "Iterate over PipelineTask[] array executing each task."
+      ],
+      "solutionCode": "class PipelineTask {\n    public void executeTask() {\n        System.out.println(\"PIPELINE TASK: Generic task execution\");\n    }\n}\n\nclass SecurityAuditTask extends PipelineTask {\n    @Override\n    public void executeTask() {\n        System.out.println(\"PIPELINE TASK: Scanning vulnerabilities... Zero threats found.\");\n    }\n}\n\nclass DataTransformTask extends PipelineTask {\n    @Override\n    public void executeTask() {\n        System.out.println(\"PIPELINE TASK: Transforming CSV records into compressed Parquet format.\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        PipelineTask[] tasks = new PipelineTask[] {\n            new SecurityAuditTask(),\n            new DataTransformTask()\n        };\n        for (PipelineTask t : tasks) {\n            t.executeTask();\n        }\n    }\n}"
+    }
+  ]
+}

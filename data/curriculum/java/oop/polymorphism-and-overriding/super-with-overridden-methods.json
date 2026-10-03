@@ -1,0 +1,358 @@
+{
+  "id": "java-oop-mod6-les9",
+  "slug": "super-with-overridden-methods",
+  "sectionSlug": "oop",
+  "moduleSlug": "polymorphism-and-overriding",
+  "languageSlug": "java",
+  "title": "super with Overridden Methods",
+  "summary": "Learn how to reuse, augment, and extend superclass behavior using super.method() rather than completely replacing it.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "method-overriding",
+    "the-super-keyword"
+  ],
+  "learningObjectives": [
+    "Differentiate total method replacement from method augmentation using super.method()",
+    "Identify when super.method() can be invoked (anywhere in method body, unlike super() constructors)",
+    "Avoid infinite recursion caused by forgetting the super prefix inside an overridden method",
+    "Design extensible decorator patterns and audit hooks using super method chaining"
+  ],
+  "expectedOutcomes": [
+    "You can invoke super.method() before, after, or around child logic to enhance base functionality",
+    "You recognize that calling method() without super inside the override triggers infinite recursion and StackOverflowError"
+  ],
+  "activities": [
+    {
+      "id": "act-les9-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Custom Home Addition",
+      "concept": "Augmentation via super.method()",
+      "realWorldMetaphor": {
+        "scenario": "When you hire a contractor to remodel your kitchen, they do not tear down the entire house foundation. They preserve the existing plumbing, electrical wiring, and structural load-bearing walls, then install modern granite countertops and smart appliances on top of the solid existing base.",
+        "mapping": "The existing foundation is `super.method()`. The modern renovation is the child class method. Instead of rewriting foundational plumbing from scratch, the child calls `super.method()` and adds its unique upgrades.",
+        "takeaway": "Overriding does not mean discarding previous work. `super.method()` allows subclasses to inherit and build upon battle-tested parent logic."
+      }
+    },
+    {
+      "id": "act-les9-concept",
+      "type": "concept",
+      "title": "Augmenting Logic with super.method()",
+      "content": "### Replacement vs. Augmentation\n\nWhen a child class overrides a parent method, it has two choices:\n1. **Total Replacement**: Discard the superclass behavior entirely and provide 100% new logic.\n2. **Augmentation**: Call `super.method()` to execute the parent's logic, and add specialized child actions before, after, or wrapped around the parent call.\n\n```java\nclass Account {\n    public void withdraw(double amount) {\n        balance -= amount;\n        System.out.println(\"Debited: $\" + amount);\n    }\n}\n\nclass AuditSavingsAccount extends Account {\n    @Override\n    public void withdraw(double amount) {\n        // Step 1: Child pre-validation\n        if (amount > 10000) {\n            System.out.println(\"[ALERT] Large withdrawal flagged for audit!\");\n        }\n        // Step 2: Delegate core balance update to superclass!\n        super.withdraw(amount);\n        // Step 3: Child post-action\n        System.out.println(\"SMS notification dispatched.\");\n    }\n}\n```\n\n### Crucial Rule: Placement Freedom\nUnlike `super(...)` constructor calls which **MUST be the very first line** of a constructor, `super.methodName()` can appear **anywhere** inside the method body:\n- At the start (run parent setup first, then child additions).\n- At the end (run child preprocessing first, then parent finalization).\n- In the middle (nested inside conditionals or try-catch blocks).\n\n### The Infinite Recursion Trap\nIf you accidentally omit `super.` when trying to delegate:\n```java\n@Override\npublic void display() {\n    display(); // TRAP! Calls ITSELF recursively until StackOverflowError!\n}\n```\nAlways verify that `super.display()` is explicitly specified."
+    },
+    {
+      "id": "act-les9-cw1",
+      "type": "code_walkthrough",
+      "title": "Transaction Validation and Audit Chaining",
+      "codeSnippet": "class BankAccount {\n    protected double balance;\n    public BankAccount(double balance) { this.balance = balance; }\n    \n    public boolean withdraw(double amount) {\n        if (amount > 0 && balance >= amount) {\n            balance -= amount;\n            System.out.println(\"Success: Withdrew $\" + amount + \" | Balance: $\" + balance);\n            return true;\n        }\n        System.out.println(\"Failed: Insufficient funds\");\n        return false;\n    }\n}\n\nclass FeeCheckingAccount extends BankAccount {\n    private double transactionFee;\n    \n    public FeeCheckingAccount(double balance, double fee) {\n        super(balance);\n        this.transactionFee = fee;\n    }\n    \n    @Override\n    public boolean withdraw(double amount) {\n        // Step 1: Pre-process with fee calculation\n        double totalDeduction = amount + transactionFee;\n        System.out.println(\"[FeeChecking] Applying $\" + transactionFee + \" service fee.\");\n        \n        // Step 2: Augment parent method with augmented amount\n        return super.withdraw(totalDeduction);\n    }\n}\n\npublic class BankDemo {\n    public static void main(String[] args) {\n        BankAccount acc = new FeeCheckingAccount(100.0, 2.50);\n        acc.withdraw(40.0);\n    }\n}",
+      "code": "class BankAccount {\n    protected double balance;\n    public BankAccount(double balance) { this.balance = balance; }\n    \n    public boolean withdraw(double amount) {\n        if (amount > 0 && balance >= amount) {\n            balance -= amount;\n            System.out.println(\"Success: Withdrew $\" + amount + \" | Balance: $\" + balance);\n            return true;\n        }\n        System.out.println(\"Failed: Insufficient funds\");\n        return false;\n    }\n}\n\nclass FeeCheckingAccount extends BankAccount {\n    private double transactionFee;\n    \n    public FeeCheckingAccount(double balance, double fee) {\n        super(balance);\n        this.transactionFee = fee;\n    }\n    \n    @Override\n    public boolean withdraw(double amount) {\n        // Step 1: Pre-process with fee calculation\n        double totalDeduction = amount + transactionFee;\n        System.out.println(\"[FeeChecking] Applying $\" + transactionFee + \" service fee.\");\n        \n        // Step 2: Augment parent method with augmented amount\n        return super.withdraw(totalDeduction);\n    }\n}\n\npublic class BankDemo {\n    public static void main(String[] args) {\n        BankAccount acc = new FeeCheckingAccount(100.0, 2.50);\n        acc.withdraw(40.0);\n    }\n}",
+      "language": "java",
+      "explanation": "FeeCheckingAccount does not duplicate the balance subtraction or validation code. It calculates the fee and passes totalDeduction to super.withdraw().",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`BankAccount acc = new FeeCheckingAccount(100.0, 2.50)` upcasts the child object to the parent reference."
+        },
+        {
+          "step": 2,
+          "description": "When `acc.withdraw(40.0)` is called, dynamic method dispatch routes to `FeeCheckingAccount.withdraw(double)`."
+        },
+        {
+          "step": 3,
+          "description": "The child prints the service fee announcement and computes totalDeduction (42.50)."
+        },
+        {
+          "step": 4,
+          "description": "`super.withdraw(totalDeduction)` invokes the parent implementation, which verifies balance >= 42.50 and updates balance to 57.50."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-cw2",
+      "type": "code_walkthrough",
+      "title": "Multi-tier Logging Pipeline via super",
+      "codeSnippet": "class BasicLogger {\n    public void log(String message) {\n        System.out.println(\"[BASE LOG] \" + message);\n    }\n}\n\nclass TimestampLogger extends BasicLogger {\n    @Override\n    public void log(String message) {\n        String timestamped = \"[2026-10-03 10:00:00] \" + message;\n        // Augment: call parent with timestamped payload\n        super.log(timestamped);\n    }\n}\n\nclass SecurityAuditLogger extends TimestampLogger {\n    @Override\n    public void log(String message) {\n        String secured = \"[ENCRYPTED-ID: 994] \" + message;\n        // Augment: call parent (TimestampLogger)\n        super.log(secured);\n        System.out.println(\"-> Audit checkpoint confirmed.\");\n    }\n}\n\npublic class LoggerDemo {\n    public static void main(String[] args) {\n        BasicLogger logger = new SecurityAuditLogger();\n        logger.log(\"User login succeeded\");\n    }\n}",
+      "code": "class BasicLogger {\n    public void log(String message) {\n        System.out.println(\"[BASE LOG] \" + message);\n    }\n}\n\nclass TimestampLogger extends BasicLogger {\n    @Override\n    public void log(String message) {\n        String timestamped = \"[2026-10-03 10:00:00] \" + message;\n        // Augment: call parent with timestamped payload\n        super.log(timestamped);\n    }\n}\n\nclass SecurityAuditLogger extends TimestampLogger {\n    @Override\n    public void log(String message) {\n        String secured = \"[ENCRYPTED-ID: 994] \" + message;\n        // Augment: call parent (TimestampLogger)\n        super.log(secured);\n        System.out.println(\"-> Audit checkpoint confirmed.\");\n    }\n}\n\npublic class LoggerDemo {\n    public static void main(String[] args) {\n        BasicLogger logger = new SecurityAuditLogger();\n        logger.log(\"User login succeeded\");\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates multilevel method augmentation. Calling super.log() in SecurityAuditLogger calls TimestampLogger.log(), which in turn calls BasicLogger.log().",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SecurityAuditLogger` prefixes the message with `[ENCRYPTED-ID: 994]`."
+        },
+        {
+          "step": 2,
+          "description": "It calls `super.log(...)`, which transfers execution up to its immediate parent `TimestampLogger`."
+        },
+        {
+          "step": 3,
+          "description": "`TimestampLogger` prepends the timestamp and calls its parent `BasicLogger.log(...)`."
+        },
+        {
+          "step": 4,
+          "description": "`BasicLogger` prints the final aggregated message, then execution returns down the stack to print the audit confirmation."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-mcq",
+      "type": "mcq",
+      "title": "super with Overridden Methods Quiz",
+      "questions": [
+        {
+          "id": "q9-1",
+          "question": "What is the purpose of writing `super.render()` inside an overridden `render()` method?",
+          "options": [
+            "To instantiate the parent class again",
+            "To invoke the superclass's implementation of render(), allowing code reuse and augmentation",
+            "To make the method private in the child class",
+            "To prevent any subclass from overriding render() in the future"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`super.render()` explicitly executes the parent class implementation of `render()`, enabling the child to augment rather than completely replace parent behavior."
+        },
+        {
+          "id": "q9-2",
+          "question": "Unlike `super()` in constructors, where can `super.methodName()` appear within an overridden method?",
+          "options": [
+            "Only on the first line of the method body",
+            "Only on the last line right before return",
+            "Anywhere within the method body\u2014at the start, middle, end, or inside loops/conditionals",
+            "Only inside a synchronized block"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "There is no line-number restriction for `super.method()`. It can be placed at the beginning, end, or conditionally anywhere within the method."
+        },
+        {
+          "id": "q9-3",
+          "question": "What happens if a child class method overrides `print()` and includes the statement `print();` without the `super.` prefix?",
+          "options": [
+            "The compiler automatically redirects it to super.print()",
+            "It calls itself recursively without an exit condition, resulting in a runtime StackOverflowError",
+            "The method returns null immediately",
+            "Compilation error: cannot call method of same name"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Calling `print()` invokes the child's own method on `this`. Without an exit condition, it recurses infinitely until memory is exhausted and a `StackOverflowError` occurs."
+        },
+        {
+          "id": "q9-4",
+          "question": "Can a child class skip its immediate parent and call its grandparent's method directly using `super.super.method()`?",
+          "options": [
+            "Yes, Java supports arbitrary super chaining such as super.super.method()",
+            "No, super.super is illegal syntax in Java and causes a compilation error",
+            "Yes, but only if all classes are in the same package",
+            "Yes, if the method is marked public"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`super.super.method()` is explicitly prohibited in Java to maintain class encapsulation and prevent breaking the immediate parent's contract."
+        },
+        {
+          "id": "q9-5",
+          "question": "Consider:\n```java\nclass A { void test() { System.out.print(\"A\"); } }\nclass B extends A {\n    void test() {\n        super.test();\n        System.out.print(\"B\");\n    }\n}\n```\nWhat does `new B().test()` output?",
+          "options": [
+            "BA",
+            "AB",
+            "B",
+            "A"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`super.test()` executes first, printing 'A'. Then `System.out.print(\"B\")` executes, printing 'B'. Total output: 'AB'."
+        },
+        {
+          "id": "q9-6",
+          "question": "Can `super.method()` be called from inside a `static` method of the child class?",
+          "options": [
+            "Yes, if the parent method is also static",
+            "No, super cannot be referenced from a static context because there is no current instance",
+            "Yes, if the method has no parameters",
+            "Only if invoked inside the main method"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Neither `this` nor `super` can be referenced from a static context, because static methods belong to the class, not any specific object instance."
+        },
+        {
+          "id": "q9-7",
+          "question": "What is method augmentation?",
+          "options": [
+            "Changing the return type of a method from void to int",
+            "Adding more parameters to overload a method",
+            "Calling super.method() inside the overridden method to perform baseline work and adding specialized logic around it",
+            "Converting instance methods into static methods"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Method augmentation is an OOP pattern where the child retains and executes parent functionality using `super.method()` while adding complementary features."
+        },
+        {
+          "id": "q9-8",
+          "question": "If the superclass method returns a value `int calculate()`, can the child method capture it?",
+          "options": [
+            "No, super.method() return values are ignored",
+            "Yes, using `int base = super.calculate();` and modifying or returning it",
+            "Only if cast to double",
+            "Only if the child method is named differently"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The child can capture the return value from `super.calculate()` into a local variable, perform additional arithmetic or formatting, and return the modified result."
+        },
+        {
+          "id": "q9-9",
+          "question": "When is post-processing with `super.method()` typically used?",
+          "options": [
+            "When the parent method must complete initialization or core state changes before the child performs logging, notifications, or cleanup",
+            "When constructors are not supported in the parent",
+            "When the child wants to prevent parent code from running",
+            "Only when dealing with abstract methods"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Calling `super.method()` at the start lets the parent execute foundational logic, allowing the child to inspect the resulting state and perform subsequent notifications or auditing."
+        },
+        {
+          "id": "q9-10",
+          "question": "What happens if a child overrides a method that was declared `private` in the parent and attempts `super.method()`?",
+          "options": [
+            "It runs the private method via reflection",
+            "Compilation error: cannot access private member of superclass",
+            "Runtime NoSuchMethodError",
+            "The call succeeds if both are in the same directory"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Private members are not accessible outside the declaring class. Attempting `super.privateMethod()` causes a compile-time error."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: super with Overridden Methods",
+      "interviewQA": [
+        {
+          "id": "i9-1",
+          "companyTag": "Google",
+          "question": "Why is `super.super.method()` forbidden in Java?",
+          "answer": "Allowing `super.super.method()` would violate class encapsulation. A subclass would be able to bypass the immediate parent's overridden logic and state invariants. If class B overrides method X of class A to enforce critical security or consistency checks, allowing class C to skip B and call A directly would breach B's encapsulation contract."
+        },
+        {
+          "id": "i9-2",
+          "companyTag": "Amazon",
+          "question": "What is the difference between method replacement and method augmentation?",
+          "answer": "In method replacement, the subclass completely overrides the parent method without invoking `super.method()`, substituting entirely new logic. In method augmentation, the subclass invokes `super.method()` to execute baseline parent logic and decorates it with additional pre-processing, post-processing, or validation."
+        },
+        {
+          "id": "i9-3",
+          "companyTag": "Microsoft",
+          "question": "What happens if you accidentally call `method()` instead of `super.method()` inside an overridden method?",
+          "answer": "Calling `method()` without `super.` invokes the current object's own overridden implementation on `this`. Because it is calling itself with identical arguments and no base condition, it triggers an infinite recursive loop, rapidly exhausting the call stack and throwing `java.lang.StackOverflowError` at runtime."
+        },
+        {
+          "id": "i9-4",
+          "companyTag": "Uber",
+          "question": "Can `super.method()` be called conditionally inside an if-statement?",
+          "answer": "Yes. Unlike `super()` constructor calls which must unconditionally be the first statement of a constructor, `super.method()` is an ordinary instance method invocation. It can be wrapped in `if-else` branches, loops, or `try-catch-finally` blocks based on business rules."
+        },
+        {
+          "id": "i9-5",
+          "companyTag": "Adobe",
+          "question": "How does the bytecode instruction for `super.method()` differ from `this.method()`?",
+          "answer": "Calling `this.method()` emits an `invokevirtual` instruction which resolves the method dynamically using the runtime object's vtable. Calling `super.method()` emits an `invokespecial` instruction, which resolves statically at compile time to the direct superclass's method implementation, bypassing dynamic dispatch on the child."
+        },
+        {
+          "id": "i9-6",
+          "companyTag": "Bloomberg",
+          "question": "Can you call `super.method()` if the superclass method is `abstract`?",
+          "answer": "No. In Java, an abstract method has no implementation body. Attempting `super.abstractMethod()` causes a compile-time error: 'Cannot directly invoke the abstract method abstractMethod() for the type SuperClass'."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand the difference between method replacement and method augmentation.",
+        "I know how to call `super.method()` to reuse parent functionality inside an override.",
+        "I understand that `super.method()` can be placed anywhere in the method body, unlike `super()` in constructors.",
+        "I know that omitting `super.` inside an override results in infinite recursion and `StackOverflowError`.",
+        "I know that `super.super.method()` is illegal in Java.",
+        "I understand why `super.method()` uses `invokespecial` bytecode rather than `invokevirtual`.",
+        "I know that `super` cannot be used in a `static` method.",
+        "I can capture and transform the return value from `super.method()`.",
+        "I can perform pre-processing before `super.method()` and post-processing after it.",
+        "I understand that `super.method()` cannot be called if the parent method is `abstract` or `private`."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les9-p1",
+      "lessonId": "java-oop-mod6-les9",
+      "orderIndex": 1,
+      "title": "Warmup: Order Processing with Tax Augmentation",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `Order` hierarchy where the child class augments the parent pricing logic.\n- `Order`: has `protected double subtotal`. Method `public double calculateTotal()` returns `subtotal`.\n- `TaxableOrder`: extends `Order`, adds `private double taxRate` (e.g., 0.08 for 8%).\n  Override `calculateTotal()`: call `super.calculateTotal()`, compute tax on that amount, and return the sum.\nIn `main`, create a `TaxableOrder` with subtotal=100.0 and taxRate=0.08, and print the result of `calculateTotal()`.",
+      "starterCode": "class Order {\n    protected double subtotal;\n    public Order(double subtotal) { this.subtotal = subtotal; }\n    public double calculateTotal() {\n        return subtotal;\n    }\n}\n\nclass TaxableOrder extends Order {\n    private double taxRate;\n    public TaxableOrder(double subtotal, double taxRate) {\n        super(subtotal);\n        this.taxRate = taxRate;\n    }\n    @Override\n    public double calculateTotal() {\n        // TODO: Call super.calculateTotal() and add (baseTotal * taxRate)\n        return 0.0;\n    }\n}\n\npublic class OrderApp {\n    public static void main(String[] args) {\n        Order order = new TaxableOrder(100.0, 0.08);\n        System.out.println(\"Total: $\" + order.calculateTotal());\n    }\n}",
+      "initialCode": "class Order {\n    protected double subtotal;\n    public Order(double subtotal) { this.subtotal = subtotal; }\n    public double calculateTotal() {\n        return subtotal;\n    }\n}\n\nclass TaxableOrder extends Order {\n    private double taxRate;\n    public TaxableOrder(double subtotal, double taxRate) {\n        super(subtotal);\n        this.taxRate = taxRate;\n    }\n    @Override\n    public double calculateTotal() {\n        // TODO: Call super.calculateTotal() and add (baseTotal * taxRate)\n        return 0.0;\n    }\n}\n\npublic class OrderApp {\n    public static void main(String[] args) {\n        Order order = new TaxableOrder(100.0, 0.08);\n        System.out.println(\"Total: $\" + order.calculateTotal());\n    }\n}",
+      "solutionCode": "class Order {\n    protected double subtotal;\n    public Order(double subtotal) { this.subtotal = subtotal; }\n    public double calculateTotal() {\n        return subtotal;\n    }\n}\n\nclass TaxableOrder extends Order {\n    private double taxRate;\n    public TaxableOrder(double subtotal, double taxRate) {\n        super(subtotal);\n        this.taxRate = taxRate;\n    }\n    @Override\n    public double calculateTotal() {\n        double base = super.calculateTotal();\n        return base + (base * taxRate);\n    }\n}\n\npublic class OrderApp {\n    public static void main(String[] args) {\n        Order order = new TaxableOrder(100.0, 0.08);\n        System.out.println(\"Total: $\" + order.calculateTotal());\n    }\n}",
+      "expectedOutput": "Total: $108.0",
+      "hints": [
+        "Call double base = super.calculateTotal(); then return base + (base * taxRate);",
+        "The output should print Total: $108.0"
+      ]
+    },
+    {
+      "id": "prob-les9-p2",
+      "lessonId": "java-oop-mod6-les9",
+      "orderIndex": 2,
+      "title": "Audited User Registration Pipeline",
+      "difficulty": "medium",
+      "problemStatement": "Build a secure user registration workflow from scratch without starter code:\n1. Base class `UserService`: has method `public void register(String username)` that prints `'[DB] User created: ' + username`.\n2. Subclass `AuditedUserService` extending `UserService`: overrides `register(String username)`:\n   - Pre-action: prints `'[AUDIT] Verifying credentials for ' + username`.\n   - Base call: calls `super.register(username)`.\n   - Post-action: prints `'[AUDIT] Welcome email queued for ' + username`.\n3. In `Main`, create an instance of `AuditedUserService` using a `UserService` reference and invoke `register(\"john_doe\")`.",
+      "solutionCode": "class UserService {\n    public void register(String username) {\n        System.out.println(\"[DB] User created: \" + username);\n    }\n}\n\nclass AuditedUserService extends UserService {\n    @Override\n    public void register(String username) {\n        System.out.println(\"[AUDIT] Verifying credentials for \" + username);\n        super.register(username);\n        System.out.println(\"[AUDIT] Welcome email queued for \" + username);\n    }\n}\n\npublic class UserApp {\n    public static void main(String[] args) {\n        UserService service = new AuditedUserService();\n        service.register(\"john_doe\");\n    }\n}",
+      "expectedOutput": "[AUDIT] Verifying credentials for john_doe\n[DB] User created: john_doe\n[AUDIT] Welcome email queued for john_doe",
+      "hints": [
+        "In AuditedUserService.register, put the audit verification print statement first, then super.register(username), then the queued email print statement."
+      ]
+    },
+    {
+      "id": "prob-les9-p3",
+      "lessonId": "java-oop-mod6-les9",
+      "orderIndex": 3,
+      "title": "Bounded Stack with super Delegation",
+      "difficulty": "medium",
+      "problemStatement": "Build a bounded stack mechanism from scratch:\n1. Base class `SimpleStack`: has an internal array `protected int[] elements = new int[10];` and `protected int top = 0;`.\n   Implement `public void push(int val)`: adds val to `elements[top++]` and prints `'Pushed: ' + val`.\n2. Subclass `BoundedStack` extending `SimpleStack`: adds `private int capacity`.\n   Override `push(int val)`: if `top >= capacity`, print `'Error: Stack full (capacity: ' + capacity + ')'`. Otherwise, call `super.push(val)`.\n3. In `Main`, instantiate a `BoundedStack` with capacity=2.\n   Call `push(10)`, `push(20)`, and `push(30)`.",
+      "solutionCode": "class SimpleStack {\n    protected int[] elements = new int[10];\n    protected int top = 0;\n    public void push(int val) {\n        elements[top++] = val;\n        System.out.println(\"Pushed: \" + val);\n    }\n}\n\nclass BoundedStack extends SimpleStack {\n    private int capacity;\n    public BoundedStack(int capacity) {\n        this.capacity = capacity;\n    }\n    @Override\n    public void push(int val) {\n        if (top >= capacity) {\n            System.out.println(\"Error: Stack full (capacity: \" + capacity + \")\");\n        } else {\n            super.push(val);\n        }\n    }\n}\n\npublic class StackApp {\n    public static void main(String[] args) {\n        SimpleStack stack = new BoundedStack(2);\n        stack.push(10);\n        stack.push(20);\n        stack.push(30);\n    }\n}",
+      "expectedOutput": "Pushed: 10\nPushed: 20\nError: Stack full (capacity: 2)",
+      "hints": [
+        "Inside BoundedStack.push(int val), check if (top >= capacity) before delegating to super.push(val)."
+      ]
+    },
+    {
+      "id": "prob-les9-p4",
+      "lessonId": "java-oop-mod6-les9",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accidental Recursive Loop",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to add coupon discount functionality to a shopping cart, but made a critical recursion bug that causes a `StackOverflowError`. Fix the code so it properly delegates to the parent class method.",
+      "starterCode": "class ShoppingCart {\n    protected double total;\n    public ShoppingCart(double total) { this.total = total; }\n    public double calculateTotal() {\n        return total;\n    }\n}\n\nclass CouponCart extends ShoppingCart {\n    private double discountAmount;\n    public CouponCart(double total, double discount) {\n        super(total);\n        this.discountAmount = discount;\n    }\n    @Override\n    public double calculateTotal() {\n        // BUG: Calls calculateTotal() instead of super.calculateTotal(), causing infinite recursion!\n        return calculateTotal() - discountAmount;\n    }\n}\n\npublic class CartBugApp {\n    public static void main(String[] args) {\n        ShoppingCart cart = new CouponCart(150.0, 25.0);\n        System.out.println(\"Discounted Total: \" + cart.calculateTotal());\n    }\n}",
+      "initialCode": "class ShoppingCart {\n    protected double total;\n    public ShoppingCart(double total) { this.total = total; }\n    public double calculateTotal() {\n        return total;\n    }\n}\n\nclass CouponCart extends ShoppingCart {\n    private double discountAmount;\n    public CouponCart(double total, double discount) {\n        super(total);\n        this.discountAmount = discount;\n    }\n    @Override\n    public double calculateTotal() {\n        // BUG: Calls calculateTotal() instead of super.calculateTotal(), causing infinite recursion!\n        return calculateTotal() - discountAmount;\n    }\n}\n\npublic class CartBugApp {\n    public static void main(String[] args) {\n        ShoppingCart cart = new CouponCart(150.0, 25.0);\n        System.out.println(\"Discounted Total: \" + cart.calculateTotal());\n    }\n}",
+      "solutionCode": "class ShoppingCart {\n    protected double total;\n    public ShoppingCart(double total) { this.total = total; }\n    public double calculateTotal() {\n        return total;\n    }\n}\n\nclass CouponCart extends ShoppingCart {\n    private double discountAmount;\n    public CouponCart(double total, double discount) {\n        super(total);\n        this.discountAmount = discount;\n    }\n    @Override\n    public double calculateTotal() {\n        return super.calculateTotal() - discountAmount;\n    }\n}\n\npublic class CartBugApp {\n    public static void main(String[] args) {\n        ShoppingCart cart = new CouponCart(150.0, 25.0);\n        System.out.println(\"Discounted Total: \" + cart.calculateTotal());\n    }\n}",
+      "expectedOutput": "Discounted Total: 125.0",
+      "hints": [
+        "Prefix calculateTotal() with super. to call the superclass method: return super.calculateTotal() - discountAmount;"
+      ]
+    },
+    {
+      "id": "prob-les9-p5",
+      "lessonId": "java-oop-mod6-les9",
+      "orderIndex": 5,
+      "title": "Three-Tier Transaction Rollback Simulator",
+      "difficulty": "hard",
+      "problemStatement": "Build a 3-tier transaction execution pipeline using multilevel `super.method()` chaining from scratch:\n1. Base class `Transaction`: has method `public boolean execute()` that prints `'[1] Database transaction committed'` and returns `true`.\n2. Subclass `TwoPhaseTransaction` extending `Transaction`: overrides `execute()`. It prints `'[2] Preparing 2-phase commit consensus'`, then calls `boolean ok = super.execute()`, then prints `'[2] 2-phase consensus acknowledged'` and returns `ok`.\n3. Subclass `DistributedTransaction` extending `TwoPhaseTransaction`: overrides `execute()`. It prints `'[3] Synchronizing across geographic regions'`, then calls `boolean ok = super.execute()`, then prints `'[3] Global lock released'` and returns `ok`.\n4. In `Main`, instantiate a `DistributedTransaction` referenced as `Transaction txn` and call `txn.execute()`.",
+      "solutionCode": "class Transaction {\n    public boolean execute() {\n        System.out.println(\"[1] Database transaction committed\");\n        return true;\n    }\n}\n\nclass TwoPhaseTransaction extends Transaction {\n    @Override\n    public boolean execute() {\n        System.out.println(\"[2] Preparing 2-phase commit consensus\");\n        boolean ok = super.execute();\n        System.out.println(\"[2] 2-phase consensus acknowledged\");\n        return ok;\n    }\n}\n\nclass DistributedTransaction extends TwoPhaseTransaction {\n    @Override\n    public boolean execute() {\n        System.out.println(\"[3] Synchronizing across geographic regions\");\n        boolean ok = super.execute();\n        System.out.println(\"[3] Global lock released\");\n        return ok;\n    }\n}\n\npublic class TransactionPipelineApp {\n    public static void main(String[] args) {\n        Transaction txn = new DistributedTransaction();\n        txn.execute();\n    }\n}",
+      "expectedOutput": "[3] Synchronizing across geographic regions\n[2] Preparing 2-phase commit consensus\n[1] Database transaction committed\n[2] 2-phase consensus acknowledged\n[3] Global lock released",
+      "hints": [
+        "In DistributedTransaction.execute, print region synchronization, call super.execute(), then print global lock released.",
+        "In TwoPhaseTransaction.execute, print prepare, call super.execute(), then print consensus acknowledged."
+      ]
+    }
+  ]
+}

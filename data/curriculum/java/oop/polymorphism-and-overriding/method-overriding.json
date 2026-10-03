@@ -1,0 +1,338 @@
+{
+  "id": "java-oop-mod6-les2",
+  "slug": "method-overriding",
+  "sectionSlug": "oop",
+  "moduleSlug": "polymorphism-and-overriding",
+  "languageSlug": "java",
+  "title": "Method Overriding",
+  "summary": "Master the strict rules and mechanics of method overriding in Java: identical method signatures, return type compatibility, and access modifier widening.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "what-is-polymorphism"
+  ],
+  "learningObjectives": [
+    "Master the essential rules of method overriding: same method name, exact same parameter list",
+    "Understand return type rules including covariant return types",
+    "Apply access modifier rules: child method can broaden visibility (e.g. protected to public) but NEVER narrow it",
+    "Identify which methods cannot be overridden: private, static, and final methods"
+  ],
+  "expectedOutcomes": [
+    "Ability to write correct, compiler-verified method overrides in Java",
+    "Confidence explaining access modifier and return type overriding constraints in technical interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-mo-1",
+      "type": "analogy",
+      "title": "The Custom Car Horn Analogy",
+      "content": "When a base chassis rolls off a car assembly line, the manufacturer installs a generic factory horn that makes a standard, polite beep.\n\nA specialized Firetruck manufacturer purchases that base vehicle. They do not change the steering wheel or the driver's horn button (the method signature remains identical: pressHorn()).\n\nHowever, when the firefighter presses the horn button, instead of a polite beep, a deafening 120-decibel emergency siren blasts.\n\nThe interface and trigger are unchanged (pressHorn()), but the implementation has been completely **overridden** to suit the specialized vehicle."
+    },
+    {
+      "id": "act-mo-2",
+      "type": "concept",
+      "title": "The Non-Negotiable Rules of Method Overriding",
+      "content": "Method overriding occurs when a subclass defines a method that has the **exact same name and parameter list** as a method in its superclass.\n\n### 1. Strict Rules of Overriding:\n1. **Identical Signature**: The method name and parameter types/order must match exactly.\n2. **Return Type Compatibility**:\n   - Primitives: Must be the **exact same primitive type** (e.g. `int` cannot change to `long`).\n   - Objects: Can be the exact same type or a **covariant return type** (a subclass of the parent's return type).\n3. **Access Modifier Rule (Cannot Narrow, Can Widen)**:\n   - The overriding method **cannot have more restrictive access** than the superclass method.\n   - `protected` in parent -> can be `protected` or `public` in child.\n   - `public` in parent -> **MUST be `public`** in child (cannot become `protected` or `private`!).\n4. **Exceptions Rule**: An overriding method cannot throw new or broader checked exceptions (can throw fewer or narrower exceptions).\n\n### 2. What CANNOT Be Overridden:\n- **`private` methods**: They are not visible to subclasses.\n- **`final` methods**: The `final` keyword explicitly forbids overriding.\n- **`static` methods**: Static methods belong to the class, not the instance (they undergo method hiding, not overriding).\n- **Constructors**: Constructors are not methods and are never inherited or overridden."
+    },
+    {
+      "id": "act-mo-3",
+      "type": "code_walkthrough",
+      "title": "Animal and Dog: Sound Overriding with Visibility Widening",
+      "description": "Observe how Dog overrides makeSound() while safely widening access from protected to public.",
+      "codeSnippet": "class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n    \n    // Protected in superclass\n    protected void makeSound() {\n        System.out.println(name + \" makes a generic animal sound\");\n    }\n}\n\nclass Dog extends Animal {\n    public Dog(String name) { super(name); }\n    \n    // Overriding: Widens access from protected to public (Legal!)\n    public void makeSound() {\n        System.out.println(name + \" barks: Woof! Woof!\");\n    }\n}\n\nclass Cat extends Animal {\n    public Cat(String name) { super(name); }\n    \n    // Overriding: Matches protected access (Legal!)\n    protected void makeSound() {\n        System.out.println(name + \" meows: Purr... Meow!\");\n    }\n}\n\npublic class OverridingRulesDemo {\n    public static void main(String[] args) {\n        Animal a1 = new Dog(\"Buddy\");\n        Animal a2 = new Cat(\"Luna\");\n        \n        a1.makeSound(); // Invokes Dog.makeSound()\n        a2.makeSound(); // Invokes Cat.makeSound()\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Animal declares protected void makeSound()."
+        },
+        {
+          "step": 2,
+          "description": "Dog overrides with public void makeSound() (widening access is legal)."
+        },
+        {
+          "step": 3,
+          "description": "Cat overrides with protected void makeSound() (matching access is legal)."
+        },
+        {
+          "step": 4,
+          "description": "Both calls dispatch dynamically at runtime based on the heap instance."
+        }
+      ],
+      "code": "class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n    \n    // Protected in superclass\n    protected void makeSound() {\n        System.out.println(name + \" makes a generic animal sound\");\n    }\n}\n\nclass Dog extends Animal {\n    public Dog(String name) { super(name); }\n    \n    // Overriding: Widens access from protected to public (Legal!)\n    public void makeSound() {\n        System.out.println(name + \" barks: Woof! Woof!\");\n    }\n}\n\nclass Cat extends Animal {\n    public Cat(String name) { super(name); }\n    \n    // Overriding: Matches protected access (Legal!)\n    protected void makeSound() {\n        System.out.println(name + \" meows: Purr... Meow!\");\n    }\n}\n\npublic class OverridingRulesDemo {\n    public static void main(String[] args) {\n        Animal a1 = new Dog(\"Buddy\");\n        Animal a2 = new Cat(\"Luna\");\n        \n        a1.makeSound(); // Invokes Dog.makeSound()\n        a2.makeSound(); // Invokes Cat.makeSound()\n    }\n}"
+    },
+    {
+      "id": "act-mo-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Covariant Return Types in Overriding",
+      "description": "See how a subclass can return a more specific subclass of the parent method's return type.",
+      "codeSnippet": "class Food { String type = \"Generic Food\"; }\nclass DogFood extends Food { String brand = \"Kibble Pro\"; }\n\nclass AnimalFeeder {\n    public Food prepareMeal() {\n        System.out.println(\"Preparing generic animal food\");\n        return new Food();\n    }\n}\n\nclass DogKennelFeeder extends AnimalFeeder {\n    // Covariant Return Type: DogFood is a subclass of Food (Legal!)\n    public DogFood prepareMeal() {\n        System.out.println(\"Preparing specialized nutrient-rich dog food\");\n        return new DogFood();\n    }\n}\n\npublic class CovariantDemo {\n    public static void main(String[] args) {\n        AnimalFeeder feeder = new DogKennelFeeder();\n        feeder.prepareMeal();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Parent prepareMeal returns Food."
+        },
+        {
+          "step": 2,
+          "description": "Child prepareMeal returns DogFood, which is a subtype of Food (covariant return type)."
+        },
+        {
+          "step": 3,
+          "description": "The compiler accepts this without error because DogFood IS-A Food."
+        }
+      ],
+      "code": "class Food { String type = \"Generic Food\"; }\nclass DogFood extends Food { String brand = \"Kibble Pro\"; }\n\nclass AnimalFeeder {\n    public Food prepareMeal() {\n        System.out.println(\"Preparing generic animal food\");\n        return new Food();\n    }\n}\n\nclass DogKennelFeeder extends AnimalFeeder {\n    // Covariant Return Type: DogFood is a subclass of Food (Legal!)\n    public DogFood prepareMeal() {\n        System.out.println(\"Preparing specialized nutrient-rich dog food\");\n        return new DogFood();\n    }\n}\n\npublic class CovariantDemo {\n    public static void main(String[] args) {\n        AnimalFeeder feeder = new DogKennelFeeder();\n        feeder.prepareMeal();\n    }\n}"
+    },
+    {
+      "id": "act-mo-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Method Overriding (10 Questions)",
+      "questions": [
+        {
+          "id": "q-mo-1",
+          "question": "What is the requirement for the method signature when overriding a method in Java?",
+          "options": [
+            "The method name must match, but parameters can be different",
+            "The method name and exact parameter list must match identically",
+            "The method name must be uppercase",
+            "Parameters must be converted to Object"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Overriding requires the exact same method name and parameter types in the exact same order."
+        },
+        {
+          "id": "q-mo-2",
+          "question": "If a superclass method is declared public, what access modifier can the overriding method have in the subclass?",
+          "options": [
+            "Any access modifier (private, protected, default, or public)",
+            "ONLY public (access cannot be narrowed)",
+            "protected or public",
+            "default or private"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "An overriding method cannot reduce visibility. A public method must remain public."
+        },
+        {
+          "id": "q-mo-3",
+          "question": "If a superclass method is declared protected, can the subclass override it with public access?",
+          "options": [
+            "No, access modifiers must match exactly",
+            "Yes, an overriding method is allowed to broaden/widen access visibility",
+            "Only if the subclass is in the same package",
+            "Only if the method returns void"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Widening access (e.g. from protected to public) is completely legal in Java."
+        },
+        {
+          "id": "q-mo-4",
+          "question": "What is a covariant return type in Java method overriding?",
+          "options": [
+            "Returning multiple values using commas",
+            "The overriding method returns a subtype of the return type declared in the superclass method",
+            "Returning void when the parent returns int",
+            "Changing an int return type to double"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "A covariant return type allows the overriding method to return a more specialized subclass of the parent's return type."
+        },
+        {
+          "id": "q-mo-5",
+          "question": "If parent defines 'int getCount()', can child override with 'long getCount()'?",
+          "options": [
+            "Yes, because long can hold int values",
+            "No, primitive return types must match exactly in method overriding",
+            "Only in Java 21",
+            "Yes, if marked @Override"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Covariant return types apply only to object references. Primitives must match identically."
+        },
+        {
+          "id": "q-mo-6",
+          "question": "Can a private method in a superclass be overridden by a subclass?",
+          "options": [
+            "Yes, by declaring public in the child",
+            "No, private methods are not visible to subclasses and cannot be overridden",
+            "Only if both are in the same package",
+            "Yes, using the super keyword"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Private methods are hidden from subclasses; any method with the same name in the child is completely unrelated."
+        },
+        {
+          "id": "q-mo-7",
+          "question": "What happens if you attempt to override a method marked final in the superclass?",
+          "options": [
+            "The program compiles with a warning",
+            "Compile-time error: cannot override final method from Superclass",
+            "The final modifier is removed at runtime",
+            "The child method becomes static"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The final keyword explicitly prevents a method from being overridden."
+        },
+        {
+          "id": "q-mo-8",
+          "question": "Can a subclass override a constructor of its superclass?",
+          "options": [
+            "Yes, if they have the same parameters",
+            "No, constructors are not methods and cannot be overridden",
+            "Only default constructors",
+            "Only if super() is omitted"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors are never inherited or overridden."
+        },
+        {
+          "id": "q-mo-9",
+          "question": "What happens if a subclass declares a method with the same name as the parent method, but with DIFFERENT parameters?",
+          "options": [
+            "It is method overriding",
+            "It is method overloading (not overriding!)",
+            "Compile-time error due to conflicting names",
+            "The parent method is deleted"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Different parameter lists constitute method overloading across classes, not overriding."
+        },
+        {
+          "id": "q-mo-10",
+          "question": "In method overriding, which entity's implementation executes when called via a parent reference holding a child object?",
+          "options": [
+            "Superclass implementation",
+            "Subclass implementation (resolved dynamically by JVM)",
+            "java.lang.Object implementation",
+            "Neither, an error is thrown"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The JVM checks the runtime object in the heap and executes the subclass's overridden implementation."
+        }
+      ]
+    },
+    {
+      "id": "act-mo-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Method Overriding",
+      "interviewQA": [
+        {
+          "question": "What are the rules of method overriding in Java regarding access modifiers?",
+          "answer": "An overriding method can never assign more restrictive access privileges than the superclass method. It can maintain the same access or broaden it (e.g. default to protected, or protected to public). If the parent method is public, the overriding method MUST be public.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "What is a covariant return type and when was it introduced?",
+          "answer": "Introduced in Java 5, a covariant return type allows an overriding method to declare a return type that is a subclass of the return type declared in the overridden superclass method. It eliminates the need for manual downcasting at call sites.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "Can static methods be overridden in Java? Explain method hiding.",
+          "answer": "No, static methods cannot be overridden. If a subclass defines a static method with the same signature as a static method in its superclass, this is method hiding. The method executed depends on the compile-time reference type, not the runtime object type in the heap.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "What happens if an overriding method declares a checked exception that is not declared in the parent method?",
+          "answer": "Compilation fails. An overriding method cannot throw broader or new checked exceptions than those declared by the superclass method. It can throw fewer checked exceptions, narrower subclasses of declared exceptions, or any unchecked (RuntimeException) exceptions.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Can you prevent a specific method in a public class from being overridden?",
+          "answer": "Yes, by declaring the method with the 'final' keyword. This allows the class itself to be extended while locking down critical algorithms against modification by subclasses.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "Why does the compiler forbid narrowing access modifiers when overriding methods?",
+          "answer": "Narrowing access violates the Liskov Substitution Principle and polymorphism. If a client has a Parent reference and calls a public method 'p.doWork()', polymorphism guarantees it can invoke doWork() on any subclass. If Child made doWork() private, client code would violate encapsulation and crash at runtime.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-mo-7",
+      "type": "self_evaluation",
+      "title": "Module 6 Lesson 2 Mastery Checkpoint",
+      "checklist": [
+        "I know that method overriding requires identical names and exact matching parameter lists",
+        "I understand access modifier rules (can widen visibility, cannot narrow visibility)",
+        "I know that public parent methods MUST remain public in subclasses",
+        "I understand covariant return types for object references",
+        "I know that primitive return types must match identically in overrides",
+        "I know why private, static, and final methods cannot be overridden",
+        "I understand method hiding vs method overriding for static methods",
+        "I understand exception rules for overridden methods (no new or broader checked exceptions)",
+        "I know why narrowing access violates the Liskov Substitution Principle",
+        "I can write verified method overrides across complex class hierarchies in Java"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-mo-1",
+      "title": "Warmup: Bank Account calculateInterest Overriding",
+      "difficulty": "easy",
+      "description": "Override calculateInterest across BankAccount and HighYieldSavingsAccount.",
+      "problemStatement": "BankAccount defines calculateInterest(double balance) returning balance * 0.02. Subclass HighYieldSavingsAccount overrides calculateInterest(double balance) to return balance * 0.05. Test via BankAccount reference.",
+      "initialCode": "class BankAccount {\n    public double calculateInterest(double balance) {\n        return balance * 0.02;\n    }\n}\n\n// Complete HighYieldSavingsAccount\nclass HighYieldSavingsAccount extends BankAccount {\n    public double calculateInterest(double balance) {\n        return balance * 0.05;\n    }\n}",
+      "expectedOutput": "Standard Interest: $20.0\nHigh-Yield Interest: $50.0",
+      "hints": [
+        "HighYieldSavingsAccount overrides calculateInterest with exact same signature.",
+        "Hold instance in BankAccount reference: BankAccount acc = new HighYieldSavingsAccount();"
+      ],
+      "solutionCode": "class BankAccount {\n    public double calculateInterest(double balance) {\n        return balance * 0.02;\n    }\n}\n\nclass HighYieldSavingsAccount extends BankAccount {\n    public double calculateInterest(double balance) {\n        return balance * 0.05;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BankAccount b1 = new BankAccount();\n        BankAccount b2 = new HighYieldSavingsAccount();\n        System.out.println(\"Standard Interest: $\" + b1.calculateInterest(1000.0));\n        System.out.println(\"High-Yield Interest: $\" + b2.calculateInterest(1000.0));\n    }\n}"
+    },
+    {
+      "id": "prob-mo-2",
+      "title": "Code from Scratch: Shipping Fee Calculation Engine",
+      "difficulty": "medium",
+      "description": "Build ShippingCalculator base class with ExpressShipping and InternationalShipping overrides.",
+      "problemStatement": "Create ShippingCalculator with computeFee(double weightKg) returning weightKg * 5.0. Create ExpressShipping overriding with weightKg * 8.0 + 15.0 flat expedite fee. Create InternationalShipping overriding with weightKg * 12.0 + 35.0 customs surcharge. From scratch.",
+      "expectedOutput": "Standard Shipping: $50.0\nExpress Shipping: $95.0\nInternational Shipping: $155.0",
+      "hints": [
+        "ShippingCalculator defines computeFee(double weightKg).",
+        "Subclasses override with exact same signature.",
+        "Test with weightKg = 10.0."
+      ],
+      "solutionCode": "class ShippingCalculator {\n    public double computeFee(double weightKg) {\n        return weightKg * 5.0;\n    }\n}\n\nclass ExpressShipping extends ShippingCalculator {\n    public double computeFee(double weightKg) {\n        return (weightKg * 8.0) + 15.0;\n    }\n}\n\nclass InternationalShipping extends ShippingCalculator {\n    public double computeFee(double weightKg) {\n        return (weightKg * 12.0) + 35.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ShippingCalculator s1 = new ShippingCalculator();\n        ShippingCalculator s2 = new ExpressShipping();\n        ShippingCalculator s3 = new InternationalShipping();\n        System.out.println(\"Standard Shipping: $\" + s1.computeFee(10.0));\n        System.out.println(\"Express Shipping: $\" + s2.computeFee(10.0));\n        System.out.println(\"International Shipping: $\" + s3.computeFee(10.0));\n    }\n}"
+    },
+    {
+      "id": "prob-mo-3",
+      "title": "Code from Scratch: Covariant Return Type Document Factory",
+      "difficulty": "medium",
+      "description": "Demonstrate covariant return types where DocumentGenerator returns Document, and PdfGenerator returns PdfDocument.",
+      "problemStatement": "Create Document with getFormat() returning 'Plain Text'. Create PdfDocument extending Document with getFormat() returning 'Portable Document Format (PDF)'. Create DocumentGenerator with createDocument() returning Document. Create PdfGenerator extending DocumentGenerator and overriding createDocument() returning PdfDocument.",
+      "expectedOutput": "Generated: Plain Text\nGenerated: Portable Document Format (PDF)",
+      "hints": [
+        "PdfDocument extends Document.",
+        "PdfGenerator.createDocument() declares return type PdfDocument (covariant).",
+        "Print generated document formats."
+      ],
+      "solutionCode": "class Document {\n    public String getFormat() { return \"Plain Text\"; }\n}\n\nclass PdfDocument extends Document {\n    public String getFormat() { return \"Portable Document Format (PDF)\"; }\n}\n\nclass DocumentGenerator {\n    public Document createDocument() {\n        return new Document();\n    }\n}\n\nclass PdfGenerator extends DocumentGenerator {\n    public PdfDocument createDocument() {\n        return new PdfDocument();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        DocumentGenerator g1 = new DocumentGenerator();\n        DocumentGenerator g2 = new PdfGenerator();\n        System.out.println(\"Generated: \" + g1.createDocument().getFormat());\n        System.out.println(\"Generated: \" + g2.createDocument().getFormat());\n    }\n}"
+    },
+    {
+      "id": "prob-mo-4",
+      "title": "Fix Broken Code: Attempting to Narrow Visibility in Override",
+      "difficulty": "easy",
+      "description": "Fix a compilation failure caused by reducing access visibility from public to protected.",
+      "problemStatement": "The code fails to compile because SubClass attempts to make processTransaction() protected when the superclass declared it public. Fix the access modifier in SubClass.",
+      "initialCode": "class BaseProcessor {\n    public void processTransaction(double amt) {\n        System.out.println(\"Base processing: $\" + amt);\n    }\n}\n\nclass SecureProcessor extends BaseProcessor {\n    // COMPILE ERROR: Cannot reduce visibility from public to protected!\n    protected void processTransaction(double amt) {\n        System.out.println(\"Secure encrypted processing: $\" + amt);\n    }\n}",
+      "expectedOutput": "Secure encrypted processing: $500.0",
+      "hints": [
+        "Change 'protected' to 'public' in SecureProcessor.processTransaction."
+      ],
+      "solutionCode": "class BaseProcessor {\n    public void processTransaction(double amt) {\n        System.out.println(\"Base processing: $\" + amt);\n    }\n}\n\nclass SecureProcessor extends BaseProcessor {\n    public void processTransaction(double amt) {\n        System.out.println(\"Secure encrypted processing: $\" + amt);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        BaseProcessor bp = new SecureProcessor();\n        bp.processTransaction(500.0);\n    }\n}"
+    },
+    {
+      "id": "prob-mo-5",
+      "title": "Challenge: Multi-Tier Loan Amortization Engine",
+      "difficulty": "hard",
+      "description": "Architect a Loan with PersonalLoan and MortgageLoan overrides computing distinct monthly repayments.",
+      "problemStatement": "Create Loan(principal, annualRate, tenureYears) with calculateMonthlyPayment(). PersonalLoan overrides applying fixed processing fee. MortgageLoan overrides applying mandatory property escrow insurance. Compute payments for both.",
+      "expectedOutput": "Personal Loan Monthly: $461.45\nMortgage Monthly: $2136.78 (Escrow Included)",
+      "hints": [
+        "Loan constructor sets principal, annualRate, tenureYears.",
+        "PersonalLoan overrides calculateMonthlyPayment.",
+        "MortgageLoan overrides calculateMonthlyPayment adding escrow."
+      ],
+      "solutionCode": "class Loan {\n    protected double principal;\n    protected double annualRate;\n    protected int tenureYears;\n    \n    public Loan(double principal, double annualRate, int tenureYears) {\n        this.principal = principal;\n        this.annualRate = annualRate;\n        this.tenureYears = tenureYears;\n    }\n    \n    public double calculateMonthlyPayment() {\n        double monthlyRate = (annualRate / 100.0) / 12.0;\n        int months = tenureYears * 12;\n        return (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));\n    }\n}\n\nclass PersonalLoan extends Loan {\n    public PersonalLoan(double principal, double annualRate, int tenureYears) {\n        super(principal, annualRate, tenureYears);\n    }\n    public double calculateMonthlyPayment() {\n        double base = super.calculateMonthlyPayment();\n        return Math.round((base + 15.0) * 100.0) / 100.0; // $15 maintenance\n    }\n}\n\nclass MortgageLoan extends Loan {\n    public MortgageLoan(double principal, double annualRate, int tenureYears) {\n        super(principal, annualRate, tenureYears);\n    }\n    public double calculateMonthlyPayment() {\n        double base = super.calculateMonthlyPayment();\n        return Math.round((base + 350.0) * 100.0) / 100.0; // $350 escrow\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Loan pLoan = new PersonalLoan(20000.0, 11.5, 5);\n        Loan mLoan = new MortgageLoan(300000.0, 6.0, 30);\n        System.out.println(\"Personal Loan Monthly: $\" + pLoan.calculateMonthlyPayment());\n        System.out.println(\"Mortgage Monthly: $\" + mLoan.calculateMonthlyPayment() + \" (Escrow Included)\");\n    }\n}"
+    }
+  ]
+}

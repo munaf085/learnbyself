@@ -1724,6 +1724,499 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
       )}
 
 
+      
+      {/* ============================================================ */}
+      {/* MODULE 6: POLYMORPHISM & OVERRIDING CHEAT SHEETS              */}
+      {/* ============================================================ */}
+
+      {/* Lesson 1: what-is-polymorphism */}
+      {(slug === 'what-is-polymorphism') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Polymorphism Forms &amp; Dispatch Mechanics Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Compile-Time Polymorphism (Static)</th>
+                  <th className="p-2.5 rounded-r-lg">Runtime Polymorphism (Dynamic)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Primary Mechanism</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Method Overloading</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Method Overriding</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Resolution Timing</td>
+                  <td className="p-2.5 text-slate-600">Compile-time by javac compiler</td>
+                  <td className="p-2.5 text-slate-600">Runtime by JVM via object vtable</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Inheritance Required?</td>
+                  <td className="p-2.5 text-slate-600">No (can exist inside single class)</td>
+                  <td className="p-2.5 text-slate-600">Yes (requires superclass / subclass tree)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Bytecode Instruction</td>
+                  <td className="p-2.5 font-mono text-slate-700">invokestatic / invokevirtual (static sig)</td>
+                  <td className="p-2.5 font-mono text-slate-700">invokevirtual (dynamic receiver)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Execution Speed</td>
+                  <td className="p-2.5 text-emerald-700">Fastest (direct address linkage)</td>
+                  <td className="p-2.5 text-slate-600">Indirect pointer lookup (JIT devirtualized)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: method-overriding */}
+      {(slug === 'method-overriding') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Method Overriding — The 6 Golden Language Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Rule #</th>
+                  <th className="p-2.5">Language Constraint</th>
+                  <th className="p-2.5">Legal Example</th>
+                  <th className="p-2.5 rounded-r-lg">Illegal Violation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono text-slate-500">01</td>
+                  <td className="p-2.5 font-bold text-slate-900">Method Signature</td>
+                  <td className="p-2.5 text-slate-600">Exact same name and parameter types</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Changing int to long creates overload!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono text-slate-500">02</td>
+                  <td className="p-2.5 font-bold text-slate-900">Return Type</td>
+                  <td className="p-2.5 text-slate-600">Exact match OR covariant subtype</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Parent returns Dog, Child returns Animal (incompatible)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono text-slate-500">03</td>
+                  <td className="p-2.5 font-bold text-slate-900">Access Modifier</td>
+                  <td className="p-2.5 text-slate-600">Same or broader (protected → public)</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Narrowing: public → protected/private</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono text-slate-500">04</td>
+                  <td className="p-2.5 font-bold text-slate-900">private Methods</td>
+                  <td className="p-2.5 text-slate-600">Cannot be overridden (not inherited)</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Defining same name creates isolated new method</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono text-slate-500">05</td>
+                  <td className="p-2.5 font-bold text-slate-900">static Methods</td>
+                  <td className="p-2.5 text-slate-600">Resolved at compile-time by reference</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Static method hiding is NOT overriding!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono text-slate-500">06</td>
+                  <td className="p-2.5 font-bold text-slate-900">final Methods</td>
+                  <td className="p-2.5 text-slate-600">Child inherits but cannot alter</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Overriding a final method triggers compile error</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: the-override-annotation */}
+      {(slug === 'the-override-annotation') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              @Override Annotation Safety Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Scenario</th>
+                  <th className="p-2.5">Without @Override</th>
+                  <th className="p-2.5 rounded-r-lg">With @Override</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Typo in Method Name (e.g. tostring)</td>
+                  <td className="p-2.5 text-amber-700">Compiles silently as a brand new unused method. Silent bug!</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Immediate compile-time error: method does not override superclass method</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Parameter Mismatch (int vs long)</td>
+                  <td className="p-2.5 text-amber-700">Compiles silently as method overloading. Dynamic dispatch fails!</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Compiler catches signature mismatch immediately</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Superclass Method Refactoring</td>
+                  <td className="p-2.5 text-amber-700">Child silently loses polymorphic binding without warnings</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Build fails at CI/CD compile stage, pinpointing affected subclasses</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Runtime Bytecode Overhead</td>
+                  <td className="p-2.5 text-slate-600">Zero overhead</td>
+                  <td className="p-2.5 text-slate-600">Zero overhead (RetentionPolicy.SOURCE discarded by javac)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: overloading-vs-overriding */}
+      {(slug === 'overloading-vs-overriding') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Method Overloading vs. Method Overriding Master Comparison
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Method Overloading</th>
+                  <th className="p-2.5 rounded-r-lg">Method Overriding</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Method Name</td>
+                  <td className="p-2.5 text-slate-700">Must be identical</td>
+                  <td className="p-2.5 text-slate-700">Must be identical</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Parameter List</td>
+                  <td className="p-2.5 text-indigo-700 font-semibold">MUST be different (count, types, order)</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">MUST be exactly the same</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Return Type</td>
+                  <td className="p-2.5 text-slate-600">Can be different (does not distinguish)</td>
+                  <td className="p-2.5 text-slate-600">Must match or be covariant subtype</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Access Modifier</td>
+                  <td className="p-2.5 text-slate-600">Any modifier allowed</td>
+                  <td className="p-2.5 text-slate-600">Cannot be more restrictive than parent</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Scope</td>
+                  <td className="p-2.5 text-slate-600">Within the same class or inherited</td>
+                  <td className="p-2.5 text-slate-600">Strictly between superclass and subclass</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Binding Type</td>
+                  <td className="p-2.5 text-indigo-700 font-semibold">Static binding (early compile-time)</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Dynamic binding (late runtime)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: parent-reference-child-object */}
+      {(slug === 'parent-reference-child-object') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Reference Type vs. Object Type Rule Matrix: Parent p = new Child()
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Component</th>
+                  <th className="p-2.5">Controlled By</th>
+                  <th className="p-2.5">When Determined?</th>
+                  <th className="p-2.5 rounded-r-lg">Operating Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Member Accessibility</td>
+                  <td className="p-2.5 text-purple-700 font-semibold">Reference Type (Parent)</td>
+                  <td className="p-2.5 text-slate-600">Compile Time (javac)</td>
+                  <td className="p-2.5 text-slate-600">Compiler rejects calls to child-only methods not declared in Parent</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Instance Method Execution</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Actual Object Type (Child)</td>
+                  <td className="p-2.5 text-slate-600">Runtime (JVM)</td>
+                  <td className="p-2.5 text-slate-600">Dynamic dispatch invokes Child overridden implementation</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Field (Variable) Resolution</td>
+                  <td className="p-2.5 text-purple-700 font-semibold">Reference Type (Parent)</td>
+                  <td className="p-2.5 text-slate-600">Compile Time (javac)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Variables are NOT polymorphic! Parent variable value is read</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Static Method Resolution</td>
+                  <td className="p-2.5 text-purple-700 font-semibold">Reference Type (Parent)</td>
+                  <td className="p-2.5 text-slate-600">Compile Time (javac)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Static methods are hidden, not overridden. Parent static runs</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: upcasting */}
+      {(slug === 'upcasting') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Upcasting vs. Downcasting Reference Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Upcasting (Widening)</th>
+                  <th className="p-2.5 rounded-r-lg">Downcasting (Narrowing)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Direction</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Subclass → Superclass (Up the hierarchy)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Superclass → Subclass (Down the hierarchy)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Cast Syntax Required?</td>
+                  <td className="p-2.5 text-slate-600">Implicit / Automatic (no cast syntax needed)</td>
+                  <td className="p-2.5 text-slate-600">Explicit cast required: (Child) ref</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Type Safety</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">100% Safe (IS-A relationship always holds)</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Risky (Throws ClassCastException if type mismatch)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Memory Alteration</td>
+                  <td className="p-2.5 text-slate-600">None! Same heap memory, new reference lens</td>
+                  <td className="p-2.5 text-slate-600">None! Unlocks access to child-specific methods</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Best Practice Pre-check</td>
+                  <td className="p-2.5 text-slate-600">None needed</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Guard with instanceof before casting</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: dynamic-method-dispatch */}
+      {(slug === 'dynamic-method-dispatch') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              JVM Dispatch Engine: Static vs. Dynamic Binding
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dispatch Type</th>
+                  <th className="p-2.5">Bytecode Instruction</th>
+                  <th className="p-2.5">Target Methods</th>
+                  <th className="p-2.5 rounded-r-lg">Resolution Mechanism</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Static Binding (Early)</td>
+                  <td className="p-2.5 font-mono text-indigo-700">invokestatic / invokespecial</td>
+                  <td className="p-2.5 text-slate-600">static, private, final, and constructors</td>
+                  <td className="p-2.5 text-slate-600">Compiler resolves direct memory address from class symbol table</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Dynamic Binding (Late)</td>
+                  <td className="p-2.5 font-mono text-emerald-700">invokevirtual / invokeinterface</td>
+                  <td className="p-2.5 text-slate-600">Non-private, non-static, non-final instance methods</td>
+                  <td className="p-2.5 text-slate-600">JVM inspects runtime object header and looks up function pointer in vtable</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">JIT Optimization</td>
+                  <td className="p-2.5 font-mono text-slate-700">Devirtualization / Inlining</td>
+                  <td className="p-2.5 text-slate-600">Monomorphic call sites (single receiver class)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Replaces vtable lookup with inline code execution</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: runtime-polymorphism */}
+      {(slug === 'runtime-polymorphism') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Runtime Polymorphism &amp; Open-Closed Principle Architecture
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Architecture Pattern</th>
+                  <th className="p-2.5">Procedural Type Checking (Bad)</th>
+                  <th className="p-2.5 rounded-r-lg">Polymorphic Dispatch (Clean OOP)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Control Flow</td>
+                  <td className="p-2.5 text-rose-700">if-else / switch on object type or enum</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Uniform ref.execute() via dynamic dispatch</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Adding New Variant</td>
+                  <td className="p-2.5 text-rose-700">Must edit every conditional branch across codebase</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Create new subclass; consumer loops require zero changes</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Open-Closed Principle</td>
+                  <td className="p-2.5 text-rose-700">Violated (closed to extension, open to modification)</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Satisfied (open for extension, closed for modification)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Coupling</td>
+                  <td className="p-2.5 text-slate-600">Caller tightly coupled to all concrete classes</td>
+                  <td className="p-2.5 text-slate-600">Caller decoupled; depends only on parent abstraction</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: super-with-overridden-methods */}
+      {(slug === 'super-with-overridden-methods') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              super.method() Augmentation vs. super() Constructor Chaining
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Rule / Property</th>
+                  <th className="p-2.5">super(...) Constructor Call</th>
+                  <th className="p-2.5 rounded-r-lg">super.methodName(...) Method Call</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Placement Restriction</td>
+                  <td className="p-2.5 text-rose-700 font-medium">MUST be the very first line of constructor</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Anywhere in method body (start, middle, end)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Conditional Execution</td>
+                  <td className="p-2.5 text-slate-600">Cannot be placed inside if-else or loops</td>
+                  <td className="p-2.5 text-slate-600">Can be wrapped inside if-else, try-catch, or loops</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Multiple Invocations</td>
+                  <td className="p-2.5 text-slate-600">Only once per constructor</td>
+                  <td className="p-2.5 text-slate-600">Can be invoked multiple times if necessary</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Omitting super Prefix</td>
+                  <td className="p-2.5 text-slate-600">Compiler auto-inserts implicit super();</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Calls itself on this recursively → StackOverflowError!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Grandparent Chaining</td>
+                  <td className="p-2.5 text-slate-600">Propagates automatically up the hierarchy</td>
+                  <td className="p-2.5 text-slate-600">super.super.method() is strictly illegal in Java</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 10: payment-system-project */}
+      {(slug === 'payment-system-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Payment System — 10-Point Architectural Checklist
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Architecture Requirement</th>
+                  <th className="p-2.5 rounded-r-lg">Implementation Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">Base Payment class defines txId, amount, status, and lifecycle methods</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">CreditCardPayment overrides calculateFee() with 2.5% interchange fee</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">PayPalPayment overrides calculateFee() with flat $0.30 + 1.5% fee</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">CryptoPayment overrides calculateFee() with flat $1.50 network gas fee</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">Subclasses annotate all overridden methods with @Override for safety</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">Subclasses augment base verification using super.processPayment()</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">Batch processor accepts Payment[] array and dispatches dynamically</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">Base printReceipt() calls this.calculateFee(), dynamically routing to child</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Zero fragile if-else or instanceof type switches in checkout loop</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Clean pedagogical boundaries: pure OOP polymorphism without abstract/interfaces</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+
       {/* Lesson: java-and-jvm */}
       {(slug === 'java-and-jvm' || slug === 'what-is-java-and-the-jvm') && (
         <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">

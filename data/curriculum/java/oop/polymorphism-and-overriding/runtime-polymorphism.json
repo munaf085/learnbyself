@@ -1,0 +1,361 @@
+{
+  "id": "java-oop-mod6-les8",
+  "slug": "runtime-polymorphism",
+  "sectionSlug": "oop",
+  "moduleSlug": "polymorphism-and-overriding",
+  "languageSlug": "java",
+  "title": "Runtime Polymorphism in Action",
+  "summary": "Master runtime polymorphism in real-world systems: processing heterogeneous collections, decoupling caller logic from subclass variants, and writing extensible code.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "dynamic-method-dispatch",
+    "upcasting"
+  ],
+  "learningObjectives": [
+    "Design systems utilizing heterogeneous collections through parent-type arrays and lists",
+    "Eliminate fragile if-else / switch type-checking chains using dynamic dispatch",
+    "Apply the Open-Closed Principle by introducing new subclasses without changing client processing loops",
+    "Avoid common performance and downcasting pitfalls in polymorphic iteration"
+  ],
+  "expectedOutcomes": [
+    "You can build batch processing pipelines accepting arrays of base classes and dynamically executing subclass behaviors",
+    "You can refactor procedural conditional branches into elegant polymorphic object hierarchies"
+  ],
+  "activities": [
+    {
+      "id": "act-les8-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Universal Media Player",
+      "concept": "Runtime Polymorphism",
+      "realWorldMetaphor": {
+        "scenario": "A modern smart TV connects to gaming consoles, Blu-ray players, cable set-top boxes, and USB thumb drives through HDMI ports. The remote control has a single 'Play/Pause' button. When you tap 'Play', the TV sends a uniform play signal down the active connection. It does not contain specialized hardware for each device manufacturer; each connected device interprets the play command according to its own firmware.",
+        "mapping": "The HDMI port is the parent reference type (common contract). The connected devices are diverse subclass instances (PlayStation, Blu-ray, AppleTV). Tapping Play is invoking an overridden method. Dynamic dispatch routes the command to the actual device firmware at runtime.",
+        "takeaway": "The client (TV remote) never cares which concrete brand is attached\u2014it issues uniform requests, and runtime polymorphism ensures the correct specialized behavior occurs seamlessly."
+      }
+    },
+    {
+      "id": "act-les8-concept",
+      "type": "concept",
+      "title": "Decoupling Systems with Runtime Polymorphism",
+      "content": "### The Power of Heterogeneous Collections\n\nIn standard static programming, processing different data types requires separate arrays and duplicate loops:\n```java\nCircle[] circles = ...;\nRectangle[] rectangles = ...;\n```\nWith **runtime polymorphism**, a single array of the superclass reference can house any instance in the inheritance tree:\n```java\nShape[] shapes = new Shape[] { new Circle(5.0), new Rectangle(4.0, 6.0), new Triangle(3.0, 4.0) };\nfor (Shape s : shapes) {\n    System.out.println(\"Area: \" + s.calculateArea()); // Dynamically dispatched!\n}\n```\n\n### Eliminating the `instanceof` Anti-Pattern\n\nA hallmark of novice object-oriented programming is switching on type:\n```java\n// ANTI-PATTERN: Fragile and violates Open-Closed Principle!\nfor (Shape s : shapes) {\n    if (s instanceof Circle) {\n        // do circle math\n    } else if (s instanceof Rectangle) {\n        // do rectangle math\n    }\n}\n```\nWhen you add `Hexagon`, you must find and modify every `if-else` statement across your entire codebase. With runtime polymorphism, the processing loop remains **untouched**; you simply create `class Hexagon extends Shape` and override `calculateArea()`. The caller is 100% closed for modification, yet open for extension.\n\n### Architecture Benefits\n1. **Extensibility**: Plug in new subclasses at any time without recompiling or altering consumer logic.\n2. **Testability**: Inject mock subclasses for testing without changing the consumer pipeline.\n3. **Maintainability**: Centralize each variant's business logic strictly within its own class definition."
+    },
+    {
+      "id": "act-les8-cw1",
+      "type": "code_walkthrough",
+      "title": "Heterogeneous Shape Pipeline with Dynamic Calculation",
+      "codeSnippet": "class Shape {\n    protected String name;\n    public Shape(String name) { this.name = name; }\n    public double calculateArea() { return 0.0; }\n    public void describe() {\n        System.out.println(name + \" -> Area: \" + String.format(\"%.2f\", calculateArea()));\n    }\n}\n\nclass Circle extends Shape {\n    private double radius;\n    public Circle(double radius) {\n        super(\"Circle\");\n        this.radius = radius;\n    }\n    @Override\n    public double calculateArea() {\n        return Math.PI * radius * radius;\n    }\n}\n\nclass Rectangle extends Shape {\n    private double width, height;\n    public Rectangle(double width, double height) {\n        super(\"Rectangle\");\n        this.width = width;\n        this.height = height;\n    }\n    @Override\n    public double calculateArea() {\n        return width * height;\n    }\n}\n\npublic class ShapeBatchDemo {\n    public static void main(String[] args) {\n        Shape[] drawing = new Shape[] {\n            new Circle(3.0),\n            new Rectangle(4.0, 5.0),\n            new Circle(1.5)\n        };\n        \n        double totalArea = 0.0;\n        for (Shape s : drawing) {\n            s.describe();\n            totalArea += s.calculateArea();\n        }\n        System.out.println(\"Total Canvas Area: \" + String.format(\"%.2f\", totalArea));\n    }\n}",
+      "code": "class Shape {\n    protected String name;\n    public Shape(String name) { this.name = name; }\n    public double calculateArea() { return 0.0; }\n    public void describe() {\n        System.out.println(name + \" -> Area: \" + String.format(\"%.2f\", calculateArea()));\n    }\n}\n\nclass Circle extends Shape {\n    private double radius;\n    public Circle(double radius) {\n        super(\"Circle\");\n        this.radius = radius;\n    }\n    @Override\n    public double calculateArea() {\n        return Math.PI * radius * radius;\n    }\n}\n\nclass Rectangle extends Shape {\n    private double width, height;\n    public Rectangle(double width, double height) {\n        super(\"Rectangle\");\n        this.width = width;\n        this.height = height;\n    }\n    @Override\n    public double calculateArea() {\n        return width * height;\n    }\n}\n\npublic class ShapeBatchDemo {\n    public static void main(String[] args) {\n        Shape[] drawing = new Shape[] {\n            new Circle(3.0),\n            new Rectangle(4.0, 5.0),\n            new Circle(1.5)\n        };\n        \n        double totalArea = 0.0;\n        for (Shape s : drawing) {\n            s.describe();\n            totalArea += s.calculateArea();\n        }\n        System.out.println(\"Total Canvas Area: \" + String.format(\"%.2f\", totalArea));\n    }\n}",
+      "language": "java",
+      "explanation": "Notice how describe() in Shape calls calculateArea(). Even though describe() is written in the superclass, calling it on a Circle resolves calculateArea() dynamically to Circle's implementation!",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Array of base type `Shape[]` is instantiated with concrete instances of Circle and Rectangle."
+        },
+        {
+          "step": 2,
+          "description": "The for-each loop iterates over each element using reference variable `Shape s`."
+        },
+        {
+          "step": 3,
+          "description": "Inside `s.describe()`, the base class method invokes `this.calculateArea()`. Because `this` is dynamically bound, Circle's Math.PI formula is executed for circles, and width * height for rectangles."
+        },
+        {
+          "step": 4,
+          "description": "The accumulator aggregates total area without needing to know any geometric specifics of individual shapes."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-cw2",
+      "type": "code_walkthrough",
+      "title": "Polymorphic Notification Service",
+      "codeSnippet": "class Notification {\n    public void send(String recipient, String message) {\n        System.out.println(\"[Default] To: \" + recipient + \" | \" + message);\n    }\n}\n\nclass EmailNotification extends Notification {\n    @Override\n    public void send(String recipient, String message) {\n        System.out.println(\"[Email Server] Connecting SMTP... Sending to \" + recipient + \": \" + message);\n    }\n}\n\nclass SMSNotification extends Notification {\n    @Override\n    public void send(String recipient, String message) {\n        System.out.println(\"[SMS Gateway] Dispatching telecom packet to \" + recipient + \": \" + message);\n    }\n}\n\nclass NotificationDispatcher {\n    // Method accepts the generic parent type!\n    public static void broadcast(Notification channel, String user, String alert) {\n        channel.send(user, alert);\n    }\n}\n\npublic class NotificationDemo {\n    public static void main(String[] args) {\n        Notification email = new EmailNotification();\n        Notification sms = new SMSNotification();\n        \n        NotificationDispatcher.broadcast(email, \"alice@corp.com\", \"Server CPU load 92%\");\n        NotificationDispatcher.broadcast(sms, \"+1555019283\", \"Urgent: Database failover\");\n    }\n}",
+      "code": "class Notification {\n    public void send(String recipient, String message) {\n        System.out.println(\"[Default] To: \" + recipient + \" | \" + message);\n    }\n}\n\nclass EmailNotification extends Notification {\n    @Override\n    public void send(String recipient, String message) {\n        System.out.println(\"[Email Server] Connecting SMTP... Sending to \" + recipient + \": \" + message);\n    }\n}\n\nclass SMSNotification extends Notification {\n    @Override\n    public void send(String recipient, String message) {\n        System.out.println(\"[SMS Gateway] Dispatching telecom packet to \" + recipient + \": \" + message);\n    }\n}\n\nclass NotificationDispatcher {\n    // Method accepts the generic parent type!\n    public static void broadcast(Notification channel, String user, String alert) {\n        channel.send(user, alert);\n    }\n}\n\npublic class NotificationDemo {\n    public static void main(String[] args) {\n        Notification email = new EmailNotification();\n        Notification sms = new SMSNotification();\n        \n        NotificationDispatcher.broadcast(email, \"alice@corp.com\", \"Server CPU load 92%\");\n        NotificationDispatcher.broadcast(sms, \"+1555019283\", \"Urgent: Database failover\");\n    }\n}",
+      "language": "java",
+      "explanation": "NotificationDispatcher.broadcast takes a Notification reference. If a developer later introduces SlackNotification, broadcast() requires zero modifications.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Parent class `Notification` defines base signature `send(String, String)`."
+        },
+        {
+          "step": 2,
+          "description": "`EmailNotification` and `SMSNotification` override `send` with transport-specific protocols."
+        },
+        {
+          "step": 3,
+          "description": "The client service `NotificationDispatcher` operates strictly on the abstract `Notification` parameter."
+        },
+        {
+          "step": 4,
+          "description": "At runtime, invocation `channel.send(...)` executes EmailNotification or SMSNotification based on the actual object passed."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-mcq",
+      "type": "mcq",
+      "title": "Runtime Polymorphism Mastery Quiz",
+      "questions": [
+        {
+          "id": "q8-1",
+          "question": "What is the primary architectural advantage of runtime polymorphism?",
+          "options": [
+            "Faster JVM startup execution time",
+            "Decoupling client code from concrete implementations, enabling easy extension without modification",
+            "Automatic memory garbage collection optimization",
+            "Elimination of static variables and methods in child classes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Runtime polymorphism allows client code to interact with high-level parent abstractions, enabling new child types to be plugged in without changing existing client loops or callers."
+        },
+        {
+          "id": "q8-2",
+          "question": "Given `Shape[] arr = { new Circle(), new Square() };`, what happens when `arr[i].draw()` is called in a loop?",
+          "options": [
+            "Shape's draw() method always executes because the array type is Shape",
+            "A ClassCastException is thrown at runtime unless explicit casting is performed",
+            "The JVM looks up the vtable of each specific element at runtime and executes Circle's or Square's draw()",
+            "Compilation error: cannot store subclasses in a superclass array"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Java arrays of reference types are covariant. The JVM resolves overridden instance methods using each object's actual class vtable at runtime."
+        },
+        {
+          "id": "q8-3",
+          "question": "Why is replacing a polymorphic method call with an `if-else (obj instanceof SubClass)` chain considered an anti-pattern?",
+          "options": [
+            "`instanceof` always throws a NullPointerException on valid objects",
+            "It tightly couples the caller to every concrete subclass and violates the Open-Closed Principle",
+            "Java forbids using instanceof in for loops",
+            "It converts dynamic binding to static compilation errors"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Explicit type checking means whenever a new subclass is created, every `if-else` chain must be manually updated, leading to brittle, error-prone code."
+        },
+        {
+          "id": "q8-4",
+          "question": "In the code: `class P { void show() { System.out.print(\"P\"); } } class C extends P { void show() { System.out.print(\"C\"); } }`\nWhat is printed by: `P[] list = { new P(), new C() }; for(P p : list) p.show();`?",
+          "options": [
+            "PP",
+            "PC",
+            "CC",
+            "Compilation error"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`list[0]` is a P instance, so `p.show()` invokes P's method ('P'). `list[1]` is a C instance, so dynamic dispatch invokes C's method ('C'). The output is 'PC'."
+        },
+        {
+          "id": "q8-5",
+          "question": "If a superclass method `process()` is called inside another superclass method `run()`, what happens if a subclass overrides `process()`?",
+          "options": [
+            "The superclass version of process() always runs because run() was defined in superclass",
+            "The subclass overridden version of process() runs when invoked on a subclass object",
+            "A StackOverflowError occurs automatically",
+            "Compilation error: superclass methods cannot call overridden methods"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Inside `run()`, the implicit receiver is `this`. When invoked on a child instance, dynamic method dispatch ensures `this.process()` routes to the child's overridden version."
+        },
+        {
+          "id": "q8-6",
+          "question": "Which of the following is REQUIRED for runtime polymorphism to work?",
+          "options": [
+            "The method must be static",
+            "The method must be private in the parent class",
+            "An inheritance relationship with method overriding and method invocation via a parent reference",
+            "The child class must have more fields than the parent class"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Runtime polymorphism requires inheritance, method overriding, and invocation via a reference variable pointing to a child object."
+        },
+        {
+          "id": "q8-7",
+          "question": "What is array covariance in Java (e.g., `Parent[] arr = new Child[5];`) and what risk does it carry at runtime?",
+          "options": [
+            "It allows zero memory overhead for primitives",
+            "It allows storing non-Child objects into arr if compiled, but throws ArrayStoreException at runtime",
+            "It prevents garbage collection of child instances",
+            "It converts all child objects to parent objects irreversibly"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java arrays are covariant: `Child[]` is assignable to `Parent[]`. However, attempting to insert an incompatible sibling object throws `ArrayStoreException` at runtime."
+        },
+        {
+          "id": "q8-8",
+          "question": "Can runtime polymorphism be achieved with instance fields (variables)?",
+          "options": [
+            "Yes, variables are overridden dynamically just like methods",
+            "No, variables are resolved at compile-time based on the reference type (variable hiding)",
+            "Only if the variable is declared protected",
+            "Only if the variable is marked final"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Fields are NOT polymorphic in Java. Field access is resolved at compile time according to the reference type."
+        },
+        {
+          "id": "q8-9",
+          "question": "What happens if a parent class reference in a heterogeneous array is `null` when a polymorphic method is called?",
+          "options": [
+            "The parent's default method executes",
+            "A NullPointerException is thrown at runtime",
+            "The loop skips the null element silently",
+            "The child's default constructor is called"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Attempting to invoke an instance method on a `null` reference immediately triggers a `NullPointerException` before dispatch can occur."
+        },
+        {
+          "id": "q8-10",
+          "question": "How does the Open-Closed Principle relate to runtime polymorphism?",
+          "options": [
+            "Classes should be closed to inheritance and open to public fields",
+            "Software entities should be open for extension (adding new subclasses) but closed for modification (existing client logic remains unchanged)",
+            "Methods must always be private to close external access",
+            "Classes must be final so nobody can modify them"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The Open-Closed Principle states that software entities should be open for extension but closed for modification. Runtime polymorphism is the primary mechanism to achieve this in OOP."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Runtime Polymorphism",
+      "interviewQA": [
+        {
+          "id": "i8-1",
+          "companyTag": "Amazon",
+          "question": "How does runtime polymorphism help implement the Open-Closed Principle (OCP)?",
+          "answer": "Runtime polymorphism allows high-level business workflows (such as order fulfillment or checkout) to depend on abstract superclasses or interfaces. When a new fulfillment channel or payment provider is introduced, developers create a new subclass overriding standard operations. The consumer workflow requires zero code changes or recompilations, remaining closed for modification while cleanly extended."
+        },
+        {
+          "id": "i8-2",
+          "companyTag": "Google",
+          "question": "Why is the use of `instanceof` with cascading `if-else` blocks considered a code smell in object-oriented systems?",
+          "answer": "Using cascading `if-else (x instanceof Subclass)` blocks couples the caller to concrete implementations, violates the Open-Closed Principle, and scatters type-checking logic across the codebase. Every time a new subclass is added, developers must find and modify every corresponding `if-else` statement. Polymorphism replaces this with a single method call dynamically dispatched to the target object."
+        },
+        {
+          "id": "i8-3",
+          "companyTag": "Microsoft",
+          "question": "What happens under the hood when a method in a heterogeneous array `SuperClass[]` is invoked?",
+          "answer": "At runtime, when the JVM executes `invokevirtual`, it retrieves the actual runtime type from the object header of the current array element. It reads the method pointer from the class vtable (Virtual Method Table) corresponding to that method offset and jumps directly to that machine code, executing the overridden child implementation."
+        },
+        {
+          "id": "i8-4",
+          "companyTag": "Adobe",
+          "question": "Can you achieve runtime polymorphism if the superclass method is declared `private` or `final`?",
+          "answer": "No. `private` methods are not inherited and cannot be overridden (they use `invokespecial`). `final` methods explicitly forbid overriding (enforced at compile time). In both cases, runtime polymorphism is impossible because no child implementation can replace the method."
+        },
+        {
+          "id": "i8-5",
+          "companyTag": "Uber",
+          "question": "Explain array covariance in Java and the runtime exception it can cause.",
+          "answer": "Java arrays are covariant: `Integer[]` is a subtype of `Number[]`, and `Child[]` is a subtype of `Parent[]`. If code casts `Child[]` to `Parent[]` and attempts to assign an instance of another sibling subclass `arr[0] = new Sibling()`, the compiler permits it based on `Parent[]`, but the JVM checks the actual array component type at runtime and throws `java.lang.ArrayStoreException`."
+        },
+        {
+          "id": "i8-6",
+          "companyTag": "Bloomberg",
+          "question": "How does runtime polymorphism impact runtime performance in latency-critical applications?",
+          "answer": "Polymorphic calls introduce a minor indirect pointer lookup via the object's vtable. Modern HotSpot JVMs optimize this heavily using monomorphic call site devirtualization (inlining the call if only one concrete class is observed at runtime) and bimorphic inlining. In megamorphic call sites (3+ active concrete types at the same call site), vtable lookup occurs without inlining, adding a few CPU cycles."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can instantiate and manage heterogeneous collections of objects using a common superclass array.",
+        "I understand why iterating through a superclass collection dynamically invokes the appropriate child method.",
+        "I know how runtime polymorphism eliminates brittle `instanceof` conditional ladders.",
+        "I understand how the Open-Closed Principle is enabled by polymorphic dispatch.",
+        "I know that invoking `this.method()` from within a superclass method resolves dynamically to child overrides.",
+        "I understand the difference between array covariance and runtime `ArrayStoreException`.",
+        "I know that `null` references in a polymorphic collection throw `NullPointerException` when methods are invoked.",
+        "I understand how the HotSpot JVM optimizes monomorphic vs megamorphic call sites.",
+        "I can design an extensible service dispatcher accepting base class parameters.",
+        "I know that instance fields are not polymorphic and do not participate in dynamic dispatch."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les8-p1",
+      "lessonId": "java-oop-mod6-les8",
+      "orderIndex": 1,
+      "title": "Warmup: Polymorphic Transport Fleet",
+      "difficulty": "easy",
+      "problemStatement": "You are building a transport fleet manager. Complete the `Vehicle` hierarchy with `Car` and `Bicycle`.\n- `Vehicle`: has `protected String model`, method `public void move()` printing `'Vehicle moving'`.\n- `Car`: overrides `move()` printing `model + ' drives on road at 60 mph'`.\n- `Bicycle`: overrides `move()` printing `model + ' pedals on bike lane at 15 mph'`.\nIn `main`, create a `Vehicle[] fleet` containing a `Car(\"Tesla\")` and a `Bicycle(\"Trek\")`. Iterate through the fleet and call `move()` on each.",
+      "starterCode": "class Vehicle {\n    protected String model;\n    public Vehicle(String model) { this.model = model; }\n    public void move() {\n        System.out.println(\"Vehicle moving\");\n    }\n}\n\nclass Car extends Vehicle {\n    public Car(String model) {\n        super(model);\n    }\n    // TODO: Override move()\n}\n\nclass Bicycle extends Vehicle {\n    public Bicycle(String model) {\n        super(model);\n    }\n    // TODO: Override move()\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        // TODO: Create Vehicle[] array with Car(\"Tesla\") and Bicycle(\"Trek\") and call move() on each\n    }\n}",
+      "initialCode": "class Vehicle {\n    protected String model;\n    public Vehicle(String model) { this.model = model; }\n    public void move() {\n        System.out.println(\"Vehicle moving\");\n    }\n}\n\nclass Car extends Vehicle {\n    public Car(String model) {\n        super(model);\n    }\n    // TODO: Override move()\n}\n\nclass Bicycle extends Vehicle {\n    public Bicycle(String model) {\n        super(model);\n    }\n    // TODO: Override move()\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        // TODO: Create Vehicle[] array with Car(\"Tesla\") and Bicycle(\"Trek\") and call move() on each\n    }\n}",
+      "solutionCode": "class Vehicle {\n    protected String model;\n    public Vehicle(String model) { this.model = model; }\n    public void move() {\n        System.out.println(\"Vehicle moving\");\n    }\n}\n\nclass Car extends Vehicle {\n    public Car(String model) {\n        super(model);\n    }\n    @Override\n    public void move() {\n        System.out.println(model + \" drives on road at 60 mph\");\n    }\n}\n\nclass Bicycle extends Vehicle {\n    public Bicycle(String model) {\n        super(model);\n    }\n    @Override\n    public void move() {\n        System.out.println(model + \" pedals on bike lane at 15 mph\");\n    }\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        Vehicle[] fleet = new Vehicle[] {\n            new Car(\"Tesla\"),\n            new Bicycle(\"Trek\")\n        };\n        for (Vehicle v : fleet) {\n            v.move();\n        }\n    }\n}",
+      "expectedOutput": "Tesla drives on road at 60 mph\nTrek pedals on bike lane at 15 mph",
+      "hints": [
+        "In Car and Bicycle, annotate move() with @Override.",
+        "Loop over Vehicle[] fleet with a standard for-each loop: for(Vehicle v : fleet) v.move();"
+      ]
+    },
+    {
+      "id": "prob-les8-p2",
+      "lessonId": "java-oop-mod6-les8",
+      "orderIndex": 2,
+      "title": "Payroll Tax Calculation Engine",
+      "difficulty": "medium",
+      "problemStatement": "Build an enterprise payroll tax calculator using runtime polymorphism from scratch without starter code.\n1. Create base class `TaxPayer` with `protected String name` and `protected double grossIncome`. Implement `public double calculateTax()` returning `grossIncome * 0.15` (15% default).\n2. Create subclass `SalariedEmployee` extending `TaxPayer`. Override `calculateTax()`: income up to 50,000 is taxed at 10%, income above 50,000 is taxed at 20% on the excess.\n3. Create subclass `Contractor` extending `TaxPayer`. Override `calculateTax()` returning a flat 12% tax regardless of income.\n4. In `Main`, create an array `TaxPayer[] taxpayers` containing:\n   - `SalariedEmployee(\"Alice\", 70000.0)` -> 50000*0.10 + 20000*0.20 = 9000.0\n   - `Contractor(\"Bob\", 40000.0)` -> 40000*0.12 = 4800.0\n   - `TaxPayer(\"Charlie\", 30000.0)` -> 30000*0.15 = 4500.0\n5. Iterate through the array and print each taxpayer's name and computed tax formatted to 1 decimal place: `<name>: $<tax>`.",
+      "solutionCode": "class TaxPayer {\n    protected String name;\n    protected double grossIncome;\n    public TaxPayer(String name, double grossIncome) {\n        this.name = name;\n        this.grossIncome = grossIncome;\n    }\n    public double calculateTax() {\n        return grossIncome * 0.15;\n    }\n    public String getName() { return name; }\n}\n\nclass SalariedEmployee extends TaxPayer {\n    public SalariedEmployee(String name, double grossIncome) {\n        super(name, grossIncome);\n    }\n    @Override\n    public double calculateTax() {\n        if (grossIncome <= 50000.0) {\n            return grossIncome * 0.10;\n        } else {\n            return (50000.0 * 0.10) + ((grossIncome - 50000.0) * 0.20);\n        }\n    }\n}\n\nclass Contractor extends TaxPayer {\n    public Contractor(String name, double grossIncome) {\n        super(name, grossIncome);\n    }\n    @Override\n    public double calculateTax() {\n        return grossIncome * 0.12;\n    }\n}\n\npublic class TaxEngineApp {\n    public static void main(String[] args) {\n        TaxPayer[] payers = new TaxPayer[] {\n            new SalariedEmployee(\"Alice\", 70000.0),\n            new Contractor(\"Bob\", 40000.0),\n            new TaxPayer(\"Charlie\", 30000.0)\n        };\n        for (TaxPayer tp : payers) {\n            System.out.println(tp.getName() + \": $\" + String.format(\"%.1f\", tp.calculateTax()));\n        }\n    }\n}",
+      "expectedOutput": "Alice: $9000.0\nBob: $4800.0\nCharlie: $4500.0",
+      "hints": [
+        "In SalariedEmployee, check if grossIncome > 50000 to compute the bracket math.",
+        "Loop over TaxPayer[] and call tp.calculateTax() dynamically."
+      ]
+    },
+    {
+      "id": "prob-les8-p3",
+      "lessonId": "java-oop-mod6-les8",
+      "orderIndex": 3,
+      "title": "Dynamic Audio Effect Processor",
+      "difficulty": "medium",
+      "problemStatement": "Design an audio signal processing chain from scratch:\n1. Base class `AudioFilter`: has method `public String process(String sample)` returning `\"[Raw] \" + sample`.\n2. Subclass `EchoFilter` extending `AudioFilter`: overrides `process` returning `\"[Echo: \" + sample + \" ... \" + sample + \"]\"`.\n3. Subclass `ReverbFilter` extending `AudioFilter`: overrides `process` returning `\"[Reverb: ~\" + sample + \"~]\"`.\n4. Subclass `NoiseGateFilter` extending `AudioFilter`: overrides `process` returning `\"[Gated: \" + sample + \"]\"`.\n5. In `Main`, create an array `AudioFilter[] chain` with one instance of each filter.\n6. For the audio sample `'Vocals_Take1'`, run it through the chain sequentially where each filter processes the sample and print each resulting transformed string.",
+      "solutionCode": "class AudioFilter {\n    public String process(String sample) {\n        return \"[Raw] \" + sample;\n    }\n}\n\nclass EchoFilter extends AudioFilter {\n    @Override\n    public String process(String sample) {\n        return \"[Echo: \" + sample + \" ... \" + sample + \"]\";\n    }\n}\n\nclass ReverbFilter extends AudioFilter {\n    @Override\n    public String process(String sample) {\n        return \"[Reverb: ~\" + sample + \"~]\";\n    }\n}\n\nclass NoiseGateFilter extends AudioFilter {\n    @Override\n    public String process(String sample) {\n        return \"[Gated: \" + sample + \"]\";\n    }\n}\n\npublic class AudioProcessorApp {\n    public static void main(String[] args) {\n        AudioFilter[] chain = new AudioFilter[] {\n            new EchoFilter(),\n            new ReverbFilter(),\n            new NoiseGateFilter()\n        };\n        String sample = \"Vocals_Take1\";\n        for (AudioFilter filter : chain) {\n            System.out.println(filter.process(sample));\n        }\n    }\n}",
+      "expectedOutput": "[Echo: Vocals_Take1 ... Vocals_Take1]\n[Reverb: ~Vocals_Take1~]\n[Gated: Vocals_Take1]",
+      "hints": [
+        "Each subclass overrides the process(String sample) method with its custom formatting.",
+        "In main, iterate over AudioFilter[] and print the result of filter.process(sample)."
+      ]
+    },
+    {
+      "id": "prob-les8-p4",
+      "lessonId": "java-oop-mod6-les8",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Broken Polymorphic Discount System",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to write an e-commerce discount calculator, but made static method mistakes and type checks instead of true polymorphism. Fix the bug so that discounts calculate polymorphically via dynamic method dispatch without static binding or if-else type checks.",
+      "starterCode": "class DiscountPolicy {\n    // BUG: Marked static, preventing dynamic dispatch!\n    public static double applyDiscount(double total) {\n        return total;\n    }\n}\n\nclass StudentDiscount extends DiscountPolicy {\n    // BUG: Attempted to hide static method\n    public static double applyDiscount(double total) {\n        return total * 0.80; // 20% off\n    }\n}\n\nclass SeniorDiscount extends DiscountPolicy {\n    public static double applyDiscount(double total) {\n        return total * 0.70; // 30% off\n    }\n}\n\npublic class DiscountBugApp {\n    public static void main(String[] args) {\n        DiscountPolicy[] policies = new DiscountPolicy[] {\n            new StudentDiscount(),\n            new SeniorDiscount()\n        };\n        // BUG: Calls static method on parent reference type\n        for (DiscountPolicy p : policies) {\n            System.out.println(p.applyDiscount(100.0));\n        }\n    }\n}",
+      "initialCode": "class DiscountPolicy {\n    // BUG: Marked static, preventing dynamic dispatch!\n    public static double applyDiscount(double total) {\n        return total;\n    }\n}\n\nclass StudentDiscount extends DiscountPolicy {\n    // BUG: Attempted to hide static method\n    public static double applyDiscount(double total) {\n        return total * 0.80; // 20% off\n    }\n}\n\nclass SeniorDiscount extends DiscountPolicy {\n    public static double applyDiscount(double total) {\n        return total * 0.70; // 30% off\n    }\n}\n\npublic class DiscountBugApp {\n    public static void main(String[] args) {\n        DiscountPolicy[] policies = new DiscountPolicy[] {\n            new StudentDiscount(),\n            new SeniorDiscount()\n        };\n        // BUG: Calls static method on parent reference type\n        for (DiscountPolicy p : policies) {\n            System.out.println(p.applyDiscount(100.0));\n        }\n    }\n}",
+      "solutionCode": "class DiscountPolicy {\n    public double applyDiscount(double total) {\n        return total;\n    }\n}\n\nclass StudentDiscount extends DiscountPolicy {\n    @Override\n    public double applyDiscount(double total) {\n        return total * 0.80;\n    }\n}\n\nclass SeniorDiscount extends DiscountPolicy {\n    @Override\n    public double applyDiscount(double total) {\n        return total * 0.70;\n    }\n}\n\npublic class DiscountBugApp {\n    public static void main(String[] args) {\n        DiscountPolicy[] policies = new DiscountPolicy[] {\n            new StudentDiscount(),\n            new SeniorDiscount()\n        };\n        for (DiscountPolicy p : policies) {\n            System.out.println(p.applyDiscount(100.0));\n        }\n    }\n}",
+      "expectedOutput": "80.0\n70.0",
+      "hints": [
+        "Remove the static keyword from applyDiscount in all classes.",
+        "Add @Override annotations in StudentDiscount and SeniorDiscount."
+      ]
+    },
+    {
+      "id": "prob-les8-p5",
+      "lessonId": "java-oop-mod6-les8",
+      "orderIndex": 5,
+      "title": "Extensible Database Query Generator",
+      "difficulty": "hard",
+      "problemStatement": "Build a multi-dialect database SQL generator using runtime polymorphism from scratch:\n1. Base class `SqlDialect`: has method `public String paginate(String query, int offset, int limit)` returning `query + \" FETCH FIRST \" + limit + \" ROWS ONLY\"`.\n2. Subclass `MySqlDialect`: overrides `paginate` returning `query + \" LIMIT \" + offset + \", \" + limit`.\n3. Subclass `PostgresDialect`: overrides `paginate` returning `query + \" LIMIT \" + limit + \" OFFSET \" + offset`.\n4. Subclass `OracleDialect`: overrides `paginate` returning `\"SELECT * FROM (\" + query + \") WHERE ROWNUM <= \" + limit`.\n5. In `Main`, create an array `SqlDialect[] dialects` containing `MySqlDialect`, `PostgresDialect`, and `OracleDialect`.\n6. For the query `'SELECT * FROM users'`, iterate through the dialects with offset=10 and limit=5, and print the resulting paginated query for each.",
+      "solutionCode": "class SqlDialect {\n    public String paginate(String query, int offset, int limit) {\n        return query + \" FETCH FIRST \" + limit + \" ROWS ONLY\";\n    }\n}\n\nclass MySqlDialect extends SqlDialect {\n    @Override\n    public String paginate(String query, int offset, int limit) {\n        return query + \" LIMIT \" + offset + \", \" + limit;\n    }\n}\n\nclass PostgresDialect extends SqlDialect {\n    @Override\n    public String paginate(String query, int offset, int limit) {\n        return query + \" LIMIT \" + limit + \" OFFSET \" + offset;\n    }\n}\n\nclass OracleDialect extends SqlDialect {\n    @Override\n    public String paginate(String query, int offset, int limit) {\n        return \"SELECT * FROM (\" + query + \") WHERE ROWNUM <= \" + limit;\n    }\n}\n\npublic class SqlDialectApp {\n    public static void main(String[] args) {\n        SqlDialect[] dialects = new SqlDialect[] {\n            new MySqlDialect(),\n            new PostgresDialect(),\n            new OracleDialect()\n        };\n        String baseQuery = \"SELECT * FROM users\";\n        for (SqlDialect dialect : dialects) {\n            System.out.println(dialect.paginate(baseQuery, 10, 5));\n        }\n    }\n}",
+      "expectedOutput": "SELECT * FROM users LIMIT 10, 5\nSELECT * FROM users LIMIT 5 OFFSET 10\nSELECT * FROM (SELECT * FROM users) WHERE ROWNUM <= 5",
+      "hints": [
+        "In each dialect, override paginate(String query, int offset, int limit) with dialect-specific SQL syntax.",
+        "Iterate over the array of SqlDialect references and invoke paginate on each."
+      ]
+    }
+  ]
+}
