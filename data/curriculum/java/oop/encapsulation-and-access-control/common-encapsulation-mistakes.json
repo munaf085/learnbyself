@@ -563,7 +563,7 @@
         {
           "id": "i-cem-2",
           "question": "Why is java.lang.String safe to return from getters without defensive copying, while java.util.Date is not?",
-          "answer": "String is immutable\u2014it has no methods to alter its internal character array once instantiated. In contrast, java.util.Date has mutable methods like setTime(), allowing callers to alter the timestamp of the internal object directly.",
+          "answer": "String is immutable—it has no methods to alter its internal character array once instantiated. In contrast, java.util.Date has mutable methods like setTime(), allowing callers to alter the timestamp of the internal object directly.",
           "company": "Oracle",
           "keyTakeaways": [
             "String = immutable (safe)",
@@ -628,7 +628,7 @@
         {
           "id": "i-cem-2",
           "question": "Why is java.lang.String safe to return from getters without defensive copying, while java.util.Date is not?",
-          "expectedAnswer": "String is immutable\u2014it has no methods to alter its internal character array once instantiated. In contrast, java.util.Date has mutable methods like setTime(), allowing callers to alter the timestamp of the internal object directly.",
+          "expectedAnswer": "String is immutable—it has no methods to alter its internal character array once instantiated. In contrast, java.util.Date has mutable methods like setTime(), allowing callers to alter the timestamp of the internal object directly.",
           "keyPoints": [
             "String = immutable (safe)",
             "Date = mutable (requires defensive copy)"
@@ -714,75 +714,70 @@
   "practiceProblems": [
     {
       "id": "p-cem-1",
-      "title": "Warmup: Plug the Array Leak",
+      "title": "Protect Array References with Cloning",
       "difficulty": "easy",
-      "description": "Fix StudentScores so getScores() returns a defensive clone of 'scores' (int[]) rather than the direct reference. In Main, instantiate with {80, 90}, obtain the array via getScores(), change element [0] to 0, and verify the internal score is still 80. Print 'Protected score: 80'.",
-      "problemStatement": "Fix StudentScores so getScores() returns a defensive clone of 'scores' (int[]) rather than the direct reference. In Main, instantiate with {80, 90}, obtain the array via getScores(), change element [0] to 0, and verify the internal score is still 80. Print 'Protected score: 80'.",
+      "description": "Returning an internal array directly allows outside callers to mutate private data. Fix it using `.clone()`.\n\n• Class `StudentScores`:\n  - Field: `private int[] scores`\n  - Constructor `StudentScores(int[] s)`: sets `this.scores = s != null ? s.clone() : new int[0];`\n  - Method `public int[] getScores()`: returns `scores.clone();` (defensive copy)\n• In `Main.main()`:\n  - `int[] original = {80, 90};`\n  - `StudentScores ss = new StudentScores(original);`\n  - `int[] copy = ss.getScores();`\n  - `copy[0] = 0;` (modifies only the copy, leaving private scores safe)\n  - Print: `Protected score: [ss.getScores()[0]]`\n\nTarget Console Output:\nProtected score: 80",
+      "problemStatement": "Returning an internal array directly allows outside callers to mutate private data. Fix it using `.clone()`.\n\n• Class `StudentScores`:\n  - Field: `private int[] scores`\n  - Constructor `StudentScores(int[] s)`: sets `this.scores = s != null ? s.clone() : new int[0];`\n  - Method `public int[] getScores()`: returns `scores.clone();` (defensive copy)\n• In `Main.main()`:\n  - `int[] original = {80, 90};`\n  - `StudentScores ss = new StudentScores(original);`\n  - `int[] copy = ss.getScores();`\n  - `copy[0] = 0;` (modifies only the copy, leaving private scores safe)\n  - Print: `Protected score: [ss.getScores()[0]]`\n\nTarget Console Output:\nProtected score: 80",
+      "initialCode": "class StudentScores {\n    private int[] scores;\n\n    public StudentScores(int[] s) {\n        this.scores = s != null ? s.clone() : new int[0];\n    }\n\n    // BUG: Returning direct reference allows callers to modify private scores array!\n    public int[] getScores() {\n        return scores;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] original = {80, 90};\n        StudentScores ss = new StudentScores(original);\n        int[] copy = ss.getScores();\n        copy[0] = 0;\n        System.out.println(\"Protected score: \" + ss.getScores()[0]);\n    }\n}",
       "expectedOutput": "Protected score: 80",
-      "hint": "Return scores.clone() in getScores()",
+      "hint": "Return scores.clone() in getScores().",
       "hints": [
-        "Return scores.clone() in getScores()",
-        "Tampering with copy will not affect internal array"
+        "Cloning prevents callers from modifying internal array elements."
       ],
-      "solutionCode": "class StudentScores {\n    private int[] scores;\n\n    public StudentScores(int[] s) {\n        this.scores = s != null ? s.clone() : new int[0];\n    }\n\n    public int[] getScores() {\n        return scores.clone();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] original = {80, 90};\n        StudentScores ss = new StudentScores(original);\n        int[] copy = ss.getScores();\n        copy[0] = 0; // Attempted tampering\n        System.out.println(\"Protected score: \" + ss.getScores()[0]);\n    }\n}",
-      "initialCode": "class StudentScores {\n    private int[] scores;\n\n    public StudentScores(int[] s) {\n        this.scores = s.clone();\n    }\n\n    // Fix the leak here!\n    public int[] getScores() {\n        return scores;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // Your test here\n    }\n}"
+      "solutionCode": "class StudentScores {\n    private int[] scores;\n\n    public StudentScores(int[] s) {\n        this.scores = s != null ? s.clone() : new int[0];\n    }\n\n    public int[] getScores() {\n        return scores.clone();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] original = {80, 90};\n        StudentScores ss = new StudentScores(original);\n        int[] copy = ss.getScores();\n        copy[0] = 0;\n        System.out.println(\"Protected score: \" + ss.getScores()[0]);\n    }\n}"
     },
     {
       "id": "p-cem-2",
-      "title": "Code from Scratch: Defensive Score Tracker",
-      "difficulty": "easy",
-      "description": "Write a complete GameScores class from scratch with private int[] scores. Constructor must defensively clone incoming int[] (or create empty array if null). Provide getScoreCount() returning length, and getScoreAt(int index) returning score or -1 if out of bounds. In Main, create with {100, 200, 300}, mutate caller array, and print 'Score at 0: 100'.",
-      "problemStatement": "Write a complete GameScores class from scratch with private int[] scores. Constructor must defensively clone incoming int[] (or create empty array if null). Provide getScoreCount() returning length, and getScoreAt(int index) returning score or -1 if out of bounds. In Main, create with {100, 200, 300}, mutate caller array, and print 'Score at 0: 100'.",
+      "title": "Defensive Score Tracker",
+      "difficulty": "medium",
+      "description": "Construct a `GameScores` class that defensively clones incoming arrays upon construction.\n\n• Class `GameScores`:\n  - Field: `private int[] scores;`\n  - Constructor `GameScores(int[] input)`: sets `this.scores = input != null ? input.clone() : new int[0];`\n  - Method `int getScoreCount()`: returns `scores.length;`\n  - Method `int getScoreAt(int index)`: returns `scores[index]` if valid, otherwise `-1`\n• In `Main.main()`:\n  - `int[] input = {100, 200, 300};`\n  - `GameScores gs = new GameScores(input);`\n  - `input[0] = 999;` (modifies external array, but internal array stays 100)\n  - Print: `Score at 0: [gs.getScoreAt(0)]`\n\nTarget Console Output:\nScore at 0: 100",
+      "problemStatement": "Construct a `GameScores` class that defensively clones incoming arrays upon construction.\n\n• Class `GameScores`:\n  - Field: `private int[] scores;`\n  - Constructor `GameScores(int[] input)`: sets `this.scores = input != null ? input.clone() : new int[0];`\n  - Method `int getScoreCount()`: returns `scores.length;`\n  - Method `int getScoreAt(int index)`: returns `scores[index]` if valid, otherwise `-1`\n• In `Main.main()`:\n  - `int[] input = {100, 200, 300};`\n  - `GameScores gs = new GameScores(input);`\n  - `input[0] = 999;` (modifies external array, but internal array stays 100)\n  - Print: `Score at 0: [gs.getScoreAt(0)]`\n\nTarget Console Output:\nScore at 0: 100",
       "expectedOutput": "Score at 0: 100",
-      "hint": "Write GameScores from scratch",
+      "hint": "Cloning the array in the constructor decouples it from the caller's array.",
       "hints": [
-        "Write GameScores from scratch",
-        "Clone incoming array in constructor",
-        "Provide getScoreAt and getScoreCount"
+        "Return -1 for out-of-bounds index requests."
       ],
-      "solutionCode": "class GameScores {\n    private int[] scores;\n\n    public GameScores(int[] input) {\n        this.scores = input != null ? input.clone() : new int[0];\n    }\n\n    public int getScoreCount() {\n        return scores.length;\n    }\n\n    public int getScoreAt(int index) {\n        if (index >= 0 && index < scores.length) {\n            return scores[index];\n        }\n        return -1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] input = {100, 200, 300};\n        GameScores gs = new GameScores(input);\n        input[0] = 999; // Caller attempts mutation\n        System.out.println(\"Score at 0: \" + gs.getScoreAt(0));\n    }\n}"
+      "solutionCode": "class GameScores {\n    private int[] scores;\n\n    public GameScores(int[] input) {\n        this.scores = input != null ? input.clone() : new int[0];\n    }\n\n    public int getScoreCount() {\n        return scores.length;\n    }\n\n    public int getScoreAt(int index) {\n        if (index >= 0 && index < scores.length) {\n            return scores[index];\n        }\n        return -1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] input = {100, 200, 300};\n        GameScores gs = new GameScores(input);\n        input[0] = 999;\n        System.out.println(\"Score at 0: \" + gs.getScoreAt(0));\n    }\n}"
     },
     {
       "id": "p-cem-3",
-      "title": "Code from Scratch: Enforced Constructor Validation",
+      "title": "Enforced Constructor Validation",
       "difficulty": "medium",
-      "description": "Write a complete MemberAccount class from scratch with private String username and private int loyaltyPoints. In setLoyaltyPoints(int points), reject negative numbers (default to 0). In setUsername(String name), reject null or whitespace strings (default to 'Guest'). In the constructor, DO NOT assign fields directly; call setUsername and setLoyaltyPoints. In Main, create account with null username and -50 points. Print 'Member: Guest | Points: 0'.",
-      "problemStatement": "Write a complete MemberAccount class from scratch with private String username and private int loyaltyPoints. In setLoyaltyPoints(int points), reject negative numbers (default to 0). In setUsername(String name), reject null or whitespace strings (default to 'Guest'). In the constructor, DO NOT assign fields directly; call setUsername and setLoyaltyPoints. In Main, create account with null username and -50 points. Print 'Member: Guest | Points: 0'.",
+      "description": "Route constructor assignments through validated setters to eliminate bypass loopholes.\n\n• Class `MemberAccount`:\n  - Fields: `private String username;`, `private int loyaltyPoints;`\n  - Constructor `MemberAccount(String name, int points)`: calls `setUsername(name); setLoyaltyPoints(points);`\n  - Method `void setUsername(String name)`: if `name != null && !name.trim().isEmpty()`, assign trimmed name, else `\"Guest\"`\n  - Method `void setLoyaltyPoints(int points)`: if `points >= 0`, assign points, else `0`\n  - Getters: `getUsername()`, `getLoyaltyPoints()`\n• In `Main.main()`:\n  - Create `MemberAccount acc = new MemberAccount(null, -50);`\n  - Print: `Member: [acc.getUsername()] | Points: [acc.getLoyaltyPoints()]`\n\nTarget Console Output:\nMember: Guest | Points: 0",
+      "problemStatement": "Route constructor assignments through validated setters to eliminate bypass loopholes.\n\n• Class `MemberAccount`:\n  - Fields: `private String username;`, `private int loyaltyPoints;`\n  - Constructor `MemberAccount(String name, int points)`: calls `setUsername(name); setLoyaltyPoints(points);`\n  - Method `void setUsername(String name)`: if `name != null && !name.trim().isEmpty()`, assign trimmed name, else `\"Guest\"`\n  - Method `void setLoyaltyPoints(int points)`: if `points >= 0`, assign points, else `0`\n  - Getters: `getUsername()`, `getLoyaltyPoints()`\n• In `Main.main()`:\n  - Create `MemberAccount acc = new MemberAccount(null, -50);`\n  - Print: `Member: [acc.getUsername()] | Points: [acc.getLoyaltyPoints()]`\n\nTarget Console Output:\nMember: Guest | Points: 0",
       "expectedOutput": "Member: Guest | Points: 0",
-      "hint": "Constructor delegates to setUsername and setLoyaltyPoints",
+      "hint": "Calling setters inside constructor ensures zero validation loopholes.",
       "hints": [
-        "Constructor delegates to setUsername and setLoyaltyPoints",
-        "Enforces non-negative points and non-null username"
+        "null username falls back to \"Guest\", negative points fall back to 0."
       ],
       "solutionCode": "class MemberAccount {\n    private String username;\n    private int loyaltyPoints;\n\n    public MemberAccount(String name, int points) {\n        setUsername(name);\n        setLoyaltyPoints(points);\n    }\n\n    public void setUsername(String name) {\n        if (name != null && !name.trim().isEmpty()) {\n            this.username = name.trim();\n        } else {\n            this.username = \"Guest\";\n        }\n    }\n\n    public void setLoyaltyPoints(int points) {\n        this.loyaltyPoints = points >= 0 ? points : 0;\n    }\n\n    public String getUsername() { return username; }\n    public int getLoyaltyPoints() { return loyaltyPoints; }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        MemberAccount acc = new MemberAccount(null, -50);\n        System.out.println(\"Member: \" + acc.getUsername() + \" | Points: \" + acc.getLoyaltyPoints());\n    }\n}"
     },
     {
       "id": "p-cem-4",
       "title": "Fix Broken Code: Direct Mutable Assignment in Constructor",
-      "difficulty": "easy",
-      "description": "The class below directly assigns 'this.ratings = ratings' in its constructor, allowing outside callers to mutate the ratings array after creation. Fix it by making a defensive clone in the constructor. In Main, verify that mutating the external array does not alter the average rating. Print 'Average rating: 4.5'.",
-      "problemStatement": "The class below directly assigns 'this.ratings = ratings' in its constructor, allowing outside callers to mutate the ratings array after creation. Fix it by making a defensive clone in the constructor. In Main, verify that mutating the external array does not alter the average rating. Print 'Average rating: 4.5'.",
+      "difficulty": "medium",
+      "description": "Fix a security loophole where the constructor stores caller-provided array reference directly.\n\n• Class `MovieReview`:\n  - Field: `private double[] ratings`\n  - Constructor `MovieReview(double[] ratings)`: fix by cloning `this.ratings = ratings != null ? ratings.clone() : new double[0];`\n  - Method `double calculateAverage()`: returns average rating (sum / length), or `0.0` if empty\n• In `Main.main()`:\n  - `double[] scores = {4.0, 5.0};`\n  - `MovieReview review = new MovieReview(scores);`\n  - `scores[0] = 1.0;` (has no effect on review's cloned array)\n  - Print: `Average rating: [review.calculateAverage()]`\n\nTarget Console Output:\nAverage rating: 4.5",
+      "problemStatement": "Fix a security loophole where the constructor stores caller-provided array reference directly.\n\n• Class `MovieReview`:\n  - Field: `private double[] ratings`\n  - Constructor `MovieReview(double[] ratings)`: fix by cloning `this.ratings = ratings != null ? ratings.clone() : new double[0];`\n  - Method `double calculateAverage()`: returns average rating (sum / length), or `0.0` if empty\n• In `Main.main()`:\n  - `double[] scores = {4.0, 5.0};`\n  - `MovieReview review = new MovieReview(scores);`\n  - `scores[0] = 1.0;` (has no effect on review's cloned array)\n  - Print: `Average rating: [review.calculateAverage()]`\n\nTarget Console Output:\nAverage rating: 4.5",
+      "initialCode": "class MovieReview {\n    private double[] ratings;\n\n    public MovieReview(double[] ratings) {\n        // BUG: Direct reference assignment allows caller to modify ratings externally!\n        this.ratings = ratings;\n    }\n\n    public double calculateAverage() {\n        double sum = 0;\n        for (double r : ratings) sum += r;\n        return ratings.length > 0 ? sum / ratings.length : 0.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        double[] scores = {4.0, 5.0};\n        MovieReview review = new MovieReview(scores);\n        scores[0] = 1.0;\n        System.out.println(\"Average rating: \" + review.calculateAverage());\n    }\n}",
       "expectedOutput": "Average rating: 4.5",
-      "hint": "Use ratings != null ? ratings.clone() : new double[0] in constructor",
+      "hint": "Change this.ratings = ratings to this.ratings = ratings != null ? ratings.clone() : new double[0];.",
       "hints": [
-        "Use ratings != null ? ratings.clone() : new double[0] in constructor"
+        "(4.0 + 5.0) / 2 = 4.5."
       ],
-      "solutionCode": "class MovieReview {\n    private double[] ratings;\n\n    public MovieReview(double[] ratings) {\n        this.ratings = ratings != null ? ratings.clone() : new double[0];\n    }\n\n    public double calculateAverage() {\n        double sum = 0;\n        for (double r : ratings) sum += r;\n        return ratings.length > 0 ? sum / ratings.length : 0.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        double[] scores = {4.0, 5.0};\n        MovieReview review = new MovieReview(scores);\n        scores[0] = 1.0; // Sabotage attempt has no effect on cloned array\n        System.out.println(\"Average rating: \" + review.calculateAverage());\n    }\n}",
-      "initialCode": "class MovieReview {\n    private double[] ratings;\n\n    public MovieReview(double[] ratings) {\n        // Bug: Directly references external array!\n        this.ratings = ratings;\n    }\n\n    public double calculateAverage() {\n        double sum = 0;\n        for (double r : ratings) sum += r;\n        return ratings.length > 0 ? sum / ratings.length : 0.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        double[] scores = {4.0, 5.0};\n        MovieReview review = new MovieReview(scores);\n        scores[0] = 1.0; // Sabotage attempt\n        // Fix constructor so calculateAverage() still yields 4.5\n        System.out.println(\"Average rating: \" + review.calculateAverage());\n    }\n}"
+      "solutionCode": "class MovieReview {\n    private double[] ratings;\n\n    public MovieReview(double[] ratings) {\n        this.ratings = ratings != null ? ratings.clone() : new double[0];\n    }\n\n    public double calculateAverage() {\n        double sum = 0;\n        for (double r : ratings) sum += r;\n        return ratings.length > 0 ? sum / ratings.length : 0.0;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        double[] scores = {4.0, 5.0};\n        MovieReview review = new MovieReview(scores);\n        scores[0] = 1.0;\n        System.out.println(\"Average rating: \" + review.calculateAverage());\n    }\n}"
     },
     {
       "id": "p-cem-5",
-      "title": "Challenge: Safe Integer Matrix Envelope",
-      "difficulty": "medium",
-      "description": "Write a complete SecureMatrix class from scratch with private int[][] grid (rows x cols). Constructor takes int rows, int cols and initializes grid. Provide setCell(int r, int c, int val) that bounds-checks r and c. Provide getCell(int r, int c) that returns cell value or -1 if out of bounds. DO NOT provide getGrid()! In Main, create 3x3 matrix, set (1, 1) to 99, try setting (5, 5) to 10 (safely ignored), and print 'Center cell: 99'.",
-      "problemStatement": "Write a complete SecureMatrix class from scratch with private int[][] grid (rows x cols). Constructor takes int rows, int cols and initializes grid. Provide setCell(int r, int c, int val) that bounds-checks r and c. Provide getCell(int r, int c) that returns cell value or -1 if out of bounds. DO NOT provide getGrid()! In Main, create 3x3 matrix, set (1, 1) to 99, try setting (5, 5) to 10 (safely ignored), and print 'Center cell: 99'.",
+      "title": "Safe Integer Matrix Envelope",
+      "difficulty": "intermediate",
+      "description": "Wrap a 2D integer grid inside a `SecureMatrix` class that only allows verified, bounds-checked cell operations.\n\n• Class `SecureMatrix`:\n  - Fields: `private int[][] grid;`, `private int rows;`, `private int cols;`\n  - Constructor `SecureMatrix(int rows, int cols)`: initializes `this.rows = (rows > 0 ? rows : 1); this.cols = (cols > 0 ? cols : 1); grid = new int[this.rows][this.cols];`\n  - Method `void setCell(int r, int c, int val)`: if `r >= 0 && r < rows && c >= 0 && c < cols`, sets `grid[r][c] = val;`\n  - Method `int getCell(int r, int c)`: if in bounds returns `grid[r][c]`, otherwise `-1`\n  - Never provide a raw getter for the 2D grid\n• In `Main.main()`:\n  - Create `SecureMatrix m = new SecureMatrix(3, 3);`\n  - Call `m.setCell(1, 1, 99);`\n  - Call `m.setCell(5, 5, 10);` (safely ignored, out of bounds)\n  - Print: `Center cell: [m.getCell(1, 1)]`\n\nTarget Console Output:\nCenter cell: 99",
+      "problemStatement": "Wrap a 2D integer grid inside a `SecureMatrix` class that only allows verified, bounds-checked cell operations.\n\n• Class `SecureMatrix`:\n  - Fields: `private int[][] grid;`, `private int rows;`, `private int cols;`\n  - Constructor `SecureMatrix(int rows, int cols)`: initializes `this.rows = (rows > 0 ? rows : 1); this.cols = (cols > 0 ? cols : 1); grid = new int[this.rows][this.cols];`\n  - Method `void setCell(int r, int c, int val)`: if `r >= 0 && r < rows && c >= 0 && c < cols`, sets `grid[r][c] = val;`\n  - Method `int getCell(int r, int c)`: if in bounds returns `grid[r][c]`, otherwise `-1`\n  - Never provide a raw getter for the 2D grid\n• In `Main.main()`:\n  - Create `SecureMatrix m = new SecureMatrix(3, 3);`\n  - Call `m.setCell(1, 1, 99);`\n  - Call `m.setCell(5, 5, 10);` (safely ignored, out of bounds)\n  - Print: `Center cell: [m.getCell(1, 1)]`\n\nTarget Console Output:\nCenter cell: 99",
       "expectedOutput": "Center cell: 99",
-      "hint": "Bounds check r >= 0 && r < rows && c >= 0 && c < cols",
+      "hint": "Guard cell index with r >= 0 && r < rows && c >= 0 && c < cols.",
       "hints": [
-        "Bounds check r >= 0 && r < rows && c >= 0 && c < cols",
-        "No getter for raw grid array"
+        "Preventing direct 2D array access eliminates out-of-bounds index exceptions."
       ],
-      "solutionCode": "class SecureMatrix {\n    private int[][] grid;\n    private int rows;\n    private int cols;\n\n    public SecureMatrix(int rows, int cols) {\n        this.rows = rows > 0 ? rows : 1;\n        this.cols = cols > 0 ? cols : 1;\n        this.grid = new int[this.rows][this.cols];\n    }\n\n    public void setCell(int r, int c, int val) {\n        if (r >= 0 && r < rows && c >= 0 && c < cols) {\n            grid[r][c] = val;\n        }\n    }\n\n    public int getCell(int r, int c) {\n        if (r >= 0 && r < rows && c >= 0 && c < cols) {\n            return grid[r][c];\n        }\n        return -1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecureMatrix m = new SecureMatrix(3, 3);\n        m.setCell(1, 1, 99);\n        m.setCell(5, 5, 10); // Safely ignored\n        System.out.println(\"Center cell: \" + m.getCell(1, 1));\n    }\n}"
+      "solutionCode": "class SecureMatrix {\n    private int[][] grid;\n    private int rows;\n    private int cols;\n\n    public SecureMatrix(int rows, int cols) {\n        this.rows = rows > 0 ? rows : 1;\n        this.cols = cols > 0 ? cols : 1;\n        this.grid = new int[this.rows][this.cols];\n    }\n\n    public void setCell(int r, int c, int val) {\n        if (r >= 0 && r < rows && c >= 0 && c < cols) {\n            grid[r][c] = val;\n        }\n    }\n\n    public int getCell(int r, int c) {\n        if (r >= 0 && r < rows && c >= 0 && c < cols) {\n            return grid[r][c];\n        }\n        return -1;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SecureMatrix m = new SecureMatrix(3, 3);\n        m.setCell(1, 1, 99);\n        m.setCell(5, 5, 10);\n        System.out.println(\"Center cell: \" + m.getCell(1, 1));\n    }\n}"
     }
   ],
   "interviewQuestions": [
@@ -802,7 +797,7 @@
     {
       "id": "i-cem-2",
       "question": "Why is java.lang.String safe to return from getters without defensive copying, while java.util.Date is not?",
-      "expectedAnswer": "String is immutable\u2014it has no methods to alter its internal character array once instantiated. In contrast, java.util.Date has mutable methods like setTime(), allowing callers to alter the timestamp of the internal object directly.",
+      "expectedAnswer": "String is immutable—it has no methods to alter its internal character array once instantiated. In contrast, java.util.Date has mutable methods like setTime(), allowing callers to alter the timestamp of the internal object directly.",
       "keyPoints": [
         "String = immutable (safe)",
         "Date = mutable (requires defensive copy)"
