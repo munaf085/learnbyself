@@ -6,6 +6,13 @@ import { Footer } from '@/components/layout/footer';
 export const metadata: Metadata = {
   title: 'LearnBySelf | Interactive Programming Platform',
   description: 'Learn programming step-by-step with interactive coding lessons, mental models, and real practice.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' }
+    ],
+    apple: '/apple-touch-icon.png'
+  },
   openGraph: {
     title: 'LearnBySelf — Learn Programming at Your Own Pace',
     description: 'Interactive, beginner-friendly coding lessons with visual models and hands-on practice.'
