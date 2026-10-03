@@ -1,0 +1,264 @@
+{
+  "id": "les-col-treemap-ranges",
+  "slug": "treemap-sorted-maps-and-range-queries",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "TreeMap: Sorted Maps & Range Queries",
+  "summary": "Master TreeMap: NavigableMap interface, subMap, headMap, tailMap range queries, lowerKey, higherKey, and key ordering guarantees.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 4,
+  "prerequisites": [
+    "The Map Contract: Associative Key-Value Storage",
+    "TreeSet: Sorted Sets & Red-Black Trees",
+    "Understanding Big-O Time Complexity"
+  ],
+  "learningObjectives": [
+    "Master the Red-Black tree architecture and NavigableMap contract of TreeMap",
+    "Utilize logarithmic range and slice views: subMap(), headMap(), and tailMap()",
+    "Execute boundary and proximity lookups: floorEntry(), ceilingEntry(), higherKey(), lowerKey()",
+    "Contrast natural key ordering with custom Comparator implementations"
+  ],
+  "expectedOutcomes": [
+    "Ability to architect range-based lookups (e.g. tax brackets, IP subnets, scheduling) with O(log N) efficiency",
+    "Mastery of bidirectional map traversal and bounded sub-map mutation semantics"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l4-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Progressive Tax Bracket Classification",
+      "analogy": {
+        "headline": "Practical Context: Progressive Tax Bracket Classification",
+        "story": "In national revenue systems, tax rates are defined in tier brackets: Income up to $10,000 pays 10%; income from $10,001 to $50,000 pays 20%; income above $50,000 pays 30%.\n\nWhen a citizen reports an income of $38,450, the tax system does not look for an exact hash match for '$38,450' (which would fail). Instead, it queries: 'Find the highest tax bracket threshold that is less than or equal to $38,450' (a floor lookup).\n\nA hash table cannot answer range questions because hash functions scatter numbers randomly. A TreeMap maintains keys in total sorted order, resolving range brackets in logarithmic O(log N) time.",
+        "keyTakeaway": "TreeMap maintains keys in sorted order inside a Red-Black Tree, enabling O(log N) proximity searches, ceiling/floor lookups, and range slices."
+      },
+      "content": "In national revenue systems, tax rates are defined in tier brackets: Income up to $10,000 pays 10%; income from $10,001 to $50,000 pays 20%; income above $50,000 pays 30%.\n\nWhen a citizen reports an income of $38,450, the tax system does not look for an exact hash match for '$38,450' (which would fail). Instead, it queries: 'Find the highest tax bracket threshold that is less than or equal to $38,450' (a floor lookup).\n\nA hash table cannot answer range questions because hash functions scatter numbers randomly. A TreeMap maintains keys in total sorted order, resolving range brackets in logarithmic O(log N) time."
+    },
+    {
+      "id": "act-col3-l4-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "TreeMap Architecture: Red-Black Trees & NavigableMap Range Queries",
+      "breakdown": {
+        "keyTakeaways": [
+          "TreeMap implements NavigableMap and SortedMap, backed by a balanced Red-Black Tree",
+          "Keys must implement Comparable or be governed by an explicit Comparator provided in the constructor",
+          "Guarantees O(log N) time complexity for containsKey, get, put, and remove",
+          "Exposes rich proximity and range methods: floorEntry(), ceilingEntry(), subMap(), descendingMap()"
+        ]
+      },
+      "content": "### Definition of TreeMap & NavigableMap Interface\n\nA **`java.util.TreeMap<K, V>`** is a sorted, associative key-value mapping based on a self-balancing Red-Black binary search tree. It implements both `SortedMap<K, V>` and `NavigableMap<K, V>`.\n\nKeys are maintained in strict total order:\n* Basic operations (`containsKey`, `get`, `put`, `remove`) run in guaranteed **$O(\\log N)$** time.\n* `null` keys are strictly prohibited (throws `NullPointerException`), though `null` values are allowed.\n* Element uniqueness is determined solely by `compareTo()` or `compare() == 0`, **not** by `equals()` or `hashCode()`.\n\n---\n\n### The NavigableMap Boundary and Proximity API\n\n`TreeMap` provides comprehensive boundary queries for keys and entries:\n* **`floorEntry(key)` / `floorKey(key)`**: Returns entry/key with greatest key $\\le$ `key`.\n* **`ceilingEntry(key)` / `ceilingKey(key)`**: Returns entry/key with least key $\\ge$ `key`.\n* **`lowerKey(key)` / `higherKey(key)`**: Strictly exclusive boundaries ($<$ `key` or $>$ `key`).\n* **`firstEntry()` / `lastEntry()`**: Returns the lowest / highest entry in the map.\n* **`subMap(from, fromIncl, to, toIncl)`**: Returns a range view of the map.\n* **`descendingMap()`**: Returns a reverse-order view in $O(1)$ time.\n\n---\n\n### Executable Demonstration: Progressive Bracket Calculation\n\n```java\nimport java.util.Map;\nimport java.util.NavigableMap;\nimport java.util.TreeMap;\n\npublic class TreeMapRangeDemo {\n    public static void main(String[] args) {\n        // Map threshold income -> marginal tax rate\n        NavigableMap<Double, Double> taxBrackets = new TreeMap<>();\n        taxBrackets.put(0.0, 0.10);      // $0 - $10,000: 10%\n        taxBrackets.put(10000.0, 0.12);  // $10,001 - $40,000: 12%\n        taxBrackets.put(40000.0, 0.22);  // $40,001 - $85,000: 22%\n        taxBrackets.put(85000.0, 0.24);  // $85,001 - $160,000: 24%\n        taxBrackets.put(160000.0, 0.32); // $160,001+: 32%\n\n        double citizenIncome = 52000.0;\n\n        // Proximity query: Find floor tier <= 52,000\n        Map.Entry<Double, Double> tier = taxBrackets.floorEntry(citizenIncome);\n        System.out.printf(\"Income $%.2f falls into bracket starting at $%.2f with rate %.0f%%%n\",\n                          citizenIncome, tier.getKey(), tier.getValue() * 100);\n\n        // Range slice: Inspect middle-class tiers [$10,000 .. $85,000]\n        NavigableMap<Double, Double> middleTiers = taxBrackets.subMap(10000.0, true, 85000.0, true);\n        System.out.println(\"Middle tiers: \" + middleTiers);\n    }\n}\n```\n\n**Console Output:**\n```text\nIncome $52000.00 falls into bracket starting at $40000.00 with rate 22%\nMiddle tiers: {10000.0=0.12, 40000.0=0.22, 85000.0=0.24}\n```\n\n---\n\n### Comparison: HashMap vs TreeMap\n\n| Dimension | `HashMap<K, V>` | `TreeMap<K, V>` |\n| :--- | :--- | :--- |\n| **Ordering** | Unordered (random hash buckets) | Sorted by key (Natural or Comparator) |\n| **Lookup / Insert Cost** | Amortized $O(1)$ | Guaranteed $O(\\log N)$ |\n| **Range Queries** | Unsupported ($O(N)$ full table scan) | Native $O(\\log N)$ views (`subMap`, `headMap`) |\n| **Null Key Support** | Allows 1 null key | Throws `NullPointerException` |"
+    },
+    {
+      "id": "act-col3-l4-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "IP Subnet Geographic Routing Engine",
+      "description": "Trace a network router finding the closest network gateway using TreeMap floorKey lookups.",
+      "code": "import java.util.NavigableMap;\nimport java.util.TreeMap;\n\npublic class IpRoutingTable {\n    // Stores subnet starting IP as long -> Gateway Name\n    private final NavigableMap<Long, String> routes = new TreeMap<>();\n\n    public void addRoute(long ipStart, String gateway) {\n        routes.put(ipStart, gateway);\n    }\n\n    public String resolveGateway(long targetIp) {\n        // floorKey finds the greatest route address <= targetIp\n        Long baseIp = routes.floorKey(targetIp);\n        if (baseIp == null) {\n            return \"DEFAULT_GATEWAY\";\n        }\n        return routes.get(baseIp);\n    }\n\n    public static void main(String[] args) {\n        IpRoutingTable router = new IpRoutingTable();\n        router.addRoute(167772160L, \"US_EAST_GATEWAY\"); // 10.0.0.0\n        router.addRoute(2886729728L, \"EU_CENTRAL_GATEWAY\"); // 172.16.0.0\n        router.addRoute(3232235520L, \"ASIA_PACIFIC_GATEWAY\"); // 192.168.0.0\n\n        long incomingTraffic = 167772260L; // 10.0.0.100\n        System.out.println(\"Routed to: \" + router.resolveGateway(incomingTraffic));\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5",
+          "description": "Instantiate a NavigableMap<Long, String> backed by TreeMap to maintain IP address blocks in sorted numerical order."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "11-17",
+          "description": "Invoke floorKey(targetIp) to locate the subnet start address less than or equal to the target IP in O(log N) time."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "20-27",
+          "description": "Test with an IP inside the 10.0.0.0 block, correctly routing to US_EAST_GATEWAY."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l4-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "TreeMap & NavigableMap Assessment",
+      "questions": [
+        {
+          "id": "col3-l4-q1",
+          "question": "What is the time complexity of map.get(key) and map.put(key, val) in a TreeMap?",
+          "options": [
+            "O(1)",
+            "O(log N)",
+            "O(N)",
+            "O(N log N)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Because TreeMap is backed by a self-balancing Red-Black binary search tree, all basic operations have guaranteed logarithmic O(log N) complexity."
+        },
+        {
+          "id": "col3-l4-q2",
+          "question": "What happens when map.put(null, 'value') is executed on a default TreeMap?",
+          "options": [
+            "The null key is placed at the root",
+            "A NullPointerException is thrown",
+            "The value is stored at index 0",
+            "It returns null quietly"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "TreeMap must compare the key to other keys in the tree using compareTo(). Calling null.compareTo() throws NullPointerException."
+        },
+        {
+          "id": "col3-l4-q3",
+          "question": "What does map.floorEntry(key) return?",
+          "options": [
+            "The entry with the greatest key strictly less than key",
+            "The entry with the greatest key less than or equal to the given key, or null if no such key exists",
+            "The least key strictly greater than key",
+            "The root entry of the tree"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "floorEntry returns the entry associated with the greatest key less than or equal to the given key (inclusive)."
+        },
+        {
+          "id": "col3-l4-q4",
+          "question": "How are duplicate keys handled in a TreeMap?",
+          "options": [
+            "Duplicate keys are detected via key1.equals(key2)",
+            "Duplicate keys are detected when comparator.compare(key1, key2) == 0 (or key1.compareTo(key2) == 0)",
+            "Duplicate keys are stored in a linked list",
+            "TreeMaps allow duplicate keys"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "TreeMap relies strictly on its Comparator / Comparable. If compare returns 0, the existing value is replaced, regardless of whether equals() returns true."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l4-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: TreeMap & Range Queries",
+      "questions": [
+        {
+          "id": "col3-l4-int-1",
+          "question": "When would you choose TreeMap over HashMap in production backend systems?",
+          "answer": "Choose TreeMap when: 1) Range queries or bounded slices (subMap, headMap, tailMap) are required, 2) Nearest-match proximity queries are needed (finding closest price, timestamp, or IP gateway via floorKey/ceilingKey), 3) Keys must be iterated in natural or custom sorted order (e.g. generating alphabetical directories or financial reports), or 4) Predictable worst-case O(log N) latency is strictly preferred over hash table spikes during rehash resizes."
+        },
+        {
+          "id": "col3-l4-int-2",
+          "question": "Is the subMap returned by TreeMap a deep copy or a backed view?",
+          "answer": "It is a backed view. Changes made to the original TreeMap within the range are immediately reflected in the subMap, and modifications made to the subMap write directly to the parent TreeMap. If you attempt to insert an entry into a subMap outside its specified key boundaries, an IllegalArgumentException is thrown."
+        },
+        {
+          "id": "col3-l4-int-3",
+          "question": "What is the consequence of compareTo() being inconsistent with equals() when using TreeMap?",
+          "answer": "The Map contract specifies that uniqueness is governed by equals(), but TreeMap violates this by relying on compareTo() == 0. If compareTo() returns 0 for two keys that are not equal according to equals() (e.g., comparing Employees solely by salary), inserting the second Employee will overwrite the first Employee's value! To prevent silent data loss, compareTo() must always be consistent with equals()."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l4-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: TreeMap & Range Queries",
+      "checklist": [
+        "I understand the Red-Black tree mechanics providing O(log N) guarantees in TreeMap",
+        "I know how to execute floorKey(), ceilingKey(), and subMap() range queries",
+        "I understand why null keys are disallowed and how compareTo() defines uniqueness in TreeMap"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l4-1",
+      "title": "Find Tax Rate by Income",
+      "difficulty": "beginner",
+      "problemStatement": "Given a TreeMap<Double, Double> mapping income thresholds to tax rates, implement getTaxRate(TreeMap<Double, Double> brackets, double income) that returns the rate using floorEntry(). If income is negative, return 0.0.",
+      "starterCode": "import java.util.TreeMap;\nimport java.util.Map;\n\npublic class TaxService {\n    public static double getTaxRate(TreeMap<Double, Double> brackets, double income) {\n        // TODO: Return tax rate using floorEntry\n        return 0.0;\n    }\n}",
+      "solutionCode": "import java.util.TreeMap;\nimport java.util.Map;\n\npublic class TaxService {\n    public static double getTaxRate(TreeMap<Double, Double> brackets, double income) {\n        if (brackets == null || income < 0) return 0.0;\n        Map.Entry<Double, Double> entry = brackets.floorEntry(income);\n        return entry != null ? entry.getValue() : 0.0;\n    }\n}",
+      "expectedOutput": "0.22",
+      "testCases": [
+        {
+          "input": "brackets = {0.0: 0.10, 40000.0: 0.22}, income = 50000.0",
+          "expected": "0.22"
+        }
+      ],
+      "hints": [
+        "Use brackets.floorEntry(income).",
+        "Check entry != null before calling getValue()."
+      ]
+    },
+    {
+      "id": "prob-col3-l4-2",
+      "title": "Extract Score Range Map",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a TreeMap<Integer, String> mapping scores to student names, return a Map containing only students with scores between minScore and maxScore (both inclusive).",
+      "starterCode": "import java.util.TreeMap;\nimport java.util.Map;\n\npublic class ScoreRangeExtractor {\n    public static Map<Integer, String> getStudentsInRange(TreeMap<Integer, String> scores, int min, int max) {\n        // TODO: Return subMap view\n        return Map.of();\n    }\n}",
+      "solutionCode": "import java.util.TreeMap;\nimport java.util.Map;\n\npublic class ScoreRangeExtractor {\n    public static Map<Integer, String> getStudentsInRange(TreeMap<Integer, String> scores, int min, int max) {\n        if (scores == null) return Map.of();\n        return scores.subMap(min, true, max, true);\n    }\n}",
+      "expectedOutput": "{80: 'Alice', 90: 'Bob'}",
+      "testCases": [
+        {
+          "input": "scores = {70: 'C', 80: 'Alice', 90: 'Bob', 95: 'D'}, min=80, max=90",
+          "expected": "{80: 'Alice', 90: 'Bob'}"
+        }
+      ],
+      "hints": [
+        "Use scores.subMap(min, true, max, true) for inclusive boundaries."
+      ]
+    },
+    {
+      "id": "prob-col3-l4-3",
+      "title": "Find Closest Preceding Event",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a TreeMap<Long, String> mapping event timestamps to event names, implement findPrecedingEvent(TreeMap<Long, String> events, long queryTime) that returns the event with the highest timestamp < queryTime, or 'NONE' if no such event exists.",
+      "starterCode": "import java.util.TreeMap;\nimport java.util.Map;\n\npublic class EventTimeline {\n    public static String findPrecedingEvent(TreeMap<Long, String> events, long queryTime) {\n        // TODO: Return strictly preceding event using lowerEntry\n        return \"NONE\";\n    }\n}",
+      "solutionCode": "import java.util.TreeMap;\nimport java.util.Map;\n\npublic class EventTimeline {\n    public static String findPrecedingEvent(TreeMap<Long, String> events, long queryTime) {\n        if (events == null) return \"NONE\";\n        Map.Entry<Long, String> entry = events.lowerEntry(queryTime);\n        return entry != null ? entry.getValue() : \"NONE\";\n    }\n}",
+      "expectedOutput": "LOGIN",
+      "testCases": [
+        {
+          "input": "events = {1000L: 'LOGIN', 2000L: 'LOGOUT'}, queryTime = 1500L",
+          "expected": "LOGIN"
+        }
+      ],
+      "hints": [
+        "lowerEntry(queryTime) returns the entry strictly less than queryTime."
+      ]
+    },
+    {
+      "id": "prob-col3-l4-4",
+      "title": "Custom Comparator by String Length",
+      "difficulty": "intermediate",
+      "problemStatement": "Create a TreeMap<String, Integer> with a custom Comparator that orders keys by length ascending, breaking ties alphabetically.",
+      "starterCode": "import java.util.TreeMap;\nimport java.util.Comparator;\n\npublic class CustomMapCreator {\n    public static TreeMap<String, Integer> createLengthOrderedMap() {\n        // TODO: Construct TreeMap with compound comparator\n        return new TreeMap<>();\n    }\n}",
+      "solutionCode": "import java.util.TreeMap;\nimport java.util.Comparator;\n\npublic class CustomMapCreator {\n    public static TreeMap<String, Integer> createLengthOrderedMap() {\n        Comparator<String> comp = Comparator\n            .comparingInt(String::length)\n            .thenComparing(Comparator.naturalOrder());\n        return new TreeMap<>(comp);\n    }\n}",
+      "expectedOutput": "TreeMap ordered by length then natural",
+      "testCases": [
+        {
+          "input": "put('bb', 2), put('a', 1), put('aa', 3)",
+          "expected": "keys order: ['a', 'aa', 'bb']"
+        }
+      ],
+      "hints": [
+        "Use Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder())."
+      ]
+    },
+    {
+      "id": "prob-col3-l4-5",
+      "title": "Reverse-Order Price Book",
+      "difficulty": "beginner",
+      "problemStatement": "Given a TreeMap<Double, String> mapping prices to item names, return a descending-order view of the map.",
+      "starterCode": "import java.util.TreeMap;\nimport java.util.NavigableMap;\n\npublic class PriceBook {\n    public static NavigableMap<Double, String> getDescendingPriceBook(TreeMap<Double, String> priceBook) {\n        // TODO: Return descendingMap view\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.TreeMap;\nimport java.util.NavigableMap;\n\npublic class PriceBook {\n    public static NavigableMap<Double, String> getDescendingPriceBook(TreeMap<Double, String> priceBook) {\n        if (priceBook == null) return null;\n        return priceBook.descendingMap();\n    }\n}",
+      "expectedOutput": "Descending view of map",
+      "testCases": [
+        {
+          "input": "priceBook = {10.0: 'A', 20.0: 'B'}",
+          "expected": "keys in order: [20.0, 10.0]"
+        }
+      ],
+      "hints": [
+        "Call priceBook.descendingMap()."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "id": "les-col-hashmap-architecture",
+  "slug": "hashmap-architecture-buckets-collisions-and-treebins",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "HashMap Architecture: Buckets, Collisions & TreeBins",
+  "summary": "Deep dive into HashMap: load factor (0.75), initial capacity (16), rehashing, linked list chaining, and Java 8 TreeBin conversion (TREEIFY_THRESHOLD = 8).",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "The Map Contract: Associative Key-Value Storage",
+    "HashSet: How Hash Buckets Guarantee O(1) Lookups",
+    "TreeSet: Sorted Sets & Red-Black Trees"
+  ],
+  "learningObjectives": [
+    "Master the internal backing array and Node<K,V> bucket architecture of HashMap",
+    "Explain load factor (0.75), capacity doubling, and bit-split rehashing without modulo",
+    "Trace collision chaining and the Java 8 TreeBin Red-Black tree conversion algorithm",
+    "Analyze algorithmic complexity across average O(1) and worst-case O(log N) boundaries"
+  ],
+  "expectedOutcomes": [
+    "Deep technical mastery of HashMap internals sufficient for elite engineering design interviews",
+    "Ability to diagnose and mitigate hash collision attacks and performance bottlenecks"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l2-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Dynamic Warehouse Bin Expansion and Automation",
+      "analogy": {
+        "headline": "Practical Context: Dynamic Warehouse Bin Expansion and Automation",
+        "story": "Imagine an automated fulfillment center with 16 storage aisles (buckets). Packages are routed to aisles using the last digits of their tracking code. When an aisle receives multiple packages, warehouse workers stack them sequentially in a single-file line (LinkedList chaining).\n\nIf the center reaches 75% total capacity (12 packages), management doubles the warehouse to 32 aisles and re-routes half the packages in each aisle to the newly built aisles. Furthermore, if a single aisle ever accumulates a dangerous bottleneck of 8 packages, robotic stackers convert that specific aisle into an automated multi-level high-density carousel (Red-Black Tree), ensuring packages can still be retrieved in seconds.",
+        "keyTakeaway": "HashMap utilizes load factor resizing to spread items across buckets, and converts severely congested chains into Red-Black TreeBins to prevent O(N) degradation."
+      },
+      "content": "Imagine an automated fulfillment center with 16 storage aisles (buckets). Packages are routed to aisles using the last digits of their tracking code. When an aisle receives multiple packages, warehouse workers stack them sequentially in a single-file line (LinkedList chaining).\n\nIf the center reaches 75% total capacity (12 packages), management doubles the warehouse to 32 aisles and re-routes half the packages in each aisle to the newly built aisles. Furthermore, if a single aisle ever accumulates a dangerous bottleneck of 8 packages, robotic stackers convert that specific aisle into an automated multi-level high-density carousel (Red-Black Tree), ensuring packages can still be retrieved in seconds."
+    },
+    {
+      "id": "act-col3-l2-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "HashMap Architecture: Buckets, Rehashing & Java 8 TreeBins",
+      "breakdown": {
+        "keyTakeaways": [
+          "HashMap is backed by a transient Node<K,V>[] table array resized in powers of 2",
+          "Bucket index is calculated via (n - 1) & (h ^ (h >>> 16))",
+          "Default initial capacity is 16; default load factor is 0.75f (resizes at 12 items)",
+          "Chains of 8 or more entries convert to Red-Black Trees (TreeBins) if table capacity is at least 64"
+        ]
+      },
+      "content": "### Definition of HashMap & Hash Table Architecture\n\nA **`java.util.HashMap<K, V>`** is an array-backed, open-hashing data structure that delivers amortized constant-time $O(1)$ performance for `get()` and `put()` operations.\n\nInternally, data is stored in a table array:\n```java\n// OpenJDK HashMap Internal Storage\ntransient Node<K,V>[] table;\nstatic final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // 16\nstatic final float DEFAULT_LOAD_FACTOR = 0.75f;\nstatic final int TREEIFY_THRESHOLD = 8;\nstatic final int UNTREEIFY_THRESHOLD = 6;\nstatic final int MIN_TREEIFY_CAPACITY = 64;\n```\n\n---\n\n### Hash Function Spreading & Bit-Split Rehashing\n\nWhen an entry is added to `HashMap`:\n1. **Hash Spreading**: `(h = key.hashCode()) ^ (h >>> 16)` shifts high-order 16 bits into the low-order bits to prevent collisions when capacity is small.\n2. **Bucket Indexing**: The index is computed using bitwise AND:\n   $$\\text{index} = (n - 1) \\& \\text{hash}$$\n3. **Bit-Split Rehashing**: When the element count exceeds the threshold ($16 \\times 0.75 = 12$), the table doubles to $32$ buckets. Because $n$ doubles, the bitmask $(n - 1)$ gains exactly one higher bit (`16`, or `00010000` in binary). Elements in old bucket $j$ either:\n   * Stay at index $j$ if `(hash & oldCap) == 0`.\n   * Move to index $j + \\text{oldCap}$ if `(hash & oldCap) != 0`.\n   This eliminates the need to recalculate hash codes during table expansion!\n\n---\n\n### Collision Handling & The TreeBin Red-Black Tree\n\nWhen multiple keys produce the same bucket index, collisions occur:\n* **Chaining (Small Collisions)**: Colliding entries are stored in a singly-linked list of `Node<K,V>` nodes.\n* **Treeification (Heavy Collisions)**: If a single bucket accumulates $\\ge 8$ nodes (`TREEIFY_THRESHOLD`) AND total capacity is $\\ge 64$ (`MIN_TREEIFY_CAPACITY`), the linked list converts into a balanced Red-Black Tree (`TreeNode<K,V>`). This guarantees that worst-case lookup never degrades to $O(N)$, remaining bounded at $O(\\log N)$.\n* If capacity is $< 64$, `HashMap` resizes the table instead of treeifying, because resizing spreads the colliding elements into separate buckets.\n\n```java\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class HashMapInternalsDemo {\n    public static void main(String[] args) {\n        Map<String, Integer> map = new HashMap<>(16, 0.75f);\n\n        // Put keys into HashMap\n        map.put(\"Java\", 1995);\n        map.put(\"Python\", 1991);\n        map.put(\"Rust\", 2010);\n        map.put(\"Go\", 2009);\n\n        System.out.println(\"Map size: \" + map.size());\n        System.out.println(\"Lookup 'Java': \" + map.get(\"Java\"));\n\n        // Hash distribution\n        int hash = \"Java\".hashCode();\n        int spread = hash ^ (hash >>> 16);\n        int bucket = (16 - 1) & spread;\n        System.out.println(\"'Java' bucket index in 16-slot table: \" + bucket);\n    }\n}\n```\n\n**Console Output:**\n```text\nMap size: 4\nLookup 'Java': 1995\n'Java' bucket index in 16-slot table: 10\n```\n\n---\n\n### Complexity Analysis: HashMap Operations\n\n| Operation | Average Case | Worst Case (Pathological Collisions) |\n| :--- | :--- | :--- |\n| **`put(K, V)`** | $O(1)$ | $O(\\log N)$ (TreeBin) / $O(N)$ (Pre-Java 8) |\n| **`get(K)`** | $O(1)$ | $O(\\log N)$ |\n| **`remove(K)`** | $O(1)$ | $O(\\log N)$ |\n| **Iteration** | $O(\\text{Capacity} + N)$ | $O(\\text{Capacity} + N)$ |"
+    },
+    {
+      "id": "act-col3-l2-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Tracing Bit-Split Rehashing Mechanics",
+      "description": "Step through a simulation of the exact JDK bit-split rehashing algorithm when expanding from capacity 16 to 32.",
+      "code": "public class RehashBitSplitSimulator {\n    public static void main(String[] args) {\n        int oldCap = 16;\n        int newCap = oldCap << 1; // 32\n        \n        String[] sampleKeys = {\"Alpha\", \"Beta\", \"Gamma\", \"Delta\", \"Epsilon\", \"Zeta\"};\n\n        System.out.printf(\"%-10s | %-10s | %-12s | %-12s | %-10s%n\", \n                          \"Key\", \"HashCode\", \"Old Bucket (16)\", \"New Bucket (32)\", \"Bit-Split\");\n        System.out.println(\"-\".repeat(65));\n\n        for (String key : sampleKeys) {\n            int h = key.hashCode() ^ (key.hashCode() >>> 16);\n            int oldBucket = (oldCap - 1) & h;\n            int newBucket = (newCap - 1) & h;\n            boolean staysAtOld = (h & oldCap) == 0;\n\n            System.out.printf(\"%-10s | %-10d | %-15d | %-15d | %s%n\",\n                              key, key.hashCode(), oldBucket, newBucket, \n                              staysAtOld ? \"Stays (same)\" : \"Moves (+16)\");\n        }\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "3-4",
+          "description": "Define old capacity 16 and new doubled capacity 32 via left shift (oldCap << 1)."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "12-16",
+          "description": "Compute old bucket index ((oldCap - 1) & h) and new bucket index ((newCap - 1) & h)."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "15-20",
+          "description": "Evaluate the JDK bit test: (h & oldCap) == 0. If 0, the node stays in oldBucket. If non-zero, it moves to oldBucket + 16 directly."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l2-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "HashMap Architecture Assessment",
+      "questions": [
+        {
+          "id": "col3-l2-q1",
+          "question": "What is the threshold for a HashMap bucket chain to convert into a TreeBin in Java 8+?",
+          "options": [
+            "Chain length >= 4, regardless of table capacity",
+            "Chain length >= 8 (TREEIFY_THRESHOLD) AND total table capacity >= 64 (MIN_TREEIFY_CAPACITY)",
+            "Chain length >= 16",
+            "When table memory exceeds 1MB"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Java 8 requires two conditions: the bucket must have at least 8 elements, AND the table capacity must be at least 64. If capacity is under 64, it resizes instead."
+        },
+        {
+          "id": "col3-l2-q2",
+          "question": "Why does HashMap use (h ^ (h >>> 16)) before masking the bucket index?",
+          "options": [
+            "To encrypt keys for security",
+            "To spread high-order bits into low-order bits, mitigating poor hash codes that only differ in upper bits",
+            "To convert negative integers to positive integers",
+            "To compress the object into memory"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Because table capacity is small (e.g., 16), only the lowest 4 bits are used by the mask (n - 1). Shifting high bits down and XORing them ensures high bits influence the bucket choice."
+        },
+        {
+          "id": "col3-l2-q3",
+          "question": "What happens when a HashMap reaches its resize threshold (capacity * loadFactor)?",
+          "options": [
+            "It throws an OutOfMemoryError",
+            "It doubles its capacity (2x) and redistributes entries across the new bucket array",
+            "It stops accepting new elements",
+            "It deletes the oldest entry"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "When threshold is reached, HashMap creates a new array of double the capacity (newCap = oldCap << 1) and rehashes entries."
+        },
+        {
+          "id": "col3-l2-q4",
+          "question": "When does a TreeBin in a HashMap revert back to a standard linked list (untreeify)?",
+          "options": [
+            "When the tree size shrinks to 6 elements (UNTREEIFY_THRESHOLD)",
+            "When the map is cleared",
+            "When garbage collection runs",
+            "It never reverts once treeified"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "To prevent oscillating between tree and list on additions/deletions, untreeification occurs at UNTREEIFY_THRESHOLD = 6, leaving a gap between 6 and 8."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l2-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: HashMap Deep Dive",
+      "questions": [
+        {
+          "id": "col3-l2-int-1",
+          "question": "Why did Java 8 introduce Red-Black TreeBins into HashMap instead of keeping linked lists?",
+          "answer": "Prior to Java 8, if malicious actors supplied thousands of keys specifically engineered to produce identical hash codes (a Hash DoS attack), all entries accumulated in a single bucket's linked list. This degraded get() and put() performance from O(1) to O(N), locking up CPU threads and crashing web servers. Java 8 introduced TreeBins so that even under worst-case 100% collision conditions, operations remain strictly bounded at O(log N)."
+        },
+        {
+          "id": "col3-l2-int-2",
+          "question": "Explain how HashMap efficiently redistributes elements during resizing without recalculating hash codes.",
+          "answer": "Because capacity is always a power of 2, doubling capacity adds exactly one higher-order bit to the mask (n - 1). For example, 16 is mask 01111; 32 is mask 11111. The only bit that changes is bit 4 (value 16). The JDK performs a simple bitwise test: `(e.hash & oldCap) == 0`. If 0, the element stays at its exact old bucket index. If non-zero, it moves to `oldIndex + oldCap`. This requires zero hash calculations and zero expensive modulo operations."
+        },
+        {
+          "id": "col3-l2-int-3",
+          "question": "What is the optimal initial capacity to set if you know you will store exactly 1,000 items in a HashMap?",
+          "answer": "To prevent any resizing passes, the capacity must satisfy: `capacity * 0.75 >= 1000`. Dividing 1000 by 0.75 yields approximately 1333.33. Since HashMap capacities must be powers of 2, the next power of 2 above 1334 is 2048 (2^11). Setting `new HashMap<>(2048)` guarantees that all 1,000 items can be inserted with zero rehash passes and optimal bucket distribution."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l2-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: HashMap Architecture",
+      "checklist": [
+        "I can explain the bucket index formula (n - 1) & (h ^ (h >>> 16)) in detail",
+        "I understand the conditions for TreeBin conversion (TREEIFY_THRESHOLD = 8 and MIN_TREEIFY_CAPACITY = 64)",
+        "I can explain the (hash & oldCap) bit-split algorithm used during capacity doubling"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l2-1",
+      "title": "Calculate Exact Bucket Index",
+      "difficulty": "beginner",
+      "problemStatement": "Implement getBucketIndex(String key, int capacity) using the JDK 8 hash spreading function (h ^ (h >>> 16)) and bitmask (capacity - 1). Handle null keys by returning 0.",
+      "starterCode": "public class HashMapCalculator {\n    public static int getBucketIndex(String key, int capacity) {\n        // TODO: Return bucket index\n        return 0;\n    }\n}",
+      "solutionCode": "public class HashMapCalculator {\n    public static int getBucketIndex(String key, int capacity) {\n        if (key == null) return 0;\n        int h = key.hashCode();\n        int spread = h ^ (h >>> 16);\n        return (capacity - 1) & spread;\n    }\n}",
+      "expectedOutput": "Computed bucket",
+      "testCases": [
+        {
+          "input": "key = null, capacity = 16",
+          "expected": "0"
+        },
+        {
+          "input": "key = 'test', capacity = 16",
+          "expected": "(15 & ('test'.hashCode() ^ ('test'.hashCode() >>> 16)))"
+        }
+      ],
+      "hints": [
+        "Check for key == null first (always bucket 0 in HashMap).",
+        "Apply spread = h ^ (h >>> 16) then & with (capacity - 1)."
+      ]
+    },
+    {
+      "id": "prob-col3-l2-2",
+      "title": "Calculate Optimal Initial Capacity",
+      "difficulty": "intermediate",
+      "problemStatement": "Write findOptimalCapacity(int expectedEntries, float loadFactor) that returns the minimum power-of-two capacity required to store expectedEntries without triggering a resize.",
+      "starterCode": "public class CapacityOptimizer {\n    public static int findOptimalCapacity(int expectedEntries, float loadFactor) {\n        // TODO: Return power of two capacity\n        return 16;\n    }\n}",
+      "solutionCode": "public class CapacityOptimizer {\n    public static int findOptimalCapacity(int expectedEntries, float loadFactor) {\n        if (expectedEntries <= 0) return 16;\n        int minRequired = (int) Math.ceil(expectedEntries / loadFactor);\n        int cap = 1;\n        while (cap < minRequired) {\n            cap <<= 1;\n        }\n        return Math.max(cap, 16);\n    }\n}",
+      "expectedOutput": "2048",
+      "testCases": [
+        {
+          "input": "expectedEntries = 1000, loadFactor = 0.75f",
+          "expected": "2048"
+        },
+        {
+          "input": "expectedEntries = 10, loadFactor = 0.75f",
+          "expected": "16"
+        }
+      ],
+      "hints": [
+        "Divide expectedEntries by loadFactor and ceil the result.",
+        "Find the smallest power of 2 >= that value, with minimum 16."
+      ]
+    },
+    {
+      "id": "prob-col3-l2-3",
+      "title": "Simulate Bit-Split Rehash Destination",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an integer hash code and oldCapacity of 16, implement willMoveOnResize(int hashCode, int oldCapacity) returning true if the entry moves to oldIndex + 16, or false if it stays.",
+      "starterCode": "public class BitSplitTester {\n    public static boolean willMoveOnResize(int hashCode, int oldCapacity) {\n        // TODO: Return true if entry moves\n        return false;\n    }\n}",
+      "solutionCode": "public class BitSplitTester {\n    public static boolean willMoveOnResize(int hashCode, int oldCapacity) {\n        int spread = hashCode ^ (hashCode >>> 16);\n        return (spread & oldCapacity) != 0;\n    }\n}",
+      "expectedOutput": "true/false",
+      "testCases": [
+        {
+          "input": "hashCode = 16, oldCapacity = 16",
+          "expected": "true"
+        },
+        {
+          "input": "hashCode = 32, oldCapacity = 16",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Compute spread = hashCode ^ (hashCode >>> 16).",
+        "Test if (spread & oldCapacity) != 0."
+      ]
+    },
+    {
+      "id": "prob-col3-l2-4",
+      "title": "Verify Treeify Qualification",
+      "difficulty": "beginner",
+      "problemStatement": "Implement isTreeifyEligible(int chainLength, int tableCapacity) returning true if chainLength >= 8 and tableCapacity >= 64.",
+      "starterCode": "public class TreeifyChecker {\n    public static boolean isTreeifyEligible(int chainLength, int tableCapacity) {\n        // TODO: Return true if treeification should trigger\n        return false;\n    }\n}",
+      "solutionCode": "public class TreeifyChecker {\n    public static boolean isTreeifyEligible(int chainLength, int tableCapacity) {\n        return chainLength >= 8 && tableCapacity >= 64;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "chainLength = 8, tableCapacity = 64",
+          "expected": "true"
+        },
+        {
+          "input": "chainLength = 8, tableCapacity = 32",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "TREEIFY_THRESHOLD is 8.",
+        "MIN_TREEIFY_CAPACITY is 64."
+      ]
+    },
+    {
+      "id": "prob-col3-l2-5",
+      "title": "Count Collisions in Bucket Array",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an array of integer hash codes and a capacity of 16, return the number of buckets that have 2 or more elements mapped to them.",
+      "starterCode": "public class CollisionCounter {\n    public static int countCollidedBuckets(int[] hashCodes, int capacity) {\n        // TODO: Return number of buckets with collisions\n        return 0;\n    }\n}",
+      "solutionCode": "public class CollisionCounter {\n    public static int countCollidedBuckets(int[] hashCodes, int capacity) {\n        if (hashCodes == null || hashCodes.length == 0) return 0;\n        int[] counts = new int[capacity];\n        for (int h : hashCodes) {\n            int spread = h ^ (h >>> 16);\n            int bucket = (capacity - 1) & spread;\n            counts[bucket]++;\n        }\n        int collided = 0;\n        for (int c : counts) {\n            if (c >= 2) collided++;\n        }\n        return collided;\n    }\n}",
+      "expectedOutput": "2",
+      "testCases": [
+        {
+          "input": "hashCodes = [0, 16, 1, 17], capacity = 16",
+          "expected": "2"
+        }
+      ],
+      "hints": [
+        "Tally counts per bucket index.",
+        "Count how many buckets have counts[i] >= 2."
+      ]
+    }
+  ]
+}

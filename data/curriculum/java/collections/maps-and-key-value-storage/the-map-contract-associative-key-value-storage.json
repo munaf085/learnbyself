@@ -1,0 +1,289 @@
+{
+  "id": "les-col-map-contract",
+  "slug": "the-map-contract-associative-key-value-storage",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "The Map Contract: Associative Key-Value Storage",
+  "summary": "Understand why Map does not extend Collection, the key-to-value association model, uniqueness of keys, and value mutability.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [
+    "The Collection Hierarchy & Root Interfaces",
+    "Object Identity vs Logical Equality",
+    "The Set Contract & Mathematical Uniqueness"
+  ],
+  "learningObjectives": [
+    "Understand the formal mathematical definition of the java.util.Map associative abstraction",
+    "Analyze why Map does not extend the java.util.Collection root interface",
+    "Master core CRUD operations: put(), get(), getOrDefault(), containsKey(), containsValue(), remove()",
+    "Differentiate the keySet() uniqueness guarantee from the values() multiset collection"
+  ],
+  "expectedOutcomes": [
+    "Articulate the architectural rationale for Map's separation from Collection in technical interviews",
+    "Confidently design key-value models with appropriate key types and null-safety patterns"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l1-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: DNS Hostname to IP Address Resolution",
+      "analogy": {
+        "headline": "Practical Context: DNS Hostname to IP Address Resolution",
+        "story": "Every time you enter a web address like 'learnbyself.dev', your computer does not store all websites in a single sequential list. Instead, the global Domain Name System (DNS) operates as a distributed key-value directory: a unique hostname acts as the key, pointing directly to a specific IP address value.\n\nHostnames cannot duplicate\u2014there can only be one 'learnbyself.dev'. However, multiple different hostnames can legitimately point to the exact same IP address (values may duplicate). When server migrations happen, the IP value is updated in-place without altering the domain name identity.\n\nThis is precisely how an Associative Map operates in software engineering.",
+        "keyTakeaway": "A Map stores associative pairs (Key -> Value). Keys are strictly unique; values can duplicate. Queries prioritize finding a value by its key in O(1) time."
+      },
+      "content": "Every time you enter a web address like 'learnbyself.dev', your computer does not store all websites in a single sequential list. Instead, the global Domain Name System (DNS) operates as a distributed key-value directory: a unique hostname acts as the key, pointing directly to a specific IP address value.\n\nHostnames cannot duplicate\u2014there can only be one 'learnbyself.dev'. However, multiple different hostnames can legitimately point to the exact same IP address (values may duplicate). When server migrations happen, the IP value is updated in-place without altering the domain name identity.\n\nThis is precisely how an Associative Map operates in software engineering."
+    },
+    {
+      "id": "act-col3-l1-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "The Map Architecture: Associative Arrays & Why Map Is Not A Collection",
+      "breakdown": {
+        "keyTakeaways": [
+          "A Map<K, V> models an associative array binding unique keys to arbitrary values",
+          "Map does NOT extend java.util.Collection because of an interface contract mismatch (single elements vs key-value pairs)",
+          "put(key, value) returns the PREVIOUS value associated with the key, or null if the key was new",
+          "Keys form a Set (no duplicates); values form a Collection (duplicates allowed)"
+        ]
+      },
+      "content": "### Definition of the java.util.Map Interface\n\nThe **`java.util.Map<K, V>`** interface is a core member of the Java Collections Framework representing an object that maps keys to values. Formally, a map cannot contain duplicate keys; each key can map to at most one value. It models the mathematical function abstraction:\n$$f : K \\to V$$\n\nUnlike `List` and `Set`, **`Map` does NOT extend `java.util.Collection`**. This is an intentional architectural design:\n* `Collection<E>` represents a container of individual elements with signatures like `add(E element)` and `iterator()`.\n* `Map<K, V>` represents pairwise associations requiring two parameters `put(K key, V value)` and cannot produce an `Iterator<E>` directly without specifying whether keys, values, or entries are being traversed.\n\n---\n\n### Core CRUD Operations & The put() Return Contract\n\nWhen interacting with a Map:\n* **`V put(K key, V value)`**: Associates the specified value with the key. If the map previously contained a mapping for the key, the old value is replaced and **returned**. If the key was absent, it returns **`null`**.\n* **`V get(Object key)`**: Returns the mapped value, or `null` if no mapping exists.\n* **`V getOrDefault(Object key, V defaultValue)`**: Returns the value if present, otherwise returns `defaultValue` without inserting it into the map.\n* **`boolean containsKey(Object key)`**: Checks key existence in $O(1)$ average time.\n* **`boolean containsValue(Object value)`**: Checks value existence in $O(N)$ linear time (requires full map scan).\n\n---\n\n### Executable Demonstration: User Session Registry\n\n```java\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class MapContractDemo {\n    public static void main(String[] args) {\n        Map<String, String> sessionStore = new HashMap<>();\n\n        // 1. Insertion: put() returns null for new keys\n        String prevAlice = sessionStore.put(\"user_101\", \"192.168.1.10\");\n        System.out.println(\"First put('user_101') returned: \" + prevAlice); // null\n\n        // 2. Duplicate key: replaces value and returns previous mapping!\n        String oldAlice = sessionStore.put(\"user_101\", \"10.0.0.99\");\n        System.out.println(\"Second put('user_101') returned: \" + oldAlice);  // 192.168.1.10\n\n        // 3. Different key mapping to duplicate value (valid in Map)\n        sessionStore.put(\"user_102\", \"10.0.0.99\");\n\n        System.out.println(\"Total mappings: \" + sessionStore.size());        // 2\n        System.out.println(\"Current user_101 IP: \" + sessionStore.get(\"user_101\")); // 10.0.0.99\n\n        // 4. Safe lookup with default fallback\n        String guestIp = sessionStore.getOrDefault(\"guest_999\", \"0.0.0.0\");\n        System.out.println(\"Guest IP fallback: \" + guestIp);                // 0.0.0.0\n    }\n}\n```\n\n**Console Output:**\n```text\nFirst put('user_101') returned: null\nSecond put('user_101') returned: 192.168.1.10\nTotal mappings: 2\nCurrent user_101 IP: 10.0.0.99\nGuest IP fallback: 0.0.0.0\n```\n\n---\n\n### Summary of Map Collection Views\n\n| Method | Return Type | Uniqueness Guarantee | Iteration Performance |\n| :--- | :--- | :--- | :--- |\n| **`map.keySet()`** | `Set<K>` | Strictly Unique | $O(\\text{Capacity} + N)$ |\n| **`map.values()`** | `Collection<V>` | Duplicates Allowed | $O(\\text{Capacity} + N)$ |\n| **`map.entrySet()`** | `Set<Map.Entry<K, V>>` | Unique by Key | $O(\\text{Capacity} + N)$ |"
+    },
+    {
+      "id": "act-col3-l1-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Config Engine with Fallback Defaults",
+      "description": "Trace a production configuration manager storing application properties with type-safe fallbacks.",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\npublic class ConfigurationManager {\n    private final Map<String, String> properties = new HashMap<>();\n\n    public void setProperty(String key, String value) {\n        if (key == null) throw new IllegalArgumentException(\"Property key cannot be null\");\n        properties.put(key.trim().toLowerCase(), value);\n    }\n\n    public String getProperty(String key, String fallback) {\n        if (key == null) return fallback;\n        return properties.getOrDefault(key.trim().toLowerCase(), fallback);\n    }\n\n    public boolean hasProperty(String key) {\n        if (key == null) return false;\n        return properties.containsKey(key.trim().toLowerCase());\n    }\n\n    public static void main(String[] args) {\n        ConfigurationManager config = new ConfigurationManager();\n        config.setProperty(\"server.port\", \"8080\");\n        config.setProperty(\"database.pool.size\", \"20\");\n\n        System.out.println(\"Port: \" + config.getProperty(\"SERVER.PORT\", \"3000\"));\n        System.out.println(\"Timeout: \" + config.getProperty(\"server.timeout\", \"5000\"));\n        System.out.println(\"Has pool config? \" + config.hasProperty(\"database.pool.size\"));\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5",
+          "description": "Initialize a private final HashMap to store key-value configuration pairings."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "7-10",
+          "description": "Validate inputs and normalize keys to lowercase so lookups are case-insensitive."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "12-15",
+          "description": "Use getOrDefault() to provide instantaneous fallback without mutating or polluting the underlying map."
+        },
+        {
+          "stepNumber": 4,
+          "focusLines": "22-29",
+          "description": "Verify port returns '8080', missing timeout falls back to '5000', and hasProperty returns true."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l1-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Map Contract Assessment",
+      "questions": [
+        {
+          "id": "col3-l1-q1",
+          "question": "Why does java.util.Map not extend java.util.Collection?",
+          "options": [
+            "Because Map is part of java.lang, not java.util",
+            "Because of a structural mismatch: Collection models single elements (add(E)), while Map models key-value pairs (put(K, V))",
+            "Because Map was deprecated in Java 5",
+            "Because Map is strictly an abstract class"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Collection represents a group of individual items (Collection<E>). Map requires pairs of objects (K, V). Extending Collection would force incompatible methods like add(Object) onto Map."
+        },
+        {
+          "id": "col3-l1-q2",
+          "question": "What is the return value of map.put(key, value) when the key is already present in the map?",
+          "options": [
+            "true",
+            "The new value that was just inserted",
+            "The previous value that was replaced by this operation (or null if previously mapped to null)",
+            "null always"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "put() returns the previous value associated with the specified key, allowing callers to inspect what was overwritten."
+        },
+        {
+          "id": "col3-l1-q3",
+          "question": "What is the time complexity of map.containsKey(key) versus map.containsValue(value) in a standard HashMap?",
+          "options": [
+            "Both are O(1)",
+            "containsKey is O(1) average; containsValue is O(N) linear scan",
+            "Both are O(N)",
+            "containsKey is O(log N); containsValue is O(1)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Keys are hashed directly to bucket indices in O(1) average time. Values are not indexed by hash; finding a value requires linearly scanning every node across all buckets O(N)."
+        },
+        {
+          "id": "col3-l1-q4",
+          "question": "What happens if map.get(key) returns null?",
+          "options": [
+            "It guarantees that the key is not in the map",
+            "It means either the key is not in the map, OR the key is present and explicitly mapped to the value null",
+            "It throws a NoSuchElementException",
+            "It removes the key from the map"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In a HashMap that allows null values, get() returning null is ambiguous. To distinguish between a missing key and a key mapped to null, invoke map.containsKey(key)."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l1-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: The Map Contract",
+      "questions": [
+        {
+          "id": "col3-l1-int-1",
+          "question": "Why is it dangerous to rely on map.get(key) != null to verify if a key exists in a HashMap?",
+          "answer": "HashMap allows null values. If a key exists in the map with a value of null (e.g., map.put('key', null)), `map.get('key')` returns null. A check like `if (map.get(key) != null)` will falsely conclude the key does not exist. The only authoritative way to verify key existence is `map.containsKey(key)`."
+        },
+        {
+          "id": "col3-l1-int-2",
+          "question": "What is the relationship between map.keySet() and the underlying map?",
+          "answer": "map.keySet() returns a backed view of the keys in the map, not a copied snapshot. Removing an element from the keySet (via `keySet.remove(k)`) removes the corresponding key-value pair directly from the underlying map! However, attempting to call `keySet.add(k)` throws an UnsupportedOperationException because a key cannot be added without an associated value."
+        },
+        {
+          "id": "col3-l1-int-3",
+          "question": "How does getOrDefault() improve code readability and performance over traditional containsKey + get checks?",
+          "answer": "Writing `if (map.containsKey(k)) return map.get(k); else return default;` performs two separate hash bucket lookups: one for containsKey and another for get. In contrast, `map.getOrDefault(k, default)` calculates the hash and traverses the bucket exactly once, cutting CPU lookup instructions in half while eliminating noisy conditional boilerplate."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l1-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: The Map Contract",
+      "checklist": [
+        "I can explain why Map does not extend Collection due to element vs pair semantics",
+        "I understand the return value of put() and how it enables atomic replacement tracking",
+        "I know the difference in time complexity between containsKey() (O(1)) and containsValue() (O(N))"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l1-1",
+      "title": "Safe User Profile Lookup",
+      "difficulty": "beginner",
+      "problemStatement": "Implement getUserEmail(Map<String, String> userMap, String userId) that returns the user's email if present, or 'unknown@domain.com' if the user is missing, using getOrDefault().",
+      "starterCode": "import java.util.Map;\n\npublic class UserLookup {\n    public static String getUserEmail(Map<String, String> userMap, String userId) {\n        // TODO: Return email or fallback default\n        return \"\";\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class UserLookup {\n    public static String getUserEmail(Map<String, String> userMap, String userId) {\n        if (userMap == null || userId == null) return \"unknown@domain.com\";\n        return userMap.getOrDefault(userId, \"unknown@domain.com\");\n    }\n}",
+      "expectedOutput": "alice@test.com",
+      "testCases": [
+        {
+          "input": "userMap = {'u1': 'alice@test.com'}, userId = 'u1'",
+          "expected": "alice@test.com"
+        },
+        {
+          "input": "userMap = {'u1': 'alice@test.com'}, userId = 'u2'",
+          "expected": "unknown@domain.com"
+        }
+      ],
+      "hints": [
+        "Use userMap.getOrDefault(userId, 'unknown@domain.com').",
+        "Handle null userMap and null userId defensively."
+      ]
+    },
+    {
+      "id": "prob-col3-l1-2",
+      "title": "Track Overwritten Values in Session Store",
+      "difficulty": "beginner",
+      "problemStatement": "Implement recordAndDetectUpdate(Map<String, String> sessions, String sessionId, String ip) that associates the sessionId with the new ip and returns true if an existing session was updated, or false if it was newly created.",
+      "starterCode": "import java.util.Map;\n\npublic class SessionTracker {\n    public static boolean recordAndDetectUpdate(Map<String, String> sessions, String sessionId, String ip) {\n        // TODO: Return true if an existing mapping was overwritten\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class SessionTracker {\n    public static boolean recordAndDetectUpdate(Map<String, String> sessions, String sessionId, String ip) {\n        if (sessions == null) return false;\n        String prev = sessions.put(sessionId, ip);\n        return prev != null;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "put('s1', '1.1.1.1'), put('s1', '2.2.2.2')",
+          "expected": "true"
+        },
+        {
+          "input": "put('s1', '1.1.1.1')",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "put() returns null if the key was not previously mapped.",
+        "If put() returns a non-null value, it was an update."
+      ]
+    },
+    {
+      "id": "prob-col3-l1-3",
+      "title": "Check Duplicate Value Presence",
+      "difficulty": "intermediate",
+      "problemStatement": "Write hasDuplicateValues(Map<String, String> map) that returns true if two or more distinct keys map to the exact same value.",
+      "starterCode": "import java.util.Map;\nimport java.util.Set;\nimport java.util.HashSet;\n\npublic class DuplicateValueChecker {\n    public static boolean hasDuplicateValues(Map<String, String> map) {\n        // TODO: Detect if any value is shared by multiple keys\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Map;\nimport java.util.Set;\nimport java.util.HashSet;\n\npublic class DuplicateValueChecker {\n    public static boolean hasDuplicateValues(Map<String, String> map) {\n        if (map == null || map.isEmpty()) return false;\n        Set<String> seenValues = new HashSet<>();\n        for (String val : map.values()) {\n            if (!seenValues.add(val)) {\n                return true; // add() returns false on duplicate!\n            }\n        }\n        return false;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "{'a': 'val1', 'b': 'val1'}",
+          "expected": "true"
+        },
+        {
+          "input": "{'a': 'val1', 'b': 'val2'}",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Iterate over map.values().",
+        "Add values to a HashSet; if add() returns false, a duplicate exists."
+      ]
+    },
+    {
+      "id": "prob-col3-l1-4",
+      "title": "Invert Key-Value Mapping Safely",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a Map<String, String> where all values are unique, implement invertBijection(Map<String, String> original) that returns a new Map<String, String> with keys and values swapped.",
+      "starterCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class MapInverter {\n    public static Map<String, String> invertBijection(Map<String, String> original) {\n        // TODO: Swap keys and values into a new map\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class MapInverter {\n    public static Map<String, String> invertBijection(Map<String, String> original) {\n        if (original == null) return new HashMap<>();\n        Map<String, String> inverted = new HashMap<>();\n        for (Map.Entry<String, String> entry : original.entrySet()) {\n            inverted.put(entry.getValue(), entry.getKey());\n        }\n        return inverted;\n    }\n}",
+      "expectedOutput": "{'val1': 'k1', 'val2': 'k2'}",
+      "testCases": [
+        {
+          "input": "{'k1': 'val1', 'k2': 'val2'}",
+          "expected": "{'val1': 'k1', 'val2': 'k2'}"
+        }
+      ],
+      "hints": [
+        "Iterate over original.entrySet().",
+        "Call inverted.put(entry.getValue(), entry.getKey())."
+      ]
+    },
+    {
+      "id": "prob-col3-l1-5",
+      "title": "Remove Key and Return Status",
+      "difficulty": "beginner",
+      "problemStatement": "Implement removeIfExists(Map<String, Integer> scoreMap, String player) returning true if the player was found and removed, or false if the player was not in the map.",
+      "starterCode": "import java.util.Map;\n\npublic class PlayerRemover {\n    public static boolean removeIfExists(Map<String, Integer> scores, String player) {\n        // TODO: Remove and return true if existed\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class PlayerRemover {\n    public static boolean removeIfExists(Map<String, Integer> scores, String player) {\n        if (scores == null || player == null) return false;\n        return scores.remove(player) != null;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "scores = {'p1': 100}, player = 'p1'",
+          "expected": "true"
+        },
+        {
+          "input": "scores = {'p1': 100}, player = 'p2'",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "map.remove(key) returns the value removed, or null if the key was absent.",
+        "Check if scores.remove(player) != null."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,276 @@
+{
+  "id": "les-col-map-bug-hunt",
+  "slug": "debugging-and-bug-hunt-map-pitfalls",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "Debugging & Bug Hunt: Map Pitfalls",
+  "summary": "Troubleshoot HashMap memory leaks from missing hashCode/equals, mutable keys mutating in-place, and ConcurrentModificationException during iteration.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "prerequisites": [
+    "The Map Contract: Associative Key-Value Storage",
+    "HashMap Architecture: Buckets, Collisions & TreeBins",
+    "Iterating Maps: keySet, values & entrySet",
+    "The equals() and hashCode() Contract in Sets"
+  ],
+  "learningObjectives": [
+    "Identify and fix the 4 classic Map architecture bugs in production systems",
+    "Remediate memory leaks caused by mutating keys after HashMap insertion",
+    "Prevent ConcurrentModificationException during collection iteration",
+    "Disambiguate missing keys from keys mapped to null values using containsKey()"
+  ],
+  "expectedOutcomes": [
+    "Intuitive ability to audit and remediate subtle Map identity and concurrency defects in enterprise codebases",
+    "Mastery of safe iteration and immutable key patterns in Java"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l7-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Post Office Box Rekeying Without Updating Directory",
+      "analogy": {
+        "headline": "Practical Context: Post Office Box Rekeying Without Updating Directory",
+        "story": "Imagine a post office with 1,000 locked PO Boxes. A customer rents Box #50, and their key code is registered in the master directory index.\n\nOne day, the customer secretly changes the physical lock on Box #50 to a different key code without notifying the post office. When the mail carrier sorts incoming letters, they look up the new key code in the directory, calculate that it belongs to Box #900, and drop the mail there. The customer visits Box #50, finds no mail, and reports the letters permanently lost.\n\nThis is identical to modifying a field in an object used as a HashMap key after it has already been inserted into the map.",
+        "keyTakeaway": "Mutating fields used in a key's hashCode() changes its bucket address, stranding entries in orphaned buckets and causing permanent memory leaks."
+      },
+      "content": "Imagine a post office with 1,000 locked PO Boxes. A customer rents Box #50, and their key code is registered in the master directory index.\n\nOne day, the customer secretly changes the physical lock on Box #50 to a different key code without notifying the post office. When the mail carrier sorts incoming letters, they look up the new key code in the directory, calculate that it belongs to Box #900, and drop the mail there. The customer visits Box #50, finds no mail, and reports the letters permanently lost.\n\nThis is identical to modifying a field in an object used as a HashMap key after it has already been inserted into the map."
+    },
+    {
+      "id": "act-col3-l7-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Map Bug Hunt: The 4 Classic Production Traps & Remediation",
+      "breakdown": {
+        "keyTakeaways": [
+          "Trap 1: Mutating Map keys after insertion strands entries in wrong buckets and causes severe memory leaks",
+          "Trap 2: Calling map.remove(k) during for-each iteration throws ConcurrentModificationException",
+          "Trap 3: get(k) == null is ambiguous when null values are allowed; always check containsKey(k)",
+          "Trap 4: Inserting null keys or un-comparable keys into TreeMap causes NullPointerException or ClassCastException"
+        ]
+      },
+      "content": "### Overview of the 4 Classic Map Architecture Traps\n\nMaps are the most frequently used data structures in backend systems, making their edge cases the source of high-severity production defects:\n\n---\n\n### Trap 1: The Mutable Key Disaster & Persistent Memory Leaks\n\n**Defect**: Using a mutable object as a `HashMap` key and altering a field used in `hashCode()`.\n* **Symptom**: `map.get(key)` returns `null` even though the key is inside the map! `map.remove(key)` fails, leaving the entry stranded in heap memory forever.\n* **Remedy**: Always make Map keys **immutable** (use Java records, `final` classes, or `String`/`UUID`).\n\n---\n\n### Trap 2: ConcurrentModificationException During Key Iteration\n\n**Defect**: Calling `map.remove(key)` directly inside a standard for-each loop:\n```java\n// CRASHES at runtime!\nfor (String key : map.keySet()) {\n    if (shouldDelete(key)) {\n        map.remove(key); // Throws ConcurrentModificationException!\n    }\n}\n```\n* **Symptom**: `ConcurrentModificationException` caused by `modCount` mismatch in the iterator.\n* **Remedy**: Use `map.keySet().removeIf(...)` or `Iterator.remove()`.\n\n---\n\n### Trap 3: The Ambiguous get(k) == null Trap\n\n**Defect**: Checking key presence with `if (map.get(key) != null)`:\n```java\nmap.put(\"timeout\", null); // Key is explicitly present with null value!\nif (map.get(\"timeout\") == null) {\n    // Falsely assumes \"timeout\" was never configured!\n}\n```\n* **Remedy**: Always verify presence using `map.containsKey(key)`.\n\n---\n\n### Trap 4: Null and Comparability Traps in TreeMap\n\n**Defect**: Inserting `null` as a key into a `TreeMap`, or using keys that do not implement `Comparable`.\n* **Symptom**: `NullPointerException` (on null key) or `ClassCastException` (without `Comparable`).\n* **Remedy**: Sanitize keys and supply explicit `Comparator` instances in the `TreeMap` constructor.\n\n---\n\n### Executable Code Walkthrough: Diagnosing and Fixing Map Pitfalls\n\n```java\nimport java.util.*;\n\npublic class MapPitfallsBugHuntDemo {\n    public static void main(String[] args) {\n        // Fix 1: Safe removal using removeIf()\n        Map<String, Integer> scores = new HashMap<>();\n        scores.put(\"Alice\", 95);\n        scores.put(\"Bob\", 40);\n        scores.put(\"Charlie\", 55);\n\n        // Safe in-place removal without ConcurrentModificationException!\n        scores.entrySet().removeIf(entry -> entry.getValue() < 60);\n        System.out.println(\"1. Safe removal result: \" + scores);\n\n        // Fix 2: Disambiguating null values\n        Map<String, String> cache = new HashMap<>();\n        cache.put(\"FEATURE_FLAG\", null); // Explicitly disabled\n\n        boolean existsViaGet = cache.get(\"FEATURE_FLAG\") != null;\n        boolean existsViaContainsKey = cache.containsKey(\"FEATURE_FLAG\");\n        System.out.println(\"2. Exists via get() != null:   \" + existsViaGet);        // false (MISLEADING!)\n        System.out.println(\"   Exists via containsKey():    \" + existsViaContainsKey); // true (ACCURATE!)\n    }\n}\n```\n\n**Console Output:**\n```text\n1. Safe removal result: {Alice=95}\n2. Exists via get() != null:   false\n   Exists via containsKey():    true\n```"
+    },
+    {
+      "id": "act-col3-l7-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Remediating a Production In-Memory Cache Leak",
+      "description": "Trace an audit fixing a memory leak caused by mutable Map keys and improper iteration removal.",
+      "code": "import java.util.HashMap;\nimport java.util.Iterator;\nimport java.util.Map;\n\npublic class CacheLeakRemediation {\n    // Solution: Immutable key record guarantees stable hash codes\n    public record TenantKey(String tenantId, String environment) {}\n\n    public static void cleanExpiredTenants(Map<TenantKey, Long> expiryMap, long now) {\n        // Solution: Safe iterator removal prevents ConcurrentModificationException\n        Iterator<Map.Entry<TenantKey, Long>> it = expiryMap.entrySet().iterator();\n        while (it.hasNext()) {\n            Map.Entry<TenantKey, Long> entry = it.next();\n            if (entry.getValue() < now) {\n                it.remove(); // Safely removes from backing map\n            }\n        }\n    }\n\n    public static void main(String[] args) {\n        Map<TenantKey, Long> expiries = new HashMap<>();\n        TenantKey k1 = new TenantKey(\"T1\", \"PROD\");\n        TenantKey k2 = new TenantKey(\"T2\", \"DEV\");\n\n        expiries.put(k1, 1000L);\n        expiries.put(k2, 2000L);\n\n        cleanExpiredTenants(expiries, 1500L);\n        System.out.println(\"Remaining active tenants: \" + expiries.keySet());\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "6",
+          "description": "Define an immutable record TenantKey to guarantee that hashCode() is permanent and immune to mutation."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "9-16",
+          "description": "Use explicit Iterator.remove() to evict expired items without triggering ConcurrentModificationException."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "25-27",
+          "description": "Verify expired tenant T1 is safely cleaned up, leaving only active tenant T2."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l7-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Map Pitfalls Assessment",
+      "questions": [
+        {
+          "id": "col3-l7-q1",
+          "question": "What exception is thrown if you call map.remove(key) inside a standard for-each loop iterating over map.keySet()?",
+          "options": [
+            "IllegalStateException",
+            "ConcurrentModificationException",
+            "NullPointerException",
+            "NoSuchElementException"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Iterators maintain an expectedModCount. Calling map.remove() directly modifies modCount without updating expectedModCount, triggering ConcurrentModificationException on the next iteration."
+        },
+        {
+          "id": "col3-l7-q2",
+          "question": "How do you distinguish between a key that is missing from a HashMap versus a key that maps to null?",
+          "options": [
+            "By checking if map.get(key) == 0",
+            "By checking map.containsKey(key)",
+            "By calling map.values().contains(null)",
+            "They cannot be distinguished in Java"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "map.containsKey(key) returns true if the key exists (even if its value is null), and false if the key was never inserted."
+        },
+        {
+          "id": "col3-l3-q3",
+          "question": "Why does mutating a key object in a HashMap result in a memory leak?",
+          "options": [
+            "Because the JVM disables garbage collection for all maps",
+            "Because the key's altered hash code points to the wrong bucket during map.remove(key), making it impossible to remove via normal methods while the map retains a strong reference",
+            "Because HashMap copies objects to disk",
+            "Because table capacity shrinks to 0"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "remove(k) searches the bucket corresponding to the mutated hash code. Finding nothing, it does not remove the item from its original bucket, causing an unremovable memory leak."
+        },
+        {
+          "id": "col3-l7-q4",
+          "question": "What is the recommended modern way to remove entries matching a condition from a Map in Java 8+?",
+          "options": [
+            "map.clear() and re-insert valid entries",
+            "map.entrySet().removeIf(entry -> condition(entry))",
+            "Use reflection to set entries to null",
+            "Use a thread sleep loop"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "entrySet().removeIf(...) is concise, highly optimized, and safely manages internal iterator modification counts."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l7-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Map Failure Modes",
+      "questions": [
+        {
+          "id": "col3-l7-int-1",
+          "question": "How does ConcurrentModificationException occur in a single-threaded application?",
+          "answer": "ConcurrentModificationException has an unfortunate name: it does NOT require multiple threads! In a single thread, it occurs whenever a collection is structurally modified (adding or removing elements) through direct collection methods while an Iterator (like a for-each loop) is actively traversing it. The iterator detects that `modCount != expectedModCount` on `it.next()` and immediately fails fast to prevent reading corrupt state."
+        },
+        {
+          "id": "col3-l7-int-2",
+          "question": "Can you use an array (like byte[] or int[]) as a key in a HashMap? Why or why not?",
+          "answer": "Technically Java permits it, but practically it is a severe bug. Java arrays do not override equals() or hashCode()\u2014they inherit the default implementation from Object, which checks reference identity (memory address). Two distinct arrays containing the exact same bytes will have different hash codes and return false on equals(). Therefore, `map.get(new byte[]{1, 2})` will never find an entry added with `map.put(new byte[]{1, 2}, val)`. To use byte sequences as keys, wrap them in java.nio.ByteBuffer or an immutable wrapper class."
+        },
+        {
+          "id": "col3-l7-int-3",
+          "question": "Why is String the most popular key type for HashMaps in Java?",
+          "answer": "String has three ideal properties for HashMap keys: 1) It is strictly immutable (its fields cannot change, preventing hash drift and vanishing entries), 2) Its hashCode() is cached in a private field `hash` after first computation, making subsequent lookups extremely fast, and 3) Its equals() and hashCode() are well-distributed and battle-tested."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l7-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Map Pitfalls & Defensive Coding",
+      "checklist": [
+        "I understand why mutable keys cause memory leaks and how to design immutable keys",
+        "I know how to safely remove entries during iteration using removeIf() or Iterator.remove()",
+        "I know how to distinguish missing keys from keys mapped to null using containsKey()"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l7-1",
+      "title": "Safe In-Place Map Removal",
+      "difficulty": "beginner",
+      "problemStatement": "Fix the removeFailingGrades(Map<String, Integer> gradeMap, int threshold) method so it removes all students with grade < threshold without throwing ConcurrentModificationException.",
+      "starterCode": "import java.util.Map;\n\npublic class GradeRemover {\n    public static void removeFailingGrades(Map<String, Integer> gradeMap, int threshold) {\n        // Buggy code: throws ConcurrentModificationException!\n        for (String student : gradeMap.keySet()) {\n            if (gradeMap.get(student) < threshold) {\n                gradeMap.remove(student);\n            }\n        }\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class GradeRemover {\n    public static void removeFailingGrades(Map<String, Integer> gradeMap, int threshold) {\n        if (gradeMap != null) {\n            gradeMap.entrySet().removeIf(entry -> entry.getValue() == null || entry.getValue() < threshold);\n        }\n    }\n}",
+      "expectedOutput": "Removed failing grades safely",
+      "testCases": [
+        {
+          "input": "gradeMap = {'A': 90, 'B': 50}, threshold = 60",
+          "expected": "gradeMap only has 'A': 90"
+        }
+      ],
+      "hints": [
+        "Use gradeMap.entrySet().removeIf(e -> e.getValue() < threshold);",
+        "This completely avoids ConcurrentModificationException."
+      ]
+    },
+    {
+      "id": "prob-col3-l7-2",
+      "title": "Accurate Null-Value Detection",
+      "difficulty": "beginner",
+      "problemStatement": "Implement isKeyExplicitlyConfigured(Map<String, Object> config, String key) that returns true if the key is present in the map, even if its value is null.",
+      "starterCode": "import java.util.Map;\n\npublic class ConfigInspector {\n    public static boolean isKeyExplicitlyConfigured(Map<String, Object> config, String key) {\n        // TODO: Distinguish key presence from missing key\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class ConfigInspector {\n    public static boolean isKeyExplicitlyConfigured(Map<String, Object> config, String key) {\n        if (config == null || key == null) return false;\n        return config.containsKey(key);\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "config = {'flag': null}, key = 'flag'",
+          "expected": "true"
+        },
+        {
+          "input": "config = {'flag': null}, key = 'other'",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Use config.containsKey(key).",
+        "Do not use config.get(key) != null because the value itself may be null."
+      ]
+    },
+    {
+      "id": "prob-col3-l7-3",
+      "title": "Remediate Mutable Key Design",
+      "difficulty": "intermediate",
+      "problemStatement": "Refactor the mutable SessionKey class into an immutable Java record with sessionId and userId to prevent hash table corruption.",
+      "starterCode": "public class KeyMigration {\n    // TODO: Define immutable record SessionKey(String sessionId, String userId)\n}",
+      "solutionCode": "public class KeyMigration {\n    public record SessionKey(String sessionId, String userId) {\n        public SessionKey {\n            if (sessionId == null || sessionId.isBlank()) {\n                throw new IllegalArgumentException(\"sessionId cannot be blank\");\n            }\n            if (userId == null || userId.isBlank()) {\n                throw new IllegalArgumentException(\"userId cannot be blank\");\n            }\n        }\n    }\n}",
+      "expectedOutput": "Immutable SessionKey record",
+      "testCases": [
+        {
+          "input": "new SessionKey('S-1', 'U-1')",
+          "expected": "SessionKey[sessionId=S-1, userId=U-1]"
+        }
+      ],
+      "hints": [
+        "Declare a record SessionKey.",
+        "Add compact constructor validation."
+      ]
+    },
+    {
+      "id": "prob-col3-l7-4",
+      "title": "Sanitize Keys for TreeMap Ingestion",
+      "difficulty": "beginner",
+      "problemStatement": "Write safeTreeMapPut(TreeMap<String, String> map, String key, String value) that only puts into the map if key is not null, returning true if added or false if key was null.",
+      "starterCode": "import java.util.TreeMap;\n\npublic class TreeMapGuard {\n    public static boolean safeTreeMapPut(TreeMap<String, String> map, String key, String value) {\n        // TODO: Prevent NullPointerException\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.TreeMap;\n\npublic class TreeMapGuard {\n    public static boolean safeTreeMapPut(TreeMap<String, String> map, String key, String value) {\n        if (map == null || key == null) return false;\n        map.put(key, value);\n        return true;\n    }\n}",
+      "expectedOutput": "Safe put into TreeMap",
+      "testCases": [
+        {
+          "input": "map, key = null, value = 'val'",
+          "expected": "false (no exception thrown)"
+        },
+        {
+          "input": "map, key = 'k', value = 'val'",
+          "expected": "true"
+        }
+      ],
+      "hints": [
+        "Check key == null before calling map.put()."
+      ]
+    },
+    {
+      "id": "prob-col3-l7-5",
+      "title": "Diagnose Leaked Map Entries",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a map containing an entry whose key was mutated after insertion, implement findLeakedValueByLinearScan(Map<Key, Value> map, String targetKeyName) that locates the value by scanning entrySet() linearly.",
+      "starterCode": "import java.util.Map;\n\npublic class LeakDetector {\n    public static class MutableKey {\n        public String name;\n        public MutableKey(String name) { this.name = name; }\n        public int hashCode() { return name.hashCode(); }\n        public boolean equals(Object o) {\n            return o instanceof MutableKey k && name.equals(k.name);\n        }\n    }\n\n    public static String findLeakedValue(Map<MutableKey, String> map, String targetName) {\n        // TODO: Linear scan over entrySet to recover stranded value\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class LeakDetector {\n    public static class MutableKey {\n        public String name;\n        public MutableKey(String name) { this.name = name; }\n        public int hashCode() { return name.hashCode(); }\n        public boolean equals(Object o) {\n            return o instanceof MutableKey k && name.equals(k.name);\n        }\n    }\n\n    public static String findLeakedValue(Map<MutableKey, String> map, String targetName) {\n        if (map == null || targetName == null) return null;\n        for (Map.Entry<MutableKey, String> entry : map.entrySet()) {\n            if (entry.getKey() != null && targetName.equals(entry.getKey().name)) {\n                return entry.getValue();\n            }\n        }\n        return null;\n    }\n}",
+      "expectedOutput": "Recovered stranded value",
+      "testCases": [
+        {
+          "input": "map with mutated key, targetName matching entry",
+          "expected": "entry value recovered"
+        }
+      ],
+      "hints": [
+        "Iterate over map.entrySet() linearly.",
+        "Check targetName.equals(entry.getKey().name)."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "id": "les-col-iterating-maps",
+  "slug": "iterating-maps-cleanly-keyset-values-and-entryset",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "Iterating Maps: keySet, values & entrySet",
+  "summary": "The 3 view collections of a Map: why entrySet() is 2x faster than keySet()+get(), iterating with for-each, forEach() lambdas, and computeIfAbsent().",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "prerequisites": [
+    "The Map Contract: Associative Key-Value Storage",
+    "HashMap Architecture: Buckets, Collisions & TreeBins",
+    "Understanding Big-O Time Complexity"
+  ],
+  "learningObjectives": [
+    "Understand the 3 collection views of a Map: keySet(), values(), and entrySet()",
+    "Analyze why entrySet() is 2x faster than keySet() + get() by eliminating secondary hash lookups",
+    "Master Java 8 functional idioms: forEach(), computeIfAbsent(), computeIfPresent(), and merge()",
+    "Implement high-throughput grouping and aggregation patterns cleanly"
+  ],
+  "expectedOutcomes": [
+    "Ability to write idiomatically modern, optimal map traversal and aggregation code in enterprise services",
+    "Elimination of double-lookup anti-patterns in production Java applications"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l5-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Reading an Invoice with Both Item and Price Simultaneously",
+      "analogy": {
+        "headline": "Practical Context: Reading an Invoice with Both Item and Price Simultaneously",
+        "story": "Imagine an accountant reviewing a ledger of 1,000 invoices. In Method A, the accountant reads only the customer ID from the ledger, walks over to the file cabinet, searches the file by ID, retrieves the price, and walks back\u2014repeating this 1,000 times!\n\nIn Method B, the accountant opens the invoice binder where each page contains both the customer ID and the price side-by-side (an Entry), reading both in a single pass without any walking.\n\nMethod A is keySet() + map.get(k) (requiring 2,000 operations). Method B is entrySet() (requiring exactly 1,000 operations, twice as fast).",
+        "keyTakeaway": "entrySet() provides direct access to both key and value in a single traversal, eliminating secondary hash lookups."
+      },
+      "content": "Imagine an accountant reviewing a ledger of 1,000 invoices. In Method A, the accountant reads only the customer ID from the ledger, walks over to the file cabinet, searches the file by ID, retrieves the price, and walks back\u2014repeating this 1,000 times!\n\nIn Method B, the accountant opens the invoice binder where each page contains both the customer ID and the price side-by-side (an Entry), reading both in a single pass without any walking.\n\nMethod A is keySet() + map.get(k) (requiring 2,000 operations). Method B is entrySet() (requiring exactly 1,000 operations, twice as fast)."
+    },
+    {
+      "id": "act-col3-l5-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Map Traversal: entrySet vs keySet & Modern Functional Primitives",
+      "breakdown": {
+        "keyTakeaways": [
+          "entrySet() returns Set<Map.Entry<K, V>> giving immediate access to both key and value",
+          "Iterating with keySet() followed by map.get(k) is an anti-pattern that doubles hash lookup overhead",
+          "computeIfAbsent(k, mappingFunction) initializes values atomically if the key is missing",
+          "merge(k, v, remappingFunction) updates or increments counters in a single line of code"
+        ]
+      },
+      "content": "### Formal Definition of Map Views & Map.Entry<K, V>\n\nA Map does not implement `Iterable` directly, but provides three distinct collection views:\n1. **`Set<K> keySet()`**: A view of all unique keys.\n2. **`Collection<V> values()`**: A view of all values (duplicates permitted).\n3. **`Set<Map.Entry<K, V>> entrySet()`**: A view of all key-value pairs as `Map.Entry` objects.\n\nEach `Map.Entry<K, V>` exposes:\n* `K getKey()`: The associated key.\n* `V getValue()`: The associated value.\n* `V setValue(V value)`: Replaces the value in the backing map.\n\n---\n\n### The Performance Anti-Pattern: keySet() vs entrySet()\n\n```java\n// Anti-Pattern: 2N operations!\nfor (String key : map.keySet()) {\n    Integer val = map.get(key); // SECONDARY HASH LOOKUP ON EVERY ITERATION!\n}\n\n// Recommended: N operations!\nfor (Map.Entry<String, Integer> entry : map.entrySet()) {\n    String key = entry.getKey();\n    Integer val = entry.getValue(); // Direct pointer access, zero hash calculation!\n}\n```\nIn a map of $1,000,000$ entries, `keySet() + map.get()` executes **$1,000,000$ unnecessary hash calculations and bucket traversals**. `entrySet()` traverses the backing node array once, running twice as fast.\n\n---\n\n### Modern Java 8+ Atomic Map Primitives\n\nModern Java introduces powerful functional operations on `Map`:\n* **`computeIfAbsent(key, k -> new ArrayList<>())`**: Computes and inserts the value if absent, returning the existing or newly created value. Ideal for multi-maps!\n* **`merge(key, 1, Integer::sum)`**: If `key` is absent, sets value to `1`. If present, applies `Integer::sum(oldVal, 1)`. Perfect for frequency counters!\n* **`forEach((k, v) -> ...)`**: Concise lambda iteration.\n\n```java\nimport java.util.*;\n\npublic class ModernMapIterationDemo {\n    public static void main(String[] args) {\n        Map<String, Integer> wordCounts = new HashMap<>();\n\n        // 1. One-line frequency counting with merge()\n        List<String> words = List.of(\"apple\", \"banana\", \"apple\", \"cherry\", \"banana\", \"apple\");\n        for (String w : words) {\n            wordCounts.merge(w, 1, Integer::sum);\n        }\n        System.out.println(\"1. Word frequencies: \" + wordCounts);\n\n        // 2. High-speed iteration with entrySet()\n        int totalWords = 0;\n        for (Map.Entry<String, Integer> entry : wordCounts.entrySet()) {\n            totalWords += entry.getValue();\n        }\n        System.out.println(\"2. Total words counted: \" + totalWords);\n\n        // 3. Multi-map grouping with computeIfAbsent()\n        Map<String, List<String>> categoryMap = new HashMap<>();\n        categoryMap.computeIfAbsent(\"fruit\", k -> new ArrayList<>()).add(\"apple\");\n        categoryMap.computeIfAbsent(\"fruit\", k -> new ArrayList<>()).add(\"banana\");\n        categoryMap.computeIfAbsent(\"grain\", k -> new ArrayList<>()).add(\"rice\");\n        System.out.println(\"3. Multi-map grouping: \" + categoryMap);\n    }\n}\n```\n\n**Console Output:**\n```text\n1. Word frequencies: {banana=2, cherry=1, apple=3}\n2. Total words counted: 6\n3. Multi-map grouping: {fruit=[apple, banana], grain=[rice]}\n```\n\n---\n\n### Iteration Approaches Summary\n\n| Approach | Read Overhead | Idiomatic For |\n| :--- | :--- | :--- |\n| **`entrySet()` loop** | $O(N)$ (Optimal) | Reading or updating both Key & Value |\n| **`map.forEach((k, v) -> ...)`** | $O(N)$ (Optimal) | Functional / Stream pipelines |\n| **`keySet()` loop** | $O(N)$ keys only | When values are not needed |\n| **`values()` loop** | $O(N)$ values only | Sums, averages, aggregations |\n| **`keySet() + map.get()`** | $O(2N)$ (Double lookup) | **Anti-pattern: Avoid in production** |"
+    },
+    {
+      "id": "act-col3-l5-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Grouping Server Log Requests by HTTP Status Code",
+      "description": "Trace a log aggregator using computeIfAbsent to organize server endpoints by HTTP status response code.",
+      "code": "import java.util.ArrayList;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\npublic class HttpStatusClassifier {\n    public static Map<Integer, List<String>> groupByStatusCode(List<String[]> logLines) {\n        Map<Integer, List<String>> classified = new HashMap<>();\n        \n        for (String[] log : logLines) {\n            String path = log[0];\n            int status = Integer.parseInt(log[1]);\n\n            // computeIfAbsent creates list on first encounter, appends path in O(1)\n            classified.computeIfAbsent(status, k -> new ArrayList<>()).add(path);\n        }\n        return classified;\n    }\n\n    public static void main(String[] args) {\n        List<String[]> logs = List.of(\n            new String[]{\"/api/v1/users\", \"200\"},\n            new String[]{\"/api/v1/login\", \"401\"},\n            new String[]{\"/api/v1/orders\", \"200\"},\n            new String[]{\"/api/v1/admin\", \"403\"},\n            new String[]{\"/api/v1/pay\", \"500\"}\n        );\n\n        Map<Integer, List<String>> report = groupByStatusCode(logs);\n        report.forEach((status, endpoints) -> \n            System.out.printf(\"Status %d: %s%n\", status, endpoints));\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "7",
+          "description": "Initialize a Map<Integer, List<String>> to hold multi-valued status code groupings."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "14",
+          "description": "Invoke computeIfAbsent(status, k -> new ArrayList<>()).add(path). If the status list is missing, it is created and inserted; then the path is appended."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "26-28",
+          "description": "Use report.forEach() to print grouped endpoints in a single functional pass."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l5-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Map Iteration Assessment",
+      "questions": [
+        {
+          "id": "col3-l5-q1",
+          "question": "Why is iterating a Map using entrySet() faster than using keySet() + map.get(key)?",
+          "options": [
+            "Because entrySet() is compiled into native assembly code",
+            "Because entrySet() already holds references to both key and value, avoiding a secondary hash computation and bucket lookup for each key",
+            "Because keySet() creates a deep copy of the map",
+            "Because entrySet() is multi-threaded"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "entrySet() directly accesses the Node.key and Node.value fields during iteration. keySet() + map.get() requires hashing the key a second time for every element."
+        },
+        {
+          "id": "col3-l5-q2",
+          "question": "What does map.computeIfAbsent(key, mappingFunction) do if the key is already present in the map?",
+          "options": [
+            "It overwrites the existing value",
+            "It throws an IllegalStateException",
+            "It returns the currently mapped value immediately without executing the mappingFunction",
+            "It clears the map"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "computeIfAbsent is lazy: if the key is already associated with a non-null value, it immediately returns the value and never invokes the mappingFunction."
+        },
+        {
+          "id": "col3-l5-q3",
+          "question": "Which method is the most concise way to increment an integer frequency counter in Java 8+?",
+          "options": [
+            "map.put(key, map.get(key) + 1)",
+            "map.merge(key, 1, Integer::sum)",
+            "map.computeIfPresent(key, (k, v) -> 1)",
+            "map.replace(key, 1)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "map.merge(key, 1, Integer::sum) inserts 1 if absent, or adds 1 to the existing value if present, in a single atomic line of code."
+        },
+        {
+          "id": "col3-l5-q4",
+          "question": "Can you call entry.setValue(newValue) while iterating over map.entrySet()?",
+          "options": [
+            "No, it throws ConcurrentModificationException",
+            "Yes, setValue() updates the value in the backing map without throwing exceptions",
+            "No, Map.Entry is strictly immutable",
+            "Only if the map is a TreeMap"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Map.Entry.setValue(v) is explicitly defined in the Java Collections contract to update the value in the backing map safely during iteration."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l5-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Map Iteration Patterns",
+      "questions": [
+        {
+          "id": "col3-l5-int-1",
+          "question": "How does map.merge() differ from map.putIfAbsent()?",
+          "answer": "putIfAbsent(k, v) only inserts value v if the key is absent or mapped to null; if the key already exists, it does nothing. In contrast, merge(k, v, remappingFunction) takes an initial value and a BiFunction: if the key is absent, it inserts v; if the key already exists, it applies remappingFunction(oldVal, v) and replaces the old value with the function's result (or removes the entry if the function returns null). This makes merge() ideal for accumulations, counters, and combining states."
+        },
+        {
+          "id": "col3-l5-int-2",
+          "question": "What is the difference between map.compute() and map.computeIfPresent()?",
+          "answer": "compute(key, (k, v) -> ...) always executes the remapping function, regardless of whether the key is currently present (v is null if absent). If the function returns null, the key is removed from the map. computeIfPresent(key, (k, v) -> ...), however, only executes if the key is currently mapped to a non-null value; if the key is absent, it does nothing and returns null without invoking the function."
+        },
+        {
+          "id": "col3-l5-int-3",
+          "question": "How can you safely remove entries during map iteration without causing ConcurrentModificationException?",
+          "answer": "You can safely remove entries in two standard ways: 1) Using Iterator.remove(): `Iterator<Map.Entry<K, V>> it = map.entrySet().iterator(); while (it.hasNext()) { if (condition(it.next())) it.remove(); }`, or 2) In Java 8+, using the entrySet / keySet removeIf method: `map.entrySet().removeIf(entry -> condition(entry));`. Both update internal iterator modification counts safely."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l5-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Map Iteration & Views",
+      "checklist": [
+        "I understand why entrySet() is 2x faster than keySet() + map.get()",
+        "I can utilize computeIfAbsent() to build multi-maps cleanly without null checks",
+        "I know how to use merge() to increment counters and combine data streams atomically"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l5-1",
+      "title": "Sum All Values Using entrySet",
+      "difficulty": "beginner",
+      "problemStatement": "Implement sumAllValues(Map<String, Integer> map) that iterates over entrySet() and returns the total sum of all integer values.",
+      "starterCode": "import java.util.Map;\n\npublic class MapSumCalculator {\n    public static int sumAllValues(Map<String, Integer> map) {\n        // TODO: Sum values via entrySet\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class MapSumCalculator {\n    public static int sumAllValues(Map<String, Integer> map) {\n        if (map == null) return 0;\n        int total = 0;\n        for (Map.Entry<String, Integer> entry : map.entrySet()) {\n            if (entry.getValue() != null) {\n                total += entry.getValue();\n            }\n        }\n        return total;\n    }\n}",
+      "expectedOutput": "60",
+      "testCases": [
+        {
+          "input": "{'a': 10, 'b': 20, 'c': 30}",
+          "expected": "60"
+        }
+      ],
+      "hints": [
+        "Iterate over map.entrySet().",
+        "Check entry.getValue() != null before adding."
+      ]
+    },
+    {
+      "id": "prob-col3-l5-2",
+      "title": "Multi-Map Grouping by First Letter",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement groupByFirstLetter(List<String> words) that returns a Map<Character, List<String>> grouping words by their starting character using computeIfAbsent.",
+      "starterCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class WordGrouper {\n    public static Map<Character, List<String>> groupByFirstLetter(List<String> words) {\n        // TODO: Group using computeIfAbsent\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\nimport java.util.ArrayList;\n\npublic class WordGrouper {\n    public static Map<Character, List<String>> groupByFirstLetter(List<String> words) {\n        Map<Character, List<String>> result = new HashMap<>();\n        if (words != null) {\n            for (String w : words) {\n                if (w != null && !w.isEmpty()) {\n                    char first = Character.toLowerCase(w.charAt(0));\n                    result.computeIfAbsent(first, k -> new ArrayList<>()).add(w);\n                }\n            }\n        }\n        return result;\n    }\n}",
+      "expectedOutput": "{'a': ['apple', 'avocado'], 'b': ['banana']}",
+      "testCases": [
+        {
+          "input": "['apple', 'banana', 'avocado']",
+          "expected": "{'a': ['apple', 'avocado'], 'b': ['banana']}"
+        }
+      ],
+      "hints": [
+        "result.computeIfAbsent(first, k -> new ArrayList<>()).add(w);"
+      ]
+    },
+    {
+      "id": "prob-col3-l5-3",
+      "title": "Frequency Counter with merge()",
+      "difficulty": "beginner",
+      "problemStatement": "Implement countFrequencies(String[] tokens) that returns a Map<String, Integer> counting the frequency of each token using map.merge().",
+      "starterCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class TokenFrequency {\n    public static Map<String, Integer> countFrequencies(String[] tokens) {\n        // TODO: Count with merge()\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class TokenFrequency {\n    public static Map<String, Integer> countFrequencies(String[] tokens) {\n        Map<String, Integer> freq = new HashMap<>();\n        if (tokens != null) {\n            for (String t : tokens) {\n                if (t != null) {\n                    freq.merge(t, 1, Integer::sum);\n                }\n            }\n        }\n        return freq;\n    }\n}",
+      "expectedOutput": "{'a': 2, 'b': 1}",
+      "testCases": [
+        {
+          "input": "['a', 'b', 'a']",
+          "expected": "{'a': 2, 'b': 1}"
+        }
+      ],
+      "hints": [
+        "Use freq.merge(token, 1, Integer::sum)."
+      ]
+    },
+    {
+      "id": "prob-col3-l5-4",
+      "title": "Safe In-Place Entry Removal with removeIf",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement purgeBelowThreshold(Map<String, Integer> scores, int minPassingScore) that uses entrySet().removeIf(...) to remove all entries whose score is < minPassingScore.",
+      "starterCode": "import java.util.Map;\n\npublic class ScorePurge {\n    public static void purgeBelowThreshold(Map<String, Integer> scores, int minPassing) {\n        // TODO: Purge in-place using removeIf\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class ScorePurge {\n    public static void purgeBelowThreshold(Map<String, Integer> scores, int minPassing) {\n        if (scores != null) {\n            scores.entrySet().removeIf(entry -> entry.getValue() == null || entry.getValue() < minPassing);\n        }\n    }\n}",
+      "expectedOutput": "Purged map",
+      "testCases": [
+        {
+          "input": "scores = {'p1': 40, 'p2': 85}, minPassing = 50",
+          "expected": "scores only contains 'p2': 85"
+        }
+      ],
+      "hints": [
+        "Call scores.entrySet().removeIf(e -> e.getValue() < minPassing)."
+      ]
+    },
+    {
+      "id": "prob-col3-l5-5",
+      "title": "Compute Word Length Map",
+      "difficulty": "beginner",
+      "problemStatement": "Given a List<String> of unique words, use computeIfAbsent or forEach to return a Map<String, Integer> mapping each word to its character length.",
+      "starterCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class WordLengthMapper {\n    public static Map<String, Integer> mapLengths(List<String> words) {\n        // TODO: Map word to length\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class WordLengthMapper {\n    public static Map<String, Integer> mapLengths(List<String> words) {\n        Map<String, Integer> map = new HashMap<>();\n        if (words != null) {\n            for (String w : words) {\n                if (w != null) {\n                    map.put(w, w.length());\n                }\n            }\n        }\n        return map;\n    }\n}",
+      "expectedOutput": "{'cat': 3, 'elephant': 8}",
+      "testCases": [
+        {
+          "input": "['cat', 'elephant']",
+          "expected": "{'cat': 3, 'elephant': 8}"
+        }
+      ],
+      "hints": [
+        "Iterate and map.put(w, w.length())."
+      ]
+    }
+  ]
+}

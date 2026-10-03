@@ -1,0 +1,274 @@
+{
+  "id": "les-col-map-practice",
+  "slug": "practice-frequency-counters-and-grouping-with-maps",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "Practice: Frequency Counters & Grouping with Maps",
+  "summary": "Solve common backend problems: word frequency counters, grouping items by category, invert a map, and handling missing keys safely.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "The Map Contract: Associative Key-Value Storage",
+    "Iterating Maps: keySet, values & entrySet",
+    "HashMap Architecture: Buckets, Collisions & TreeBins"
+  ],
+  "learningObjectives": [
+    "Implement high-throughput frequency counting and histogram patterns",
+    "Model one-to-many multimap relationships using Map<K, List<V>>",
+    "Invert bidirectional maps safely handling many-to-one collisions",
+    "Solve canonical coding interview challenges: Anagram Grouping and First Unique Character"
+  ],
+  "expectedOutcomes": [
+    "Fluency in standard FAANG-style map aggregation and grouping interview patterns",
+    "Mastery of clean grouping logic using modern Java collection idioms"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l6-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Postal Sorting Center Mail Sorting Slots",
+      "analogy": {
+        "headline": "Practical Context: Postal Sorting Center Mail Sorting Slots",
+        "story": "In a regional postal distribution center, thousands of letters pour into the facility in mixed piles. Workers stand in front of a grid of pigeonhole slots labeled by postal ZIP code (the key).\n\nAs each letter is picked up, the worker looks at the postal code and drops the letter into the corresponding pigeonhole. If a slot already contains letters, the new letter is simply placed on top of the pile (one-to-many list grouping). At the end of the shift, each postal slot contains a ready-to-ship bundle sorted by destination, achieved in a single linear pass.\n\nThis is the exact design of multimap grouping in backend engineering.",
+        "keyTakeaway": "Grouping maps partition flat streams of data into categorized buckets in O(N) linear time, replacing expensive nested loops."
+      },
+      "content": "In a regional postal distribution center, thousands of letters pour into the facility in mixed piles. Workers stand in front of a grid of pigeonhole slots labeled by postal ZIP code (the key).\n\nAs each letter is picked up, the worker looks at the postal code and drops the letter into the corresponding pigeonhole. If a slot already contains letters, the new letter is simply placed on top of the pile (one-to-many list grouping). At the end of the shift, each postal slot contains a ready-to-ship bundle sorted by destination, achieved in a single linear pass."
+    },
+    {
+      "id": "act-col3-l6-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Data Aggregation Patterns: Frequency Tallying & Multimap Grouping",
+      "breakdown": {
+        "keyTakeaways": [
+          "Frequency counting maps an item to its occurrence count: Map<Item, Integer>",
+          "Multimaps represent one-to-many relationships: Map<Category, List<Item>>",
+          "Anagram grouping uses sorted character arrays or frequency fingerprints as keys",
+          "Map inversion swaps keys and values, grouping multiple keys that shared identical values into lists"
+        ]
+      },
+      "content": "### Core Aggregation Patterns in Java\n\nWhen building backend services and solving algorithmic problems, Map data structures form the backbone of two primary data transformations:\n\n---\n\n### Pattern 1: Frequency Counters & Histograms\n\nA frequency counter measures the occurrence count of distinct tokens in $O(N)$ time:\n```java\nMap<String, Integer> counts = new HashMap<>();\nfor (String token : tokens) {\n    counts.merge(token, 1, Integer::sum);\n}\n```\nThis enables instantaneous $O(1)$ lookups for item frequency, finding majority elements, or identifying the first non-repeating character in a stream.\n\n---\n\n### Pattern 2: Multimap Grouping ($K \\to \\text{List}\\langle V\\rangle$)\n\nJava does not provide a native `MultiMap` in `java.util`, but you can cleanly model it using:\n```java\nMap<K, List<V>> multiMap = new HashMap<>();\nmultiMap.computeIfAbsent(key, k -> new ArrayList<>()).add(value);\n```\n`computeIfAbsent` ensures that list initialization is atomic, lazy, and free of noisy `contains` checks.\n\n---\n\n### Pattern 3: Canonical Anagram Grouping in Code\n\n```java\nimport java.util.*;\n\npublic class MapGroupingDemo {\n    public static List<List<String>> groupAnagrams(String[] words) {\n        if (words == null || words.length == 0) return List.of();\n\n        Map<String, List<String>> anagramMap = new HashMap<>();\n        for (String word : words) {\n            // Compute canonical key: sorted characters\n            char[] chars = word.toCharArray();\n            Arrays.sort(chars);\n            String canonicalKey = new String(chars);\n\n            anagramMap.computeIfAbsent(canonicalKey, k -> new ArrayList<>()).add(word);\n        }\n        return new ArrayList<>(anagramMap.values());\n    }\n\n    public static void main(String[] args) {\n        String[] sample = {\"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\"};\n        List<List<String>> grouped = groupAnagrams(sample);\n        System.out.println(\"Grouped Anagrams: \" + grouped);\n    }\n}\n```\n\n**Console Output:**\n```text\nGrouped Anagrams: [[eat, tea, ate], [bat], [tan, nat]]\n```\n\n---\n\n### Complexity Analysis of Grouping Patterns\n\n| Operation | Time Complexity | Auxiliary Space |\n| :--- | :--- | :--- |\n| **Token Frequency Tally** | $O(N)$ | $O(U)$ where $U$ = unique tokens |\n| **Anagram Grouping** | $O(N \\cdot K \\log K)$ ($K$ = word length) | $O(N \\cdot K)$ |\n| **Multimap Inversion** | $O(N)$ | $O(N)$ |"
+    },
+    {
+      "id": "act-col3-l6-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Finding the First Non-Repeating Character in O(N)",
+      "description": "Trace an optimal two-pass algorithm using LinkedHashMap to locate the first unique character in a stream.",
+      "code": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class FirstUniqueCharFinder {\n    public static Character findFirstNonRepeating(String input) {\n        if (input == null || input.isEmpty()) return null;\n\n        // LinkedHashMap preserves character arrival order\n        Map<Character, Integer> counts = new LinkedHashMap<>();\n\n        // Pass 1: Build frequency histogram in O(N)\n        for (char c : input.toCharArray()) {\n            counts.merge(c, 1, Integer::sum);\n        }\n\n        // Pass 2: Traverse ordered map to find first key with count == 1 in O(U)\n        for (Map.Entry<Character, Integer> entry : counts.entrySet()) {\n            if (entry.getValue() == 1) {\n                return entry.getKey();\n            }\n        }\n        return null; // All characters repeated\n    }\n\n    public static void main(String[] args) {\n        String test = \"swiss\";\n        System.out.println(\"First non-repeating in 'swiss': \" + findFirstNonRepeating(test)); // 'w'\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "8",
+          "description": "Construct a LinkedHashMap to simultaneously tally counts and preserve original character encounter sequence."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "11-13",
+          "description": "Tally character frequencies using counts.merge(c, 1, Integer::sum) in a single linear pass."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "16-20",
+          "description": "Iterate over entrySet(). The first entry encountered with count == 1 is mathematically guaranteed to be the first unique character."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l6-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Map Practice & Grouping Assessment",
+      "questions": [
+        {
+          "id": "col3-l6-q1",
+          "question": "What is the primary advantage of computeIfAbsent over if (!map.containsKey(k)) map.put(k, new ArrayList<>())?",
+          "options": [
+            "It runs in parallel threads",
+            "It eliminates redundant hash table lookups and prevents boilerplate null-checking",
+            "It guarantees insertion order",
+            "It prevents OutOfMemoryError"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "computeIfAbsent performs a single hash bucket lookup, initializes the list lazily only when missing, and returns the list reference directly."
+        },
+        {
+          "id": "col3-l6-q2",
+          "question": "What is the time complexity of grouping N words of average length K into anagram categories using sorted character keys?",
+          "options": [
+            "O(N)",
+            "O(N * K log K)",
+            "O(N^2)",
+            "O(K^2)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Sorting the characters of each word takes O(K log K). Doing this for all N words takes O(N * K log K). Inserting into the hash map takes O(1) on average."
+        },
+        {
+          "id": "col3-l6-q3",
+          "question": "How should you model an inverted map when original values contain duplicates?",
+          "options": [
+            "Map<V, K> (overwriting duplicates)",
+            "Map<V, List<K>> (grouping all matching keys into a list for each unique value)",
+            "List<Map<K, V>>",
+            "Set<Map.Entry<V, K>>"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Because values in the original map can duplicate, inverting the map means a single original value may map to multiple original keys, requiring Map<V, List<K>>."
+        },
+        {
+          "id": "col3-l6-q4",
+          "question": "Why is LinkedHashMap preferred over standard HashMap for the 'First Non-Repeating Character' problem?",
+          "options": [
+            "Because LinkedHashMap uses less memory",
+            "Because LinkedHashMap preserves insertion order, allowing Pass 2 to iterate only unique characters in their arrival sequence rather than rescanning the full string",
+            "Because HashMap does not support Character keys",
+            "Because LinkedHashMap is thread-safe"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "LinkedHashMap retains the chronological arrival order of unique characters, so iterating through its entrySet checks unique keys in original arrival order."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l6-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Real-World Map Algorithms",
+      "questions": [
+        {
+          "id": "col3-l6-int-1",
+          "question": "How would you optimize the canonical Anagram Grouping problem to achieve strictly O(N * K) time complexity?",
+          "answer": "Instead of sorting the string's characters with Arrays.sort() (which costs O(K log K)), compute a 26-element character frequency array `int[] count = new int[26]`. For example, 'abb' becomes '#1#2#0...'. Using this character count array string as the hash map key takes linear O(K) time per word, resulting in an optimal O(N * K) overall time complexity."
+        },
+        {
+          "id": "col3-l6-int-2",
+          "question": "How do you find the Top K Frequent Elements in an array of N integers?",
+          "answer": "1) Build a frequency map `Map<Integer, Integer> freq = new HashMap<>()` using `freq.merge(n, 1, Integer::sum)` in O(N) time. 2) Insert entries into a min-heap PriorityQueue of bounded size K ordered by frequency in O(N log K) time. Alternatively, use Bucket Sort where bucket index represents frequency count, achieving strictly O(N) time complexity."
+        },
+        {
+          "id": "col3-l6-int-3",
+          "question": "What happens if a custom object used as a Map key has a hashCode() that always returns 1?",
+          "answer": "All keys will collide into bucket index 1. The HashMap will degenerate into a single linked list of O(N) length. In Java 8+, if entries exceed 8 and implement Comparable, it converts into a Red-Black tree of O(log N). If entries do NOT implement Comparable, it remains a linked list, degrading all get() and put() operations to O(N) and defeating the purpose of a hash table."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l6-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Map Grouping & Frequency Counters",
+      "checklist": [
+        "I can implement one-line frequency counting using map.merge()",
+        "I know how to build multimaps using computeIfAbsent(k, k -> new ArrayList<>())",
+        "I can solve canonical grouping and unique element interview problems in O(N) time"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l6-1",
+      "title": "Find First Unique Character Index",
+      "difficulty": "beginner",
+      "problemStatement": "Given a string s, find the index of the first non-repeating character. If it does not exist, return -1.",
+      "starterCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class FirstUniqueIndex {\n    public static int firstUniqChar(String s) {\n        // TODO: Return 0-based index of first unique char or -1\n        return -1;\n    }\n}",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class FirstUniqueIndex {\n    public static int firstUniqChar(String s) {\n        if (s == null || s.isEmpty()) return -1;\n        Map<Character, Integer> counts = new HashMap<>();\n        for (char c : s.toCharArray()) {\n            counts.merge(c, 1, Integer::sum);\n        }\n        for (int i = 0; i < s.length(); i++) {\n            if (counts.get(s.charAt(i)) == 1) {\n                return i;\n            }\n        }\n        return -1;\n    }\n}",
+      "expectedOutput": "0",
+      "testCases": [
+        {
+          "input": "\"leetcode\"",
+          "expected": "0"
+        },
+        {
+          "input": "\"loveleetcode\"",
+          "expected": "2"
+        }
+      ],
+      "hints": [
+        "Pass 1: Count character frequencies in a HashMap.",
+        "Pass 2: Scan string indices and return index where count == 1."
+      ]
+    },
+    {
+      "id": "prob-col3-l6-2",
+      "title": "Group Strings by Word Length",
+      "difficulty": "beginner",
+      "problemStatement": "Given an array of words, return a Map<Integer, List<String>> grouping words by their length using computeIfAbsent.",
+      "starterCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class LengthClassifier {\n    public static Map<Integer, List<String>> groupByLength(String[] words) {\n        // TODO: Group words by length\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\nimport java.util.ArrayList;\n\npublic class LengthClassifier {\n    public static Map<Integer, List<String>> groupByLength(String[] words) {\n        Map<Integer, List<String>> map = new HashMap<>();\n        if (words != null) {\n            for (String w : words) {\n                if (w != null) {\n                    map.computeIfAbsent(w.length(), k -> new ArrayList<>()).add(w);\n                }\n            }\n        }\n        return map;\n    }\n}",
+      "expectedOutput": "{3: ['cat', 'dog'], 4: ['bird']}",
+      "testCases": [
+        {
+          "input": "['cat', 'dog', 'bird']",
+          "expected": "{3: ['cat', 'dog'], 4: ['bird']}"
+        }
+      ],
+      "hints": [
+        "Use map.computeIfAbsent(w.length(), k -> new ArrayList<>()).add(w);"
+      ]
+    },
+    {
+      "id": "prob-col3-l6-3",
+      "title": "Invert a One-to-Many Multimap",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a Map<String, List<String>> mapping Department -> List of Employees, return an inverted Map<String, String> mapping Employee -> Department.",
+      "starterCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class DepartmentInverter {\n    public static Map<String, String> invertDeptMap(Map<String, List<String>> deptMap) {\n        // TODO: Return employee to department mapping\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class DepartmentInverter {\n    public static Map<String, String> invertDeptMap(Map<String, List<String>> deptMap) {\n        Map<String, String> empToDept = new HashMap<>();\n        if (deptMap != null) {\n            for (Map.Entry<String, List<String>> entry : deptMap.entrySet()) {\n                String dept = entry.getKey();\n                List<String> emps = entry.getValue();\n                if (emps != null) {\n                    for (String emp : emps) {\n                        empToDept.put(emp, dept);\n                    }\n                }\n            }\n        }\n        return empToDept;\n    }\n}",
+      "expectedOutput": "{'Alice': 'Eng', 'Bob': 'Eng'}",
+      "testCases": [
+        {
+          "input": "{'Eng': ['Alice', 'Bob']}",
+          "expected": "{'Alice': 'Eng', 'Bob': 'Eng'}"
+        }
+      ],
+      "hints": [
+        "Iterate over deptMap.entrySet().",
+        "For each employee in list, put emp -> dept in the inverted map."
+      ]
+    },
+    {
+      "id": "prob-col3-l6-4",
+      "title": "Find Majority Element",
+      "difficulty": "beginner",
+      "problemStatement": "Given an array of size n, return the majority element that appears more than floor(n/2) times using a frequency map.",
+      "starterCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class MajorityFinder {\n    public static int findMajority(int[] nums) {\n        // TODO: Find majority element\n        return -1;\n    }\n}",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class MajorityFinder {\n    public static int findMajority(int[] nums) {\n        if (nums == null || nums.length == 0) return -1;\n        Map<Integer, Integer> freq = new HashMap<>();\n        int threshold = nums.length / 2;\n        for (int n : nums) {\n            int count = freq.merge(n, 1, Integer::sum);\n            if (count > threshold) {\n                return n;\n            }\n        }\n        return -1;\n    }\n}",
+      "expectedOutput": "3",
+      "testCases": [
+        {
+          "input": "[3, 2, 3]",
+          "expected": "3"
+        },
+        {
+          "input": "[2, 2, 1, 1, 1, 2, 2]",
+          "expected": "2"
+        }
+      ],
+      "hints": [
+        "Tally frequencies with freq.merge(n, 1, Integer::sum).",
+        "Early return when count > nums.length / 2."
+      ]
+    },
+    {
+      "id": "prob-col3-l6-5",
+      "title": "Aggregate Transaction Totals by Category",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a list of transaction records with category and amount, return a Map<String, Double> summing the total amount spent per category.",
+      "starterCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class SpendingAggregator {\n    public record Transaction(String category, double amount) {}\n\n    public static Map<String, Double> aggregateTotals(List<Transaction> transactions) {\n        // TODO: Sum amounts per category\n        return new HashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class SpendingAggregator {\n    public record Transaction(String category, double amount) {}\n\n    public static Map<String, Double> aggregateTotals(List<Transaction> transactions) {\n        Map<String, Double> totals = new HashMap<>();\n        if (transactions != null) {\n            for (Transaction t : transactions) {\n                if (t != null && t.category() != null) {\n                    totals.merge(t.category(), t.amount(), Double::sum);\n                }\n            }\n        }\n        return totals;\n    }\n}",
+      "expectedOutput": "{'Food': 35.5, 'Transport': 12.0}",
+      "testCases": [
+        {
+          "input": "[Transaction('Food', 20.0), Transaction('Food', 15.5)]",
+          "expected": "{'Food': 35.5}"
+        }
+      ],
+      "hints": [
+        "Use totals.merge(t.category(), t.amount(), Double::sum)."
+      ]
+    }
+  ]
+}

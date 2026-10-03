@@ -1,0 +1,268 @@
+{
+  "id": "les-col-linkedhashmap-lru",
+  "slug": "linkedhashmap-insertion-order-access-order-and-lru-caches",
+  "sectionSlug": "collections",
+  "moduleSlug": "maps-and-key-value-storage",
+  "languageSlug": "java",
+  "title": "LinkedHashMap: Insertion/Access Order & LRU Caches",
+  "summary": "Master LinkedHashMap's dual modes: insertion-order and access-order. Build a production-grade Least-Recently-Used (LRU) cache using removeEldestEntry().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "prerequisites": [
+    "HashMap Architecture: Buckets, Collisions & TreeBins",
+    "LinkedHashSet: Predictable Insertion-Order",
+    "LinkedList: Doubly-Linked Nodes & Pointers"
+  ],
+  "learningObjectives": [
+    "Understand the dual pointer architecture of java.util.LinkedHashMap",
+    "Differentiate insertion-order (default) from access-order mode",
+    "Implement an in-memory Least-Recently-Used (LRU) cache using removeEldestEntry()",
+    "Analyze memory overhead and cache replacement performance"
+  ],
+  "expectedOutcomes": [
+    "Ability to design robust, self-evicting in-memory caches without external dependencies",
+    "Mastery of LinkedHashMap access-order semantics in high-performance Java applications"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-l3-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Library Books on a High-Demand Reading Desk",
+      "analogy": {
+        "headline": "Practical Context: Library Books on a High-Demand Reading Desk",
+        "story": "Imagine a university research desk that holds at most 5 books. When a student requests a book, a librarian retrieves it from the shelves and places it at the rightmost end of the desk (most recently used).\n\nWhenever a student reads or consults any book already on the desk, the librarian slides that book back to the rightmost end. If a new book arrives when the desk is full, the librarian removes the book sitting at the far left (the least recently consulted book) to make room.\n\nThis is the exact operating principle of an LRU (Least Recently Used) cache powered by LinkedHashMap in access-order mode.",
+        "keyTakeaway": "LinkedHashMap in access-order mode moves accessed elements to the tail, making the head of the list the natural candidate for eviction."
+      },
+      "content": "Imagine a university research desk that holds at most 5 books. When a student requests a book, a librarian retrieves it from the shelves and places it at the rightmost end of the desk (most recently used).\n\nWhenever a student reads or consults any book already on the desk, the librarian slides that book back to the rightmost end. If a new book arrives when the desk is full, the librarian removes the book sitting at the far left (the least recently consulted book) to make room.\n\nThis is the exact operating principle of an LRU (Least Recently Used) cache powered by LinkedHashMap in access-order mode."
+    },
+    {
+      "id": "act-col3-l3-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "LinkedHashMap Architecture: Access-Order & In-Memory LRU Caches",
+      "breakdown": {
+        "keyTakeaways": [
+          "LinkedHashMap extends HashMap, connecting entries with before and after pointers",
+          "Default mode is insertion-order; setting accessOrder=true activates LRU tracking",
+          "In access-order mode, invoking get() or put() shifts the accessed entry to the tail",
+          "Overriding removeEldestEntry(Map.Entry) transforms the map into an automatic self-evicting cache"
+        ]
+      },
+      "content": "### Definition of LinkedHashMap & The Dual-Mode Architecture\n\nA **`java.util.LinkedHashMap<K, V>`** is a hash table and doubly-linked list implementation of the `Map` interface. It inherits all hashing mechanisms from `HashMap` while threading a doubly-linked list through all its entries.\n\nIt operates in one of two modes, determined by the `accessOrder` constructor parameter:\n```java\npublic LinkedHashMap(int initialCapacity, float loadFactor, boolean accessOrder)\n```\n1. **Insertion-Order (`accessOrder = false`, Default)**:\n   * Entries are visited in the order they were inserted.\n   * Calling `get()` or re-inserting an existing key does not modify the sequence.\n2. **Access-Order (`accessOrder = true`)**:\n   * Entries are visited from **least-recently accessed** to **most-recently accessed**.\n   * Any call to `get()`, `put()`, or `getOrDefault()` moves the accessed entry to the tail (end) of the doubly-linked list.\n\n---\n\n### Building an In-Memory LRU Cache with removeEldestEntry()\n\n`LinkedHashMap` provides a built-in eviction hook invoked by `put()` and `putAll()`:\n```java\nprotected boolean removeEldestEntry(Map.Entry<K,V> eldest) {\n    return false; // Default: Never removes eldest entry\n}\n```\nBy subclassing `LinkedHashMap` and overriding this method to return `size() > maxCapacity`, the map automatically deletes the least-recently used entry (the head) as soon as capacity is exceeded!\n\n---\n\n### Executable Code Walkthrough: Production LRU Cache\n\n```java\nimport java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class LruCacheDemo {\n    public static class SimpleLruCache<K, V> extends LinkedHashMap<K, V> {\n        private final int maxCapacity;\n\n        public SimpleLruCache(int maxCapacity) {\n            // initialCapacity, loadFactor, accessOrder = true\n            super(maxCapacity, 0.75f, true);\n            this.maxCapacity = maxCapacity;\n        }\n\n        @Override\n        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n            return size() > maxCapacity; // Evict eldest when full!\n        }\n    }\n\n    public static void main(String[] args) {\n        // Cache with max capacity 3\n        SimpleLruCache<String, String> cache = new SimpleLruCache<>(3);\n\n        cache.put(\"Page-1\", \"Home\");\n        cache.put(\"Page-2\", \"About\");\n        cache.put(\"Page-3\", \"Contact\");\n        System.out.println(\"1. Initial Cache: \" + cache.keySet());\n\n        // Access Page-1 (moves Page-1 to the most-recently-used tail!)\n        cache.get(\"Page-1\");\n        System.out.println(\"2. After accessing Page-1: \" + cache.keySet());\n\n        // Insert Page-4: exceeds capacity 3!\n        // Page-2 (the least recently used) is automatically evicted!\n        cache.put(\"Page-4\", \"Dashboard\");\n        System.out.println(\"3. After adding Page-4: \" + cache.keySet());\n    }\n}\n```\n\n**Console Output:**\n```text\n1. Initial Cache: [Page-1, Page-2, Page-3]\n2. After accessing Page-1: [Page-2, Page-3, Page-1]\n3. After adding Page-4: [Page-3, Page-1, Page-4]\n```\n\n---\n\n### Comparison: Insertion-Order vs Access-Order\n\n| Attribute | Insertion-Order (`accessOrder = false`) | Access-Order (`accessOrder = true`) |\n| :--- | :--- | :--- |\n| **`get(key)` Side Effect** | None (read-only) | Mutates entry pointer to tail |\n| **Tail Element** | Most recently inserted key | Most recently accessed or inserted key |\n| **Head Element** | First inserted key | Least recently accessed key (LRU candidate) |\n| **Primary Use Case** | Predictable JSON serialization, audit logs | In-memory caching, buffer pools, session expiry |"
+    },
+    {
+      "id": "act-col3-l3-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Thread-Safe Bounded Database Query Cache",
+      "description": "Trace a production database query cache leveraging synchronized access-order LinkedHashMap with eviction logging.",
+      "code": "import java.util.Collections;\nimport java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class DatabaseQueryCache {\n    private final Map<String, String> syncCache;\n\n    public DatabaseQueryCache(int capacity) {\n        LinkedHashMap<String, String> lruMap = new LinkedHashMap<>(capacity, 0.75f, true) {\n            @Override\n            protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {\n                boolean evict = size() > capacity;\n                if (evict) {\n                    System.out.println(\"Evicting stale query: \" + eldest.getKey());\n                }\n                return evict;\n            }\n        };\n        // Wrap in synchronized map for safe concurrent usage\n        this.syncCache = Collections.synchronizedMap(lruMap);\n    }\n\n    public void put(String sql, String result) { syncCache.put(sql, result); }\n    public String get(String sql) { return syncCache.get(sql); }\n\n    public static void main(String[] args) {\n        DatabaseQueryCache queryCache = new DatabaseQueryCache(2);\n        queryCache.put(\"SELECT * FROM users\", \"UsersData\");\n        queryCache.put(\"SELECT * FROM orders\", \"OrdersData\");\n\n        // Access users query to refresh its recency\n        queryCache.get(\"SELECT * FROM users\");\n\n        // Adding third query will evict orders (since users was just accessed)\n        queryCache.put(\"SELECT * FROM products\", \"ProductsData\");\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "9-18",
+          "description": "Create an anonymous subclass of LinkedHashMap with accessOrder=true and override removeEldestEntry to evict when size > capacity."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "20",
+          "description": "Wrap in Collections.synchronizedMap() because access-order LinkedHashMap mutates internal pointers during get() operations, requiring thread safety."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "29-35",
+          "description": "Demonstrate that accessing users makes orders the least recently used, causing orders to be cleanly evicted when products is inserted."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l3-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "LinkedHashMap & LRU Assessment",
+      "questions": [
+        {
+          "id": "col3-l3-q1",
+          "question": "What happens when map.get(key) is invoked on a LinkedHashMap initialized with accessOrder = true?",
+          "options": [
+            "Nothing; get() is strictly read-only and changes nothing",
+            "The entry corresponding to the key is moved to the tail (end) of the doubly-linked list",
+            "The entry is moved to the head of the list",
+            "The entry is deleted"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In access-order mode, accessing an entry via get() marks it as most-recently-used by re-linking it to the tail of the list."
+        },
+        {
+          "id": "col3-l3-q2",
+          "question": "Why is an access-order LinkedHashMap not thread-safe for concurrent read operations?",
+          "options": [
+            "Because read operations execute in O(N) time",
+            "Because get() mutates the internal doubly-linked list pointers to reorder nodes, causing race conditions during simultaneous reads",
+            "Because Java collections disable multithreading",
+            "Because memory is cleared during concurrent reads"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Even though get() is conceptually a read operation, in access-order mode it writes to before/after pointers. Concurrent gets can corrupt pointers without synchronization."
+        },
+        {
+          "id": "col3-l3-q3",
+          "question": "How do you enable automatic eviction of the least-recently used entry in LinkedHashMap?",
+          "options": [
+            "By setting the capacity to a negative number",
+            "By overriding the protected boolean removeEldestEntry(Map.Entry eldest) method to return true when size() exceeds maximum capacity",
+            "By calling setAutoEvict(true)",
+            "By implementing the EvictionPolicy interface"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "removeEldestEntry() is called by put() and putAll(). If it returns true, the eldest entry (the head) is automatically removed."
+        },
+        {
+          "id": "col3-l3-q4",
+          "question": "What is the memory overhead of LinkedHashMap compared to HashMap?",
+          "options": [
+            "Zero overhead",
+            "Two additional reference pointers (before and after) per entry node",
+            "Double the table array size",
+            "Requires an external SQLite file"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "LinkedHashMap.Entry subclasses HashMap.Node and adds two references: before and after, chaining all entries into a doubly-linked list."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l3-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: LRU Caches & LinkedHashMap",
+      "questions": [
+        {
+          "id": "col3-l3-int-1",
+          "question": "How would you implement an in-memory LRU Cache in Java in under 10 lines of code?",
+          "answer": "By subclassing LinkedHashMap: `public class LruCache<K, V> extends LinkedHashMap<K, V> { private final int max; public LruCache(int max) { super(max, 0.75f, true); this.max = max; } @Override protected boolean removeEldestEntry(Map.Entry<K, V> e) { return size() > max; } }`. Setting accessOrder to true ensures entries accessed via get/put are shifted to the tail, while removeEldestEntry evicts the head whenever the size exceeds max."
+        },
+        {
+          "id": "col3-l3-int-2",
+          "question": "Why is Collections.synchronizedMap(lruCache) required in concurrent web services instead of ConcurrentHashMap?",
+          "answer": "ConcurrentHashMap does not maintain doubly-linked insertion or access order; it has no built-in LRU support. While LinkedHashMap provides LRU mechanics, its get() method is state-mutating (reordering before/after pointers). Without synchronizing the entire access-order LinkedHashMap instance via Collections.synchronizedMap() or an explicit ReentrantLock, concurrent reads will corrupt node pointers and throw ConcurrentModificationException or cause infinite loops."
+        },
+        {
+          "id": "col3-l3-int-3",
+          "question": "What is the time complexity of put, get, and eviction in an LRU cache built with LinkedHashMap?",
+          "answer": "All three operations run in O(1) constant time on average. Key lookup in the hash table takes O(1) time. Moving an accessed node to the tail of a doubly-linked list takes O(1) pointer updates. Evicting the eldest entry from the head of the doubly-linked list and removing it from the bucket table takes O(1) time."
+        }
+      ]
+    },
+    {
+      "id": "act-col3-l3-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: LinkedHashMap & LRU",
+      "checklist": [
+        "I understand the difference between insertion-order and access-order in LinkedHashMap",
+        "I can implement a production-grade LRU cache by overriding removeEldestEntry()",
+        "I understand why get() in access-order mode is a mutating operation requiring synchronization in multithreaded environments"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col3-l3-1",
+      "title": "Implement Fixed-Size LRU Cache",
+      "difficulty": "beginner",
+      "problemStatement": "Implement a class BoundedCache<K, V> that extends LinkedHashMap<K, V> and automatically evicts the least recently used element when size() > capacity.",
+      "starterCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class BoundedCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n\n    public BoundedCache(int capacity) {\n        super(16, 0.75f, false);\n        this.capacity = capacity;\n    }\n    // TODO: Implement access-order and removeEldestEntry\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class BoundedCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n\n    public BoundedCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        return size() > capacity;\n    }\n}",
+      "expectedOutput": "BoundedCache operating as LRU",
+      "testCases": [
+        {
+          "input": "capacity = 2, put(1, 'A'), put(2, 'B'), get(1), put(3, 'C')",
+          "expected": "containsKey(2) is false, containsKey(1) is true"
+        }
+      ],
+      "hints": [
+        "Pass true for accessOrder in super(capacity, 0.75f, true).",
+        "Return size() > capacity in removeEldestEntry."
+      ]
+    },
+    {
+      "id": "prob-col3-l3-2",
+      "title": "Verify Access Order Movement",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an access-order LinkedHashMap with items 'A', 'B', 'C', call get('A') and return a List of keys in current iteration order.",
+      "starterCode": "import java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class AccessOrderInspector {\n    public static List<String> inspectOrderAfterAccess() {\n        // TODO: Create access-order map, add A, B, C, get(A), return keys\n        return List.of();\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class AccessOrderInspector {\n    public static List<String> inspectOrderAfterAccess() {\n        LinkedHashMap<String, Integer> map = new LinkedHashMap<>(16, 0.75f, true);\n        map.put(\"A\", 1);\n        map.put(\"B\", 2);\n        map.put(\"C\", 3);\n        map.get(\"A\"); // Shifts A to tail\n        return new ArrayList<>(map.keySet());\n    }\n}",
+      "expectedOutput": "[\"B\", \"C\", \"A\"]",
+      "testCases": [
+        {
+          "input": "inspectOrderAfterAccess()",
+          "expected": "[\"B\", \"C\", \"A\"]"
+        }
+      ],
+      "hints": [
+        "Use super constructor with accessOrder = true.",
+        "Calling map.get('A') moves A to the end of the iteration order."
+      ]
+    },
+    {
+      "id": "prob-col3-l3-3",
+      "title": "Preserve Form Field Submission Order",
+      "difficulty": "beginner",
+      "problemStatement": "Write a method storeFormFields(String[][] fields) that returns a LinkedHashMap preserving the exact order in which fields were submitted.",
+      "starterCode": "import java.util.LinkedHashMap;\n\npublic class FormFieldStorage {\n    public static LinkedHashMap<String, String> storeFormFields(String[][] fields) {\n        // TODO: Store in insertion-order map\n        return new LinkedHashMap<>();\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\n\npublic class FormFieldStorage {\n    public static LinkedHashMap<String, String> storeFormFields(String[][] fields) {\n        LinkedHashMap<String, String> map = new LinkedHashMap<>();\n        if (fields != null) {\n            for (String[] pair : fields) {\n                if (pair != null && pair.length == 2) {\n                    map.put(pair[0], pair[1]);\n                }\n            }\n        }\n        return map;\n    }\n}",
+      "expectedOutput": "Preserved submission order",
+      "testCases": [
+        {
+          "input": "[['name', 'Alice'], ['email', 'a@b.com']]",
+          "expected": "keys in order: ['name', 'email']"
+        }
+      ],
+      "hints": [
+        "Default LinkedHashMap preserves insertion order.",
+        "Iterate through pairs and put into map."
+      ]
+    },
+    {
+      "id": "prob-col3-l3-4",
+      "title": "Find Eldest Key Without Evicting",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a LinkedHashMap, return the eldest key (the first key in iteration order) without removing it, or null if the map is empty.",
+      "starterCode": "import java.util.LinkedHashMap;\n\npublic class EldestKeyFinder {\n    public static <K, V> K peekEldestKey(LinkedHashMap<K, V> map) {\n        // TODO: Return eldest key without mutation\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\n\npublic class EldestKeyFinder {\n    public static <K, V> K peekEldestKey(LinkedHashMap<K, V> map) {\n        if (map == null || map.isEmpty()) return null;\n        return map.keySet().iterator().next();\n    }\n}",
+      "expectedOutput": "Eldest key",
+      "testCases": [
+        {
+          "input": "{'first': 1, 'second': 2}",
+          "expected": "'first'"
+        }
+      ],
+      "hints": [
+        "In LinkedHashMap, the iterator starts at the eldest entry.",
+        "map.keySet().iterator().next() returns the first element in O(1) time."
+      ]
+    },
+    {
+      "id": "prob-col3-l3-5",
+      "title": "Eviction Counter Cache",
+      "difficulty": "intermediate",
+      "problemStatement": "Create a class EvictionTrackingCache<K, V> extending LinkedHashMap that counts how many total entries have been evicted via removeEldestEntry.",
+      "starterCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class EvictionTrackingCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n    private int evictions = 0;\n\n    public EvictionTrackingCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n\n    public int getEvictionCount() { return evictions; }\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class EvictionTrackingCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n    private int evictions = 0;\n\n    public EvictionTrackingCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        if (size() > capacity) {\n            evictions++;\n            return true;\n        }\n        return false;\n    }\n\n    public int getEvictionCount() { return evictions; }\n}",
+      "expectedOutput": "1",
+      "testCases": [
+        {
+          "input": "capacity = 1, put(1, 'A'), put(2, 'B')",
+          "expected": "getEvictionCount() == 1"
+        }
+      ],
+      "hints": [
+        "In removeEldestEntry, check if size() > capacity.",
+        "Increment evictions when returning true."
+      ]
+    }
+  ]
+}
