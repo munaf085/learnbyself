@@ -126,83 +126,118 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
   } = (project || {}) as any;
 
   const projectBrief = {
-    problemItSolves: rawBrief?.problemItSolves || '',
-    estimatedTime: rawBrief?.estimatedTime || '45–60 mins',
-    difficulty: rawBrief?.difficulty || 'intermediate',
-    whatAreWeBuilding: rawBrief?.whatAreWeBuilding || rawBrief?.problemItSolves || '',
-    finishedAppDescription: rawBrief?.finishedAppDescription || '',
-    javaFundamentals: Array.isArray(rawBrief?.javaFundamentals) ? rawBrief.javaFundamentals : []
+    problemItSolves: (rawBrief?.problemItSolves as string) || '',
+    estimatedTime: (rawBrief?.estimatedTime as string) || '45–60 mins',
+    difficulty: (rawBrief?.difficulty as string) || 'intermediate',
+    whatAreWeBuilding: (rawBrief?.whatAreWeBuilding as string) || (rawBrief?.problemItSolves as string) || '',
+    finishedAppDescription: (rawBrief?.finishedAppDescription as string) || '',
+    javaFundamentals: Array.isArray(rawBrief?.javaFundamentals)
+      ? (rawBrief.javaFundamentals as string[])
+      : ([] as string[])
   };
 
   const realWorldScenario = {
-    headline: rawScenario?.headline || project.title || 'Project Scenario',
-    story: rawScenario?.story || '',
-    context: rawScenario?.context || 'Core Software Engineering'
+    headline: (rawScenario?.headline as string) || project.title || 'Project Scenario',
+    story: (rawScenario?.story as string) || '',
+    context: (rawScenario?.context as string) || 'Core Software Engineering'
   };
 
   const requirements = {
-    functional: Array.isArray(rawReqs?.functional) ? rawReqs.functional : [],
+    functional: Array.isArray(rawReqs?.functional) ? (rawReqs.functional as string[]) : ([] as string[]),
     technicalConstraints: Array.isArray(rawReqs?.technicalConstraints)
-      ? rawReqs.technicalConstraints
-      : (Array.isArray(rawReqs?.technical) ? rawReqs.technical : []),
-    userDecisions: Array.isArray(rawReqs?.userDecisions) ? rawReqs.userDecisions : []
+      ? (rawReqs.technicalConstraints as string[])
+      : (Array.isArray(rawReqs?.technical) ? (rawReqs.technical as string[]) : ([] as string[])),
+    userDecisions: Array.isArray(rawReqs?.userDecisions) ? (rawReqs.userDecisions as string[]) : ([] as string[])
   };
 
   const beforeYouCode = {
-    inputsRequired: Array.isArray(rawBefore?.inputsRequired) ? rawBefore.inputsRequired : [],
-    outputsRequired: Array.isArray(rawBefore?.outputsRequired) ? rawBefore.outputsRequired : [],
-    variablesNeeded: Array.isArray(rawBefore?.variablesNeeded) ? rawBefore.variablesNeeded : [],
-    arrayUsage: rawBefore?.arrayUsage || '',
-    recommendedMethods: Array.isArray(rawBefore?.recommendedMethods) ? rawBefore.recommendedMethods : []
+    inputsRequired: Array.isArray(rawBefore?.inputsRequired) ? (rawBefore.inputsRequired as string[]) : ([] as string[]),
+    outputsRequired: Array.isArray(rawBefore?.outputsRequired) ? (rawBefore.outputsRequired as string[]) : ([] as string[]),
+    variablesNeeded: Array.isArray(rawBefore?.variablesNeeded) ? (rawBefore.variablesNeeded as string[]) : ([] as string[]),
+    arrayUsage: (rawBefore?.arrayUsage as string) || '',
+    recommendedMethods: Array.isArray(rawBefore?.recommendedMethods) ? (rawBefore.recommendedMethods as string[]) : ([] as string[])
   };
 
-  const thinkBeforeYouCode = Array.isArray(rawThink) ? rawThink : [];
-  const buildRoadmap = (Array.isArray(rawRoadmap) ? rawRoadmap : []).map((m: any, idx: number) => ({
-    milestoneNumber: m?.milestoneNumber ?? (m?.stepNumber ?? idx + 1),
-    title: m?.title || `Milestone ${idx + 1}`,
-    objective: m?.objective || '',
-    tasks: Array.isArray(m?.tasks) ? m.tasks : [],
-    acceptanceCriteria: Array.isArray(m?.acceptanceCriteria) ? m.acceptanceCriteria : []
+  interface ThinkItem {
+    question: string;
+    mentorInsight?: string;
+    hint?: string;
+  }
+  const thinkBeforeYouCode: ThinkItem[] = Array.isArray(rawThink)
+    ? (rawThink as any[]).map((item: any) => ({
+        question: item?.question || '',
+        mentorInsight: item?.mentorInsight || item?.hint || ''
+      }))
+    : [];
+
+  interface RoadmapMilestone {
+    milestoneNumber: number;
+    title: string;
+    objective: string;
+    tasks: string[];
+    acceptanceCriteria: string[];
+  }
+  const buildRoadmap: RoadmapMilestone[] = (Array.isArray(rawRoadmap) ? (rawRoadmap as any[]) : []).map((m: any, idx: number) => ({
+    milestoneNumber: Number(m?.milestoneNumber ?? (m?.stepNumber ?? idx + 1)),
+    title: String(m?.title || `Milestone ${idx + 1}`),
+    objective: String(m?.objective || ''),
+    tasks: Array.isArray(m?.tasks) ? (m.tasks as string[]) : ([] as string[]),
+    acceptanceCriteria: Array.isArray(m?.acceptanceCriteria) ? (m.acceptanceCriteria as string[]) : ([] as string[])
   }));
 
-  const hintSystem = (Array.isArray(rawHints) ? rawHints : []).map((h: any, idx: number) => ({
-    topic: h?.topic || `Hint ${h?.step ?? idx + 1}`,
-    level1Conceptual: h?.level1Conceptual || h?.hint || '',
-    level2Implementation: h?.level2Implementation || '',
-    level3JavaSyntax: h?.level3JavaSyntax || ''
+  interface HintItem {
+    topic: string;
+    level1Conceptual: string;
+    level2Implementation: string;
+    level3JavaSyntax: string;
+  }
+  const hintSystem: HintItem[] = (Array.isArray(rawHints) ? (rawHints as any[]) : []).map((h: any, idx: number) => ({
+    topic: String(h?.topic || `Hint ${h?.step ?? idx + 1}`),
+    level1Conceptual: String(h?.level1Conceptual || h?.hint || ''),
+    level2Implementation: String(h?.level2Implementation || ''),
+    level3JavaSyntax: String(h?.level3JavaSyntax || '')
   }));
 
   const testYourProject = {
-    normalCases: Array.isArray(rawTests?.normalCases) ? rawTests.normalCases : [],
-    boundaryCases: Array.isArray(rawTests?.boundaryCases) ? rawTests.boundaryCases : [],
-    invalidInputCases: Array.isArray(rawTests?.invalidInputCases) ? rawTests.invalidInputCases : [],
-    edgeCases: Array.isArray(rawTests?.edgeCases) ? rawTests.edgeCases : []
+    normalCases: Array.isArray(rawTests?.normalCases) ? (rawTests.normalCases as string[]) : ([] as string[]),
+    boundaryCases: Array.isArray(rawTests?.boundaryCases) ? (rawTests.boundaryCases as string[]) : ([] as string[]),
+    invalidInputCases: Array.isArray(rawTests?.invalidInputCases) ? (rawTests.invalidInputCases as string[]) : ([] as string[]),
+    edgeCases: Array.isArray(rawTests?.edgeCases) ? (rawTests.edgeCases as string[]) : ([] as string[])
   };
 
-  const debuggingGuide = Array.isArray(rawDebug) ? rawDebug : [];
-  const projectPolish = Array.isArray(rawPolish) ? rawPolish : [];
+  const debuggingGuide: string[] = Array.isArray(rawDebug) ? (rawDebug as string[]) : ([] as string[]);
+  const projectPolish: string[] = Array.isArray(rawPolish) ? (rawPolish as string[]) : ([] as string[]);
 
+  interface GitCommand {
+    command: string;
+    explanation: string;
+  }
   const gitHubReady = {
-    readmeTemplate: rawGithub?.readmeTemplate || rawGithub?.suggestedReadme || '',
-    gitCommands: Array.isArray(rawGithub?.gitCommands)
-      ? rawGithub.gitCommands
+    readmeTemplate: String(rawGithub?.readmeTemplate || rawGithub?.suggestedReadme || ''),
+    gitCommands: (Array.isArray(rawGithub?.gitCommands)
+      ? (rawGithub.gitCommands as any[])
       : [
           { command: 'git init', explanation: 'Initializes Git tracking in your project directory.' },
           { command: 'git add .', explanation: 'Stages all project source files.' },
           { command: `git commit -m "feat: complete ${project.title}"`, explanation: 'Creates milestone commit.' }
         ]
+    ).map((cmd: any) => ({
+      command: String(cmd?.command || ''),
+      explanation: String(cmd?.explanation || '')
+    })) as GitCommand[]
   };
 
-  const portfolioChecklist = Array.isArray(rawPortCheck) ? rawPortCheck : [];
-  const explainYourProject = Array.isArray(rawExplain) ? rawExplain : [];
+  const portfolioChecklist: string[] = Array.isArray(rawPortCheck) ? (rawPortCheck as string[]) : ([] as string[]);
+  const explainYourProject: string[] = Array.isArray(rawExplain) ? (rawExplain as string[]) : ([] as string[]);
 
   const projectCompletion = {
-    headline: rawCompletion?.headline || '🎉 Outstanding Work!',
-    congratulations: rawCompletion?.congratulations || rawCompletion?.celebrationMessage || 'You have successfully completed this project and demonstrated professional engineering standards.',
-    skillsDemonstrated: Array.isArray(rawCompletion?.skillsDemonstrated)
-      ? rawCompletion.skillsDemonstrated
-      : (Array.isArray(rawCompletion?.resumeBullets) ? rawCompletion.resumeBullets : ['Java Architecture', 'Defensive Programming', 'Testing & Verification']),
-    nextStepAction: rawCompletion?.nextStepAction || 'Commit your work, add it to GitHub, and proceed to the next module.'
+    headline: String(rawCompletion?.headline || '🎉 Outstanding Work!'),
+    congratulations: String(rawCompletion?.congratulations || rawCompletion?.celebrationMessage || 'You have successfully completed this project and demonstrated professional engineering standards.'),
+    skillsDemonstrated: (Array.isArray(rawCompletion?.skillsDemonstrated)
+      ? (rawCompletion.skillsDemonstrated as string[])
+      : (Array.isArray(rawCompletion?.resumeBullets) ? (rawCompletion.resumeBullets as string[]) : ['Java Architecture', 'Defensive Programming', 'Testing & Verification'])
+    ) as string[],
+    nextStepAction: String(rawCompletion?.nextStepAction || 'Commit your work, add it to GitHub, and proceed to the next module.')
   };
 
   // Calculate stats
