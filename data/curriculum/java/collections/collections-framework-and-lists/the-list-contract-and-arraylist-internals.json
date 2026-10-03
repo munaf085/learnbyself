@@ -1,0 +1,474 @@
+{
+  "id": "les-collections-1-the-list-contract-and-arraylist-internals",
+  "slug": "the-list-contract-and-arraylist-internals",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "The List Contract & ArrayList Internals",
+  "summary": "Go deep under the hood of Java's most widely used collection. Explore internal backing array resizing, the 1.5x growth factor, fast random access via index math, and insertion shifts.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "The Collection Hierarchy & Root Interfaces",
+    "Bitwise Shift Operations (>> 1)",
+    "Amortized Time Complexity Basics"
+  ],
+  "learningObjectives": [
+    "Master the List<E> contract: positional access, search, and ListIterator",
+    "Dissect the source code internals of java.util.ArrayList (elementData, size, modCount)",
+    "Calculate the 1.5x dynamic growth formula: oldCapacity + (oldCapacity >> 1)",
+    "Understand why get(i) is O(1) constant time and why middle insertions/deletions are O(n)"
+  ],
+  "expectedOutcomes": [
+    "Clear mental model of how ArrayList manages its internal buffer and when memory reallocation triggers",
+    "Ability to write optimized, high-throughput code using ensureCapacity and avoiding unnecessary resizes"
+  ],
+  "activities": [
+    {
+      "id": "act-col3-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Modular Hotel with Contiguous Rooms",
+      "analogy": {
+        "headline": "A hotel where all guests must stay in consecutive room numbers on the same floor",
+        "story": "Imagine a boutique hotel with a strict rule: **All guest rooms must be physically contiguous on a single corridor.**\n\n- The hotel opens with a wing of 10 rooms (Initial Capacity = 10).\n- As guests check in, you assign rooms 1, 2, 3... (Size = 3).\n- If a guest wants Room 2, the receptionist can instantly point them there because Room 2 is exactly 1 door past Room 1. That is **$O(1)$ instant random access**!\n\nNow, 10 guests arrive, filling the entire wing (Size = 10, Capacity = 10).\nWhen the 11th guest arrives:\n1. The hotel cannot just knock down a wall (the adjacent land is occupied).\n2. Instead, the management builds a brand new wing with **15 rooms** (1.5x expansion!).\n3. All 10 existing guests pack their bags and are moved into rooms 1 through 10 of the new wing.\n4. The 11th guest is placed in Room 11.\n5. The old 10-room wing is demolished.\n\nWhat happens if a guest wants to cut into Room 3?\nEvery guest in rooms 3 through 11 must step forward one room to make room. That is why **middle insertions cost $O(n)$ shifts**!",
+        "keyTakeaway": "ArrayList maintains an internal Object[] buffer. Capacity is the physical buffer size; size is the number of active elements. When full, it grows by 50% (1.5x) and copies elements to the new buffer."
+      }
+    },
+    {
+      "id": "act-col3-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "ArrayList Internals: Source Code Deep Dive",
+      "breakdown": {
+        "keyTakeaways": [
+          "ArrayList is backed by a package-private buffer: `transient Object[] elementData`",
+          "`size` tracks active items; `elementData.length` is the internal capacity",
+          "Default initial capacity is 10, lazily allocated upon the first `add()` invocation",
+          "Growth formula: `int newCapacity = oldCapacity + (oldCapacity >> 1)` (1.5x multiplier)",
+          "`get(index)` is pure pointer math (`baseAddress + index * 4/8 bytes`) &rarr; true O(1)"
+        ]
+      },
+      "content": "### 1. Internal Fields of `ArrayList`\n\nIf you inspect the OpenJDK source code for `java.util.ArrayList`, you will find these core fields:\n```java\npublic class ArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess ... {\n    // Default initial capacity\n    private static final int DEFAULT_CAPACITY = 10;\n    \n    // The internal backing array buffer\n    transient Object[] elementData;\n    \n    // The number of valid elements contained in the list\n    private int size;\n    \n    // Inherited from AbstractList: counts structural modifications for fail-fast iterators\n    protected transient int modCount = 0;\n}\n```\n\n> **Note on Lazy Initialization**: Calling `new ArrayList<>()` does NOT immediately allocate an array of 10 slots! It assigns `elementData` to a shared empty array (`DEFAULTCAPACITY_EMPTY_ELEMENTDATA`). The 10-slot buffer is allocated only when the first element is added via `add()`.\n\n### 2. The 1.5x Expansion Formula\n\nWhen `size == elementData.length`, adding an element triggers `grow()`:\n```java\nprivate Object[] grow(int minCapacity) {\n    int oldCapacity = elementData.length;\n    if (oldCapacity > 0) {\n        // Bitwise right shift by 1 is integer division by 2\n        int newCapacity = oldCapacity + (oldCapacity >> 1); \n        return elementData = Arrays.copyOf(elementData, newCapacity);\n    } else {\n        return elementData = new Object[Math.max(DEFAULT_CAPACITY, minCapacity)];\n    }\n}\n```\n\n#### Capacity Progression Table:\n| Expansion Event | Old Capacity | Math: `old + (old >> 1)` | New Capacity |\n|:---:|:---:|:---:|:---:|\n| First `add()` | 0 | `DEFAULT_CAPACITY` | **10** |\n| Exceeding 10 | 10 | $10 + 5$ | **15** |\n| Exceeding 15 | 15 | $15 + 7$ | **22** |\n| Exceeding 22 | 22 | $22 + 11$ | **33** |\n| Exceeding 33 | 33 | $33 + 16$ | **49** |\n\n### 3. Time Complexity Breakdown\n\n```text\n+----------------------------+-----------------------+-----------------------------+\n| Operation                  | Time Complexity       | Underlying Mechanism        |\n+----------------------------+-----------------------+-----------------------------+\n| get(int index)             | O(1) Constant         | Direct array index access   |\n| set(int index, E element)  | O(1) Constant         | Overwrite array index       |\n| add(E element) [Append]    | Amortized O(1)        | Append at tail (rare grow)  |\n| add(int index, E element)  | O(n) Linear           | System.arraycopy shifts right|\n| remove(int index)          | O(n) Linear           | System.arraycopy shifts left|\n| contains(Object o)         | O(n) Linear           | Linear scan with .equals()  |\n| indexOf(Object o)          | O(n) Linear           | Linear scan from index 0    |\n+----------------------------+-----------------------+-----------------------------+\n```\n\n### 4. Eliminating Growth Overhead: `ensureCapacity()`\n\nIf you know in advance that your application will load 100,000 records from a database:\n```java\n// BAD: Triggers dozens of array allocations and copies as it grows from 10 to 100,000\nList<User> users = new ArrayList<>();\nfor (int i = 0; i < 100_000; i++) { users.add(fetchUser(i)); }\n\n// GOOD: Allocates exact buffer upfront! Zero intermediate resizing!\nList<User> users = new ArrayList<>(100_000);\n```"
+    },
+    {
+      "id": "act-col3-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Tracing ArrayList Operations & Shifting Overhead",
+      "description": "Observe how positional insertions shift elements and how pre-sizing eliminates array copy events.",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // 1. Pre-sizing with known initial capacity\n        ArrayList<String> list = new ArrayList<>(5);\n        list.add(\"A\");\n        list.add(\"B\");\n        list.add(\"D\");\n        list.add(\"E\");\n        System.out.println(\"Initial List: \" + list);\n\n        // 2. Positional Insertion (Shifts 'D' and 'E' one slot to the right)\n        list.add(2, \"C\"); \n        System.out.println(\"After inserting 'C' at index 2: \" + list);\n\n        // 3. Fast O(1) Random Access\n        String itemAt2 = list.get(2);\n        System.out.println(\"Element at index 2: \" + itemAt2);\n\n        // 4. Positional Deletion (Shifts 'D' and 'E' one slot to the left)\n        String removed = list.remove(2);\n        System.out.println(\"Removed item: \" + removed);\n        System.out.println(\"After removing index 2: \" + list);\n\n        // 5. Trimming unused buffer capacity to current size\n        list.trimToSize();\n        System.out.println(\"Trimmed list size: \" + list.size());\n    }\n}",
+      "codeSnippet": "ArrayList<String> list = new ArrayList<>(100); // Pre-size\nlist.add(2, \"New Item\"); // O(n) right shift\nlist.get(2); // O(1) instant read"
+    },
+    {
+      "id": "act-col3-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: ArrayList Internals (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col3-1",
+          "type": "mcq",
+          "prompt": "What is the default initial capacity of an ArrayList when created with 'new ArrayList<>()' in modern Java?",
+          "options": [
+            "0 initially, then 10 upon the first element addition",
+            "Always 16 immediately",
+            "Always 10 immediately upon constructor execution",
+            "Unlimited"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Modern Java uses lazy initialization: new ArrayList<>() points to an empty shared array and allocates the initial capacity of 10 only when add() is first called.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about lazy initialization to save memory for unused lists."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col3-2",
+          "type": "mcq",
+          "prompt": "By what factor does an ArrayList increase its capacity when it runs out of space?",
+          "options": [
+            "100% (doubles, 2x)",
+            "50% (1.5x: oldCapacity + (oldCapacity >> 1))",
+            "Constant 10 elements",
+            "75% (0.75x load factor)"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ArrayList expands by ~50% (1.5x) using the bitwise formula: oldCapacity + (oldCapacity >> 1).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "oldCapacity >> 1 is integer division by 2."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col3-3",
+          "type": "mcq",
+          "prompt": "If an ArrayList currently has capacity 20 and becomes full, what will its new capacity be?",
+          "options": [
+            "40",
+            "30",
+            "25",
+            "35"
+          ],
+          "correctAnswer": 1,
+          "explanation": "20 + (20 >> 1) = 20 + 10 = 30.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Calculate 20 + 20/2."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col3-4",
+          "type": "mcq",
+          "prompt": "Why is 'list.get(index)' an O(1) constant time operation in an ArrayList?",
+          "options": [
+            "It traverses a linked chain of nodes",
+            "It performs direct memory pointer arithmetic based on the contiguous backing array",
+            "It uses binary search on keys",
+            "It caches previous queries in a hash table"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because the backing array is contiguous in memory, accessing index 'i' is computed directly: address = baseAddress + (i * elementSize), which executes in 1 CPU cycle.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Contiguous memory allows instant offset math."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col3-5",
+          "type": "mcq",
+          "prompt": "What is the worst-case time complexity of inserting an element at index 0 of an ArrayList with N elements?",
+          "options": [
+            "O(1)",
+            "O(log N)",
+            "O(N)",
+            "O(N^2)"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Inserting at index 0 requires shifting all N existing elements one position to the right via System.arraycopy, requiring O(N) operations.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "All subsequent elements must move forward by one position."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col3-6",
+          "type": "mcq",
+          "prompt": "What marker interface does ArrayList implement to advertise that it supports fast constant-time random access?",
+          "options": [
+            "java.io.Serializable",
+            "java.util.RandomAccess",
+            "java.lang.Cloneable",
+            "java.util.FastAccess"
+          ],
+          "correctAnswer": 1,
+          "explanation": "RandomAccess is a marker interface (contains no methods) used by generic algorithms (like Collections.binarySearch) to choose fast indexed loops over iterators.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Marker interface in java.util."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col3-7",
+          "type": "mcq",
+          "prompt": "What method can be invoked on an ArrayList to trim the capacity of the backing array to the list's current size?",
+          "options": [
+            "list.shrink()",
+            "list.compact()",
+            "list.trimToSize()",
+            "list.minimize()"
+          ],
+          "correctAnswer": 2,
+          "explanation": "trimToSize() trims the capacity of the ArrayList instance to be the list's current size, freeing unused memory in the heap.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Method name contains 'trim'."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col3-8",
+          "type": "mcq",
+          "prompt": "Why is the internal backing array 'transient Object[] elementData' declared transient in ArrayList?",
+          "options": [
+            "Because ArrayList cannot be serialized",
+            "To prevent serializing unused null slots at the end of the backing array, optimizing network/disk payloads",
+            "Transient is required for all arrays in Java",
+            "To make it thread-safe"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If elementData has capacity 1000 but size is only 10, default serialization would write 990 useless nulls. By making it transient, ArrayList uses custom writeObject/readObject methods to write only the active 'size' elements.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Consider the serialization of trailing null slots."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 50
+        },
+        {
+          "id": "q-col3-9",
+          "type": "mcq",
+          "prompt": "What is the amortized time complexity of appending an element to the end of an ArrayList via 'list.add(e)'?",
+          "options": [
+            "O(1)",
+            "O(N)",
+            "O(log N)",
+            "O(N log N)"
+          ],
+          "correctAnswer": 0,
+          "explanation": "While an occasional add() triggers an O(N) resize, the doubling/1.5x strategy spreads this cost across so many subsequent O(1) additions that the average cost per operation is amortized O(1).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about amortized average cost across thousands of additions."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col3-10",
+          "type": "mcq",
+          "prompt": "What exception is thrown if you invoke 'list.get(5)' on an ArrayList where 'list.size() == 5'?",
+          "options": [
+            "NullPointerException",
+            "IndexOutOfBoundsException",
+            "NoSuchElementException",
+            "IllegalArgumentException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Valid indices for a list of size 5 are 0, 1, 2, 3, and 4. Accessing index 5 violates bounds and throws IndexOutOfBoundsException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "0-based indexing means max index is size - 1."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        }
+      ]
+    },
+    {
+      "id": "act-col3-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: ArrayList Internals",
+      "interviewQA": [
+        {
+          "id": "qa-col3-1",
+          "question": "How does ArrayList work internally in Java?",
+          "expectedAnswer": "ArrayList is backed by a dynamic Object[] array. It tracks the element count using a 'size' field. When an element is added and the backing array is full, it dynamically expands by 1.5x using the formula: oldCapacity + (oldCapacity >> 1). Elements are copied to the newly allocated array via Arrays.copyOf (native System.arraycopy).",
+          "keyPoints": [
+            "Backed by Object[] elementData array",
+            "1.5x capacity growth factor via bitwise right shift",
+            "Amortized O(1) additions; O(1) random reads via index math"
+          ],
+          "companyTags": [
+            "Amazon",
+            "Microsoft",
+            "TCS",
+            "Infosys"
+          ]
+        },
+        {
+          "id": "qa-col3-2",
+          "question": "What is the difference between the size and capacity of an ArrayList?",
+          "expectedAnswer": "'size' is the actual number of elements currently stored in the list, returned by list.size(). 'capacity' is the total number of slots allocated in the underlying backing array (elementData.length) before resizing is required. Capacity is an internal buffer metric not directly exposed as a public getter.",
+          "keyPoints": [
+            "Size = number of active elements",
+            "Capacity = length of backing buffer array",
+            "Size <= Capacity always"
+          ],
+          "companyTags": [
+            "Google",
+            "Adobe",
+            "Cognizant"
+          ]
+        },
+        {
+          "id": "qa-col3-3",
+          "question": "Why is elementData declared as 'transient Object[]' in ArrayList?",
+          "expectedAnswer": "If elementData was serialized by default, Java's default serialization mechanism would serialize all unused empty slots (which are null references), wasting significant network bandwidth and storage. Marking it transient allows ArrayList to implement custom writeObject() and readObject() methods that serialize only the valid elements up to 'size'.",
+          "keyPoints": [
+            "Prevents serializing unused null array slots",
+            "Optimizes network/disk serialization footprint",
+            "ArrayList uses custom readObject/writeObject routines"
+          ],
+          "companyTags": [
+            "Oracle",
+            "Goldman Sachs",
+            "Morgan Stanley"
+          ]
+        },
+        {
+          "id": "qa-col3-4",
+          "question": "What is the RandomAccess marker interface and why does ArrayList implement it?",
+          "expectedAnswer": "RandomAccess is a marker interface that has no methods. It signals to generic algorithms (such as Collections.binarySearch or shuffle) that the list supports constant-time O(1) indexed access. Algorithms can check 'if (list instanceof RandomAccess)' to use high-speed index-based loops instead of creating Iterator cursor objects.",
+          "keyPoints": [
+            "Marker interface (no methods)",
+            "Signals O(1) random positional access",
+            "Used by Collections algorithms to optimize iteration style"
+          ],
+          "companyTags": [
+            "Flipkart",
+            "Walmart",
+            "Paytm"
+          ]
+        },
+        {
+          "id": "qa-col3-5",
+          "question": "What is the performance implication of inserting or removing elements at the beginning or middle of an ArrayList?",
+          "expectedAnswer": "Inserting or removing at index k requires shifting (size - k) elements to the right or left using System.arraycopy. For index 0, every single element must be copied, making it an O(n) operation. If an application requires frequent head or middle insertions, an ArrayDeque or LinkedList is usually a better fit.",
+          "keyPoints": [
+            "Requires System.arraycopy memory block shifting",
+            "O(n) linear cost for index 0 and middle operations",
+            "Only tail appends/removals are O(1)"
+          ],
+          "companyTags": [
+            "Zoho",
+            "Accenture",
+            "Wipro"
+          ]
+        },
+        {
+          "id": "qa-col3-6",
+          "question": "How can you optimize ArrayList performance when inserting a known large number of elements?",
+          "expectedAnswer": "You should use the parameterized constructor 'new ArrayList<>(expectedCapacity)' or invoke 'list.ensureCapacity(expectedCapacity)' before loading data. This pre-allocates the exact required buffer upfront, completely eliminating repeated memory allocations and array copying cycles during growth.",
+          "keyPoints": [
+            "Use new ArrayList<>(initialCapacity)",
+            "Call ensureCapacity() before bulk additions",
+            "Avoids repeated O(n) reallocation and GC pressure"
+          ],
+          "companyTags": [
+            "Cisco",
+            "IBM",
+            "TCS"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col3-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 3 Mastery Checkpoint",
+      "checklist": [
+        "I understand the difference between size and capacity in ArrayList.",
+        "I can calculate the 1.5x expansion formula: oldCapacity + (oldCapacity >> 1).",
+        "I know why get(i) is O(1) and why add(i, e) is O(n).",
+        "I understand why elementData is marked transient.",
+        "I know when and how to use ensureCapacity() to optimize memory throughput."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-3-1",
+      "title": "Capacity Growth Simulator",
+      "difficulty": "beginner",
+      "description": "Calculate and print the capacity growth steps of an ArrayList from 10 elements up to 100 elements.",
+      "problemStatement": "Write a growth simulation program:\n\n1. In `Main.main()`:\n   - Start with an `int capacity = 10;`\n   - In a loop, simulate expansions using the exact Java formula: `capacity = capacity + (capacity >> 1)`\n   - Continue until capacity exceeds 100.\n   - Print each expansion step in the format:\n     `Step <stepNum>: Capacity = <capacity>`\n   - After the loop, print: `Total Expansions: <stepNum>`",
+      "expectedOutput": "Step 1: Capacity = 15\nStep 2: Capacity = 22\nStep 3: Capacity = 33\nStep 4: Capacity = 49\nStep 5: Capacity = 73\nStep 6: Capacity = 109\nTotal Expansions: 6",
+      "hint": "Use capacity = capacity + (capacity >> 1) inside a while (capacity <= 100) loop.",
+      "hints": [
+        "int step = 0; while (capacity <= 100) { step++; capacity = capacity + (capacity >> 1); ... }",
+        "Print step and capacity on each iteration."
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        int capacity = 10;\n        int step = 0;\n        \n        while (capacity <= 100) {\n            step++;\n            capacity = capacity + (capacity >> 1);\n            System.out.println(\"Step \" + step + \": Capacity = \" + capacity);\n        }\n        \n        System.out.println(\"Total Expansions: \" + step);\n    }\n}",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        // TODO: Simulate ArrayList growth from 10 to > 100 using bitwise formula\n    }\n}"
+    },
+    {
+      "id": "p-col1-3-2",
+      "title": "Pre-Allocation Benchmark Tracker",
+      "difficulty": "easy",
+      "description": "Compare element insertion into a default-capacity ArrayList versus a pre-sized ArrayList.",
+      "problemStatement": "Write an insertion benchmark simulator:\n\n1. In `Main.main()`:\n   - Create `List<Integer> listDefault = new ArrayList<>();`\n   - Insert numbers 1 to 50,000 into `listDefault`.\n   - Create `List<Integer> listPresized = new ArrayList<>(50000);`\n   - Insert numbers 1 to 50,000 into `listPresized`.\n   - Verify both lists have matching sizes and print:\n     `Default List Size: <size>`\n     `Presized List Size: <size>`\n     `Lists Match: <true/false>`",
+      "expectedOutput": "Default List Size: 50000\nPresized List Size: 50000\nLists Match: true",
+      "hint": "Verify listDefault.equals(listPresized) to test if both lists hold the same elements in identical order.",
+      "hints": [
+        "Populate using for (int i = 1; i <= 50000; i++)",
+        "Test equality with listDefault.equals(listPresized)"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> listDefault = new ArrayList<>();\n        for (int i = 1; i <= 50000; i++) {\n            listDefault.add(i);\n        }\n\n        List<Integer> listPresized = new ArrayList<>(50000);\n        for (int i = 1; i <= 50000; i++) {\n            listPresized.add(i);\n        }\n\n        System.out.println(\"Default List Size: \" + listDefault.size());\n        System.out.println(\"Presized List Size: \" + listPresized.size());\n        System.out.println(\"Lists Match: \" + listDefault.equals(listPresized));\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Populate default vs pre-sized ArrayLists with 50,000 items and verify equality\n    }\n}"
+    },
+    {
+      "id": "p-col1-3-3",
+      "title": "Middle Shift Cost Calculator",
+      "difficulty": "easy",
+      "description": "Calculate the exact number of element shifts required when inserting items at specific indices.",
+      "problemStatement": "Implement a shift calculator function that quantifies the O(n) penalty of positional insertions:\n\n1. Write static method:\n   `public static int calculateShifts(int currentSize, int insertIndex)`\n   - If `insertIndex < 0 || insertIndex > currentSize`, throw `IndexOutOfBoundsException`.\n   - When inserting at `insertIndex`, all elements from `insertIndex` to `currentSize - 1` must shift right by 1 slot.\n   - Return the number of elements shifted: `currentSize - insertIndex`.\n\n2. In `Main.main()`:\n   - For a list with `currentSize = 10`:\n     - Calculate shifts for inserting at index 0 (head)\n     - Calculate shifts for inserting at index 5 (middle)\n     - Calculate shifts for inserting at index 10 (tail)\n   - Print:\n     `Head Insert Shifts: <shifts>`\n     `Middle Insert Shifts: <shifts>`\n     `Tail Insert Shifts: <shifts>`",
+      "expectedOutput": "Head Insert Shifts: 10\nMiddle Insert Shifts: 5\nTail Insert Shifts: 0",
+      "hint": "Shifts count is currentSize - insertIndex. At index 10 (the tail), 0 elements need to shift!",
+      "hints": [
+        "Head insert at 0 shifts all 10 elements.",
+        "Middle insert at 5 shifts 10 - 5 = 5 elements.",
+        "Tail append at 10 shifts 0 elements (true O(1))."
+      ],
+      "solutionCode": "public class Main {\n    public static int calculateShifts(int currentSize, int insertIndex) {\n        if (insertIndex < 0 || insertIndex > currentSize) {\n            throw new IndexOutOfBoundsException();\n        }\n        return currentSize - insertIndex;\n    }\n\n    public static void main(String[] args) {\n        int size = 10;\n        System.out.println(\"Head Insert Shifts: \" + calculateShifts(size, 0));\n        System.out.println(\"Middle Insert Shifts: \" + calculateShifts(size, 5));\n        System.out.println(\"Tail Insert Shifts: \" + calculateShifts(size, 10));\n    }\n}",
+      "initialCode": "public class Main {\n    public static int calculateShifts(int currentSize, int insertIndex) {\n        // TODO: Return number of elements shifted\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        // TODO: Test with size 10 at indices 0, 5, 10\n    }\n}"
+    },
+    {
+      "id": "p-col1-3-4",
+      "title": "Fix Concurrent Modification Off-By-One Deletion",
+      "difficulty": "intermediate",
+      "description": "Fix an element-skipping bug when removing elements by index in a forward for-loop.",
+      "problemStatement": "A developer wrote a loop to remove all words starting with 'Z' from an ArrayList:\n```java\nfor (int i = 0; i < list.size(); i++) {\n    if (list.get(i).startsWith(\"Z\")) {\n        list.remove(i);\n    }\n}\n```\nBug: When consecutive 'Z' words appear (e.g. [\"Zebra\", \"Zenith\"]), deleting \"Zebra\" shifts \"Zenith\" into index 0, but the loop increments `i` to 1, completely skipping \"Zenith\"!\n\nYour Task:\n1. Fix the deletion logic by iterating **backwards** from `list.size() - 1` down to 0.\n2. In `Main.main()`, test with: `[\"Apple\", \"Zebra\", \"Zenith\", \"Banana\", \"Zero\", \"Cherry\"]`.\n3. Print the cleaned list: `[Apple, Banana, Cherry]`",
+      "expectedOutput": "[Apple, Banana, Cherry]",
+      "hint": "Iterate backwards: for (int i = list.size() - 1; i >= 0; i--). Shifting elements to the left only affects higher indices that have already been visited!",
+      "hints": [
+        "Forward removal skips adjacent matching elements.",
+        "Backward removal: for (int i = list.size() - 1; i >= 0; i--)",
+        "Or use Java 8 list.removeIf(w -> w.startsWith(\"Z\"))"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> words = new ArrayList<>(Arrays.asList(\"Apple\", \"Zebra\", \"Zenith\", \"Banana\", \"Zero\", \"Cherry\"));\n\n        // Safe backward iteration\n        for (int i = words.size() - 1; i >= 0; i--) {\n            if (words.get(i).startsWith(\"Z\")) {\n                words.remove(i);\n            }\n        }\n\n        System.out.println(words);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> words = new ArrayList<>(Arrays.asList(\"Apple\", \"Zebra\", \"Zenith\", \"Banana\", \"Zero\", \"Cherry\"));\n        // TODO: Fix the forward loop skipping bug by iterating backwards\n        System.out.println(words);\n    }\n}"
+    },
+    {
+      "id": "p-col1-3-5",
+      "title": "High-Watermark Memory Trimmer",
+      "difficulty": "intermediate",
+      "description": "Simulate high burst traffic in an ArrayList and use trimToSize to release unneeded heap buffer.",
+      "problemStatement": "Build a burst buffer processor:\n\n1. In `Main.main()`:\n   - Create an `ArrayList<String>` with initial capacity 1000.\n   - Add 1,000 temporary batch records: `\"RECORD-\" + i`.\n   - Print: `Peak Size: <list.size()>`\n   - Retain only the first 5 records using `list.subList(5, list.size()).clear();`.\n   - Call `list.trimToSize()` to shrink the backing array down to 5 slots.\n   - Print:\n     `Retained Size: <list.size()>`\n     `Final Records: <list>`",
+      "expectedOutput": "Peak Size: 1000\nRetained Size: 5\nFinal Records: [RECORD-0, RECORD-1, RECORD-2, RECORD-3, RECORD-4]",
+      "hint": "subList(5, list.size()).clear() clears elements from index 5 onwards. trimToSize() resizes the backing array to size 5.",
+      "hints": [
+        "ArrayList<String> list = new ArrayList<>(1000);",
+        "Clear excess: list.subList(5, list.size()).clear();",
+        "list.trimToSize();"
+      ],
+      "solutionCode": "import java.util.ArrayList;\n\npublic class Main {\n    public static void main(String[] args) {\n        ArrayList<String> list = new ArrayList<>(1000);\n        for (int i = 0; i < 1000; i++) {\n            list.add(\"RECORD-\" + i);\n        }\n\n        System.out.println(\"Peak Size: \" + list.size());\n\n        // Retain only top 5\n        list.subList(5, list.size()).clear();\n        list.trimToSize();\n\n        System.out.println(\"Retained Size: \" + list.size());\n        System.out.println(\"Final Records: \" + list);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Create 1000 items, clear down to 5, trimToSize, and print records\n    }\n}"
+    }
+  ]
+}

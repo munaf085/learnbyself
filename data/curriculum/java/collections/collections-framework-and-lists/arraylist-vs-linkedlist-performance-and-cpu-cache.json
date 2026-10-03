@@ -1,0 +1,473 @@
+{
+  "id": "les-collections-1-arraylist-vs-linkedlist-performance-and-cpu-cache",
+  "slug": "arraylist-vs-linkedlist-performance-and-cpu-cache",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "ArrayList vs LinkedList: Performance & CPU Caching",
+  "summary": "Settle the age-old debate with modern hardware architecture facts. Discover why ArrayList almost always outperforms LinkedList in production due to CPU L1/L2 cache locality, spatial locality, and memory fragmentation.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "The List Contract & ArrayList Internals",
+    "LinkedList: Doubly-Linked Nodes & Pointers",
+    "Computer Architecture: CPU Caches (L1/L2/L3)"
+  ],
+  "learningObjectives": [
+    "Understand the modern CPU memory hierarchy: Registers -> L1/L2/L3 Cache -> RAM",
+    "Analyze spatial locality and how 64-byte CPU cache lines accelerate contiguous array traversal",
+    "Debunk the common textbook myth that 'LinkedList is always faster for insertions'",
+    "Apply production benchmarking principles to choose the right List or Deque implementation"
+  ],
+  "expectedOutcomes": [
+    "High-confidence architectural intuition on why modern systems engineers default to ArrayList",
+    "Ability to explain hardware cache lines and pointer chasing in senior-level software engineering interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-col5-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Reading a Book vs A City-Wide Scavenger Hunt",
+      "analogy": {
+        "headline": "Turning pages in a printed book versus chasing clues across distant buildings",
+        "story": "Imagine reading a 100-page book.\n\nWhen you open page 1, pages 2, 3, 4, and 5 are physically bound right next to it (**Spatial Locality**). You read seamlessly because the text is laid out contiguously on your desk. This is **`ArrayList`**.\n\nNow imagine a scavenger hunt where every clue tells you: *\"To read the next sentence, drive to the coffee shop at 5th Avenue.\"* When you arrive at the coffee shop, the clue reads: *\"Now drive to the library on Oak Street.\"*\n\nEven if reading each sentence takes 1 second, you spend 20 minutes driving across the city between every word! This is **`LinkedList`**.\n\nIn modern computers, your **CPU** runs at ~4.0 GHz, but **Main RAM** is slow. To bridge the gap, the CPU has lightning-fast **L1/L2 hardware caches** that fetch chunks of 64 contiguous bytes at a time.\n- With **ArrayList**, one cache fetch loads multiple adjacent elements into the CPU.\n- With **LinkedList**, every node is at a random heap address. The CPU suffers a **cache miss** on almost every single node, stalling while waiting for RAM!",
+        "keyTakeaway": "Contiguous arrays enjoy massive CPU cache line speedups. Linked node chains force expensive CPU cache misses due to pointer chasing across fragmented heap RAM."
+      }
+    },
+    {
+      "id": "act-col5-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Hardware Reality: Spatial Locality & The Cache Line",
+      "breakdown": {
+        "keyTakeaways": [
+          "Modern CPUs fetch data into L1/L2 cache in chunks of 64 contiguous bytes called Cache Lines",
+          "`ArrayList` elements sit next to each other, giving near 100% cache hits during traversal",
+          "`LinkedList` nodes are scattered randomly across heap memory, forcing frequent CPU cache misses (~100-200 cycles each)",
+          "The 'LinkedList is faster for insertions' claim is a myth for arbitrary indices because it must first traverse to the index via slow pointer hops"
+        ]
+      },
+      "content": "### 1. The Modern Hardware Memory Gap\n\nOver the past 30 years, CPU speed has increased exponentially, but RAM latency has improved much more slowly. A modern CPU core can execute instructions in **~0.25 nanoseconds** (sub-nanosecond registers and L1 cache), but fetching a word from main RAM takes **~60 to 100 nanoseconds** \u2014 hundreds of wasted CPU cycles!\n\n```text\nCPU Core (~0.25 ns)\n   v\nL1 Data Cache (32 KB, ~1 ns)       <-- Super fast, loads 64-byte Cache Lines\n   v\nL2 Cache (512 KB, ~3-4 ns)\n   v\nL3 Cache Shared (16-64 MB, ~10-15 ns)\n   v\nMain RAM (16-64 GB, ~60-100 ns)    <-- 200x slower than L1 cache!\n```\n\n### 2. Spatial Locality: Why `ArrayList` Traverses at Blazing Speed\n\nWhen a CPU requests an element from an `ArrayList`:\n1. The CPU loads a **64-byte Cache Line** from RAM into L1 cache.\n2. On a 64-bit JVM with compressed OOPs (4-byte references), that single 64-byte fetch brings in **16 consecutive references**!\n3. When the loop steps to index `i + 1`, `i + 2`... all the way to `i + 15`, the data is **already in L1 cache**!\n4. Result: Zero RAM round-trips. Maximum instruction throughput.\n\n### 3. Pointer Chasing: The Death of `LinkedList` Throughput\n\nIn `LinkedList`, every element is a separate heap allocation:\n- Node A is at address `0x1000`\n- Node B was allocated 5 seconds later at `0x8400`\n- Node C is at `0x2200`\n\nWhen your loop executes `node = node.next`:\n1. Node B is almost certainly NOT in the L1 cache.\n2. The CPU suffers a **Cache Miss**.\n3. The instruction pipeline stalls for ~80 nanoseconds waiting for RAM.\n4. Result: Sequential iteration on a large `LinkedList` can be **10x to 40x slower** than `ArrayList` in real production benchmarks!\n\n### 4. Debunking the Insertion Myth\n\nTextbooks often claim:\n> *\"Use LinkedList if you do lots of insertions/deletions, because insertion is O(1).\"*\n\n**This is misleading in practice!**\n- While *relinking* pointers is $O(1)$, to insert at index $k$, you must first **walk $k$ nodes** across the heap ($O(k)$ pointer chasing cache misses).\n- In `ArrayList`, inserting at index $k$ requires shifting elements, but Java uses `System.arraycopy`, which is implemented as a **native hardware block transfer** (vectorized SIMD instructions copying megabytes per microsecond).\n- For lists under 100,000 elements, `ArrayList` shifting is almost always faster in wall-clock time than `LinkedList` pointer hopping!\n\n### 5. Final Recommendation Matrix\n\n| Workload Requirement | Winner | Recommended Modern Class |\n|---|---|---|\n| **Random Access (`get(i)`, `set(i, e)`)** | `ArrayList` (Instant $O(1)$) | `ArrayList` |\n| **Sequential Iteration / Processing** | `ArrayList` (10x faster cache hits) | `ArrayList` |\n| **Memory Footprint** | `ArrayList` (4-8x less RAM) | `ArrayList` |\n| **Queue / Deque (Head & Tail operations)** | `ArrayDeque` (Fast ring buffer) | `ArrayDeque` (NEVER `LinkedList`) |\n| **Arbitrary Middle Insertions with Pre-positioned Iterator** | `LinkedList` | Extremely rare niche |"
+    },
+    {
+      "id": "act-col5-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Benchmarking Traversal: Cache Locality in Action",
+      "description": "Benchmark sequential iteration across 100,000 elements in ArrayList vs LinkedList to observe the tangible impact of CPU cache locality.",
+      "code": "import java.util.ArrayList;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class Main {\n    private static final int COUNT = 100_000;\n\n    public static void main(String[] args) {\n        // Populate both collections with identical data\n        List<Integer> arrayList = new ArrayList<>(COUNT);\n        List<Integer> linkedList = new LinkedList<>();\n\n        for (int i = 0; i < COUNT; i++) {\n            arrayList.add(i);\n            linkedList.add(i);\n        }\n\n        // 1. Benchmark ArrayList Traversal\n        long startArr = System.nanoTime();\n        long sumArr = 0;\n        for (int val : arrayList) {\n            sumArr += val;\n        }\n        long durationArr = System.nanoTime() - startArr;\n\n        // 2. Benchmark LinkedList Traversal (using Iterator/for-each)\n        long startLinked = System.nanoTime();\n        long sumLinked = 0;\n        for (int val : linkedList) {\n            sumLinked += val;\n        }\n        long durationLinked = System.nanoTime() - startLinked;\n\n        System.out.println(\"=== Sequential Traversal Benchmark (\" + COUNT + \" items) ===\");\n        System.out.printf(\"ArrayList Duration:  %,d ns\\n\", durationArr);\n        System.out.printf(\"LinkedList Duration: %,d ns\\n\", durationLinked);\n        System.out.println(\"Sums match? \" + (sumArr == sumLinked));\n        System.out.println(\"Conclusion: Contiguous memory and CPU cache locality provide massive speedups!\");\n    }\n}",
+      "codeSnippet": "// Sequential traversal benchmark\nfor (int val : arrayList) { sum += val; } // Fast cache hits\nfor (int val : linkedList) { sum += val; } // Slow pointer chasing"
+    },
+    {
+      "id": "act-col5-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: Performance & CPU Caching (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col5-1",
+          "type": "mcq",
+          "prompt": "What is the typical size of a CPU cache line in modern x86/ARM processors?",
+          "options": [
+            "8 bytes",
+            "32 bytes",
+            "64 bytes",
+            "1024 bytes"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Modern CPUs fetch data into L1/L2 caches in chunks of 64 contiguous bytes called Cache Lines.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Standard processor cache line width is 64 bytes."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col5-2",
+          "type": "mcq",
+          "prompt": "Why does iterating over an ArrayList have much higher CPU cache hit rates than a LinkedList?",
+          "options": [
+            "ArrayList is written in C++ internally",
+            "ArrayList elements are stored in a contiguous backing array, satisfying spatial locality so multiple references are loaded in a single cache line",
+            "LinkedList is synchronized by default",
+            "ArrayList disables garbage collection"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Spatial locality means accessing memory address X makes it likely address X+4 will be accessed next. Contiguous array memory ensures adjacent references are already loaded into L1 cache.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about contiguous memory and spatial locality."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col5-3",
+          "type": "mcq",
+          "prompt": "What is 'pointer chasing' in the context of data structure performance?",
+          "options": [
+            "Dereferencing memory pointers scattered randomly across heap RAM, causing frequent CPU cache misses",
+            "Sorting an array with pointer arithmetic",
+            "Cleaning up pointers during garbage collection",
+            "Using multiple threads to search a tree"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Pointer chasing refers to following reference chains (e.g. node.next.next) where each node lives at an unpredictable heap address, forcing the CPU to stall on high-latency RAM fetches.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Hopping through heap addresses that aren't adjacent in memory."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col5-4",
+          "type": "mcq",
+          "prompt": "Why is inserting an element at index 5,000 of a 10,000-element LinkedList often slower in wall-clock time than in an ArrayList?",
+          "options": [
+            "LinkedList must first traverse 5,000 pointers across the heap (O(N) cache misses) before inserting, whereas ArrayList uses hardware SIMD block memory copy",
+            "ArrayList does not shift elements in Java 21",
+            "LinkedList throws an exception for middle insertions",
+            "ArrayList uses multithreading for insertions"
+          ],
+          "correctAnswer": 0,
+          "explanation": "LinkedList takes 5,000 pointer dereferences to reach index 5,000. ArrayList computes index 5,000 in 1 cycle and shifts memory using highly optimized native System.arraycopy.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Compare walking 5,000 heap pointers vs instant offset access + native arraycopy."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 50
+        },
+        {
+          "id": "q-col5-5",
+          "type": "mcq",
+          "prompt": "Which low-level native method is used by ArrayList to perform high-speed hardware memory shifts during insertions and deletions?",
+          "options": [
+            "System.arraycopy()",
+            "Arrays.shift()",
+            "Thread.memoryCopy()",
+            "Unsafe.shiftArray()"
+          ],
+          "correctAnswer": 0,
+          "explanation": "System.arraycopy() is an intrinsic JVM method implemented in native C++/assembly using vectorized processor instructions (like AVX) to copy memory blocks at bus speed.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Standard native utility method on java.lang.System."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col5-6",
+          "type": "mcq",
+          "prompt": "If you need a double-ended queue (FIFO/LIFO queue or stack) in high-throughput production code, what is the best choice in Java?",
+          "options": [
+            "java.util.LinkedList",
+            "java.util.ArrayDeque",
+            "java.util.Vector",
+            "java.util.Stack"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ArrayDeque implements Deque with a circular resizable array. It has zero node allocation overhead and superior cache locality, outperforming LinkedList in virtually all queue benchmarks.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Resizable circular array implementation of Deque."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col5-7",
+          "type": "mcq",
+          "prompt": "What is the primary factor that causes LinkedList to put much more pressure on the Java Garbage Collector than ArrayList?",
+          "options": [
+            "LinkedList nodes cannot be collected",
+            "LinkedList allocates a new Node object for every single element added, generating millions of short-lived heap objects to be tracked and collected",
+            "LinkedList overrides the finalize() method",
+            "LinkedList allocates memory in the Metaspace"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Every element added to LinkedList creates a separate Node object. Adding and removing 1,000,000 items creates 1,000,000 heap garbage objects, triggering frequent GC pauses.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Consider the number of discrete heap objects created per item."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col5-8",
+          "type": "mcq",
+          "prompt": "In what specific scenario does LinkedList have a legitimate theoretical performance advantage over ArrayList?",
+          "options": [
+            "When doing frequent random reads with get(i)",
+            "When inserting/deleting millions of elements at an active cursor position using an existing ListIterator without index lookups",
+            "When serializing data to JSON",
+            "When running on 32-bit JVMs"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If a ListIterator is already positioned at a node, inserting or deleting via iterator.add() or iterator.remove() is true O(1) with zero element shifting.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "When you already have a pointer to the exact node via ListIterator."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-col5-9",
+          "type": "mcq",
+          "prompt": "What did Joshua Bloch (lead designer of the Java Collections Framework) famously tweet regarding LinkedList in Java?",
+          "options": [
+            "'Everyone should use LinkedList for its O(1) flexibility'",
+            "'Does anyone actually use LinkedList? I wrote it and I never use it.'",
+            "'LinkedList will replace ArrayList in Java 9'",
+            "'LinkedList is the fastest collection in Java'"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Josh Bloch famously tweeted: 'Does anyone actually use LinkedList? I wrote it and I never use it.' because ArrayList and ArrayDeque are superior in almost every practical case.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "The creator himself admitted he never uses it."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col5-10",
+          "type": "mcq",
+          "prompt": "What is the memory difference between storing 1,000,000 references in an ArrayList versus a LinkedList on a 64-bit JVM with compressed OOPs?",
+          "options": [
+            "They consume the exact same memory",
+            "ArrayList: ~4 MB; LinkedList: ~24 MB (6x more memory due to Node headers and pointers)",
+            "LinkedList consumes less memory because it has no empty buffer slots",
+            "ArrayList consumes 100 MB more than LinkedList"
+          ],
+          "correctAnswer": 1,
+          "explanation": "With 4-byte compressed references, ArrayList needs ~4 MB for its array. LinkedList allocates 1,000,000 Node objects (12-byte header + 3x4-byte pointers = 24 bytes each), requiring ~24 MB.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "1 million Node objects vs 1 million array reference slots."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 50
+        }
+      ]
+    },
+    {
+      "id": "act-col5-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: ArrayList vs LinkedList Performance",
+      "interviewQA": [
+        {
+          "id": "qa-col5-1",
+          "question": "Why is ArrayList almost always preferred over LinkedList in modern Java enterprise systems?",
+          "expectedAnswer": "ArrayList uses a contiguous backing array that leverages CPU cache locality. When an element is read, adjacent elements are fetched into the CPU L1/L2 cache lines automatically, resulting in near-instant traversals. In contrast, LinkedList nodes are scattered across heap RAM, causing frequent CPU cache misses. Furthermore, ArrayList consumes 4-6x less memory and causes less GC pressure.",
+          "keyPoints": [
+            "CPU cache line locality (spatial locality)",
+            "Avoids pointer chasing and L1 cache miss penalties",
+            "Dramatically smaller memory footprint and lower GC pressure"
+          ],
+          "companyTags": [
+            "Google",
+            "Amazon",
+            "Microsoft",
+            "Uber"
+          ]
+        },
+        {
+          "id": "qa-col5-2",
+          "question": "Explain the concept of CPU cache lines and how they impact collection performance.",
+          "expectedAnswer": "CPUs do not read individual bytes from RAM; they read 64-byte blocks called Cache Lines into high-speed L1/L2 caches. Because an ArrayList is a contiguous array, a single 64-byte read brings in multiple adjacent references at once. For LinkedList, nodes are located at non-contiguous heap addresses, meaning almost every node dereference requires a full 60-100ns RAM round trip.",
+          "keyPoints": [
+            "Cache line is 64 bytes wide",
+            "Contiguous memory yields 100% cache hits",
+            "Non-contiguous heap allocations trigger cache misses"
+          ],
+          "companyTags": [
+            "Morgan Stanley",
+            "Goldman Sachs",
+            "Oracle"
+          ]
+        },
+        {
+          "id": "qa-col5-3",
+          "question": "Why is 'LinkedList is faster for insertions' considered a common misconception?",
+          "expectedAnswer": "While relinking node pointers is O(1), inserting at index k requires walking k nodes from the head or tail, which takes O(k) slow pointer-chasing steps. In contrast, ArrayList accesses index k in O(1) and shifts elements using System.arraycopy, which is a native hardware SIMD block copy. For typical collection sizes (< 100,000), ArrayList shifting is faster in real clock time.",
+          "keyPoints": [
+            "Reaching index k in LinkedList requires O(k) pointer hops",
+            "ArrayList uses hardware-accelerated System.arraycopy",
+            "Real-world clock time favors ArrayList for almost all index sizes"
+          ],
+          "companyTags": [
+            "Flipkart",
+            "Walmart",
+            "Paytm"
+          ]
+        },
+        {
+          "id": "qa-col5-4",
+          "question": "What should you use instead of LinkedList if you need a high-performance Queue or Stack?",
+          "expectedAnswer": "You should use java.util.ArrayDeque. ArrayDeque implements the Deque interface using a resizable circular array buffer. It has O(1) head and tail operations, creates zero node allocation garbage, and maintains contiguous memory for CPU cache efficiency. It consistently outperforms LinkedList by 2x to 5x for queue workloads.",
+          "keyPoints": [
+            "Use java.util.ArrayDeque",
+            "Backed by a circular array buffer",
+            "Zero node garbage and superior cache locality"
+          ],
+          "companyTags": [
+            "Adobe",
+            "Cisco",
+            "ThoughtWorks"
+          ]
+        },
+        {
+          "id": "qa-col5-5",
+          "question": "How does garbage collection impact the choice between ArrayList and LinkedList?",
+          "expectedAnswer": "ArrayList allocates one array object that is periodically replaced during growth. LinkedList allocates a new Node object for every single element added. In a high-throughput system adding and removing millions of items, LinkedList generates millions of orphaned Node objects, forcing the garbage collector into frequent young-generation minor and major GC pauses.",
+          "keyPoints": [
+            "1 element = 1 Node object allocation in LinkedList",
+            "Millions of nodes trigger heavy GC pressure",
+            "ArrayList minimizes object churn"
+          ],
+          "companyTags": [
+            "TCS",
+            "Infosys",
+            "Cognizant"
+          ]
+        },
+        {
+          "id": "qa-col5-6",
+          "question": "When would you ever choose LinkedList in production code?",
+          "expectedAnswer": "The only valid scenario for LinkedList is when you require frequent insertions and deletions at the current position while iterating through elements using an active ListIterator, or when memory is so constrained that the periodic 1.5x buffer headroom of an ArrayList cannot be tolerated. In modern high-level Java, this scenario is exceedingly rare.",
+          "keyPoints": [
+            "Active ListIterator position insertions",
+            "Strict zero-headroom memory constraints",
+            "Rarely chosen in modern Java development"
+          ],
+          "companyTags": [
+            "Wipro",
+            "Accenture",
+            "Zoho"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col5-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 5 Mastery Checkpoint",
+      "checklist": [
+        "I can explain what a 64-byte CPU cache line is and why spatial locality matters.",
+        "I understand why pointer chasing causes CPU pipeline stalls.",
+        "I can explain why ArrayList shifting with System.arraycopy beats LinkedList traversal.",
+        "I know why ArrayDeque is preferred over LinkedList for queues and stacks.",
+        "I understand the garbage collection overhead differences between arrays and nodes."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-5-1",
+      "title": "Memory Footprint Comparator",
+      "difficulty": "beginner",
+      "description": "Calculate and compare the theoretical heap memory consumed by ArrayList versus LinkedList for N items.",
+      "problemStatement": "Write a memory estimator for 64-bit JVMs with compressed pointers:\n\n1. Given memory formulas:\n   - `ArrayList` overhead for N items = `(N * 4)` bytes (array references) + `24` bytes (array object header).\n   - `LinkedList` overhead for N items = `N * 24` bytes (Node objects: 12-byte header + 3 * 4-byte references).\n\n2. In `Main.main()`:\n   - Calculate memory for `N = 100,000` elements.\n   - Print results:\n     `ArrayList Overhead: <bytes> bytes`\n     `LinkedList Overhead: <bytes> bytes`\n     `LinkedList Extra Ratio: <ratio formatted to 1 decimal place>x`",
+      "expectedOutput": "ArrayList Overhead: 400024 bytes\nLinkedList Overhead: 2400000 bytes\nLinkedList Extra Ratio: 6.0x",
+      "hint": "Ratio is (double) linkedBytes / arrayBytes.",
+      "hints": [
+        "long arrayBytes = (100000L * 4) + 24;",
+        "long linkedBytes = 100000L * 24;",
+        "double ratio = (double) linkedBytes / arrayBytes;"
+      ],
+      "solutionCode": "public class Main {\n    public static void main(String[] args) {\n        long n = 100_000L;\n        long arrayBytes = (n * 4) + 24;\n        long linkedBytes = n * 24;\n        double ratio = (double) linkedBytes / arrayBytes;\n\n        System.out.println(\"ArrayList Overhead: \" + arrayBytes + \" bytes\");\n        System.out.println(\"LinkedList Overhead: \" + linkedBytes + \" bytes\");\n        System.out.printf(\"LinkedList Extra Ratio: %.1fx\\n\", ratio);\n    }\n}",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        // TODO: Compute and print memory footprint for 100,000 elements\n    }\n}"
+    },
+    {
+      "id": "p-col1-5-2",
+      "title": "Sequential Traversal Stopwatch",
+      "difficulty": "easy",
+      "description": "Benchmark iteration over 10,000 integers to demonstrate cache locality in ArrayList vs LinkedList.",
+      "problemStatement": "Write an iteration benchmark:\n\n1. In `Main.main()`:\n   - Create an `ArrayList<Integer>` and `LinkedList<Integer>`, each populated with 10,000 integers (1 to 10,000).\n   - Measure traversal sum for `ArrayList` using an enhanced for-each loop.\n   - Measure traversal sum for `LinkedList` using an enhanced for-each loop.\n   - Verify both sums equal `50005000`.\n   - Print:\n     `ArrayList Sum: <sum>`\n     `LinkedList Sum: <sum>`\n     `Validation: PASSED`",
+      "expectedOutput": "ArrayList Sum: 50005000\nLinkedList Sum: 50005000\nValidation: PASSED",
+      "hint": "The formula for sum of 1 to N is N*(N+1)/2. For 10,000, sum is 10000 * 10001 / 2 = 50005000.",
+      "hints": [
+        "Populate both with for (int i = 1; i <= 10000; i++)",
+        "Iterate with for (int v : list)",
+        "Check sum == 50005000L"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> arr = new ArrayList<>(10000);\n        List<Integer> link = new LinkedList<>();\n\n        for (int i = 1; i <= 10000; i++) {\n            arr.add(i);\n            link.add(i);\n        }\n\n        long sumArr = 0;\n        for (int val : arr) sumArr += val;\n\n        long sumLink = 0;\n        for (int val : link) sumLink += val;\n\n        System.out.println(\"ArrayList Sum: \" + sumArr);\n        System.out.println(\"LinkedList Sum: \" + sumLink);\n        System.out.println(\"Validation: \" + (sumArr == 50005000L && sumLink == 50005000L ? \"PASSED\" : \"FAILED\"));\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Benchmark traversal sum across 10,000 elements\n    }\n}"
+    },
+    {
+      "id": "p-col1-5-3",
+      "title": "Head Insertion Comparison: ArrayList vs ArrayDeque",
+      "difficulty": "easy",
+      "description": "Compare head insertions on ArrayList (which shifts memory) against ArrayDeque (circular pointer).",
+      "problemStatement": "Demonstrate the efficiency of head insertions using `ArrayDeque`:\n\n1. In `Main.main()`:\n   - Create `List<Integer> arrList = new ArrayList<>();`\n   - Insert numbers 1 to 5 at the head (`arrList.add(0, i)`).\n   - Create `java.util.ArrayDeque<Integer> deque = new java.util.ArrayDeque<>();`\n   - Insert numbers 1 to 5 at the head (`deque.addFirst(i)`).\n   - Print:\n     `ArrayList after head inserts: <arrList>`\n     `ArrayDeque after head inserts: <deque>`\n     `Both match reverse order: <true/false>`",
+      "expectedOutput": "ArrayList after head inserts: [5, 4, 3, 2, 1]\nArrayDeque after head inserts: [5, 4, 3, 2, 1]\nBoth match reverse order: true",
+      "hint": "Inserting at index 0 or addFirst() reverses the incoming sequence: 1 is pushed down, so 5 ends up at the front.",
+      "hints": [
+        "arrList.add(0, i); deque.addFirst(i);",
+        "Both collections will display [5, 4, 3, 2, 1]."
+      ],
+      "solutionCode": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> arrList = new ArrayList<>();\n        ArrayDeque<Integer> deque = new ArrayDeque<>();\n\n        for (int i = 1; i <= 5; i++) {\n            arrList.add(0, i);\n            deque.addFirst(i);\n        }\n\n        System.out.println(\"ArrayList after head inserts: \" + arrList);\n        System.out.println(\"ArrayDeque after head inserts: \" + deque);\n        System.out.println(\"Both match reverse order: \" + arrList.toString().equals(deque.toString()));\n    }\n}",
+      "initialCode": "import java.util.ArrayDeque;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Perform head insertions on ArrayList and ArrayDeque\n    }\n}"
+    },
+    {
+      "id": "p-col1-5-4",
+      "title": "Fix Accidental LinkedList Selection in REST API",
+      "difficulty": "intermediate",
+      "description": "Refactor an API service that accidentally used LinkedList for paginated random access.",
+      "problemStatement": "A developer wrote a user search service using `LinkedList<String>`:\n```java\npublic static List<String> getPage(LinkedList<String> users, int page, int pageSize) {\n    List<String> result = new ArrayList<>();\n    int start = page * pageSize;\n    for (int i = start; i < start + pageSize && i < users.size(); i++) {\n        result.add(users.get(i)); // ACCIDENTAL O(N) IN EACH ITERATION\n    }\n    return result;\n}\n```\nBecause `users.get(i)` is called on a `LinkedList`, page lookups for deep pages (e.g. page 100) become extremely slow!\n\nYour Task:\n1. Refactor `getPage` to accept `List<String> users`.\n2. Use `users.subList(start, end)` to extract the page in $O(1)$ constant time!\n3. In `Main.main()`, test with an `ArrayList<String>` of 20 users `[\"User0\", \"User1\", ... \"User19\"]`.\n4. Retrieve `page = 1, pageSize = 5` (users 5 through 9) and print:\n   `Page 1 Results: [User5, User6, User7, User8, User9]`",
+      "expectedOutput": "Page 1 Results: [User5, User6, User7, User8, User9]",
+      "hint": "Use int end = Math.min(start + pageSize, users.size()); return new ArrayList<>(users.subList(start, end));",
+      "hints": [
+        "subList(start, end) creates an O(1) view.",
+        "Pass List<String> users rather than LinkedList."
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static List<String> getPage(List<String> users, int page, int pageSize) {\n        int start = page * pageSize;\n        int end = Math.min(start + pageSize, users.size());\n        if (start >= users.size()) return new ArrayList<>();\n        return new ArrayList<>(users.subList(start, end));\n    }\n\n    public static void main(String[] args) {\n        List<String> users = new ArrayList<>();\n        for (int i = 0; i < 20; i++) {\n            users.add(\"User\" + i);\n        }\n\n        List<String> page1 = getPage(users, 1, 5);\n        System.out.println(\"Page 1 Results: \" + page1);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    // TODO: Implement getPage(List<String> users, int page, int pageSize) using subList\n\n    public static void main(String[] args) {\n        // TODO: Test pagination on 20 users\n    }\n}"
+    },
+    {
+      "id": "p-col1-5-5",
+      "title": "Automated Collection Recommendation Engine",
+      "difficulty": "intermediate",
+      "description": "Build an architectural recommendation rule engine that outputs the best Java collection for given requirements.",
+      "problemStatement": "Implement an automated recommendation engine for software architects:\n\n1. Define static method:\n   `public static String recommendCollection(boolean needsRandomAccess, boolean isQueueOrStack, boolean memoryCritical)`\n   - If `needsRandomAccess` is true &rarr; return `\"java.util.ArrayList\"`\n   - If `isQueueOrStack` is true &rarr; return `\"java.util.ArrayDeque\"`\n   - If `memoryCritical` is true &rarr; return `\"Primitive Array or ArrayList\"`\n   - Otherwise &rarr; return `\"java.util.ArrayList (Default Standard)\"`\n\n2. In `Main.main()`:\n   - Query 1: `needsRandomAccess=true, isQueueOrStack=false, memoryCritical=false`\n   - Query 2: `needsRandomAccess=false, isQueueOrStack=true, memoryCritical=false`\n   - Query 3: `needsRandomAccess=false, isQueueOrStack=false, memoryCritical=true`\n   - Output:\n     `Workload 1: java.util.ArrayList`\n     `Workload 2: java.util.ArrayDeque`\n     `Workload 3: Primitive Array or ArrayList`",
+      "expectedOutput": "Workload 1: java.util.ArrayList\nWorkload 2: java.util.ArrayDeque\nWorkload 3: Primitive Array or ArrayList",
+      "hint": "Evaluate the flags sequentially in conditional if-else statements.",
+      "hints": [
+        "if (needsRandomAccess) return ...",
+        "else if (isQueueOrStack) return ...",
+        "else if (memoryCritical) return ..."
+      ],
+      "solutionCode": "public class Main {\n    public static String recommendCollection(boolean needsRandomAccess, boolean isQueueOrStack, boolean memoryCritical) {\n        if (needsRandomAccess) {\n            return \"java.util.ArrayList\";\n        } else if (isQueueOrStack) {\n            return \"java.util.ArrayDeque\";\n        } else if (memoryCritical) {\n            return \"Primitive Array or ArrayList\";\n        } else {\n            return \"java.util.ArrayList (Default Standard)\";\n        }\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Workload 1: \" + recommendCollection(true, false, false));\n        System.out.println(\"Workload 2: \" + recommendCollection(false, true, false));\n        System.out.println(\"Workload 3: \" + recommendCollection(false, false, true));\n    }\n}",
+      "initialCode": "public class Main {\n    public static String recommendCollection(boolean needsRandomAccess, boolean isQueueOrStack, boolean memoryCritical) {\n        // TODO: Implement recommendation logic\n        return \"\";\n    }\n\n    public static void main(String[] args) {\n        // TODO: Test the 3 workloads\n    }\n}"
+    }
+  ]
+}

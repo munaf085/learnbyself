@@ -1,0 +1,475 @@
+{
+  "id": "les-collections-1-why-collections-and-arrays-vs-collections",
+  "slug": "why-collections-and-arrays-vs-collections",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "Why Collections? (Arrays vs Collections)",
+  "summary": "Discover why real-world software engineering outgrows primitive arrays. Contrast fixed-size arrays with dynamic Java collections, exploring resizing overhead, type flexibility, and collection utility algorithms.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "Java Arrays Fundamentals",
+    "Classes & Object Basics",
+    "Memory Allocation (Stack vs Heap)"
+  ],
+  "learningObjectives": [
+    "Understand the core limitations of native Java arrays in production software",
+    "Analyze the performance and memory cost of manual array resizing",
+    "Contrast arrays and the Java Collections Framework across size, type flexibility, and memory",
+    "Identify when to keep primitive arrays for high-frequency low-level tasks versus using Collections"
+  ],
+  "expectedOutcomes": [
+    "Intuitive mastery of why the Java Collections Framework (JCF) exists and how it eliminates boilerplate memory management",
+    "Ability to articulate the trade-offs between contiguous array buffers and dynamic high-level collections in technical interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-col1-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Wooden Egg Crate vs The Accordion Storage Organizer",
+      "analogy": {
+        "headline": "You cannot squeeze a 13th egg into a rigid 12-slot wooden carton",
+        "story": "Imagine purchasing a solid oak egg crate crafted with exactly 12 carved slots. When you place 12 eggs inside, it is perfectly secure.\n\nNow imagine a customer brings you one more egg.\n\nCan the oak wood expand? No! The physical slots were carved when the crate was created. To store 13 eggs, you must:\n1. Buy an entirely new 24-slot wooden crate.\n2. Carefully pick up and transfer each of the 12 existing eggs one by one into the new crate.\n3. Place the 13th egg in the 13th slot.\n4. Discard or burn the old 12-slot crate.\n\nThis is exactly how a native Java array works (`int[] arr = new int[12]`). Its length is baked into memory at birth!\n\nIn contrast, imagine an accordion storage organizer. When you drop items in, its pleated bellows effortlessly stretch to hold 10, 50, or 500 items. When you remove items, it contracts.\n\nThat dynamic, self-managing accordion organizer is the **Java Collections Framework**!",
+        "keyTakeaway": "Native arrays have fixed, unchangeable capacity allocated at instantiation. The Java Collections Framework provides dynamic data structures that automatically expand, contract, and manage memory for you."
+      }
+    },
+    {
+      "id": "act-col1-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Arrays vs Collections: Architectural Deep Dive",
+      "breakdown": {
+        "keyTakeaways": [
+          "Native arrays are fixed in length once instantiated (`arr.length` is immutable)",
+          "Manual resizing requires allocating a new array and copying elements via System.arraycopy (O(n) cost)",
+          "Arrays hold both primitives and objects; Collections can only hold object references (via auto-boxing)",
+          "The Java Collections Framework (JCF) provides unified interfaces, data structures, and algorithms"
+        ]
+      },
+      "content": "### 1. The Core Limitation of Java Arrays\n\nWhen you declare an array in Java:\n```java\nint[] scores = new int[5];\n```\nThe JVM reserves a contiguous, unbroken block of memory in the heap for exactly 5 integers (5 * 4 bytes = 20 contiguous bytes). Once allocated, this length is permanently locked:\n- You cannot append a 6th element.\n- You cannot delete slot 2 to shrink the array to 4 elements.\n- `scores.length` is a `final` property.\n\n```text\nNative Array in Heap Memory (Contiguous Fixed Block):\n+--------+--------+--------+--------+--------+\n| [0] 85 | [1] 92 | [2] 78 | [3] 99 | [4] 64 |  ==> Length is ALWAYS 5\n+--------+--------+--------+--------+--------+\n```\n\n### 2. The Heavy Burden of Manual Resizing\n\nIf your application receives incoming data that exceeds array capacity, you are forced to write manual buffer re-allocation code:\n```java\n// Step 1: Allocate a new, larger array\nint[] expanded = new int[scores.length * 2];\n\n// Step 2: Copy every old element to the new array using System.arraycopy\nSystem.arraycopy(scores, 0, expanded, 0, scores.length);\n\n// Step 3: Reassign reference, leaving old array as garbage\nscores = expanded;\n```\nEvery time you do this, you pay an $O(n)$ CPU penalty copying memory via System.arraycopy, create garbage on the heap, and risk subtle off-by-one bugs.\n\n### 3. Comprehensive Comparison Matrix\n\n| Feature | Native Java Array (`T[]`) | Java Collections Framework (`List<T>`, `Set<T>`, etc.) |\n|---|---|---|\n| **Size** | Fixed at creation time; immutable length | Dynamic; grows and shrinks automatically |\n| **Primitive Support** | Direct native support (`int[]`, `double[]`) with zero boxing overhead | Holds object references only (`List<Integer>`, auto-boxing required) |\n| **Memory Layout** | Contiguous flat block of memory; best CPU cache locality | Dynamic references; slight object header overhead |\n| **Built-in Algorithms** | Minimal (`java.util.Arrays` utility class) | Extensive (`Collections.sort()`, `binarySearch()`, `shuffle()`, etc.) |\n| **Type Safety** | Reifiable at runtime (knows its component type) | Enforced via compile-time Generics (Type Erasure at runtime) |\n| **Performance** | Maximum possible raw performance; zero method call overhead | Negligible method invocation overhead; amortized $O(1)$ operations |\n\n### 4. Why Was JCF Introduced?\n\nPrior to Java 1.2, Java developers relied on disjointed, ad-hoc containers like `Vector`, `Hashtable`, and raw arrays. These legacy classes lacked a common interface hierarchy, had inconsistent method names (`addElement` vs `put`), and synchronized every method by default, causing performance bottlenecks.\n\nThe **Java Collections Framework (JCF)** introduced:\n1. **Unified Architecture**: Common root interfaces (`Collection`, `List`, `Set`, `Queue`, `Map`).\n2. **High-Performance Implementations**: Battle-tested algorithms written by language architects (Josh Bloch, Doug Lea).\n3. **Interoperability**: Standardized data interchange between unrelated libraries and third-party APIs."
+    },
+    {
+      "id": "act-col1-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Manual Resizing vs The Collections Approach",
+      "description": "Examine how manual array resizing requires verbose, error-prone boilerplate compared to the clean elegance of ArrayList.",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    // --- Approach A: Painful Manual Array Expansion ---\n    public static int[] appendToArray(int[] original, int newElement) {\n        // Allocate new array with size + 1\n        int[] newBuffer = new int[original.length + 1];\n        // Copy existing elements\n        System.arraycopy(original, 0, newBuffer, 0, original.length);\n        // Insert new element at the tail\n        newBuffer[original.length] = newElement;\n        return newBuffer;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"=== 1. Manual Array Resizing ===\");\n        int[] numbers = new int[2];\n        numbers[0] = 10;\n        numbers[1] = 20;\n        \n        // Adding 30 requires manual array reallocation!\n        numbers = appendToArray(numbers, 30);\n        System.out.println(\"Array length after resize: \" + numbers.length);\n        System.out.println(\"Last element: \" + numbers[numbers.length - 1]);\n\n        System.out.println(\"\\n=== 2. Collections Approach (ArrayList) ===\");\n        List<Integer> list = new ArrayList<>();\n        list.add(10);\n        list.add(20);\n        list.add(30); // Seamless dynamic expansion behind the scenes!\n        list.add(40);\n        \n        System.out.println(\"List size: \" + list.size());\n        System.out.println(\"Contains 30? \" + list.contains(30));\n        System.out.println(\"List content: \" + list);\n    }\n}",
+      "codeSnippet": "List<Integer> list = new ArrayList<>();\nlist.add(10);\nlist.add(20);\nlist.add(30); // Dynamic expansion!"
+    },
+    {
+      "id": "act-col1-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: Arrays vs Collections (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col1-1",
+          "type": "mcq",
+          "prompt": "What happens if you attempt to insert an element at index 5 of an array declared with 'int[] arr = new int[5]'?",
+          "options": [
+            "The array automatically doubles its length to accommodate the element",
+            "An ArrayIndexOutOfBoundsException is thrown at runtime",
+            "The JVM overwrites the element at index 0",
+            "The code fails to compile"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Native arrays have fixed sizes with valid indices from 0 to length-1. Accessing index 5 on an array of length 5 causes ArrayIndexOutOfBoundsException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Valid indices for length 5 are 0, 1, 2, 3, 4."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col1-2",
+          "type": "mcq",
+          "prompt": "Why can't native Java arrays be dynamically resized after creation?",
+          "options": [
+            "Arrays are allocated as contiguous blocks of memory in the heap; expanding them in-place could overwrite adjacent data",
+            "Java does not support memory pointers",
+            "The compiler forbids resizing to maintain string immutability",
+            "Only the garbage collector can resize objects"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Arrays require contiguous heap memory for O(1) index addressing math. Expanding in-place is impossible because the adjacent memory blocks may already be claimed by other heap objects.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about how contiguous memory allocation works in RAM."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-col1-3",
+          "type": "mcq",
+          "prompt": "Can a standard Java Collection directly store primitive types like int, double, or boolean without boxing?",
+          "options": [
+            "Yes, Collections store primitives natively just like arrays",
+            "No, Java Generics and Collections only store object references; primitives must be auto-boxed into wrapper objects",
+            "Only boolean primitives are supported",
+            "Only ArrayList supports primitives, but HashSet does not"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Java Collections store Object references. When you add primitive 'int 42' to a List<Integer>, the compiler auto-boxes it into 'Integer.valueOf(42)'.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Remember that Collection<E> requires E to be an Object."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col1-4",
+          "type": "mcq",
+          "prompt": "What is the primary advantage of native arrays over Collections in performance-critical algorithms?",
+          "options": [
+            "Native arrays use less memory, avoid object wrapper headers, and offer superior CPU cache locality",
+            "Native arrays are thread-safe by default",
+            "Native arrays support auto-sorting without calling methods",
+            "Native arrays allow heterogenous data types"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Primitive arrays (e.g. double[]) store unboxed values in contiguous memory without object headers (16 bytes per object) or reference pointers (4/8 bytes), maximizing CPU cache hits.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Consider CPU cache locality and zero boxing overhead."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-col1-5",
+          "type": "mcq",
+          "prompt": "What is the time complexity of copying an old array of size N to a newly allocated doubled buffer?",
+          "options": [
+            "O(1)",
+            "O(log N)",
+            "O(N)",
+            "O(N^2)"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Copying N elements from an old array to a new array requires inspecting and copying each of the N memory slots, which is strictly O(N) linear time.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Every element must be copied individually."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col1-6",
+          "type": "mcq",
+          "prompt": "Who was the chief architect behind the design of the Java Collections Framework in Java 2?",
+          "options": [
+            "James Gosling",
+            "Joshua Bloch",
+            "Bjarne Stroustrup",
+            "Guido van Rossum"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Joshua Bloch designed the Java Collections Framework (along with writing Effective Java and co-designing Java Generics).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Author of 'Effective Java'."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col1-7",
+          "type": "mcq",
+          "prompt": "Which legacy collection class from Java 1.0 was retrofitted into the Collections Framework in Java 2?",
+          "options": [
+            "ArrayList",
+            "Vector",
+            "LinkedList",
+            "HashSet"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Vector and Hashtable were created in Java 1.0 and were later retrofitted to implement the List and Map interfaces in Java 2.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "It is synchronized on every method by default."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col1-8",
+          "type": "mcq",
+          "prompt": "Why should modern Java applications prefer ArrayList over Vector?",
+          "options": [
+            "ArrayList is not synchronized on every method call, eliminating unnecessary lock overhead in single-threaded workflows",
+            "Vector cannot store strings",
+            "Vector has a maximum capacity of 100 elements",
+            "ArrayList was deprecated in Java 17"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Vector synchronizes every single operation, creating severe performance penalties. Modern code uses unsynchronized ArrayList (or explicit concurrent collections when multithreading).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Consider synchronization locking overhead."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col1-9",
+          "type": "mcq",
+          "prompt": "Which method is used to determine the number of elements in an ArrayList versus a native array?",
+          "options": [
+            "list.length vs array.size()",
+            "list.size() vs array.length",
+            "list.count() vs array.length()",
+            "list.capacity() vs array.size"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ArrayList uses the method list.size(), whereas a native array exposes the public final field array.length.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "One is a method call (); the other is a property field."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col1-10",
+          "type": "mcq",
+          "prompt": "If you know in advance that your program will store exactly 10,000,000 double sensor readings and perform high-frequency arithmetic, which choice is best?",
+          "options": [
+            "List<Double> for high-level convenience",
+            "double[] native array to prevent boxing 10 million Double objects and avoid gigabytes of heap overhead",
+            "Vector<Double> for thread safety",
+            "LinkedList<Double> for node traversal"
+          ],
+          "correctAnswer": 1,
+          "explanation": "10 million Double wrapper objects require ~240 MB of memory due to object headers and pointer indirection, whereas double[] requires only ~80 MB flat with zero GC pressure.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about primitive unboxed memory footprint vs millions of wrapper objects."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 50
+        }
+      ]
+    },
+    {
+      "id": "act-col1-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: Arrays vs Collections",
+      "interviewQA": [
+        {
+          "id": "qa-col1-1",
+          "question": "What are the primary disadvantages of native Java arrays that motivated the Collections Framework?",
+          "expectedAnswer": "Native arrays have fixed sizes that cannot grow or shrink dynamically, requiring manual O(n) reallocation and copying. Furthermore, arrays lack built-in search, sort, and deduplication utility contracts, and provide no standard interface abstraction across different data organization paradigms.",
+          "keyPoints": [
+            "Fixed immutable capacity at instantiation",
+            "Manual reallocation boilerplate and O(n) array copying cost",
+            "Lack of high-level utility contracts and unified interfaces"
+          ],
+          "companyTags": [
+            "Amazon",
+            "TCS",
+            "Infosys",
+            "Cognizant"
+          ]
+        },
+        {
+          "id": "qa-col1-2",
+          "question": "Why can't Java Collections store primitive types directly?",
+          "expectedAnswer": "Java Generics use Type Erasure, replacing generic parameters with Object (or their upper bound) at compile time. Because primitives (int, double, char) do not inherit from java.lang.Object, they cannot be stored directly in generic collection references without being boxed into their wrapper classes (Integer, Double, Character).",
+          "keyPoints": [
+            "Type Erasure compiles generic types to java.lang.Object",
+            "Primitives do not inherit from Object",
+            "Requires compiler auto-boxing to wrapper objects"
+          ],
+          "companyTags": [
+            "Google",
+            "Microsoft",
+            "Oracle"
+          ]
+        },
+        {
+          "id": "qa-col1-3",
+          "question": "When would you choose a primitive array (e.g. int[]) over an ArrayList<Integer> in production?",
+          "expectedAnswer": "You should choose primitive arrays when building high-performance, low-latency applications (e.g. graphics engines, financial trading systems, large scientific computing buffers) where the size is fixed or bounded. Primitive arrays consume dramatically less RAM (no 16-byte object headers or pointer indirection) and maximize CPU cache line locality.",
+          "keyPoints": [
+            "Zero boxing/unboxing overhead",
+            "Eliminates object header memory footprint",
+            "Superior CPU spatial cache locality"
+          ],
+          "companyTags": [
+            "Morgan Stanley",
+            "Goldman Sachs",
+            "Adobe"
+          ]
+        },
+        {
+          "id": "qa-col1-4",
+          "question": "What is the difference between Vector and ArrayList?",
+          "expectedAnswer": "Both are resizable array implementations of the List interface. However, Vector is a legacy class from Java 1.0 where every method is synchronized, causing severe thread contention and overhead. ArrayList is unsynchronized, making it significantly faster for single-threaded or modern non-blocking concurrent patterns.",
+          "keyPoints": [
+            "Vector is synchronized on every method (Java 1.0 legacy)",
+            "ArrayList is unsynchronized and faster",
+            "Vector grows by 100% (2x) by default; ArrayList grows by 50% (1.5x)"
+          ],
+          "companyTags": [
+            "Wipro",
+            "Capgemini",
+            "Accenture"
+          ]
+        },
+        {
+          "id": "qa-col1-5",
+          "question": "Explain what happens in memory when an ArrayList exceeds its current capacity.",
+          "expectedAnswer": "When elements exceed the backing array's length, ArrayList calculates a new capacity: oldCapacity + (oldCapacity >> 1) (a 1.5x expansion). It then calls Arrays.copyOf, allocating a new larger array on the heap, copying the old elements via System.arraycopy, and updating its internal elementData pointer. The old array is dereferenced and collected by GC.",
+          "keyPoints": [
+            "1.5x capacity growth factor (old + old >> 1)",
+            "Arrays.copyOf calls System.arraycopy (native memory copy)",
+            "Amortized O(1) time complexity per insertion"
+          ],
+          "companyTags": [
+            "Amazon",
+            "Flipkart",
+            "Walmart"
+          ]
+        },
+        {
+          "id": "qa-col1-6",
+          "question": "What is the difference between length, length(), and size() in Java?",
+          "expectedAnswer": "'length' is a public final field on native arrays (e.g. arr.length). 'length()' is a method on java.lang.String (e.g. str.length()). 'size()' is a method defined on java.util.Collection and implemented by all collection classes (e.g. list.size()).",
+          "keyPoints": [
+            "array.length is a field",
+            "string.length() is a method",
+            "collection.size() is an interface method"
+          ],
+          "companyTags": [
+            "TCS",
+            "Zoho",
+            "HCL"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col1-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 1 Mastery Checkpoint",
+      "checklist": [
+        "I can explain why native arrays cannot expand in-place in heap memory.",
+        "I know the performance and memory cost of allocating and copying arrays manually.",
+        "I understand why Collections require wrapper types instead of raw primitives.",
+        "I know the exact difference between array.length, string.length(), and collection.size().",
+        "I can explain why ArrayList replaced Vector in modern Java development."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-1-1",
+      "title": "Dynamic Array Buffer Tracker",
+      "difficulty": "beginner",
+      "description": "Implement a custom DynamicIntBuffer class that doubles its internal array capacity whenever full.",
+      "problemStatement": "Implement a class `DynamicIntBuffer` that manages an internal `int[]` array:\n\n1. Fields:\n   - `private int[] buffer` (initialized to capacity 2)\n   - `private int count` (initialized to 0)\n\n2. Methods:\n   - `public void add(int value)`: If `count == buffer.length`, double the capacity of `buffer` using a new array, copy existing elements, then insert `value` and increment `count`.\n   - `public int getCapacity()`: Returns current length of the backing array.\n   - `public int size()`: Returns `count`.\n   - `public void printStats()`: Prints `Size: <count>, Capacity: <capacity>`.\n\n3. In `Main.main()`:\n   - Instantiate `DynamicIntBuffer`.\n   - Add values 10, 20, 30.\n   - Call `printStats()`.",
+      "expectedOutput": "Size: 3, Capacity: 4",
+      "hint": "When count reaches buffer.length, create int[] newBuf = new int[buffer.length * 2] and use a loop or System.arraycopy.",
+      "hints": [
+        "When count reaches buffer.length, double buffer.length.",
+        "Copy elements with System.arraycopy(buffer, 0, newBuf, 0, buffer.length);",
+        "Reassign buffer = newBuf;"
+      ],
+      "solutionCode": "class DynamicIntBuffer {\n    private int[] buffer = new int[2];\n    private int count = 0;\n\n    public void add(int value) {\n        if (count == buffer.length) {\n            int[] newBuffer = new int[buffer.length * 2];\n            System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);\n            buffer = newBuffer;\n        }\n        buffer[count++] = value;\n    }\n\n    public int getCapacity() {\n        return buffer.length;\n    }\n\n    public int size() {\n        return count;\n    }\n\n    public void printStats() {\n        System.out.println(\"Size: \" + size() + \", Capacity: \" + getCapacity());\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        DynamicIntBuffer db = new DynamicIntBuffer();\n        db.add(10);\n        db.add(20);\n        db.add(30);\n        db.printStats();\n    }\n}",
+      "initialCode": "class DynamicIntBuffer {\n    // TODO: Declare private int[] buffer (capacity 2) and private int count\n    // TODO: Implement add(int value) with doubling strategy\n    // TODO: Implement getCapacity(), size(), and printStats()\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Test your DynamicIntBuffer with values 10, 20, 30\n    }\n}"
+    },
+    {
+      "id": "p-col1-1-2",
+      "title": "Array to ArrayList Migration Assistant",
+      "difficulty": "beginner",
+      "description": "Convert a fixed-size String array into a dynamic ArrayList, append new items, and display formatted stats.",
+      "problemStatement": "Write a program that demonstrates migrating from static arrays to dynamic collections:\n\n1. In `Main.main()`:\n   - Define a fixed string array: `String[] initialItems = {\"Java\", \"Python\", \"C++\"};`\n   - Create an `ArrayList<String>` and populate it with all elements from `initialItems`.\n   - Dynamically append `\"Rust\"` and `\"Go\"`.\n   - Remove `\"C++\"` from the list.\n   - Print the final list size and contents formatted as:\n     `Active Languages (4): [Java, Python, Rust, Go]`",
+      "expectedOutput": "Active Languages (4): [Java, Python, Rust, Go]",
+      "hint": "Use for-each loop or Collections.addAll() to transfer items, then call list.add() and list.remove().",
+      "hints": [
+        "Create List<String> list = new ArrayList<>();",
+        "Add initial array items using a loop or Collections.addAll(list, initialItems);",
+        "Remove item using list.remove(\"C++\");"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        String[] initialItems = {\"Java\", \"Python\", \"C++\"};\n        List<String> languages = new ArrayList<>();\n        Collections.addAll(languages, initialItems);\n        \n        languages.add(\"Rust\");\n        languages.add(\"Go\");\n        languages.remove(\"C++\");\n        \n        System.out.println(\"Active Languages (\" + languages.size() + \"): \" + languages);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        String[] initialItems = {\"Java\", \"Python\", \"C++\"};\n        // TODO: Convert to ArrayList, add 'Rust' & 'Go', remove 'C++', print output\n    }\n}"
+    },
+    {
+      "id": "p-col1-1-3",
+      "title": "Dynamic Passing Scores Filter",
+      "difficulty": "easy",
+      "description": "Filter passing scores (>= 75) from an input score stream into a dynamically expanding collection.",
+      "problemStatement": "Write a score filtering utility:\n\n1. In `Main.main()`:\n   - Given an input raw array of scores: `int[] rawScores = {62, 88, 74, 91, 55, 75, 100, 49};`\n   - Iterate through `rawScores` and append all passing scores (`score >= 75`) to an `ArrayList<Integer>` named `passingScores`.\n   - Calculate the average of the passing scores as a `double`.\n   - Print:\n     `Passing Count: <count>`\n     `Passing Scores: <list>`\n     `Passing Average: <avg formatted to 1 decimal place>`",
+      "expectedOutput": "Passing Count: 4\nPassing Scores: [88, 91, 75, 100]\nPassing Average: 88.5",
+      "hint": "Check if each score >= 75, add it to the ArrayList, and sum passing scores for average computation.",
+      "hints": [
+        "Iterate with for (int score : rawScores)",
+        "Sum the passing elements using a double accumulator.",
+        "Use String.format(\"%.1f\", avg) or direct arithmetic."
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] rawScores = {62, 88, 74, 91, 55, 75, 100, 49};\n        List<Integer> passingScores = new ArrayList<>();\n        double sum = 0;\n\n        for (int score : rawScores) {\n            if (score >= 75) {\n                passingScores.add(score);\n                sum += score;\n            }\n        }\n\n        double average = passingScores.isEmpty() ? 0 : sum / passingScores.size();\n        System.out.println(\"Passing Count: \" + passingScores.size());\n        System.out.println(\"Passing Scores: \" + passingScores);\n        System.out.printf(\"Passing Average: %.1f\\n\", average);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        int[] rawScores = {62, 88, 74, 91, 55, 75, 100, 49};\n        // TODO: Filter scores >= 75 into an ArrayList and compute average\n    }\n}"
+    },
+    {
+      "id": "p-col1-1-4",
+      "title": "Fix Broken Manual Array Resize Bug",
+      "difficulty": "easy",
+      "description": "Fix an off-by-one bug in a legacy manual array resizer that corrupts data during expansion.",
+      "problemStatement": "A junior developer attempted to write a manual array expander function, but it has two bugs:\n1. The new buffer is created with `original.length` instead of `original.length + 1`.\n2. The new element is placed at index `original.length + 1`, causing `ArrayIndexOutOfBoundsException`.\n\nYour Task:\n1. Fix the method `public static String[] insertAtEnd(String[] arr, String newItem)`.\n2. In `Main.main()`, test with array `{\"Alpha\", \"Beta\"}` and insert `\"Gamma\"`.\n3. Print the resulting array elements separated by ` -> `:\n   `Alpha -> Beta -> Gamma`",
+      "expectedOutput": "Alpha -> Beta -> Gamma",
+      "hint": "The new array size must be arr.length + 1, and the new item goes at index arr.length.",
+      "hints": [
+        "String[] result = new String[arr.length + 1];",
+        "System.arraycopy(arr, 0, result, 0, arr.length);",
+        "result[arr.length] = newItem;"
+      ],
+      "solutionCode": "public class Main {\n    public static String[] insertAtEnd(String[] arr, String newItem) {\n        String[] result = new String[arr.length + 1];\n        System.arraycopy(arr, 0, result, 0, arr.length);\n        result[arr.length] = newItem;\n        return result;\n    }\n\n    public static void main(String[] args) {\n        String[] original = {\"Alpha\", \"Beta\"};\n        String[] updated = insertAtEnd(original, \"Gamma\");\n        System.out.println(String.join(\" -> \", updated));\n    }\n}",
+      "initialCode": "// Broken code with off-by-one resize bugs:\npublic class Main {\n    public static String[] insertAtEnd(String[] arr, String newItem) {\n        String[] result = new String[arr.length]; // BUG 1\n        for (int i = 0; i < arr.length; i++) {\n            result[i] = arr[i];\n        }\n        result[arr.length + 1] = newItem; // BUG 2\n        return result;\n    }\n\n    public static void main(String[] args) {\n        String[] original = {\"Alpha\", \"Beta\"};\n        String[] updated = insertAtEnd(original, \"Gamma\");\n        System.out.println(String.join(\" -> \", updated));\n    }\n}"
+    },
+    {
+      "id": "p-col1-1-5",
+      "title": "Elastic Transaction Ledger Buffer",
+      "difficulty": "intermediate",
+      "description": "Build an elastic transaction ledger that dynamically expands while tracking total resize events.",
+      "problemStatement": "Build a transaction ledger `ElasticLedger`:\n\n1. Fields:\n   - `private String[] transactions` (initial capacity: 2)\n   - `private int size = 0;`\n   - `private int resizeCount = 0;`\n\n2. Methods:\n   - `public void record(String tx)`: Records the transaction string. If buffer is full, double the capacity, increment `resizeCount`, and copy old elements.\n   - `public void printAuditReport()`: Prints:\n     `Total Recorded: <size>`\n     `Buffer Capacity: <transactions.length>`\n     `Resize Events: <resizeCount>`\n\n3. In `Main.main()`:\n   - Record 5 transactions: `\"TX-101\"`, `\"TX-102\"`, `\"TX-103\"`, `\"TX-104\"`, `\"TX-105\"`.\n   - Call `printAuditReport()`.",
+      "expectedOutput": "Total Recorded: 5\nBuffer Capacity: 8\nResize Events: 2",
+      "hint": "Capacities progression: 2 -> 4 (on 3rd item) -> 8 (on 5th item). Total resize events: 2.",
+      "hints": [
+        "Check if size == transactions.length before adding.",
+        "Double capacity: transactions.length * 2.",
+        "Increment resizeCount every time resizing triggers."
+      ],
+      "solutionCode": "class ElasticLedger {\n    private String[] transactions = new String[2];\n    private int size = 0;\n    private int resizeCount = 0;\n\n    public void record(String tx) {\n        if (size == transactions.length) {\n            String[] expanded = new String[transactions.length * 2];\n            System.arraycopy(transactions, 0, expanded, 0, transactions.length);\n            transactions = expanded;\n            resizeCount++;\n        }\n        transactions[size++] = tx;\n    }\n\n    public void printAuditReport() {\n        System.out.println(\"Total Recorded: \" + size);\n        System.out.println(\"Buffer Capacity: \" + transactions.length);\n        System.out.println(\"Resize Events: \" + resizeCount);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ElasticLedger ledger = new ElasticLedger();\n        ledger.record(\"TX-101\");\n        ledger.record(\"TX-102\");\n        ledger.record(\"TX-103\");\n        ledger.record(\"TX-104\");\n        ledger.record(\"TX-105\");\n        ledger.printAuditReport();\n    }\n}",
+      "initialCode": "class ElasticLedger {\n    // TODO: Declare transactions array (size 2), size, and resizeCount\n    // TODO: Implement record(String tx) with doubling logic\n    // TODO: Implement printAuditReport()\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Record 5 transactions and print audit report\n    }\n}"
+    }
+  ]
+}

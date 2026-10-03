@@ -1,0 +1,470 @@
+{
+  "id": "les-collections-1-practice-list-operations-and-filtering",
+  "slug": "practice-list-operations-and-filtering",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "Practice: List Operations & Filtering",
+  "summary": "Put theory into practice with essential industry list manipulation patterns: in-place filtering, element transformation, deduplication, sublists, and multi-criteria sorting.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "The List Contract & ArrayList Internals",
+    "Java Lambda Expressions Basics",
+    "Basic Sorting & Comparable"
+  ],
+  "learningObjectives": [
+    "Perform in-place element removal safely using Java 8+ Collection.removeIf()",
+    "Transform all list elements in-place using List.replaceAll()",
+    "Work with subList() views safely without triggering ConcurrentModificationException",
+    "Distinguish between Arrays.asList(), List.of(), and new ArrayList<>() initialization strategies"
+  ],
+  "expectedOutcomes": [
+    "Practical fluency writing production-grade list algorithms for data filtering, partitioning, and validation",
+    "Ability to avoid the dangerous pitfalls of unmodifiable list views and shared sublist references"
+  ],
+  "activities": [
+    {
+      "id": "act-col6-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Quality-Control Conveyor Belt",
+      "analogy": {
+        "headline": "Inspecting, transforming, and filtering defective parts along an automated assembly line",
+        "story": "Imagine a factory assembly line producing precision electronic components.\n\nAs components glide down the conveyor belt:\n1. **Filtering (`removeIf`)**: An optical sensor spots scratched components and kicks them off the belt immediately. No manual counting or shifting required.\n2. **Transformation (`replaceAll`)**: A laser engraves a compliance serial code onto every single item that passes inspection.\n3. **Inspection Window (`subList`)**: A quality-assurance inspector places a magnifying frame over 5 consecutive items on the belt. The inspector does not pick them up or duplicate them; they look directly through the frame window at the live belt.\n4. **Batch Packaging (Chunking)**: Once verified, the components are packed into neat batches of 10 for shipment.\n\nIn Java, **`List`** provides all of these built-in assembly-line operations natively!",
+        "keyTakeaway": "Modern Java Lists provide rich functional methods (removeIf, replaceAll, subList) to filter, transform, and partition data in-place with minimal boilerplate."
+      }
+    },
+    {
+      "id": "act-col6-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Modern List Engineering: Essential Methods & Patterns",
+      "breakdown": {
+        "keyTakeaways": [
+          "`removeIf(Predicate<E> filter)` mutates the list in-place in linear O(N) time with a single backward shift pass",
+          "`replaceAll(UnaryOperator<E> operator)` transforms every element without allocating new container objects",
+          "`subList(fromIndex, toIndex)` returns a live VIEW into the parent list, NOT an independent copy",
+          "`List.of()` creates an immutable list; `Arrays.asList()` creates a fixed-size mutable list; `new ArrayList<>()` creates a fully mutable list"
+        ]
+      },
+      "content": "### 1. In-Place Filtering: `removeIf`\n\nPrior to Java 8, filtering elements from a list required manual iterator loops. Java 8 introduced `Collection.removeIf(Predicate)`:\n```java\nList<Integer> numbers = new ArrayList<>(Arrays.asList(10, 15, 20, 25, 30));\n// Remove all odd numbers in-place:\nnumbers.removeIf(n -> n % 2 != 0);\n// numbers is now: [10, 20, 30]\n```\n`removeIf` operates in $O(n)$ time using a compact two-pointer shift algorithm inside `ArrayList`, outperforming manual loops.\n\n### 2. In-Place Transformation: `replaceAll`\n\nInstead of allocating a brand new list and copying transformed items:\n```java\nList<String> names = new ArrayList<>(Arrays.asList(\"alice\", \"bob\", \"charlie\"));\nnames.replaceAll(String::toUpperCase);\n// names is now: [ALICE, BOB, CHARLIE]\n```\n\n### 3. The `subList(from, to)` Contract\n\n`list.subList(int fromIndex, int toIndex)` returns a **view** of the portion of the list between `fromIndex` (inclusive) and `toIndex` (exclusive):\n```text\nParent List: [A, B, C, D, E, F]\n                     ^        ^\n               fromIndex=2  toIndex=5\nSublist View:       [C, D, E]\n```\n\n> **CRITICAL WARNING**: Any structural modification (e.g. `add()` or `remove()`) to the parent list directly invalidates the `subList`! Subsequent calls on the sublist will immediately throw **`ConcurrentModificationException`**.\n\nTo make an independent copy that is safe from parent modifications:\n```java\nList<String> independentCopy = new ArrayList<>(parentList.subList(2, 5));\n```\n\n### 4. Creation Patterns: The Big Three\n\n| Initialization Method | Mutability | Resizability | Null Elements Permitted? |\n|---|---|---|:---:|\n| `new ArrayList<>()` | Fully Mutable | Resizable (`add`, `remove`) | Yes |\n| `Arrays.asList(\"A\", \"B\")` | Elements Mutable (`set` works) | **Fixed Size** (`add`/`remove` throw `UnsupportedOperationException`) | Yes |\n| `List.of(\"A\", \"B\")` (Java 9+) | **Completely Immutable** | Fixed Size | **No (throws NPE)** |"
+    },
+    {
+      "id": "act-col6-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Complete List Manipulation Pipeline",
+      "description": "Walk through filtering, transforming, sublisting, and sorting an employee payroll roster.",
+      "code": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // 1. Fully mutable list initialization\n        List<String> roster = new ArrayList<>(Arrays.asList(\n            \"emp_david\", \"contractor_bob\", \"emp_alice\", \"contractor_eve\", \"emp_carol\"\n        ));\n        System.out.println(\"Raw Roster: \" + roster);\n\n        // 2. In-Place Filtering: Drop all temporary contractors\n        roster.removeIf(name -> name.startsWith(\"contractor_\"));\n        System.out.println(\"Employees Only: \" + roster);\n\n        // 3. In-Place Transformation: Strip prefix and capitalize\n        roster.replaceAll(name -> name.replace(\"emp_\", \"\").toUpperCase());\n        System.out.println(\"Cleaned Names: \" + roster);\n\n        // 4. Natural Sorting\n        Collections.sort(roster);\n        System.out.println(\"Alphabetical: \" + roster);\n\n        // 5. Safe Sublist Extraction\n        List<String> topTwo = new ArrayList<>(roster.subList(0, 2));\n        System.out.println(\"Top 2 Leaders: \" + topTwo);\n    }\n}",
+      "codeSnippet": "roster.removeIf(name -> name.startsWith(\"contractor_\"));\nroster.replaceAll(name -> name.replace(\"emp_\", \"\").toUpperCase());\nCollections.sort(roster);"
+    },
+    {
+      "id": "act-col6-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: List Operations (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col6-1",
+          "type": "mcq",
+          "prompt": "What happens if you invoke 'list.add(\"C\")' on a list created with 'Arrays.asList(\"A\", \"B\")'?",
+          "options": [
+            "The list expands and adds \"C\"",
+            "Throws UnsupportedOperationException",
+            "Overwrites \"A\" with \"C\"",
+            "Throws NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays.asList() returns a fixed-size wrapper backed directly by the array. Structural modifications like add() or remove() throw UnsupportedOperationException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Arrays.asList produces a fixed-size list."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col6-2",
+          "type": "mcq",
+          "prompt": "What happens if you pass a null value to 'List.of(\"A\", null, \"C\")' in Java 9+?",
+          "options": [
+            "Stores null as an element",
+            "Throws NullPointerException immediately",
+            "Replaces null with an empty string",
+            "Omits the null element"
+          ],
+          "correctAnswer": 1,
+          "explanation": "List.of() strictly disallows null elements and throws NullPointerException at creation time.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Java 9 unmodifiable collections are null-hostile."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col6-3",
+          "type": "mcq",
+          "prompt": "What happens to a subList view if you structurally add an element to the parent list after creating the subList?",
+          "options": [
+            "The subList automatically updates its bounds",
+            "The subList becomes completely severed from the parent",
+            "Any subsequent operation on the subList throws ConcurrentModificationException",
+            "The added element is discarded"
+          ],
+          "correctAnswer": 2,
+          "explanation": "The subList contract states that structural modifications to the backing list make the semantics of the sublist undefined. In OpenJDK, it checks modCount and throws ConcurrentModificationException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Structural changes to parent list desynchronize the sublist view."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-col6-4",
+          "type": "mcq",
+          "prompt": "How can you safely clear a range of elements (e.g. from index 2 to 5) from an ArrayList?",
+          "options": [
+            "list.removeRange(2, 5) (public method)",
+            "list.subList(2, 5).clear()",
+            "Using a while loop with list.remove(2)",
+            "list.deleteBetween(2, 5)"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The idiomatic Java way to remove a range from a list is list.subList(from, to).clear(). The clear() call mutates the backing list directly.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "subList provides a view, and clear() on the view removes those elements from the parent!"
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col6-5",
+          "type": "mcq",
+          "prompt": "Which method signature in Java 8 allows filtering out elements matching a condition in-place?",
+          "options": [
+            "list.filter(Predicate<E> p)",
+            "list.removeIf(Predicate<? super E> filter)",
+            "list.dropWhere(Function<E, Boolean> f)",
+            "list.clean(Consumer<E> c)"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Collection.removeIf(Predicate<? super E> filter) removes all elements that satisfy the given predicate in-place.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Method name is 'removeIf'."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col6-6",
+          "type": "mcq",
+          "prompt": "What does 'list.replaceAll(s -> s.trim())' do?",
+          "options": [
+            "Creates and returns a brand new list with trimmed strings",
+            "Mutates every element in the existing list in-place by applying the trim function",
+            "Removes elements that contain whitespace",
+            "Throws an exception if strings are immutable"
+          ],
+          "correctAnswer": 1,
+          "explanation": "List.replaceAll(UnaryOperator<E> operator) replaces each element of the list with the result of applying the operator to that element in-place.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "In-place element transformation."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col6-7",
+          "type": "mcq",
+          "prompt": "What does 'list.indexOf(o)' return if the object is NOT present in the list?",
+          "options": [
+            "0",
+            "-1",
+            "Throws NoSuchElementException",
+            "null"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Like String.indexOf(), list.indexOf(o) returns -1 if the specified element is not found.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Standard not-found sentinel index."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 20
+        },
+        {
+          "id": "q-col6-8",
+          "type": "mcq",
+          "prompt": "What is the recommended modern idiom to create a truly independent, mutable copy of an existing collection?",
+          "options": [
+            "List<T> copy = new ArrayList<>(existingCollection);",
+            "List<T> copy = existingCollection.clone();",
+            "List<T> copy = Arrays.asList(existingCollection);",
+            "List<T> copy = (List<T>) existingCollection;"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The copy constructor 'new ArrayList<>(existingCollection)' creates a decoupled, mutable ArrayList populated with references from the source collection.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Use the copy constructor."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col6-9",
+          "type": "mcq",
+          "prompt": "What is the time complexity of 'Collections.sort(List<T> list)' on an ArrayList?",
+          "options": [
+            "O(N)",
+            "O(N^2)",
+            "O(N log N)",
+            "O(log N)"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Collections.sort() uses TimSort (an adaptive hybrid of MergeSort and InsertionSort), which operates in O(N log N) time in the average and worst case.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Standard optimal comparison-based sorting complexity."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col6-10",
+          "type": "mcq",
+          "prompt": "How does 'subList(fromIndex, toIndex)' behave regarding the boundaries?",
+          "options": [
+            "fromIndex is inclusive, toIndex is exclusive",
+            "Both fromIndex and toIndex are inclusive",
+            "Both fromIndex and toIndex are exclusive",
+            "fromIndex is exclusive, toIndex is inclusive"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Like String.substring(), subList(from, to) is half-open: fromIndex is inclusive, and toIndex is exclusive [from, to).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Standard half-open interval [from, to)."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        }
+      ]
+    },
+    {
+      "id": "act-col6-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: List Operations",
+      "interviewQA": [
+        {
+          "id": "qa-col6-1",
+          "question": "What is the difference between Arrays.asList(), List.of(), and new ArrayList<>()?",
+          "expectedAnswer": "Arrays.asList() returns a fixed-size list backed by the array (elements can be modified via set(), but add/remove throw UnsupportedOperationException). List.of() (Java 9+) returns a completely immutable, null-hostile list (any mutation throws UnsupportedOperationException, and null elements throw NPE). new ArrayList<>() creates a fully mutable, resizable collection that permits nulls.",
+          "keyPoints": [
+            "Arrays.asList: fixed-size, elements mutable, permits null",
+            "List.of: completely immutable, rejects nulls",
+            "new ArrayList: fully mutable and resizable"
+          ],
+          "companyTags": [
+            "Amazon",
+            "Google",
+            "Microsoft",
+            "Goldman Sachs"
+          ]
+        },
+        {
+          "id": "qa-col6-2",
+          "question": "How does subList() work, and why does mutating the parent list invalidate it?",
+          "expectedAnswer": "subList() returns a live view of the backing list rather than a new copy. It stores an offset and size, delegating all reads and writes directly to the parent list. If the parent list is structurally modified (add/remove) directly, its modCount increments. The subList detects this discrepancy on subsequent calls and throws ConcurrentModificationException to prevent corrupt views.",
+          "keyPoints": [
+            "subList is a view, not a new list allocation",
+            "Shares underlying storage with parent list",
+            "Structural modification to parent causes ConcurrentModificationException"
+          ],
+          "companyTags": [
+            "Oracle",
+            "Flipkart",
+            "Walmart"
+          ]
+        },
+        {
+          "id": "qa-col6-3",
+          "question": "How do you remove elements matching a condition from a List in Java 8+ without throwing ConcurrentModificationException?",
+          "expectedAnswer": "You should use Collection.removeIf(Predicate). It is specifically optimized to remove elements in-place safely in a single pass without throwing ConcurrentModificationException. Alternatively, you can use an explicit Iterator and call iterator.remove().",
+          "keyPoints": [
+            "Use list.removeIf(predicate)",
+            "Or use Iterator it = list.iterator() with it.remove()",
+            "Never remove directly from list inside an enhanced for-each loop"
+          ],
+          "companyTags": [
+            "TCS",
+            "Infosys",
+            "Adobe"
+          ]
+        },
+        {
+          "id": "qa-col6-4",
+          "question": "How does Collection.removeIf() achieve better performance than an explicit iterator loop?",
+          "expectedAnswer": "In ArrayList, removeIf is overridden to use a BitSet to track matching indices in a first pass, followed by a single compacted memory shift pass in a second pass. This shifts all remaining elements forward in one O(N) sweep rather than executing multiple O(N) System.arraycopy shifts for every deleted element.",
+          "keyPoints": [
+            "Two-pass compacting algorithm in ArrayList",
+            "Single memory shift pass avoids repeated array copies",
+            "Strictly O(N) total runtime"
+          ],
+          "companyTags": [
+            "Uber",
+            "LinkedIn",
+            "PayPal"
+          ]
+        },
+        {
+          "id": "qa-col6-5",
+          "question": "How do you remove duplicates from an ArrayList while preserving the original insertion order?",
+          "expectedAnswer": "You can wrap the ArrayList in a LinkedHashSet (which enforces uniqueness while preserving insertion order), and then copy it back into an ArrayList: 'List<T> unique = new ArrayList<>(new LinkedHashSet<>(list));'. Alternatively, in Java 8+ streams: 'list.stream().distinct().collect(Collectors.toList());'.",
+          "keyPoints": [
+            "Use LinkedHashSet to deduplicate and preserve order",
+            "Or use stream().distinct()",
+            "HashSet does not preserve insertion order"
+          ],
+          "companyTags": [
+            "Zoho",
+            "Accenture",
+            "Cognizant"
+          ]
+        },
+        {
+          "id": "qa-col6-6",
+          "question": "How do you partition a large List of N items into smaller batches of size K (e.g. for batch SQL queries)?",
+          "expectedAnswer": "You can iterate with a stride of K: 'for (int i = 0; i < list.size(); i += K)', and extract each batch using 'list.subList(i, Math.min(i + K, list.size()))'. In third-party libraries, Guava provides 'Lists.partition(list, K)', but in standard Java, subList() achieves this with zero memory overhead.",
+          "keyPoints": [
+            "Loop with stride: i += K",
+            "Extract batch: list.subList(i, Math.min(i + K, list.size()))",
+            "Zero extra object allocation"
+          ],
+          "companyTags": [
+            "Morgan Stanley",
+            "Cisco",
+            "Dell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col6-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 6 Mastery Checkpoint",
+      "checklist": [
+        "I can filter lists in-place using removeIf() with lambda expressions.",
+        "I know how to transform elements in-place using replaceAll().",
+        "I understand that subList() is a view and know why parent mutations break it.",
+        "I know the exact differences between Arrays.asList(), List.of(), and new ArrayList<>().",
+        "I can partition large lists into fixed-size batches using subList."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-6-1",
+      "title": "Safe In-Place Transaction Filter",
+      "difficulty": "beginner",
+      "description": "Filter out cancelled or zero-value transactions in-place using Collection.removeIf().",
+      "problemStatement": "Write a transaction audit cleaner:\n\n1. In `Main.main()`:\n   - Create a mutable `List<String> transactions = new ArrayList<>(Arrays.asList(\n       \"TX_SUCCESS_100\", \"TX_CANCELLED_50\", \"TX_SUCCESS_0\", \"TX_SUCCESS_250\", \"TX_CANCELLED_90\"\n     ));`\n   - Using `transactions.removeIf(...)`, remove all transactions that contain `\"CANCELLED\"` OR end with `\"_0\"`.\n   - Print remaining transactions:\n     `Valid Transactions: <list>`",
+      "expectedOutput": "Valid Transactions: [TX_SUCCESS_100, TX_SUCCESS_250]",
+      "hint": "Use transactions.removeIf(tx -> tx.contains(\"CANCELLED\") || tx.endsWith(\"_0\")).",
+      "hints": [
+        "removeIf takes a Predicate lambda.",
+        "Check tx.contains(\"CANCELLED\") || tx.endsWith(\"_0\")"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> transactions = new ArrayList<>(Arrays.asList(\n            \"TX_SUCCESS_100\", \"TX_CANCELLED_50\", \"TX_SUCCESS_0\", \"TX_SUCCESS_250\", \"TX_CANCELLED_90\"\n        ));\n\n        transactions.removeIf(tx -> tx.contains(\"CANCELLED\") || tx.endsWith(\"_0\"));\n\n        System.out.println(\"Valid Transactions: \" + transactions);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Filter transactions using removeIf and print valid transactions\n    }\n}"
+    },
+    {
+      "id": "p-col1-6-2",
+      "title": "Batch Pagination Chunker",
+      "difficulty": "easy",
+      "description": "Partition an arbitrary list of items into fixed-size sublist batches using a loop stride.",
+      "problemStatement": "Implement a batch partitioning algorithm:\n\n1. In `Main` class:\n   - Write static method:\n     `public static <T> List<List<T>> partition(List<T> list, int batchSize)`\n   - Split `list` into batches of at most `batchSize` using `list.subList(i, Math.min(i + batchSize, list.size()))`.\n\n2. In `Main.main()`:\n   - Create a list with numbers 1 to 7: `[1, 2, 3, 4, 5, 6, 7]`.\n   - Call `partition(numbers, 3)`.\n   - Print each batch:\n     `Batch 1: [1, 2, 3]`\n     `Batch 2: [4, 5, 6]`\n     `Batch 3: [7]`",
+      "expectedOutput": "Batch 1: [1, 2, 3]\nBatch 2: [4, 5, 6]\nBatch 3: [7]",
+      "hint": "Loop with for (int i = 0; i < list.size(); i += batchSize) and use subList.",
+      "hints": [
+        "int end = Math.min(i + batchSize, list.size());",
+        "result.add(new ArrayList<>(list.subList(i, end)));"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static <T> List<List<T>> partition(List<T> list, int batchSize) {\n        List<List<T>> batches = new ArrayList<>();\n        for (int i = 0; i < list.size(); i += batchSize) {\n            int end = Math.min(i + batchSize, list.size());\n            batches.add(new ArrayList<>(list.subList(i, end)));\n        }\n        return batches;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7);\n        List<List<Integer>> batches = partition(numbers, 3);\n\n        for (int i = 0; i < batches.size(); i++) {\n            System.out.println(\"Batch \" + (i + 1) + \": \" + batches.get(i));\n        }\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    // TODO: Implement partition(List<T> list, int batchSize)\n\n    public static void main(String[] args) {\n        // TODO: Partition [1..7] into batches of 3 and print results\n    }\n}"
+    },
+    {
+      "id": "p-col1-6-3",
+      "title": "Preserve-Order Duplicate Remover",
+      "difficulty": "easy",
+      "description": "Deduplicate an ArrayList while strictly maintaining the first-occurrence insertion order.",
+      "problemStatement": "Deduplicate a list without losing original order:\n\n1. In `Main.main()`:\n   - Input list: `[\"Java\", \"Python\", \"Java\", \"C++\", \"Python\", \"Rust\", \"Java\"]`.\n   - Eliminate duplicates using a `LinkedHashSet`.\n   - Re-wrap into an `ArrayList<String>`.\n   - Print original count, deduplicated count, and clean list:\n     `Original Count: 7`\n     `Unique Count: 4`\n     `Clean Roster: [Java, Python, C++, Rust]`",
+      "expectedOutput": "Original Count: 7\nUnique Count: 4\nClean Roster: [Java, Python, C++, Rust]",
+      "hint": "LinkedHashSet preserves insertion order and eliminates duplicates: new ArrayList<>(new LinkedHashSet<>(inputList)).",
+      "hints": [
+        "Set<String> set = new LinkedHashSet<>(inputList);",
+        "List<String> unique = new ArrayList<>(set);"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.LinkedHashSet;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> input = Arrays.asList(\"Java\", \"Python\", \"Java\", \"C++\", \"Python\", \"Rust\", \"Java\");\n        List<String> unique = new ArrayList<>(new LinkedHashSet<>(input));\n\n        System.out.println(\"Original Count: \" + input.size());\n        System.out.println(\"Unique Count: \" + unique.size());\n        System.out.println(\"Clean Roster: \" + unique);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Deduplicate list preserving insertion order\n    }\n}"
+    },
+    {
+      "id": "p-col1-6-4",
+      "title": "Fix ConcurrentModificationException on SubList",
+      "difficulty": "intermediate",
+      "description": "Fix a runtime ConcurrentModificationException caused by mutating the backing list during sublist processing.",
+      "problemStatement": "A developer wrote code to inspect the top 3 users and then add an admin user to the list:\n```java\nList<String> users = new ArrayList<>(Arrays.asList(\"Alice\", \"Bob\", \"Charlie\", \"Dave\"));\nList<String> top3 = users.subList(0, 3);\nusers.add(\"Admin\"); // MUTATING PARENT LIST DIRECTLY!\nSystem.out.println(\"Top 3: \" + top3); // CRASHES with ConcurrentModificationException!\n```\n\nYour Task:\n1. Fix the bug by creating an independent, decoupled copy of the sublist view.\n2. In `Main.main()`, verify that `top3` can be safely printed even after adding `\"Admin\"` to `users`.\n3. Output format:\n   `Top 3: [Alice, Bob, Charlie]`\n   `Total Users: 5`",
+      "expectedOutput": "Top 3: [Alice, Bob, Charlie]\nTotal Users: 5",
+      "hint": "Decouple the sublist: List<String> top3 = new ArrayList<>(users.subList(0, 3));",
+      "hints": [
+        "Passing users.subList to new ArrayList<>() copies the elements into an independent buffer.",
+        "Parent additions will no longer affect top3."
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> users = new ArrayList<>(Arrays.asList(\"Alice\", \"Bob\", \"Charlie\", \"Dave\"));\n        \n        // Fix: Make an independent copy of the sublist view\n        List<String> top3 = new ArrayList<>(users.subList(0, 3));\n        users.add(\"Admin\");\n\n        System.out.println(\"Top 3: \" + top3);\n        System.out.println(\"Total Users: \" + users.size());\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> users = new ArrayList<>(Arrays.asList(\"Alice\", \"Bob\", \"Charlie\", \"Dave\"));\n        // BUGGY:\n        // List<String> top3 = users.subList(0, 3);\n        // users.add(\"Admin\");\n        // System.out.println(\"Top 3: \" + top3);\n    }\n}"
+    },
+    {
+      "id": "p-col1-6-5",
+      "title": "Top-K Leaderboard Window",
+      "difficulty": "intermediate",
+      "description": "Maintain a dynamic leaderboard that keeps only the top 3 highest scores using Collections.sort and subList.",
+      "problemStatement": "Build a leaderboard window:\n\n1. Define class `Leaderboard`:\n   - `private final List<Integer> scores = new ArrayList<>();`\n   - `public void addScore(int score)`: Appends `score`, sorts in descending order using `Collections.sort(scores, Collections.reverseOrder())`, and trims excess elements so `scores.size() <= 3` using `subList(3, scores.size()).clear();`.\n   - `public void display()`: Prints `Top Scores: <scores>`.\n\n2. In `Main.main()`:\n   - Add scores: 450, 890, 320, 950, 600, 1020.\n   - Call `display()`.\n   - Output: `Top Scores: [1020, 950, 890]`",
+      "expectedOutput": "Top Scores: [1020, 950, 890]",
+      "hint": "Sort descending with Collections.sort(scores, Collections.reverseOrder()). If scores.size() > 3, call scores.subList(3, scores.size()).clear().",
+      "hints": [
+        "Collections.sort(scores, Collections.reverseOrder());",
+        "if (scores.size() > 3) scores.subList(3, scores.size()).clear();"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Leaderboard {\n    private final List<Integer> scores = new ArrayList<>();\n\n    public void addScore(int score) {\n        scores.add(score);\n        Collections.sort(scores, Collections.reverseOrder());\n        if (scores.size() > 3) {\n            scores.subList(3, scores.size()).clear();\n        }\n    }\n\n    public void display() {\n        System.out.println(\"Top Scores: \" + scores);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Leaderboard board = new Leaderboard();\n        board.addScore(450);\n        board.addScore(890);\n        board.addScore(320);\n        board.addScore(950);\n        board.addScore(600);\n        board.addScore(1020);\n        board.display();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Leaderboard {\n    // TODO: Implement scores list, addScore, and display\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Test Leaderboard with sample scores\n    }\n}"
+    }
+  ]
+}

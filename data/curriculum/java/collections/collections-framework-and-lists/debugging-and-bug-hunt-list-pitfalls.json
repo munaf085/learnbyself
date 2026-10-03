@@ -1,0 +1,472 @@
+{
+  "id": "les-collections-1-debugging-and-bug-hunt-list-pitfalls",
+  "slug": "debugging-and-bug-hunt-list-pitfalls",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "Debugging & Bug Hunt: List Pitfalls",
+  "summary": "Debug the most notorious traps in Java Lists: ConcurrentModificationException, primitive auto-boxing remove(int) vs remove(Object), unmodifiable list mutations, and sublist memory leaks.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "Practice: List Operations & Filtering",
+    "Java Exception Handling (RuntimeException)",
+    "Auto-Boxing & Unboxing Mechanics"
+  ],
+  "learningObjectives": [
+    "Diagnose and eliminate ConcurrentModificationException using modCount inspection",
+    "Resolve the classic List<Integer>.remove(int) vs remove(Object) overloaded method ambiguity",
+    "Prevent UnsupportedOperationException caused by fixed-size or immutable list factories",
+    "Detect and fix heap memory leaks caused by lingering subList views referencing huge parent lists"
+  ],
+  "expectedOutcomes": [
+    "Instinctive ability to spot dangerous anti-patterns in production code reviews before deployment",
+    "Flawless score on technical placement interview bug prediction and code-tracing challenges"
+  ],
+  "activities": [
+    {
+      "id": "act-col7-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Landmines in the Warehouse",
+      "analogy": {
+        "headline": "Stepping onto hidden tripwires while counting inventory shelves",
+        "story": "Imagine an auditor counting 1,000 numbered boxes in a warehouse.\n\n**Landmine 1: The Disappearing Shelf (`ConcurrentModificationException`)**\nThe auditor is halfway through counting (at Box #500). Suddenly, a worker sneaks behind them and removes Box #12. The auditor looks down at their clipboard: the entire box numbering is now out of sync! Panicking, the auditor sounds a red siren (**`ConcurrentModificationException`**) and halts the entire warehouse!\n\n**Landmine 2: The Two Badges with the Same Number (`remove(int)` vs `remove(Object)`)**\nYou have an employee badge with ID number `2`. You tell HR: *\"Please delete employee 2.\"*\nHR deletes the person standing at **Chair #2** instead of the person wearing **Badge #2**! In Java, `List<Integer>` has two overloaded `remove` methods: `remove(int index)` and `remove(Object obj)`.\n\n**Landmine 3: The Sealed Glass Case (`Arrays.asList`)**\nYou ask to place a new box in a display case. The manager shouts: *\"Stop! This case was cast in solid acrylic glass! You can rearrange items inside, but you cannot add or remove slots!\"*\n\nLearning to spot these landmines is the hallmark of a senior Java engineer!",
+        "keyTakeaway": "Understanding the internal invariants of List implementations (modCount, overloading rules, and backed views) prevents the most common runtime crashes in Java production systems."
+      }
+    },
+    {
+      "id": "act-col7-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Dissecting the 5 Classic Java List Landmines",
+      "breakdown": {
+        "keyTakeaways": [
+          "`ConcurrentModificationException` occurs when `modCount != expectedModCount` during iterator traversal",
+          "`List<Integer>.remove(int)` treats primitives as an INDEX, not as a value to remove",
+          "`Arrays.asList()` produces a fixed-size wrapper; `add()` and `remove()` throw `UnsupportedOperationException`",
+          "`subList()` holds a hard reference to the parent list; keeping a tiny sublist prevents GC from freeing the entire parent"
+        ]
+      },
+      "content": "### 1. Landmine 1: ConcurrentModificationException\n\n```java\n// BUGGY CODE:\nfor (String item : list) {\n    if (item.equals(\"bad\")) {\n        list.remove(item); // CRASH! ConcurrentModificationException\n    }\n}\n```\n#### Why Does This Happen?\nThe enhanced `for-each` loop uses an internal `Iterator`. When the iterator is created, it captures `expectedModCount = list.modCount`. When you call `list.remove(item)` directly on the list, `list.modCount` increments, but the iterator's `expectedModCount` does NOT! On the next loop iteration, `iterator.next()` verifies:\n```java\nif (modCount != expectedModCount)\n    throw new ConcurrentModificationException();\n```\n#### The Fix:\n```java\n// Fix A: Use Iterator.remove() (updates expectedModCount!)\nIterator<String> it = list.iterator();\nwhile (it.hasNext()) {\n    if (it.next().equals(\"bad\")) it.remove();\n}\n\n// Fix B: Use Java 8 removeIf (cleanest & fastest!)\nlist.removeIf(item -> item.equals(\"bad\"));\n```\n\n### 2. Landmine 2: `remove(int index)` vs `remove(Object o)`\n\n```java\nList<Integer> numbers = new ArrayList<>(Arrays.asList(10, 20, 30, 40));\nnumbers.remove(2); // DANGER! Does this remove value 2, or index 2?\n// It removes index 2 (value 30)! Result: [10, 20, 40]\n```\n#### Why?\nThe `List` interface declares two overloaded methods:\n- `E remove(int index)` (defined by `List`)\n- `boolean remove(Object o)` (inherited from `Collection`)\n\nBecause the literal `2` is a primitive `int`, Java matches the primitive `remove(int index)` method without auto-boxing!\n\n#### The Fix:\nTo remove the **value** 2, you must explicitly box the argument into an `Integer` object:\n```java\nnumbers.remove(Integer.valueOf(2)); // Removes object with value 2\n```\n\n### 3. Landmine 3: `Arrays.asList` Fixed-Size Trap\n\n```java\nList<String> list = Arrays.asList(\"A\", \"B\");\nlist.add(\"C\"); // CRASH! UnsupportedOperationException\n```\n`Arrays.asList()` returns an instance of an internal private static class named `java.util.Arrays$ArrayList` (NOT `java.util.ArrayList`!). It does NOT implement `add()` or `remove()`.\n\n#### The Fix:\nWrap in a real `ArrayList`:\n```java\nList<String> list = new ArrayList<>(Arrays.asList(\"A\", \"B\"));\nlist.add(\"C\"); // Works perfectly!\n```\n\n### 4. Landmine 4: The SubList Memory Leak\n\n```java\npublic List<String> getPreview() {\n    List<String> hugeList = loadMillionsOfRecords(); // 1,000,000 items (100MB RAM)\n    return hugeList.subList(0, 10); // DANGER: Retains strong reference to hugeList!\n}\n```\n`subList` holds a hard reference to the parent `hugeList`. As long as the caller holds `getPreview()`, the garbage collector CANNOT collect the 1,000,000 elements in `hugeList`!\n\n#### The Fix:\nDecouple with a copy:\n```java\nreturn new ArrayList<>(hugeList.subList(0, 10)); // Decoupled! hugeList can be garbage collected\n```"
+    },
+    {
+      "id": "act-col7-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Interactive Demonstration of Common List Bugs",
+      "description": "Witness the exact runtime behavior of index removal vs value removal and safe iteration.",
+      "code": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // Pitfall 1: Overloaded remove on List<Integer>\n        List<Integer> list = new ArrayList<>(Arrays.asList(100, 101, 102, 103));\n        System.out.println(\"Initial List: \" + list);\n\n        // Remove at index 1 (removes 101)\n        Integer removedByIndex = list.remove(1);\n        System.out.println(\"Removed by index 1: \" + removedByIndex);\n        System.out.println(\"After index remove: \" + list);\n\n        // Remove by value 102 (must box explicitly!)\n        boolean removedByVal = list.remove(Integer.valueOf(102));\n        System.out.println(\"Removed value 102? \" + removedByVal);\n        System.out.println(\"After value remove: \" + list);\n\n        // Pitfall 2: Safe in-place removal with removeIf\n        List<String> words = new ArrayList<>(Arrays.asList(\"apple\", \"banana\", \"avocado\"));\n        words.removeIf(w -> w.startsWith(\"a\"));\n        System.out.println(\"\\nAfter removeIf('a'): \" + words);\n    }\n}",
+      "codeSnippet": "list.remove(1); // Removes index 1\nlist.remove(Integer.valueOf(102)); // Removes object 102\nwords.removeIf(w -> w.startsWith(\"a\")); // Safe removal"
+    },
+    {
+      "id": "act-col7-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: List Pitfalls & Debugging (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col7-1",
+          "type": "mcq",
+          "prompt": "What exception is thrown when you execute 'for (String s : list) { list.remove(s); }'?",
+          "options": [
+            "NullPointerException",
+            "ConcurrentModificationException",
+            "IllegalStateException",
+            "UnsupportedOperationException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Directly modifying a list while iterating over it with an enhanced for-each loop desynchronizes modCount and expectedModCount, triggering ConcurrentModificationException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "The fail-fast mechanism detects concurrent structural mutations."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col7-2",
+          "type": "mcq",
+          "prompt": "Given 'List<Integer> list = new ArrayList<>(Arrays.asList(5, 4, 3, 2, 1));', what does 'list.remove(1)' do?",
+          "options": [
+            "Removes the number 1 from the end of the list",
+            "Removes the element at index 1 (which is the number 4)",
+            "Throws an IllegalArgumentException",
+            "Removes both 1 and 4"
+          ],
+          "correctAnswer": 1,
+          "explanation": "1 is an int primitive, so Java calls remove(int index). Index 1 holds the number 4, which is removed, leaving [5, 3, 2, 1].",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Primitive literals match remove(int index)."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col7-3",
+          "type": "mcq",
+          "prompt": "How do you remove the number 1 (value) from 'List<Integer> list' instead of index 1?",
+          "options": [
+            "list.remove(Integer.valueOf(1));",
+            "list.removeValue(1);",
+            "list.delete(1);",
+            "list.removeElement(1);"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Boxing 1 into an Integer object via Integer.valueOf(1) forces Java to resolve the overloaded remove(Object o) method rather than remove(int index).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Box the primitive int into an Integer object."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col7-4",
+          "type": "mcq",
+          "prompt": "Why does 'Arrays.asList(\"A\", \"B\").add(\"C\")' throw UnsupportedOperationException?",
+          "options": [
+            "Strings cannot be appended to lists",
+            "Arrays.asList returns a fixed-size wrapper whose length cannot change",
+            "Arrays.asList is deprecated in Java 17",
+            "The JVM ran out of memory"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The list returned by Arrays.asList is backed directly by the fixed-length array. It does not implement the optional add() or remove() methods.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Fixed-size list wrapper."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col7-5",
+          "type": "mcq",
+          "prompt": "What is the danger of returning a subList() from a method that loaded a 100MB dataset from disk?",
+          "options": [
+            "The sublist will be corrupted on reading",
+            "The sublist holds a strong reference to the entire 100MB parent list, preventing the garbage collector from freeing it (memory leak)",
+            "subList throws OutOfMemoryError immediately",
+            "subList cannot be converted to JSON"
+          ],
+          "correctAnswer": 1,
+          "explanation": "subList is a view with an internal field referencing the parent list. Keeping even a 1-element sublist alive keeps the entire 100MB parent list reachable and uncollectable.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about GC reachability and hard object references."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-col7-6",
+          "type": "mcq",
+          "prompt": "What variable in AbstractList tracks structural modifications for fail-fast iterators?",
+          "options": [
+            "changeCounter",
+            "modCount",
+            "version",
+            "stateHash"
+          ],
+          "correctAnswer": 1,
+          "explanation": "modCount is a protected field inherited from AbstractList that increments every time the list is structurally modified (add, remove, clear).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "modCount = modification count."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 20
+        },
+        {
+          "id": "q-col7-7",
+          "type": "mcq",
+          "prompt": "Can you modify an element in a list created with 'Arrays.asList(\"A\", \"B\")' using 'list.set(0, \"Z\")'?",
+          "options": [
+            "Yes, because set() replaces an element without changing the size of the backing array",
+            "No, it throws UnsupportedOperationException",
+            "No, Arrays.asList is completely immutable",
+            "Only in Java 8 and older"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Arrays.asList is fixed-size, NOT unmodifiable. set(index, element) works because it does not alter array length, writing directly to the backing array.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Does set() change the size of the array?"
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col7-8",
+          "type": "mcq",
+          "prompt": "What is the result of 'List.of(\"A\", \"B\").set(0, \"Z\")' in Java 9+?",
+          "options": [
+            "Updates \"A\" to \"Z\"",
+            "Throws UnsupportedOperationException because List.of creates an unmodifiable list",
+            "Returns false",
+            "Creates a new list"
+          ],
+          "correctAnswer": 1,
+          "explanation": "List.of() returns a truly immutable list. Any mutation (add, remove, set) throws UnsupportedOperationException.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "List.of produces completely immutable collections."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col7-9",
+          "type": "mcq",
+          "prompt": "How can you safely remove elements during iteration without using Java 8 streams or removeIf?",
+          "options": [
+            "Use an explicit Iterator and invoke iterator.remove()",
+            "Use a normal for-each loop with list.remove()",
+            "Use a synchronized block",
+            "Set elements to null and call System.gc()"
+          ],
+          "correctAnswer": 0,
+          "explanation": "iterator.remove() is specifically designed for safe in-flight removal because it updates the iterator's expectedModCount to match list.modCount.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "The iterator itself provides a remove() method."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col7-10",
+          "type": "mcq",
+          "prompt": "What happens if two threads simultaneously call 'list.add(item)' on a standard unsynchronized ArrayList without external synchronization?",
+          "options": [
+            "The JVM automatically serializes the calls",
+            "Elements may be lost, indices corrupted, or an ArrayIndexOutOfBoundsException thrown due to non-atomic 'size++' race conditions",
+            "One thread blocks until the other finishes",
+            "Throws ThreadCollisionException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ArrayList is not thread-safe. Concurrent additions without synchronization cause race conditions on the internal 'elementData[size++] = e' assignment, causing lost data or index corruption.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "ArrayList is completely unsynchronized."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        }
+      ]
+    },
+    {
+      "id": "act-col7-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: List Pitfalls & Bugs",
+      "interviewQA": [
+        {
+          "id": "qa-col7-1",
+          "question": "What is ConcurrentModificationException and how does Java detect it in Collections?",
+          "expectedAnswer": "ConcurrentModificationException is thrown when a collection detects an unexpected structural modification (add/remove) during iteration. It is detected via the 'fail-fast' mechanism: the collection maintains a 'modCount' field incremented on every structural change. Iterators store an 'expectedModCount'. On every next() or previous() call, the iterator asserts 'modCount == expectedModCount'; if unequal, it throws ConcurrentModificationException immediately.",
+          "keyPoints": [
+            "Fail-fast mechanism detects concurrent structural mutations",
+            "Compares collection.modCount with iterator.expectedModCount",
+            "Throws runtime ConcurrentModificationException on mismatch"
+          ],
+          "companyTags": [
+            "Amazon",
+            "Google",
+            "Microsoft",
+            "Oracle"
+          ]
+        },
+        {
+          "id": "qa-col7-2",
+          "question": "Explain the difference between list.remove(int) and list.remove(Object) in List<Integer>.",
+          "expectedAnswer": "List declares remove(int index), while Collection declares remove(Object o). When working with List<Integer>, calling list.remove(2) passes an int primitive literal, matching remove(int index) and deleting the element at index 2. To remove the object whose value is 2, you must explicitly box the argument: list.remove(Integer.valueOf(2)).",
+          "keyPoints": [
+            "remove(int index) removes by position",
+            "remove(Object o) removes by object equality",
+            "Must use Integer.valueOf(val) to remove by value in List<Integer>"
+          ],
+          "companyTags": [
+            "TCS",
+            "Infosys",
+            "Cognizant",
+            "Wipro"
+          ]
+        },
+        {
+          "id": "qa-col7-3",
+          "question": "Why does subList() cause memory leaks, and how do you prevent them?",
+          "expectedAnswer": "subList() returns a view that maintains a hard reference to the parent list. If a method loads a 500MB list and returns only a 5-element subList, the entire 500MB parent list remains referenced in heap memory and cannot be garbage collected. You prevent this by creating a decoupled independent copy: 'new ArrayList<>(hugeList.subList(0, 5))'.",
+          "keyPoints": [
+            "subList maintains hard reference to backing parent list",
+            "Prevents garbage collection of large discarded datasets",
+            "Resolve by copying: new ArrayList<>(subList)"
+          ],
+          "companyTags": [
+            "Goldman Sachs",
+            "Morgan Stanley",
+            "Uber"
+          ]
+        },
+        {
+          "id": "qa-col7-4",
+          "question": "What is the difference between fail-fast and fail-safe iterators?",
+          "expectedAnswer": "Fail-fast iterators (used by ArrayList, HashSet, HashMap) operate directly on the collection's data and throw ConcurrentModificationException immediately if the collection is structurally modified during iteration. Fail-safe (or weakly consistent) iterators (used by CopyOnWriteArrayList, ConcurrentHashMap) operate on a clone or snapshot of the data and never throw ConcurrentModificationException.",
+          "keyPoints": [
+            "Fail-fast: throws ConcurrentModificationException immediately on mutation",
+            "Fail-safe: operates on a clone/snapshot; no exceptions",
+            "CopyOnWriteArrayList uses fail-safe iteration"
+          ],
+          "companyTags": [
+            "Adobe",
+            "Flipkart",
+            "Walmart"
+          ]
+        },
+        {
+          "id": "qa-col7-5",
+          "question": "Why is Collections.synchronizedList(new ArrayList<>()) rarely used in modern concurrent Java?",
+          "expectedAnswer": "synchronizedList wraps all operations in a synchronized block locking on a single monitor (this). This causes massive thread contention and serializes all reads and writes. Furthermore, iterating over a synchronizedList still requires manual synchronization by the developer. Modern systems prefer CopyOnWriteArrayList (for read-heavy workloads) or concurrent queue structures.",
+          "keyPoints": [
+            "Single coarse-grained lock causes thread contention",
+            "Iteration still requires manual synchronization",
+            "Superseded by java.util.concurrent collections"
+          ],
+          "companyTags": [
+            "Cisco",
+            "IBM",
+            "PayPal"
+          ]
+        },
+        {
+          "id": "qa-col7-6",
+          "question": "How do you make an existing ArrayList unmodifiable in Java 8 vs Java 9+?",
+          "expectedAnswer": "In Java 8, use 'Collections.unmodifiableList(list)'. Note that this is an unmodifiable VIEW: if the original list reference is modified elsewhere, the view reflects those changes. In Java 10+, use 'List.copyOf(list)', which creates a truly independent, immutable shallow snapshot that is immune to subsequent modifications of the source list.",
+          "keyPoints": [
+            "Collections.unmodifiableList(list): unmodifiable view (reflects underlying changes)",
+            "List.copyOf(list): true independent immutable copy (Java 10+)",
+            "Both throw UnsupportedOperationException on write attempts"
+          ],
+          "companyTags": [
+            "ThoughtWorks",
+            "Zoho",
+            "Accenture"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col7-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 7 Mastery Checkpoint",
+      "checklist": [
+        "I can explain why ConcurrentModificationException is thrown and how to avoid it.",
+        "I know the difference between list.remove(int) and list.remove(Integer.valueOf(...)).",
+        "I understand why Arrays.asList throws UnsupportedOperationException on add/remove.",
+        "I know how to prevent subList memory leaks by making independent copies.",
+        "I can identify fail-fast vs fail-safe iterators."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-7-1",
+      "title": "Bug Hunt: Integer Overload Removal Trap",
+      "difficulty": "beginner",
+      "description": "Fix a classic bug where a developer attempts to remove the value 10 from a list of scores.",
+      "problemStatement": "Fix the overloaded remove bug in `List<Integer>`:\n\nGiven the buggy code:\n```java\nList<Integer> scores = new ArrayList<>(Arrays.asList(100, 50, 10, 80));\nscores.remove(2); // Developer wanted to remove value 10, but hardcoded index 2!\n// Worse: if scores order changes, remove(10) throws IndexOutOfBoundsException!\n```\n\nYour Task:\n1. Refactor the code to remove the **value** 10 dynamically (regardless of its index) using `Integer.valueOf(10)`.\n2. In `Main.main()`, verify on `[100, 50, 10, 80]`.\n3. Print the remaining scores: `Clean Scores: [100, 50, 80]`",
+      "expectedOutput": "Clean Scores: [100, 50, 80]",
+      "hint": "Use scores.remove(Integer.valueOf(10)).",
+      "hints": [
+        "scores.remove(Integer.valueOf(10));",
+        "Removes by value rather than by index."
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> scores = new ArrayList<>(Arrays.asList(100, 50, 10, 80));\n        scores.remove(Integer.valueOf(10));\n        System.out.println(\"Clean Scores: \" + scores);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> scores = new ArrayList<>(Arrays.asList(100, 50, 10, 80));\n        // BUGGY: scores.remove(10); // Throws IndexOutOfBoundsException!\n        // TODO: Fix removal to remove value 10\n    }\n}"
+    },
+    {
+      "id": "p-col1-7-2",
+      "title": "Bug Hunt: Fix ConcurrentModification in Iterator",
+      "difficulty": "easy",
+      "description": "Fix a runtime crash caused by modifying a collection inside an enhanced for-each loop.",
+      "problemStatement": "A service crashes with `ConcurrentModificationException`:\n```java\nList<String> logs = new ArrayList<>(Arrays.asList(\"INFO\", \"DEBUG\", \"ERROR\", \"DEBUG\"));\nfor (String log : logs) {\n    if (log.equals(\"DEBUG\")) {\n        logs.remove(log); // CRASH!\n    }\n}\n```\n\nYour Task:\n1. Refactor the method to safely purge `\"DEBUG\"` entries using either `Iterator.remove()` or `logs.removeIf(...)`.\n2. In `Main.main()`, print the purged logs:\n   `Production Logs: [INFO, ERROR]`",
+      "expectedOutput": "Production Logs: [INFO, ERROR]",
+      "hint": "Use logs.removeIf(log -> log.equals(\"DEBUG\"));",
+      "hints": [
+        "removeIf avoids ConcurrentModificationException completely.",
+        "Alternatively: Iterator<String> it = logs.iterator(); while (it.hasNext()) if (it.next().equals(\"DEBUG\")) it.remove();"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> logs = new ArrayList<>(Arrays.asList(\"INFO\", \"DEBUG\", \"ERROR\", \"DEBUG\"));\n        logs.removeIf(log -> log.equals(\"DEBUG\"));\n        System.out.println(\"Production Logs: \" + logs);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> logs = new ArrayList<>(Arrays.asList(\"INFO\", \"DEBUG\", \"ERROR\", \"DEBUG\"));\n        // TODO: Safely remove all 'DEBUG' entries without throwing ConcurrentModificationException\n    }\n}"
+    },
+    {
+      "id": "p-col1-7-3",
+      "title": "Bug Hunt: Fix Arrays.asList Mutation Error",
+      "difficulty": "easy",
+      "description": "Fix an UnsupportedOperationException caused by attempting to add elements to Arrays.asList().",
+      "problemStatement": "A developer wrote a shopping cart initializer that crashes when adding an item:\n```java\nList<String> cart = Arrays.asList(\"Bread\", \"Milk\");\ncart.add(\"Eggs\"); // CRASH! UnsupportedOperationException\n```\n\nYour Task:\n1. Fix the initialization so `cart` is a truly mutable `ArrayList`.\n2. Add `\"Eggs\"` and `\"Butter\"`.\n3. Print the final cart contents and size:\n   `Cart (4): [Bread, Milk, Eggs, Butter]`",
+      "expectedOutput": "Cart (4): [Bread, Milk, Eggs, Butter]",
+      "hint": "Wrap Arrays.asList in new ArrayList<>(...): List<String> cart = new ArrayList<>(Arrays.asList(\"Bread\", \"Milk\"));",
+      "hints": [
+        "new ArrayList<>(Arrays.asList(\"Bread\", \"Milk\")) creates a resizable list.",
+        "Now cart.add() works cleanly."
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<String> cart = new ArrayList<>(Arrays.asList(\"Bread\", \"Milk\"));\n        cart.add(\"Eggs\");\n        cart.add(\"Butter\");\n        System.out.println(\"Cart (\" + cart.size() + \"): \" + cart);\n    }\n}",
+      "initialCode": "import java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // BUGGY: List<String> cart = Arrays.asList(\"Bread\", \"Milk\");\n        // TODO: Fix initialization, add 'Eggs' and 'Butter', and print cart\n    }\n}"
+    },
+    {
+      "id": "p-col1-7-4",
+      "title": "Bug Hunt: Prevent SubList Memory Leak",
+      "difficulty": "intermediate",
+      "description": "Eliminate a memory leak where a small sublist retains a reference to a massive parent dataset.",
+      "problemStatement": "Prevent a lingering subList memory leak:\n\n1. In `Main` class:\n   - Write method `public static List<Integer> getFirstThree(List<Integer> dataset)`\n   - Incorrect implementation: `return dataset.subList(0, 3);` (keeps entire dataset alive in heap!)\n   - Correct implementation: Create an independent decoupled list: `return new ArrayList<>(dataset.subList(0, 3));`\n\n2. In `Main.main()`:\n   - Pass a list of 10 items: `[10, 20, 30, 40, 50, 60, 70, 80, 90, 100]` to `getFirstThree`.\n   - Print results:\n     `Preview: <result>`\n     `Is Decoupled Copy: true`",
+      "expectedOutput": "Preview: [10, 20, 30]\nIs Decoupled Copy: true",
+      "hint": "Use return new ArrayList<>(dataset.subList(0, 3)); to sever reference ties to the parent dataset.",
+      "hints": [
+        "new ArrayList<>(subList) copies elements into a new buffer.",
+        "Parent list reference is not retained by the sublist."
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static List<Integer> getFirstThree(List<Integer> dataset) {\n        // Decoupled independent copy\n        return new ArrayList<>(dataset.subList(0, 3));\n    }\n\n    public static void main(String[] args) {\n        List<Integer> dataset = Arrays.asList(10, 20, 30, 40, 50, 60, 70, 80, 90, 100);\n        List<Integer> preview = getFirstThree(dataset);\n        System.out.println(\"Preview: \" + preview);\n        System.out.println(\"Is Decoupled Copy: true\");\n    }\n}",
+      "initialCode": "import java.util.Arrays;\nimport java.util.List;\n\npublic class Main {\n    public static List<Integer> getFirstThree(List<Integer> dataset) {\n        // TODO: Return decoupled independent copy of first 3 elements\n        return null;\n    }\n\n    public static void main(String[] args) {\n        // TODO: Test getFirstThree\n    }\n}"
+    },
+    {
+      "id": "p-col1-7-5",
+      "title": "Bug Hunt: Fix Null-Hostile List.of() Crash",
+      "difficulty": "intermediate",
+      "description": "Fix an unexpected NullPointerException when migrating legacy code to Java 9+ List.of().",
+      "problemStatement": "A developer refactored a helper method to use `List.of()`, causing production NPE crashes:\n```java\nString middleName = null; // optional value\nList<String> names = List.of(\"John\", middleName, \"Doe\"); // CRASH! NullPointerException\n```\n\nYour Task:\n1. Fix the method to safely handle optional null values by filtering out nulls before list creation, or using a null-friendly collection strategy.\n2. In `Main.main()`:\n   - Assemble a clean list containing only non-null names: `[\"John\", \"Doe\"]`.\n   - Print:\n     `Sanitized Names: [John, Doe]`\n     `Size: 2`",
+      "expectedOutput": "Sanitized Names: [John, Doe]\nSize: 2",
+      "hint": "Collect non-null elements into an ArrayList, or filter nulls before calling List.of.",
+      "hints": [
+        "List<String> names = new ArrayList<>();",
+        "Add only non-null values: if (val != null) names.add(val);",
+        "Or use Stream.of(items).filter(Objects::nonNull).toList();"
+      ],
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        String firstName = \"John\";\n        String middleName = null;\n        String lastName = \"Doe\";\n\n        List<String> names = new ArrayList<>();\n        if (firstName != null) names.add(firstName);\n        if (middleName != null) names.add(middleName);\n        if (lastName != null) names.add(lastName);\n\n        System.out.println(\"Sanitized Names: \" + names);\n        System.out.println(\"Size: \" + names.size());\n    }\n}",
+      "initialCode": "public class Main {\n    public static void main(String[] args) {\n        String firstName = \"John\";\n        String middleName = null;\n        String lastName = \"Doe\";\n        // BUGGY: List<String> names = List.of(firstName, middleName, lastName); // Throws NPE!\n        // TODO: Assemble sanitized non-null list\n    }\n}"
+    }
+  ]
+}

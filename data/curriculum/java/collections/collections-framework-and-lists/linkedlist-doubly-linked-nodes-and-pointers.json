@@ -1,0 +1,474 @@
+{
+  "id": "les-collections-1-linkedlist-doubly-linked-nodes-and-pointers",
+  "slug": "linkedlist-doubly-linked-nodes-and-pointers",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "LinkedList: Doubly-Linked Nodes & Pointers",
+  "summary": "Unpack the doubly-linked list architecture in Java. Learn how Node<E> objects link memory with prev and next pointers, enabling O(1) head/tail operations at the cost of heap pointer overhead.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "The List Contract & ArrayList Internals",
+    "Object References & Heap Pointers",
+    "Interface Implementation (List and Deque)"
+  ],
+  "learningObjectives": [
+    "Deconstruct the internal Node<E> class (item, next, prev) of java.util.LinkedList",
+    "Trace bidirectional pointer traversal and analyze why index lookups remain O(n)",
+    "Leverage LinkedList as a dual-purpose data structure implementing both List<E> and Deque<E>",
+    "Calculate the memory overhead of heap nodes versus flat array buffers"
+  ],
+  "expectedOutcomes": [
+    "Thorough structural understanding of doubly-linked nodes and pointer manipulation in Java",
+    "Clear recognition of the exact use cases where LinkedList excels (FIFO queues / deques) versus where it degrades performance"
+  ],
+  "activities": [
+    {
+      "id": "act-col4-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Linked Train of Railcars vs The Parking Lot",
+      "analogy": {
+        "headline": "Coupling railcars with steel hooks versus parking cars in numbered numbered stalls",
+        "story": "Imagine a freight train.\n\nEach railcar holds cargo, and every railcar has two couplers:\n- A coupler connecting to the railcar in front (**`prev`**).\n- A coupler connecting to the railcar behind (**`next`**).\n\nIf you want to attach a new locomotive at the very front or a caboose at the very back, it is instantaneous: you hook it on (**$O(1)$ insertion**)! You do not need to move any other railcar on the tracks.\n\nHowever, what if you need to inspect Cargo Car #50?\nBecause railcars are scattered along the winding track without numbered road slots, you cannot teleport directly to Car #50. You must start at the front locomotive and walk along the train, car by car, counting 1, 2, 3... all the way to 50 (**$O(n)$ traversal**).\n\nFurthermore, each railcar must carry heavy steel couplers and coupling chains. In Java, those couplers are the 24\u201332 bytes of pointer overhead on every single `Node` object!",
+        "keyTakeaway": "LinkedList connects isolated heap objects via forward and backward reference pointers. Head and tail additions are instantaneous O(1), but random access by index requires O(n) pointer hopping."
+      }
+    },
+    {
+      "id": "act-col4-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "LinkedList Architecture: Node Pointers & The Deque Interface",
+      "breakdown": {
+        "keyTakeaways": [
+          "`LinkedList` is backed by an internal static nested class: `Node<E>` with `item`, `next`, and `prev`",
+          "`LinkedList` maintains only three top-level fields: `first`, `last`, and `size`",
+          "`get(index)` optimizes traversal: if `index < (size >> 1)` it walks forward from `first`; otherwise it walks backward from `last`",
+          "`LinkedList` implements both `List<E>` and `Deque<E>`, serving as a FIFO Queue or LIFO Stack"
+        ]
+      },
+      "content": "### 1. Internal `Node<E>` Structure\n\nUnlike `ArrayList` which stores elements inside a single contiguous array, `LinkedList` allocates an independent object in the heap for every single element:\n```java\nprivate static class Node<E> {\n    E item;          // The payload element\n    Node<E> next;    // Reference to following node\n    Node<E> prev;    // Reference to preceding node\n\n    Node(Node<E> prev, E element, Node<E> next) {\n        this.item = element;\n        this.next = next;\n        this.prev = prev;\n    }\n}\n```\n\n```text\nVisual Memory Representation of Doubly-Linked List:\n\n [first]                                              [last]\n    |                                                    |\n    v                                                    v\n+--------+      +--------+      +--------+      +--------+\n| null   | <--- | prev   | <--- | prev   | <--- | prev   |\n| Node A | ---> | Node B | ---> | Node C | ---> | Node D | ---> null\n+--------+      +--------+      +--------+      +--------+\n```\n\n### 2. The Index Lookup Optimization\n\nWhen you call `linkedList.get(index)`, how does Java find the node? It cannot do array pointer math because nodes are scattered unpredictably across heap RAM.\n\nJava checks whether the requested index is closer to the beginning or the end:\n```java\nNode<E> node(int index) {\n    // If index is in the first half of the list, walk forward from head\n    if (index < (size >> 1)) {\n        Node<E> x = first;\n        for (int i = 0; i < index; i++)\n            x = x.next;\n        return x;\n    } else {\n        // If index is in the second half, walk backward from tail\n        Node<E> x = last;\n        for (int i = size - 1; i > index; i--)\n            x = x.prev;\n        return x;\n    }\n}\n```\n> **Critical Insight**: Even though this cuts the average number of node traversals in half ($n/4$ hops on average), its asymptotic time complexity is still **$O(n)$ linear time**!\n\n### 3. Dual Personality: `List` and `Deque`\n\n`LinkedList` implements both interfaces:\n```java\npublic class LinkedList<E> extends AbstractSequentialList<E>\n    implements List<E>, Deque<E>, Cloneable, java.io.Serializable\n```\n\nBecause it implements `Deque<E>`, it provides true $O(1)$ operations at both ends:\n- `addFirst(E e)` / `offerFirst(E e)`\n- `addLast(E e)` / `offerLast(E e)`\n- `removeFirst()` / `pollFirst()`\n- `removeLast()` / `pollLast()`\n- `peekFirst()` / `peekLast()`\n\n### 4. The Hidden Memory Tax of LinkedList\n\nOn a 64-bit HotSpot JVM (with compressed OOPs disabled or heap > 32GB):\n- Each `Node` object header: 16 bytes\n- `item` reference: 8 bytes\n- `next` pointer: 8 bytes\n- `prev` pointer: 8 bytes\n- Total: **40 bytes per node!** (Plus the size of the payload object itself!)\n\nIn contrast, an `ArrayList` stores a single reference in its array (4\u20138 bytes per slot). Storing 1,000,000 integers in a `LinkedList` consumes ~48 MB of RAM, compared to ~8 MB in an `ArrayList`!"
+    },
+    {
+      "id": "act-col4-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "LinkedList as a Deque vs Indexed Access",
+      "description": "Compare O(1) double-ended operations (head/tail) against the performance hazard of index-based operations.",
+      "code": "import java.util.Deque;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        // 1. Using LinkedList as a Deque (Double-Ended Queue)\n        Deque<String> deque = new LinkedList<>();\n        \n        // O(1) Operations on Head and Tail\n        deque.addFirst(\"Middle\");\n        deque.addFirst(\"Front\");\n        deque.addLast(\"Back\");\n        System.out.println(\"Deque state: \" + deque);\n\n        System.out.println(\"Peek Head: \" + deque.peekFirst());\n        System.out.println(\"Peek Tail: \" + deque.peekLast());\n\n        System.out.println(\"Poll Front: \" + deque.pollFirst()); // O(1) removal\n        System.out.println(\"After Poll: \" + deque);\n\n        // 2. The O(n) Index Access Trap (Antipattern)\n        List<Integer> list = new LinkedList<>();\n        for (int i = 0; i < 5; i++) { list.add(i * 10); }\n\n        System.out.println(\"\\n=== Index-based Traversal ===\");\n        // WARNING: In a large LinkedList, calling get(i) in a for-loop results in O(n^2)!\n        for (int i = 0; i < list.size(); i++) {\n            System.out.println(\"Index \" + i + \": \" + list.get(i));\n        }\n    }\n}",
+      "codeSnippet": "Deque<String> deque = new LinkedList<>();\ndeque.addFirst(\"A\"); // O(1)\ndeque.addLast(\"Z\");  // O(1)\ndeque.pollFirst();   // O(1)"
+    },
+    {
+      "id": "act-col4-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: LinkedList Architecture (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col4-1",
+          "type": "mcq",
+          "prompt": "What data structure forms the internal foundation of java.util.LinkedList?",
+          "options": [
+            "A dynamically resizing circular array",
+            "A singly-linked list with only 'next' pointers",
+            "A doubly-linked list where each node points to both its predecessor and successor",
+            "A red-black binary search tree"
+          ],
+          "correctAnswer": 2,
+          "explanation": "java.util.LinkedList is implemented as a doubly-linked list, where every Node has references to 'item', 'next', and 'prev'.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Nodes point both forward and backward."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col4-2",
+          "type": "mcq",
+          "prompt": "What is the time complexity of 'linkedList.addFirst(element)' in Java?",
+          "options": [
+            "O(1) constant time",
+            "O(log N)",
+            "O(N) linear time",
+            "O(N^2)"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Adding to the head merely instantiates a new Node, points its 'next' to the current 'first', and updates the 'first' reference pointer. No elements are moved, making it pure O(1).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Does it require traversing the list or copying memory?"
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col4-3",
+          "type": "mcq",
+          "prompt": "What is the time complexity of 'linkedList.get(k)' when retrieving an element from the middle of a LinkedList with N elements?",
+          "options": [
+            "O(1)",
+            "O(log N)",
+            "O(N)",
+            "Amortized O(1)"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Retrieving by index requires walking from either the head or tail through node pointers until index k is reached. This requires up to N/2 pointer dereferences, which is O(N) linear time.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "LinkedList has no contiguous indexing math."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 30
+        },
+        {
+          "id": "q-col4-4",
+          "type": "mcq",
+          "prompt": "How does the OpenJDK LinkedList optimize the 'get(index)' operation?",
+          "options": [
+            "It caches previous queries in a hash table",
+            "It checks if index < size/2; if so, it traverses forward from 'first'; otherwise it traverses backward from 'last'",
+            "It uses binary search on node pointers",
+            "It maintains an auxiliary array of node references"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If index < (size >> 1), it iterates forward starting at 'first'. Otherwise, it iterates backward starting at 'last', cutting traversal distance by half.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "It checks whether the index is closer to head or tail."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col4-5",
+          "type": "mcq",
+          "prompt": "What is the time complexity of the following loop on a LinkedList of size N?\nfor (int i = 0; i < list.size(); i++) { list.get(i); }",
+          "options": [
+            "O(N)",
+            "O(N log N)",
+            "O(N^2)",
+            "O(1)"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Each get(i) call performs O(i) pointer hops from the start/end. Summing 1 + 2 + ... + N gives N(N+1)/2, resulting in an O(N^2) quadratic disaster!",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "O(N) operations executed inside an O(N) loop."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col4-6",
+          "type": "mcq",
+          "prompt": "Which of the following interfaces are implemented by java.util.LinkedList?",
+          "options": [
+            "List and Deque",
+            "List and Set",
+            "Queue and Map",
+            "RandomAccess and List"
+          ],
+          "correctAnswer": 0,
+          "explanation": "LinkedList implements both List<E> (allowing indexed access) and Deque<E> (allowing double-ended queue operations). It does NOT implement RandomAccess!",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "It functions as both a list and a double-ended queue."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col4-7",
+          "type": "mcq",
+          "prompt": "Why does java.util.LinkedList NOT implement the java.util.RandomAccess marker interface?",
+          "options": [
+            "Because it was written before Java 1.4",
+            "Because accessing elements by index requires O(N) linear traversal rather than O(1) constant time access",
+            "Because it does not support serialization",
+            "Because node memory is not garbage collected"
+          ],
+          "correctAnswer": 1,
+          "explanation": "RandomAccess is reserved exclusively for collections that provide fast O(1) index access (like ArrayList and Vector). LinkedList is O(N) for random access.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Does it have O(1) random access?"
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col4-8",
+          "type": "mcq",
+          "prompt": "What happens if you invoke 'deque.pop()' on an empty LinkedList?",
+          "options": [
+            "Returns null",
+            "Throws NoSuchElementException",
+            "Throws IndexOutOfBoundsException",
+            "Throws NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Deque stack methods (pop, removeFirst) throw NoSuchElementException when the collection is empty. In contrast, queue-style methods (poll, pollFirst) return null.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Stack operations throw an exception when popping an empty container."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col4-9",
+          "type": "mcq",
+          "prompt": "Approximately how much heap memory does each Node in a LinkedList consume on a 64-bit JVM without pointer compression?",
+          "options": [
+            "4 to 8 bytes",
+            "12 bytes",
+            "32 to 40 bytes (object header + 3 references)",
+            "128 bytes"
+          ],
+          "correctAnswer": 2,
+          "explanation": "A 64-bit JVM allocates 16 bytes for the object header, plus 8 bytes each for the 'item', 'next', and 'prev' reference fields, totaling 40 bytes per node.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "16 bytes header + 3 * 8 bytes references."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 45
+        },
+        {
+          "id": "q-col4-10",
+          "type": "mcq",
+          "prompt": "If you need a high-performance double-ended queue (FIFO/LIFO) without index-based operations, which class is universally recommended over LinkedList in modern Java?",
+          "options": [
+            "Vector",
+            "ArrayDeque",
+            "Stack",
+            "PriorityQueue"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ArrayDeque is backed by a circular resizable array. It has zero node allocation overhead, excellent CPU cache locality, and is significantly faster than LinkedList for queues and stacks.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Resizable circular array implementation of Deque."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        }
+      ]
+    },
+    {
+      "id": "act-col4-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: LinkedList Architecture",
+      "interviewQA": [
+        {
+          "id": "qa-col4-1",
+          "question": "How does LinkedList work internally in Java?",
+          "expectedAnswer": "LinkedList is a doubly-linked list where each element is wrapped inside a private static Node<E> instance containing references to the payload item, the previous node (prev), and the next node (next). The LinkedList class holds references to 'first', 'last', and a 'size' integer. Insertion and deletion at both ends are O(1), while index-based access is O(n).",
+          "keyPoints": [
+            "Doubly-linked structure with Node<E> (item, prev, next)",
+            "Tracks 'first', 'last', and 'size'",
+            "O(1) head/tail insertions; O(n) random index access"
+          ],
+          "companyTags": [
+            "Amazon",
+            "TCS",
+            "Infosys",
+            "Wipro"
+          ]
+        },
+        {
+          "id": "qa-col4-2",
+          "question": "Why does iterating over a LinkedList with 'for (int i=0; i<list.size(); i++) list.get(i)' cause severe performance degradation?",
+          "expectedAnswer": "Because LinkedList does not have contiguous memory addressing, list.get(i) must traverse pointers from either the head or tail to reach index i (O(i) steps). When executed inside an N-element loop, the total steps equal 1 + 2 + ... + N = O(N^2). To iterate an N-element LinkedList in O(N) linear time, you must use an enhanced for-each loop or an explicit Iterator.",
+          "keyPoints": [
+            "get(i) requires O(i) pointer traversals",
+            "N calls inside a loop produce O(N^2) quadratic time",
+            "Must use Iterator or for-each loop for O(N) sequential traversal"
+          ],
+          "companyTags": [
+            "Google",
+            "Microsoft",
+            "Goldman Sachs"
+          ]
+        },
+        {
+          "id": "qa-col4-3",
+          "question": "What is the difference between peek(), poll(), and remove() in LinkedList?",
+          "expectedAnswer": "All three inspect or retrieve the head element. 'peek()' retrieves the head without removing it, returning null if empty. 'poll()' retrieves and removes the head, returning null if empty. 'remove()' retrieves and removes the head, but throws NoSuchElementException if the list is empty.",
+          "keyPoints": [
+            "peek(): inspects without removing; returns null if empty",
+            "poll(): removes head; returns null if empty",
+            "remove(): removes head; throws NoSuchElementException if empty"
+          ],
+          "companyTags": [
+            "Adobe",
+            "Cognizant",
+            "Accenture"
+          ]
+        },
+        {
+          "id": "qa-col4-4",
+          "question": "Why does ArrayList almost always consume less memory than LinkedList despite having unused capacity slots?",
+          "expectedAnswer": "ArrayList allocates a flat Object[] array where each slot is just a 4 or 8 byte reference. LinkedList allocates a full Node object for every single element, incurring a 16-byte object header plus three reference pointers (item, next, prev), amounting to 24\u201340 bytes of overhead per element. Even an ArrayList with 50% unused capacity consumes vastly less memory than a LinkedList.",
+          "keyPoints": [
+            "LinkedList has 24\u201340 bytes of node overhead per element",
+            "ArrayList has flat 4\u20138 byte references in a continuous buffer",
+            "Node memory fragmentation increases garbage collection pressure"
+          ],
+          "companyTags": [
+            "Flipkart",
+            "Walmart",
+            "Oracle"
+          ]
+        },
+        {
+          "id": "qa-col4-5",
+          "question": "Can LinkedList be used as a Stack in Java? Is it recommended?",
+          "expectedAnswer": "Yes, LinkedList implements the Deque interface, providing push(e), pop(), and peek() methods. It is much better than the legacy java.util.Stack class (which extends Vector and has synchronization overhead). However, java.util.ArrayDeque is even better than LinkedList because it avoids node allocations and has superior cache performance.",
+          "keyPoints": [
+            "Implements Deque, supporting push() and pop()",
+            "Superior to legacy synchronized java.util.Stack",
+            "ArrayDeque is preferred in modern production code"
+          ],
+          "companyTags": [
+            "Morgan Stanley",
+            "Cisco",
+            "Paytm"
+          ]
+        },
+        {
+          "id": "qa-col4-6",
+          "question": "Does LinkedList support fast random access?",
+          "expectedAnswer": "No. LinkedList does not implement RandomAccess. Accessing elements by index requires sequential node pointer traversal, making it O(n). Algorithms in Collections check 'instanceof RandomAccess' and choose iterator-based algorithms when operating on a LinkedList.",
+          "keyPoints": [
+            "Does NOT implement RandomAccess",
+            "O(n) linear lookup time",
+            "Requires pointer traversal from head or tail"
+          ],
+          "companyTags": [
+            "Zoho",
+            "HCL",
+            "Dell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col4-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 4 Mastery Checkpoint",
+      "checklist": [
+        "I understand the fields and structure of the internal Node<E> class.",
+        "I know why get(i) is O(n) even with the first/last halving optimization.",
+        "I can explain why get(i) in a for-loop creates an O(N^2) quadratic trap.",
+        "I know how to use LinkedList as a Deque (addFirst, addLast, pollFirst, pollLast).",
+        "I can calculate the node memory overhead compared to an ArrayList buffer."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-4-1",
+      "title": "Double-Ended Print Job Dispatcher",
+      "difficulty": "beginner",
+      "description": "Implement a print spooler using Deque operations to support regular jobs (FIFO) and VIP rush jobs.",
+      "problemStatement": "Build a print job dispatcher using `LinkedList` as a `Deque<String>`:\n\n1. In `Main.main()`:\n   - Create `Deque<String> spooler = new LinkedList<>();`\n   - Enqueue regular jobs to the tail using `addLast`: `\"Doc1.pdf\"`, `\"Doc2.pdf\"`.\n   - Enqueue a VIP emergency job to the front using `addFirst`: `\"VIP_BoardMeeting.pdf\"`.\n   - Process and print jobs one by one using `pollFirst()` until the spooler is empty.\n   - Output format:\n     `Printing: VIP_BoardMeeting.pdf`\n     `Printing: Doc1.pdf`\n     `Printing: Doc2.pdf`",
+      "expectedOutput": "Printing: VIP_BoardMeeting.pdf\nPrinting: Doc1.pdf\nPrinting: Doc2.pdf",
+      "hint": "Use spooler.addLast() for normal jobs, spooler.addFirst() for VIP, and a while (!spooler.isEmpty()) loop with pollFirst().",
+      "hints": [
+        "Deque<String> spooler = new LinkedList<>();",
+        "spooler.addLast(\"Doc1.pdf\");",
+        "spooler.addFirst(\"VIP_BoardMeeting.pdf\");",
+        "while (!spooler.isEmpty()) { System.out.println(\"Printing: \" + spooler.pollFirst()); }"
+      ],
+      "solutionCode": "import java.util.Deque;\nimport java.util.LinkedList;\n\npublic class Main {\n    public static void main(String[] args) {\n        Deque<String> spooler = new LinkedList<>();\n        spooler.addLast(\"Doc1.pdf\");\n        spooler.addLast(\"Doc2.pdf\");\n        spooler.addFirst(\"VIP_BoardMeeting.pdf\");\n\n        while (!spooler.isEmpty()) {\n            System.out.println(\"Printing: \" + spooler.pollFirst());\n        }\n    }\n}",
+      "initialCode": "import java.util.Deque;\nimport java.util.LinkedList;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Enqueue 2 regular jobs and 1 VIP job, then process in order\n    }\n}"
+    },
+    {
+      "id": "p-col1-4-2",
+      "title": "Browser Navigation History Stack",
+      "difficulty": "easy",
+      "description": "Model a browser tab history stack using LinkedList deque operations (push, pop, peek).",
+      "problemStatement": "Implement a browser history tracker:\n\n1. In `Main.main()`:\n   - Create `Deque<String> history = new LinkedList<>();`\n   - Visit three web pages using `push()`: `\"google.com\"`, `\"github.com\"`, `\"stackoverflow.com\"`.\n   - Print current page using `peek()`: `Current Page: <page>`\n   - User clicks Back button twice: `pop()` and print the closed pages:\n     `Navigated Back From: <page>`\n   - Print remaining active page: `Active Page: <page>`",
+      "expectedOutput": "Current Page: stackoverflow.com\nNavigated Back From: stackoverflow.com\nNavigated Back From: github.com\nActive Page: google.com",
+      "hint": "push() adds to the front/top of the deque. pop() removes from the front/top. peek() inspects the front/top.",
+      "hints": [
+        "history.push(\"google.com\"); ...",
+        "System.out.println(\"Current Page: \" + history.peek());",
+        "history.pop();"
+      ],
+      "solutionCode": "import java.util.Deque;\nimport java.util.LinkedList;\n\npublic class Main {\n    public static void main(String[] args) {\n        Deque<String> history = new LinkedList<>();\n        history.push(\"google.com\");\n        history.push(\"github.com\");\n        history.push(\"stackoverflow.com\");\n\n        System.out.println(\"Current Page: \" + history.peek());\n        System.out.println(\"Navigated Back From: \" + history.pop());\n        System.out.println(\"Navigated Back From: \" + history.pop());\n        System.out.println(\"Active Page: \" + history.peek());\n    }\n}",
+      "initialCode": "import java.util.Deque;\nimport java.util.LinkedList;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Implement browser history with push, pop, and peek\n    }\n}"
+    },
+    {
+      "id": "p-col1-4-3",
+      "title": "Bidirectional Playlist Navigator",
+      "difficulty": "easy",
+      "description": "Navigate a music playlist forward and backward using ListIterator on a LinkedList.",
+      "problemStatement": "Demonstrate bidirectional pointer traversal:\n\n1. In `Main.main()`:\n   - Create a `LinkedList<String> playlist = new LinkedList<>(Arrays.asList(\"Song 1\", \"Song 2\", \"Song 3\"));`\n   - Create a `ListIterator<String> it = playlist.listIterator();`\n   - Advance to the end using `it.hasNext()` and `it.next()`.\n   - Reverse direction and traverse backward using `it.hasPrevious()` and `it.previous()`.\n   - Print output:\n     `Forward: Song 1 | Song 2 | Song 3 | `\n     `Backward: Song 3 | Song 2 | Song 1 | `",
+      "expectedOutput": "Forward: Song 1 | Song 2 | Song 3 | \nBackward: Song 3 | Song 2 | Song 1 | ",
+      "hint": "Use while (it.hasNext()) { ... it.next() ... } followed immediately by while (it.hasPrevious()) { ... it.previous() ... }.",
+      "hints": [
+        "playlist.listIterator() gives a bidirectional cursor.",
+        "Print forward traversal first, then backward traversal."
+      ],
+      "solutionCode": "import java.util.Arrays;\nimport java.util.LinkedList;\nimport java.util.ListIterator;\n\npublic class Main {\n    public static void main(String[] args) {\n        LinkedList<String> playlist = new LinkedList<>(Arrays.asList(\"Song 1\", \"Song 2\", \"Song 3\"));\n        ListIterator<String> it = playlist.listIterator();\n\n        System.out.print(\"Forward: \");\n        while (it.hasNext()) {\n            System.out.print(it.next() + \" | \");\n        }\n        System.out.println();\n\n        System.out.print(\"Backward: \");\n        while (it.hasPrevious()) {\n            System.out.print(it.previous() + \" | \");\n        }\n        System.out.println();\n    }\n}",
+      "initialCode": "import java.util.Arrays;\nimport java.util.LinkedList;\nimport java.util.ListIterator;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Traverse LinkedList forward and backward using ListIterator\n    }\n}"
+    },
+    {
+      "id": "p-col1-4-4",
+      "title": "Fix Quadratic O(n^2) LinkedList Traversal Bug",
+      "difficulty": "intermediate",
+      "description": "Refactor a disastrous O(n^2) get(i) loop on a LinkedList into an efficient O(n) iterator loop.",
+      "problemStatement": "A developer wrote a sum calculator for a `LinkedList<Integer>` using index lookups:\n```java\nint total = 0;\nfor (int i = 0; i < list.size(); i++) {\n    total += list.get(i); // BUG: O(N) per iteration -> O(N^2) overall!\n}\n```\nYour Task:\n1. Refactor the summing loop to use an enhanced `for-each` loop (or an `Iterator`), achieving true $O(n)$ performance.\n2. In `Main.main()`, calculate and print the sum of `[10, 20, 30, 40, 50]`:\n   `Linear Traversal Sum: 150`",
+      "expectedOutput": "Linear Traversal Sum: 150",
+      "hint": "Replace for (int i=0; ...) with for (int val : list). The enhanced for-each loop uses the Iterator cursor which moves forward by 1 pointer in O(1) time!",
+      "hints": [
+        "for (int val : list) total += val;",
+        "Every next() step on an iterator is O(1)."
+      ],
+      "solutionCode": "import java.util.Arrays;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> list = new LinkedList<>(Arrays.asList(10, 20, 30, 40, 50));\n        int total = 0;\n\n        // Refactored to O(n) enhanced for-each loop\n        for (int val : list) {\n            total += val;\n        }\n\n        System.out.println(\"Linear Traversal Sum: \" + total);\n    }\n}",
+      "initialCode": "import java.util.Arrays;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> list = new LinkedList<>(Arrays.asList(10, 20, 30, 40, 50));\n        // TODO: Refactor the summing loop from get(i) to an enhanced for-each loop\n    }\n}"
+    },
+    {
+      "id": "p-col1-4-5",
+      "title": "Custom Doubly-Linked Node Chainer",
+      "difficulty": "intermediate",
+      "description": "Build a manual 3-node doubly linked chain from scratch to master prev and next pointer relinking.",
+      "problemStatement": "Construct a manual doubly-linked list chain:\n\n1. Define class `SimpleNode`:\n   - `String data; SimpleNode prev; SimpleNode next;`\n   - Constructor `public SimpleNode(String data)`\n\n2. In `Main.main()`:\n   - Create three nodes: `n1 = new SimpleNode(\"A\");`, `n2 = new SimpleNode(\"B\");`, `n3 = new SimpleNode(\"C\");`\n   - Manually link them:\n     `n1.next = n2; n2.prev = n1;`\n     `n2.next = n3; n3.prev = n2;`\n   - Print forward traversal from n1: `A <-> B <-> C`\n   - Print backward traversal from n3: `C <-> B <-> A`",
+      "expectedOutput": "Forward: A <-> B <-> C\nBackward: C <-> B <-> A",
+      "hint": "Link next and prev references explicitly, then use while loops traversing node.next and node.prev.",
+      "hints": [
+        "n1.next = n2; n2.prev = n1;",
+        "Traverse forward: SimpleNode curr = n1; while (curr != null) { ... curr = curr.next; }",
+        "Traverse backward: SimpleNode curr = n3; while (curr != null) { ... curr = curr.prev; }"
+      ],
+      "solutionCode": "class SimpleNode {\n    String data;\n    SimpleNode prev;\n    SimpleNode next;\n\n    public SimpleNode(String data) {\n        this.data = data;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SimpleNode n1 = new SimpleNode(\"A\");\n        SimpleNode n2 = new SimpleNode(\"B\");\n        SimpleNode n3 = new SimpleNode(\"C\");\n\n        // Link doubly\n        n1.next = n2; n2.prev = n1;\n        n2.next = n3; n3.prev = n2;\n\n        // Forward\n        System.out.print(\"Forward: \");\n        SimpleNode curr = n1;\n        while (curr != null) {\n            System.out.print(curr.data + (curr.next != null ? \" <-> \" : \"\"));\n            curr = curr.next;\n        }\n        System.out.println();\n\n        // Backward\n        System.out.print(\"Backward: \");\n        curr = n3;\n        while (curr != null) {\n            System.out.print(curr.data + (curr.prev != null ? \" <-> \" : \"\"));\n            curr = curr.prev;\n        }\n        System.out.println();\n    }\n}",
+      "initialCode": "class SimpleNode {\n    // TODO: Define data, prev, next fields and constructor\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Instantiate 3 nodes, link them doubly, and print forward & backward\n    }\n}"
+    }
+  ]
+}

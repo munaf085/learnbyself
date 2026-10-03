@@ -1,0 +1,474 @@
+{
+  "id": "les-collections-1-the-collection-hierarchy-and-root-interfaces",
+  "slug": "the-collection-hierarchy-and-root-interfaces",
+  "sectionSlug": "collections",
+  "moduleSlug": "collections-framework-and-lists",
+  "languageSlug": "java",
+  "title": "The Collection Hierarchy & Root Interfaces",
+  "summary": "Master the structural architecture of the Java Collections Framework. Understand how Iterable, Collection, List, Set, and Queue relate to one another, and why Map stands alone outside Collection.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "Why Collections? (Arrays vs Collections)",
+    "Java Interfaces & Polymorphism",
+    "Generics Basics"
+  ],
+  "learningObjectives": [
+    "Navigate the complete interface taxonomy of the Java Collections Framework",
+    "Understand the core contract of java.lang.Iterable and how it powers the enhanced for-each loop",
+    "Explore the fundamental methods shared by all Collection implementations",
+    "Articulate the design rationale for why Map does not extend Collection"
+  ],
+  "expectedOutcomes": [
+    "Ability to visualize the entire JCF interface tree and choose the right container interface for any data design",
+    "Fluency in writing generic algorithms against Collection<E> references for maximum code reusability"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Royal Hierarchy of Transportation & Logistics",
+      "analogy": {
+        "headline": "A Bus, a Vault, and an Airport Terminal are all transport vehicles, but a Dictionary is a catalog",
+        "story": "Imagine a global shipping and transit hub.\n\nAt the very top of all transportable cargo is the **Passable** rule: *Can someone inspect this cargo item by item?* That is **`Iterable`**.\n\nBeneath that is a **Container** (**`Collection`**): It has a size, can accept items (`add`), can discard items (`remove`), and checks if an item is present (`contains`).\n\nNow, how do items sit inside that container?\n1. **`List` (The Passenger Bus)**: Seats are numbered in strict order (index 0, 1, 2). Passengers can sit anywhere, and duplicates are totally fine.\n2. **`Set` (The High-Security Vault)**: No duplicate fingerprint or badge is ever allowed. Mathematical uniqueness reigns.\n3. **`Queue` (The Airport Security Line)**: Passengers are serviced in strict order \u2014 typically First-In, First-Out (FIFO).\n\nNow, what about the **Airport Directory Desk** (**`Map`**)?\nAt the directory desk, you do not hand over a single item. You ask: *\"What terminal is Flight AA-240 departing from?\"*\nYou provide a **Key** (`AA-240`) and retrieve a **Value** (`Terminal 4`).\nBecause it pairs keys with values, it does NOT fit into a simple container of solo items. Hence, **`Map`** lives in its own dedicated hierarchy!",
+        "keyTakeaway": "Iterable is the root of traversal; Collection is the root of single-element containers (List, Set, Queue); and Map is an independent key-value hierarchy."
+      }
+    },
+    {
+      "id": "act-col2-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "The Core JCF Hierarchy: Visual Architecture",
+      "breakdown": {
+        "keyTakeaways": [
+          "`java.lang.Iterable<T>` is the top super-interface that permits an object to be targeted by the enhanced for-each loop",
+          "`java.util.Collection<E>` extends `Iterable<E>` and defines core CRUD methods (add, remove, contains, size, toArray)",
+          "The three primary sub-interfaces are List (ordered/indexed), Set (unique), and Queue (order of processing)",
+          "`java.util.Map<K, V>` does NOT extend Collection because it stores 2-dimensional key-value associations rather than individual elements"
+        ]
+      },
+      "content": "### 1. The Interface Hierarchy Tree\n\n```text\n                  <<interface>>\n               java.lang.Iterable<T>\n                         ^\n                         |\n                  <<interface>>\n             java.util.Collection<E>\n             /          |          \\\n            /           |           \\\n   <<interface>>  <<interface>>  <<interface>>\n      List<E>        Set<E>        Queue<E>\n        |              |              |\n   - ArrayList    - HashSet      - ArrayDeque\n   - LinkedList   - LinkedHashSet- PriorityQueue\n   - Vector       - TreeSet (SortedSet)\n\n\n   --- Separate Hierarchy: Key-Value Associations ---\n\n                  <<interface>>\n              java.util.Map<K, V>\n                       |\n                  - HashMap\n                  - LinkedHashMap\n                  - TreeMap (SortedMap)\n                  - ConcurrentHashMap\n```\n\n### 2. The Root: `java.lang.Iterable<T>`\n\nAny class that implements `Iterable<T>` has only one mandatory contract:\n```java\npublic interface Iterable<T> {\n    Iterator<T> iterator();\n}\n```\nWhen you write an enhanced `for-each` loop in Java:\n```java\nfor (String item : myList) { ... }\n```\nThe Java compiler rewrites it under the hood into:\n```java\nIterator<String> it = myList.iterator();\nwhile (it.hasNext()) {\n    String item = it.next();\n    ...\n}\n```\nBecause `Collection<E>` extends `Iterable<E>`, **every List, Set, and Queue in Java can be traversed using the for-each loop!**\n\n### 3. The `Collection<E>` Root Contract\n\n`Collection<E>` defines universal behaviors that every single-element container must fulfill:\n\n| Operation | Method Signature | Description |\n|---|---|---|\n| **Add** | `boolean add(E e)` | Inserts element; returns `true` if modified |\n| **Remove** | `boolean remove(Object o)` | Removes first matching occurrence |\n| **Query** | `boolean contains(Object o)` | Returns `true` if element exists via `.equals()` |\n| **Size** | `int size()`, `boolean isEmpty()` | Returns count / checks if empty |\n| **Bulk Ops** | `addAll()`, `removeAll()`, `retainAll()` | Set-theoretic union, difference, and intersection |\n| **Array Bridge** | `Object[] toArray()`, `<T> T[] toArray(T[] a)` | Bridges collection back to native array |\n\n### 4. Why Doesn't `Map` Extend `Collection`?\n\nThis is one of the most famous Java architectural interview questions. The reasons are architectural and type-theoretic:\n\n1. **Incompatible Cardinality**: `Collection` models a group of individual elements (`E`). `Map` models key-value *pairs* (`K` and `V`).\n2. **Incompatible Method Signatures**: `collection.add(element)` takes 1 argument. A map requires `map.put(key, value)` with 2 arguments. If `Map` implemented `Collection`, what would `map.add(x)` do? Throw `UnsupportedOperationException`? That would violate the Liskov Substitution Principle!\n3. **Map Views into Collections**: Rather than being a `Collection`, a `Map` provides *three views* into its data via collection types:\n   - `map.keySet()` &rarr; returns a `Set<K>` of keys (keys are unique!)\n   - `map.values()` &rarr; returns a `Collection<V>` of values (values may have duplicates!)\n   - `map.entrySet()` &rarr; returns a `Set<Map.Entry<K, V>>` of key-value pairs!"
+    },
+    {
+      "id": "act-col2-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Polymorphic Programming with Collection<E>",
+      "description": "Learn to write decoupled methods that accept any Collection (List, Set, or Queue) to perform universal audits and print operations.",
+      "code": "import java.util.*;\n\npublic class Main {\n    // Universal method: Works seamlessly on List, Set, Queue, or any Collection!\n    public static <T> void printCollectionSummary(String name, Collection<T> col) {\n        System.out.println(\"[\" + name + \"] Size: \" + col.size() + \", IsEmpty: \" + col.isEmpty());\n        System.out.print(\"Elements: \");\n        for (T item : col) { // Uses Iterable contract!\n            System.out.print(item + \" \");\n        }\n        System.out.println();\n    }\n\n    public static void main(String[] args) {\n        // 1. A List (ordered, permits duplicates)\n        Collection<String> list = new ArrayList<>(Arrays.asList(\"A\", \"B\", \"A\", \"C\"));\n        \n        // 2. A Set (unique, drops duplicate 'A')\n        Collection<String> set = new HashSet<>(Arrays.asList(\"A\", \"B\", \"A\", \"C\"));\n\n        // 3. A Queue (FIFO processing order)\n        Collection<String> queue = new ArrayDeque<>(Arrays.asList(\"First\", \"Second\", \"Third\"));\n\n        System.out.println(\"=== Demonstrating Polymorphic Collection Operations ===\");\n        printCollectionSummary(\"ArrayList\", list);\n        printCollectionSummary(\"HashSet\", set);\n        printCollectionSummary(\"ArrayDeque\", queue);\n\n        // Bulk operations: Set intersection (retainAll)\n        list.retainAll(Collections.singleton(\"A\"));\n        System.out.println(\"\\nAfter retainAll('A') on List: \" + list);\n    }\n}",
+      "codeSnippet": "public static <T> void printSummary(Collection<T> col) {\n    System.out.println(\"Size: \" + col.size());\n    for (T item : col) { System.out.println(item); }\n}"
+    },
+    {
+      "id": "act-col2-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Concept Validation: Root Hierarchy & Interfaces (10 Questions)",
+      "questions": [
+        {
+          "id": "q-col2-1",
+          "type": "mcq",
+          "prompt": "What is the top-most interface that allows any class in Java to be used inside an enhanced for-each loop?",
+          "options": [
+            "java.util.Collection",
+            "java.lang.Iterable",
+            "java.util.Iterator",
+            "java.lang.Cloneable"
+          ],
+          "correctAnswer": 1,
+          "explanation": "java.lang.Iterable defines the iterator() method. Any class implementing Iterable can be the target of the enhanced for-each statement.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "It lives in java.lang, not java.util."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col2-2",
+          "type": "mcq",
+          "prompt": "Which of the following is NOT a direct sub-interface of java.util.Collection?",
+          "options": [
+            "List",
+            "Set",
+            "Queue",
+            "Map"
+          ],
+          "correctAnswer": 3,
+          "explanation": "Map does NOT extend Collection. It is an independent top-level interface modeling key-value pairs.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Think about which one deals with keys and values instead of solo items."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col2-3",
+          "type": "mcq",
+          "prompt": "What does the method 'collection.retainAll(otherCollection)' do?",
+          "options": [
+            "Appends all elements from otherCollection into collection",
+            "Removes all elements from collection that are NOT contained in otherCollection (intersection)",
+            "Removes all elements in otherCollection from collection (difference)",
+            "Clears both collections"
+          ],
+          "correctAnswer": 1,
+          "explanation": "retainAll performs a mathematical set intersection: it retains only the elements in this collection that are also contained in the specified collection.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "It 'retains' matching elements and drops the rest."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col2-4",
+          "type": "mcq",
+          "prompt": "What does 'boolean add(E e)' return when invoked on a HashSet if the element is already present in the set?",
+          "options": [
+            "true, and overwrites the existing element",
+            "false, and leaves the set unchanged",
+            "Throws DuplicateElementException",
+            "Returns null"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The Collection contract specifies that add() returns true if the collection changed as a result of the call. Since Set rejects duplicates, it leaves the set unchanged and returns false.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Does the set mutate if a duplicate is offered?"
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col2-5",
+          "type": "mcq",
+          "prompt": "Why can't you iterate directly over a Map with 'for (var item : myMap)'?",
+          "options": [
+            "Map does not implement java.lang.Iterable",
+            "Java forbids iterating over key-value structures",
+            "Maps only allow iteration using while loops",
+            "Map is an abstract class, not an interface"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Map does not extend Collection or Iterable. To iterate a map, you must iterate one of its views (e.g. myMap.keySet(), myMap.values(), or myMap.entrySet()).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Check the interface inheritance tree."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col2-6",
+          "type": "mcq",
+          "prompt": "Which method on Map returns a Set of objects containing both the key and the value for each mapping?",
+          "options": [
+            "map.keySet()",
+            "map.values()",
+            "map.entrySet()",
+            "map.pairSet()"
+          ],
+          "correctAnswer": 2,
+          "explanation": "map.entrySet() returns a Set<Map.Entry<K, V>> where each entry provides getKey() and getValue().",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Each key-value association is an 'Entry'."
+            }
+          ],
+          "difficulty": "easy",
+          "estimatedSeconds": 25
+        },
+        {
+          "id": "q-col2-7",
+          "type": "mcq",
+          "prompt": "Which design principle would be violated if Map extended Collection with an 'add(Object o)' method?",
+          "options": [
+            "Single Responsibility Principle",
+            "Liskov Substitution Principle (LSP)",
+            "Dependency Inversion Principle",
+            "Open-Closed Principle"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Liskov Substitution Principle states subtypes must be substitutable for their supertypes. If Map implemented Collection, calling collection.add(e) on a Map would fail or throw exceptions, breaking callers expecting valid Collection behavior.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Subtypes must not violate the contract of their base types."
+            }
+          ],
+          "difficulty": "advanced",
+          "estimatedSeconds": 50
+        },
+        {
+          "id": "q-col2-8",
+          "type": "mcq",
+          "prompt": "What is the primary difference between Iterator and Iterable in Java?",
+          "options": [
+            "Iterable represents a data structure that CAN be traversed; Iterator is the cursor object that actually DOES the traversal",
+            "They are exact synonyms in Java",
+            "Iterator is an interface, but Iterable is an abstract class",
+            "Iterator only works on Arrays; Iterable works on Lists"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Iterable has iterator() to generate a traversal cursor. Iterator has hasNext(), next(), and remove() to step through elements.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "One produces the cursor; the other is the cursor."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 40
+        },
+        {
+          "id": "q-col2-9",
+          "type": "mcq",
+          "prompt": "What is the recommended parameter type for a method that only needs to calculate the total count and check emptiness of any collection?",
+          "options": [
+            "ArrayList<Object>",
+            "Collection<?>",
+            "HashSet<?>",
+            "Vector<?>"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Accepting Collection<?> is the most polymorphic and decoupled design: it allows callers to pass ArrayList, HashSet, PriorityQueue, or any custom collection without forcing conversions.",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Program to the most general interface."
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        },
+        {
+          "id": "q-col2-10",
+          "type": "mcq",
+          "prompt": "What happens if you invoke 'col.remove(x)' on a collection containing multiple duplicate instances of x?",
+          "options": [
+            "All occurrences of x are removed",
+            "Only the first occurrence encountered during iteration is removed",
+            "An exception is thrown",
+            "The collection clears itself"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The Collection contract specifies that remove(o) removes a single instance of the specified element from this collection, if it is present (typically the first encountered).",
+          "hints": [
+            {
+              "step": 1,
+              "hint": "Does it delete one or all by default?"
+            }
+          ],
+          "difficulty": "intermediate",
+          "estimatedSeconds": 35
+        }
+      ]
+    },
+    {
+      "id": "act-col2-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Placement Interview Q&A: Collection Hierarchy",
+      "interviewQA": [
+        {
+          "id": "qa-col2-1",
+          "question": "Why does Map not extend the Collection interface in Java?",
+          "expectedAnswer": "Map models a key-value mapping (2-dimensional associations), whereas Collection models a collection of independent elements (1-dimensional). If Map implemented Collection, methods like add(E e) would have no meaningful implementation without keys, violating the Liskov Substitution Principle. Instead, Map provides collection views via keySet(), values(), and entrySet().",
+          "keyPoints": [
+            "Incompatible domain model (key-value associations vs solo elements)",
+            "Preserves Liskov Substitution Principle (no dummy add() method)",
+            "Provides Collection views via entrySet(), keySet(), values()"
+          ],
+          "companyTags": [
+            "Amazon",
+            "Google",
+            "Microsoft",
+            "Oracle"
+          ]
+        },
+        {
+          "id": "qa-col2-2",
+          "question": "What is the difference between Iterable and Iterator in Java?",
+          "expectedAnswer": "Iterable is a functional interface in java.lang with a single method: Iterator<T> iterator(). Implementing it signifies that an object can be iterated using the for-each loop. Iterator is the cursor in java.util with hasNext(), next(), and remove() methods that actually performs the step-by-step traversal.",
+          "keyPoints": [
+            "Iterable represents 'can be traversed' (powers for-each loop)",
+            "Iterator represents the active traversal cursor (hasNext, next)",
+            "Iterable produces new Iterator instances"
+          ],
+          "companyTags": [
+            "TCS",
+            "Infosys",
+            "Wipro",
+            "Paytm"
+          ]
+        },
+        {
+          "id": "qa-col2-3",
+          "question": "What are the core differences between List, Set, and Queue?",
+          "expectedAnswer": "List is an ordered collection that permits duplicate elements and allows index-based random access. Set models mathematical uniqueness and rejects duplicate elements. Queue is designed for holding elements prior to processing, typically following FIFO (First-In, First-Out) or priority order.",
+          "keyPoints": [
+            "List: ordered, duplicates allowed, index-accessible",
+            "Set: unique elements, no index access",
+            "Queue: order of processing, FIFO or priority buffer"
+          ],
+          "companyTags": [
+            "Flipkart",
+            "Cisco",
+            "Adobe"
+          ]
+        },
+        {
+          "id": "qa-col2-4",
+          "question": "What is the difference between collection.toArray() and collection.toArray(T[] a)?",
+          "expectedAnswer": "collection.toArray() returns Object[], requiring downcasting which is unsafe. In contrast, collection.toArray(T[] a) is a generic method that returns an array of the exact type T[]. If the passed array 'a' is large enough, elements are stored in it; otherwise, a new array of type T[] is allocated via reflection.",
+          "keyPoints": [
+            "toArray() returns Object[] (unsafe)",
+            "toArray(T[] a) returns type-safe T[] array",
+            "Modern idiom: list.toArray(new String[0]) or list.toArray(String[]::new)"
+          ],
+          "companyTags": [
+            "Morgan Stanley",
+            "Goldman Sachs"
+          ]
+        },
+        {
+          "id": "qa-col2-5",
+          "question": "Why should you program to interface types (e.g. List<String> list = new ArrayList<>()) instead of concrete classes?",
+          "expectedAnswer": "Programming to interfaces decouples client code from the specific implementation details. It allows you to switch the underlying data structure (e.g. from ArrayList to LinkedList or CopyOnWriteArrayList) with zero changes to downstream business logic.",
+          "keyPoints": [
+            "Enforces loose coupling (Dependency Inversion Principle)",
+            "Allows swapping implementations without breaking callers",
+            "Standard production design practice"
+          ],
+          "companyTags": [
+            "ThoughtWorks",
+            "Accenture",
+            "Zoho"
+          ]
+        },
+        {
+          "id": "qa-col2-6",
+          "question": "What bulk operations are defined in the Collection interface?",
+          "expectedAnswer": "The Collection interface defines four major bulk operations: addAll(c) for union, removeAll(c) for set difference, retainAll(c) for set intersection, and containsAll(c) to test subset inclusion. All of these return a boolean indicating whether the target collection was modified.",
+          "keyPoints": [
+            "addAll: union",
+            "removeAll: difference",
+            "retainAll: intersection",
+            "containsAll: subset check"
+          ],
+          "companyTags": [
+            "Cognizant",
+            "HCL",
+            "Dell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-col2-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 2 Mastery Checkpoint",
+      "checklist": [
+        "I can draw the inheritance relationship from Iterable down to List, Set, and Queue.",
+        "I can articulate why Map is completely separate from Collection.",
+        "I know the difference between Iterable and Iterator.",
+        "I understand the algebraic meaning of addAll, removeAll, and retainAll.",
+        "I always declare collection variables using their interface types."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-col1-2-1",
+      "title": "Universal Collection Inspector",
+      "difficulty": "beginner",
+      "description": "Write a polymorphic method that inspects any Collection and computes item count, emptiness, and content summary.",
+      "problemStatement": "Implement a universal inspector utility:\n\n1. In `Main` class:\n   - Write a generic static method:\n     `public static <T> void inspectCollection(String label, Collection<T> data)`\n   - Output format:\n     `=== <label> ===`\n     `Size: <size>`\n     `Empty: <isEmpty>`\n     `Contains 'Java': <true/false>`\n\n2. In `Main.main()`:\n   - Create an `ArrayList<String>` with `[\"Java\", \"Kotlin\"]`.\n   - Create a `HashSet<String>` with `[\"Python\", \"Rust\"]`.\n   - Call `inspectCollection(\"Course List\", arrayList)`.\n   - Call `inspectCollection(\"Unique Tools\", hashSet)`.",
+      "expectedOutput": "=== Course List ===\nSize: 2\nEmpty: false\nContains 'Java': true\n=== Unique Tools ===\nSize: 2\nEmpty: false\nContains 'Java': false",
+      "hint": "Use data.size(), data.isEmpty(), and data.contains(\"Java\").",
+      "hints": [
+        "The method takes Collection<T> data.",
+        "All methods (size, isEmpty, contains) come from java.util.Collection."
+      ],
+      "solutionCode": "import java.util.*;\n\npublic class Main {\n    public static <T> void inspectCollection(String label, Collection<T> data) {\n        System.out.println(\"=== \" + label + \" ===\");\n        System.out.println(\"Size: \" + data.size());\n        System.out.println(\"Empty: \" + data.isEmpty());\n        System.out.println(\"Contains 'Java': \" + data.contains(\"Java\"));\n    }\n\n    public static void main(String[] args) {\n        Collection<String> list = new ArrayList<>(Arrays.asList(\"Java\", \"Kotlin\"));\n        Collection<String> set = new HashSet<>(Arrays.asList(\"Python\", \"Rust\"));\n\n        inspectCollection(\"Course List\", list);\n        inspectCollection(\"Unique Tools\", set);\n    }\n}",
+      "initialCode": "import java.util.*;\n\npublic class Main {\n    // TODO: Implement inspectCollection(String label, Collection<T> data)\n\n    public static void main(String[] args) {\n        // TODO: Test with ArrayList and HashSet\n    }\n}"
+    },
+    {
+      "id": "p-col1-2-2",
+      "title": "Set-Theoretic Bulk Operations Engine",
+      "difficulty": "easy",
+      "description": "Perform mathematical union, difference, and intersection on two collections using Collection bulk methods.",
+      "problemStatement": "Demonstrate set-theoretic operations using Collection bulk methods:\n\n1. In `Main.main()`:\n   - Initialize two lists:\n     `List<Integer> setA = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5));`\n     `List<Integer> setB = new ArrayList<>(Arrays.asList(4, 5, 6, 7, 8));`\n   - Compute **Union**: Create a new list with setA elements, then `addAll(setB)`.\n   - Compute **Intersection**: Create a new list with setA elements, then `retainAll(setB)`.\n   - Compute **Difference (A - B)**: Create a new list with setA elements, then `removeAll(setB)`.\n   - Print results:\n     `Intersection (A \u2229 B): [4, 5]`\n     `Difference (A - B): [1, 2, 3]`",
+      "expectedOutput": "Intersection (A \u2229 B): [4, 5]\nDifference (A - B): [1, 2, 3]",
+      "hint": "Always create a new copy of setA before invoking retainAll or removeAll to avoid mutating the original data.",
+      "hints": [
+        "List<Integer> intersection = new ArrayList<>(setA); intersection.retainAll(setB);",
+        "List<Integer> difference = new ArrayList<>(setA); difference.removeAll(setB);"
+      ],
+      "solutionCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> setA = Arrays.asList(1, 2, 3, 4, 5);\n        List<Integer> setB = Arrays.asList(4, 5, 6, 7, 8);\n\n        List<Integer> intersection = new ArrayList<>(setA);\n        intersection.retainAll(setB);\n\n        List<Integer> difference = new ArrayList<>(setA);\n        difference.removeAll(setB);\n\n        System.out.println(\"Intersection (A \u2229 B): \" + intersection);\n        System.out.println(\"Difference (A - B): \" + difference);\n    }\n}",
+      "initialCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        List<Integer> setA = Arrays.asList(1, 2, 3, 4, 5);\n        List<Integer> setB = Arrays.asList(4, 5, 6, 7, 8);\n        // TODO: Compute and print intersection and difference\n    }\n}"
+    },
+    {
+      "id": "p-col1-2-3",
+      "title": "Map Views Extractor",
+      "difficulty": "easy",
+      "description": "Extract the keySet, values collection, and entrySet views from a Map to show how Map connects to Collections.",
+      "problemStatement": "Demonstrate the 3 collection views of a Map:\n\n1. In `Main.main()`:\n   - Create a `Map<String, Integer> fruitInventory = new LinkedHashMap<>();`\n   - Populate with: `\"Apples\" -> 50`, `\"Bananas\" -> 30`, `\"Oranges\" -> 50`.\n   - Extract and print:\n     `Keys (Set): <fruitInventory.keySet()>`\n     `Values (Collection): <fruitInventory.values()>`\n     `Total Value Sum: <sum of all quantities>`\n     `Total Entries: <fruitInventory.entrySet().size()>`",
+      "expectedOutput": "Keys (Set): [Apples, Bananas, Oranges]\nValues (Collection): [50, 30, 50]\nTotal Value Sum: 130\nTotal Entries: 3",
+      "hint": "fruitInventory.values() returns a Collection<Integer> which you can sum using a for-each loop.",
+      "hints": [
+        "Set<String> keys = fruitInventory.keySet();",
+        "Collection<Integer> vals = fruitInventory.values();",
+        "Iterate vals to calculate sum."
+      ],
+      "solutionCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Map<String, Integer> fruitInventory = new LinkedHashMap<>();\n        fruitInventory.put(\"Apples\", 50);\n        fruitInventory.put(\"Bananas\", 30);\n        fruitInventory.put(\"Oranges\", 50);\n\n        System.out.println(\"Keys (Set): \" + fruitInventory.keySet());\n        System.out.println(\"Values (Collection): \" + fruitInventory.values());\n\n        int sum = 0;\n        for (int qty : fruitInventory.values()) {\n            sum += qty;\n        }\n        System.out.println(\"Total Value Sum: \" + sum);\n        System.out.println(\"Total Entries: \" + fruitInventory.entrySet().size());\n    }\n}",
+      "initialCode": "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Populate LinkedHashMap and display keySet, values, sum, and entrySet count\n    }\n}"
+    },
+    {
+      "id": "p-col1-2-4",
+      "title": "Fix Concrete Type Coupling Violation",
+      "difficulty": "intermediate",
+      "description": "Refactor rigid concrete class dependencies in a service to adhere to the Dependency Inversion Principle.",
+      "problemStatement": "A developer tightly coupled an order processing method to `ArrayList<String>`:\n```java\npublic static void processBatch(ArrayList<String> orders) { ... }\n```\nBecause of this, clients passing a `HashSet` or `LinkedList` receive compiler errors!\n\nYour Task:\n1. Refactor `processBatch` to accept any `Collection<String>`.\n2. Inside `processBatch`, print:\n   `Processing <orders.size()> orders: <sorted comma-separated elements>`\n3. In `Main.main()`:\n   - Call `processBatch` passing a `HashSet<String>` with `[\"ORD-3\", \"ORD-1\", \"ORD-2\"]`.\n   - Ensure it outputs: `Processing 3 orders: ORD-1, ORD-2, ORD-3`",
+      "expectedOutput": "Processing 3 orders: ORD-1, ORD-2, ORD-3",
+      "hint": "Change parameter to Collection<String>. To sort them cleanly, copy to a new ArrayList and call Collections.sort().",
+      "hints": [
+        "public static void processBatch(Collection<String> orders)",
+        "List<String> sorted = new ArrayList<>(orders); Collections.sort(sorted);",
+        "String.join(\", \", sorted)"
+      ],
+      "solutionCode": "import java.util.*;\n\npublic class Main {\n    public static void processBatch(Collection<String> orders) {\n        List<String> sorted = new ArrayList<>(orders);\n        Collections.sort(sorted);\n        System.out.println(\"Processing \" + orders.size() + \" orders: \" + String.join(\", \", sorted));\n    }\n\n    public static void main(String[] args) {\n        Set<String> set = new HashSet<>(Arrays.asList(\"ORD-3\", \"ORD-1\", \"ORD-2\"));\n        processBatch(set);\n    }\n}",
+      "initialCode": "import java.util.*;\n\npublic class Main {\n    // BROKEN: Tightly coupled to ArrayList\n    public static void processBatch(ArrayList<String> orders) {\n        // TODO: Refactor to accept Collection<String> and sort for display\n    }\n\n    public static void main(String[] args) {\n        Set<String> set = new HashSet<>(Arrays.asList(\"ORD-3\", \"ORD-1\", \"ORD-2\"));\n        // processBatch(set); // Fails to compile!\n    }\n}"
+    },
+    {
+      "id": "p-col1-2-5",
+      "title": "Custom Iterable Number Range",
+      "difficulty": "intermediate",
+      "description": "Implement java.lang.Iterable to create a memory-efficient Range class that can be used directly in a for-each loop.",
+      "problemStatement": "Implement a memory-efficient `Range` class that implements `Iterable<Integer>`:\n\n1. Fields:\n   - `private final int start;`\n   - `private final int end;` (inclusive)\n\n2. Constructor:\n   - `public Range(int start, int end)`\n\n3. Implement `iterator()`:\n   - Return a custom `Iterator<Integer>` that yields numbers from `start` to `end` without storing them in a list!\n\n4. In `Main.main()`:\n   - Create `Range r = new Range(5, 9);`\n   - Use an enhanced `for-each` loop:\n     `for (int num : r) { System.out.print(num + \" \"); }`\n   - Output: `5 6 7 8 9 `",
+      "expectedOutput": "5 6 7 8 9 ",
+      "hint": "In the custom Iterator, maintain an int current = start. hasNext() checks current <= end, and next() returns current++.",
+      "hints": [
+        "Implement Iterable<Integer>.",
+        "In iterator(), return new Iterator<Integer>() { int curr = start; ... }",
+        "hasNext() is curr <= end; next() returns curr++."
+      ],
+      "solutionCode": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\nclass Range implements Iterable<Integer> {\n    private final int start;\n    private final int end;\n\n    public Range(int start, int end) {\n        this.start = start;\n        this.end = end;\n    }\n\n    @Override\n    public Iterator<Integer> iterator() {\n        return new Iterator<Integer>() {\n            private int current = start;\n\n            @Override\n            public boolean hasNext() {\n                return current <= end;\n            }\n\n            @Override\n            public Integer next() {\n                if (!hasNext()) {\n                    throw new NoSuchElementException();\n                }\n                return current++;\n            }\n        };\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Range r = new Range(5, 9);\n        for (int num : r) {\n            System.out.print(num + \" \");\n        }\n    }\n}",
+      "initialCode": "import java.util.Iterator;\n\nclass Range implements Iterable<Integer> {\n    // TODO: Implement fields, constructor, and iterator()\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        // TODO: Iterate over Range(5, 9) with for-each loop\n    }\n}"
+    }
+  ]
+}
