@@ -14,7 +14,9 @@ export const CourseHeader: React.FC<CourseHeaderProps> = ({ course }) => {
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <Badge variant="blue" size="sm">Java</Badge>
         <span className="text-slate-400">•</span>
-        <span className="text-slate-500 font-medium">18 Sections</span>
+        <span className="text-slate-500 font-medium">
+          {course.sections.length} Sections
+        </span>
         <span className="text-slate-400">•</span>
         <span className="text-slate-500 font-medium">Beginner Friendly</span>
         <span className="text-slate-400">•</span>

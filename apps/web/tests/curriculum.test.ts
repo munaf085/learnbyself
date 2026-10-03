@@ -14,11 +14,11 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
     expect(java?.isAvailable).toBe(true);
   });
 
-  it('loads full 18-section course roadmap for Java', async () => {
+  it('loads full 11-stage course roadmap for Java', async () => {
     const course = await provider.getCourse('java');
     expect(course).not.toBeNull();
     expect(course?.slug).toBe('java');
-    expect(course?.sections.length).toBe(18);
+    expect(course?.sections.length).toBe(11);
 
     const basics = course?.sections.find(s => s.slug === 'basics');
     expect(basics).toBeDefined();
@@ -31,6 +31,15 @@ describe('4-Level Curriculum Hierarchy Abstraction', () => {
     const collections = course?.sections.find(s => s.slug === 'collections');
     expect(collections).toBeDefined();
     expect(collections?.isLocked).toBe(true);
+    expect(collections?.title).toBe('Collections & Generics');
+
+    const dsa = course?.sections.find(s => s.slug === 'dsa');
+    expect(dsa).toBeDefined();
+    expect(dsa?.title).toBe('Data Structures & Algorithms');
+
+    const interviewPrep = course?.sections.find(s => s.slug === 'interview-prep');
+    expect(interviewPrep).toBeDefined();
+    expect(interviewPrep?.orderIndex).toBe(11);
   });
 
   it('resolves section and module levels accurately', async () => {

@@ -39,7 +39,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
               Course Syllabus
             </h2>
             <p className="text-xs text-slate-500">
-              18 structured sections from basics to advanced topics
+              {course.sections.length} structured sections from fundamentals to interview prep
             </p>
           </div>
         </div>
