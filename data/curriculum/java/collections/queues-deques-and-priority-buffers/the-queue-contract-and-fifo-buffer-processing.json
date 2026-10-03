@@ -1,0 +1,270 @@
+{
+  "id": "les-col-queue-contract",
+  "slug": "the-queue-contract-and-fifo-buffer-processing",
+  "sectionSlug": "collections",
+  "moduleSlug": "queues-deques-and-priority-buffers",
+  "languageSlug": "java",
+  "title": "The Queue Contract & FIFO Buffer Processing",
+  "summary": "Understand the Queue interface: First-In-First-Out (FIFO) semantics, throwing vs special-value methods (add/offer, remove/poll, element/peek).",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [
+    "The Collection Hierarchy & Root Interfaces",
+    "The List Contract & ArrayList Internals",
+    "Understanding Big-O Time Complexity"
+  ],
+  "learningObjectives": [
+    "Understand the formal First-In-First-Out (FIFO) contract of java.util.Queue",
+    "Master the dual method taxonomy: exception-throwing vs special-value return methods",
+    "Analyze bounded vs unbounded buffer constraints in producer-consumer pipelines",
+    "Implement asynchronous message processing buffers using Queue semantics"
+  ],
+  "expectedOutcomes": [
+    "Ability to select between add/offer, remove/poll, and element/peek based on failure mode requirements",
+    "Mastery of thread-safe pipeline design foundations using Queue primitives"
+  ],
+  "activities": [
+    {
+      "id": "act-col4-l1-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Airport Security Screening Checkpoint Lanes",
+      "analogy": {
+        "headline": "Practical Context: Airport Security Screening Checkpoint Lanes",
+        "story": "Imagine an airport security screening checkpoint lane. Passengers enter at the back of the stanchion lane (the tail) and wait their turn. The TSA officer at the front of the lane (the head) inspects one passenger at a time. The first person who stepped into the line is strictly the first person screened and cleared (First-In, First-Out).\n\nIf the waiting lane is cordoned off with a fixed physical capacity of 20 people (a bounded buffer), a newly arriving traveler cannot force their way in without the agent turning them away (offer returns false). If the line is completely empty, the agent simply rests and waits rather than triggering an emergency alarm (poll returns null).\n\nThis is precisely how the Java Queue interface models data flow.",
+        "keyTakeaway": "Queues model FIFO sequencing where insertion occurs at the tail and extraction occurs at the head. Methods come in pairs: throwing exceptions or returning special values."
+      },
+      "content": "Imagine an airport security screening checkpoint lane. Passengers enter at the back of the stanchion lane (the tail) and wait their turn. The TSA officer at the front of the lane (the head) inspects one passenger at a time. The first person who stepped into the line is strictly the first person screened and cleared (First-In, First-Out).\n\nIf the waiting lane is cordoned off with a fixed physical capacity of 20 people (a bounded buffer), a newly arriving traveler cannot force their way in without the agent turning them away (offer returns false). If the line is completely empty, the agent simply rests and waits rather than triggering an emergency alarm (poll returns null).\n\nThis is precisely how the Java Queue interface models data flow."
+    },
+    {
+      "id": "act-col4-l1-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "The Queue Architecture: Dual Method Forms & FIFO Buffer Semantics",
+      "breakdown": {
+        "keyTakeaways": [
+          "Queue models First-In-First-Out (FIFO) ordering where elements are added at tail and removed from head",
+          "Methods come in dual forms: Throwing exceptions (add, remove, element) vs Returning special values (offer, poll, peek)",
+          "In bounded buffers, offer() returns false on overflow; poll() returns null on underflow",
+          "Queue implementations generally disallow null elements because null is used as a sentinel return value by poll() and peek()"
+        ]
+      },
+      "content": "### Definition of the java.util.Queue Interface\n\nA **`java.util.Queue<E>`** is a collection designed for holding elements prior to processing. Besides basic `Collection` operations, queues provide additional insertion, extraction, and inspection operations.\n\nQueues typically, but do not necessarily, order elements in a **FIFO (First-In-First-Out)** manner. Exceptions include priority queues (ordered by comparators) and LIFO stacks (ordered last-in-first-out). Whatever the ordering used, the **head** of the queue is the element that would be removed by a call to `remove()` or `poll()`.\n\n---\n\n### The Dual-Method Taxonomy: Exceptions vs Special Values\n\nEvery queue operation comes in two distinct forms to accommodate bounded buffers and graceful error handling:\n\n| Operation Type | Throws Exception on Failure | Returns Special Value (`false` or `null`) |\n| :--- | :--- | :--- |\n| **Insert (Tail)** | `add(e)` (throws `IllegalStateException`) | `offer(e)` (returns `false` if capacity full) |\n| **Remove (Head)** | `remove()` (throws `NoSuchElementException`) | `poll()` (returns `null` if queue empty) |\n| **Examine (Head)** | `element()` (throws `NoSuchElementException`) | `peek()` (returns `null` if queue empty) |\n\nIn enterprise message processing systems, the special-value methods (`offer`, `poll`, `peek`) are overwhelmingly preferred because empty or full buffers are normal operational conditions, and throwing exceptions incur heavy stack-unwinding performance penalties.\n\n---\n\n### Executable Code Walkthrough: Order Fulfillment Pipeline\n\n```java\nimport java.util.ArrayDeque;\nimport java.util.Queue;\n\npublic class QueueContractDemo {\n    public static void main(String[] args) {\n        // ArrayDeque is the gold-standard implementation of Queue\n        Queue<String> printJobs = new ArrayDeque<>();\n\n        // 1. Safe Enqueue via offer()\n        printJobs.offer(\"Invoice_101.pdf\");\n        printJobs.offer(\"Contract_202.pdf\");\n        printJobs.offer(\"Receipt_303.pdf\");\n        System.out.println(\"Queued jobs count: \" + printJobs.size());\n\n        // 2. Inspection via peek() without removing\n        System.out.println(\"Next job to print (peek): \" + printJobs.peek());\n\n        // 3. Sequential Dequeue via poll() in FIFO order\n        while (!printJobs.isEmpty()) {\n            String currentJob = printJobs.poll();\n            System.out.println(\"Processing: \" + currentJob);\n        }\n\n        // 4. Polling an empty queue returns null safely!\n        String emptyPoll = printJobs.poll();\n        System.out.println(\"Polling empty queue returned: \" + emptyPoll); // null\n    }\n}\n```\n\n**Console Output:**\n```text\nQueued jobs count: 3\nNext job to print (peek): Invoice_101.pdf\nProcessing: Invoice_101.pdf\nProcessing: Contract_202.pdf\nProcessing: Receipt_303.pdf\nPolling empty queue returned: null\n```\n\n---\n\n### Key Architectural Guidelines for Queue Usage\n\n1. **Avoid `null` Elements**: Even if an implementation permits null, never insert null into a Queue. `poll()` and `peek()` return `null` to signal an empty queue; inserting null makes it impossible to distinguish an empty queue from a queue containing null.\n2. **Prefer `ArrayDeque` Over `LinkedList`**: Unless you explicitly need to hold elements while retaining `List` index access, `ArrayDeque` is significantly faster, uses less memory, and generates zero per-node heap garbage."
+    },
+    {
+      "id": "act-col4-l1-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Bounded Message Processing Pipeline",
+      "description": "Trace a bounded telemetry message buffer that safely rejects overflow packets without throwing exceptions.",
+      "code": "import java.util.ArrayDeque;\nimport java.util.Queue;\n\npublic class TelemetryBuffer {\n    private final Queue<String> buffer = new ArrayDeque<>();\n    private final int maxCapacity;\n\n    public TelemetryBuffer(int maxCapacity) {\n        this.maxCapacity = maxCapacity;\n    }\n\n    public boolean enqueuePacket(String packet) {\n        if (packet == null) return false;\n        if (buffer.size() >= maxCapacity) {\n            // Buffer overflow: reject gracefully\n            return false;\n        }\n        return buffer.offer(packet);\n    }\n\n    public String consumeNextPacket() {\n        return buffer.poll(); // Returns null if empty\n    }\n\n    public static void main(String[] args) {\n        TelemetryBuffer telemetry = new TelemetryBuffer(2);\n\n        System.out.println(\"Enqueue pkt1: \" + telemetry.enqueuePacket(\"PKT_A\")); // true\n        System.out.println(\"Enqueue pkt2: \" + telemetry.enqueuePacket(\"PKT_B\")); // true\n        System.out.println(\"Enqueue pkt3: \" + telemetry.enqueuePacket(\"PKT_C\")); // false (Capacity reached!)\n\n        System.out.println(\"Consumed:     \" + telemetry.consumeNextPacket());     // PKT_A (FIFO!)\n        System.out.println(\"Consumed:     \" + telemetry.consumeNextPacket());     // PKT_B\n        System.out.println(\"Consumed:     \" + telemetry.consumeNextPacket());     // null\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5-10",
+          "description": "Initialize a private Queue backed by ArrayDeque with an enforced integer capacity limit."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "12-18",
+          "description": "Check if buffer.size() >= maxCapacity before calling buffer.offer(packet). If full, return false cleanly without crashing."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "20-22",
+          "description": "Consume packets via buffer.poll(). Returns the head element in FIFO order or null if the queue is drained."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l1-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Queue Contract Assessment",
+      "questions": [
+        {
+          "id": "col4-l1-q1",
+          "question": "What is the difference between queue.remove() and queue.poll() when called on an empty queue?",
+          "options": [
+            "Both return null",
+            "remove() throws a NoSuchElementException; poll() returns null",
+            "remove() blocks the thread; poll() throws an exception",
+            "remove() returns false; poll() returns true"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "remove() is the exception-throwing form that throws NoSuchElementException on empty queues; poll() returns null to signal empty status gracefully."
+        },
+        {
+          "id": "col4-l1-q2",
+          "question": "Why do standard Queue implementations strongly discourage or forbid inserting null elements?",
+          "options": [
+            "Because null cannot be hashed",
+            "Because poll() and peek() use null as a sentinel return value to indicate the queue is empty",
+            "Because Java arrays cannot hold null references",
+            "Because JVM garbage collection crashes on null in queues"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "If null were stored in a queue, a caller receiving null from poll() could not distinguish between an empty queue and a queue whose head element is null."
+        },
+        {
+          "id": "col4-l1-q3",
+          "question": "Which method is the special-value counterpart to queue.add(e) when inserting into a bounded queue that is full?",
+          "options": [
+            "queue.push(e)",
+            "queue.offer(e) which returns false",
+            "queue.put(e)",
+            "queue.insert(e)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "While add(e) throws an IllegalStateException if a bounded queue is full, offer(e) returns false to indicate rejection."
+        },
+        {
+          "id": "col4-l1-q4",
+          "question": "What order does a standard FIFO Queue guarantee when extracting elements?",
+          "options": [
+            "Sorted alphabetical order",
+            "First-In, First-Out: elements are extracted in the exact chronological sequence they were inserted",
+            "Last-In, First-Out",
+            "Random order based on memory address"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "A standard FIFO queue guarantees that the earliest inserted element remaining in the buffer is always the first one extracted at the head."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l1-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Queue Architecture",
+      "questions": [
+        {
+          "id": "col4-l1-int-1",
+          "question": "Why should high-throughput backend services prefer offer/poll/peek over add/remove/element in Queues?",
+          "answer": "In high-throughput services, queues routinely reach capacity or become empty during normal operation. Throwing exceptions (like IllegalStateException or NoSuchElementException) requires JVM stack trace construction and frame unwinding, which consumes significant CPU cycles and creates GC pressure. Special-value methods (offer returning false, poll returning null) execute in constant nanosecond time without allocating exception objects."
+        },
+        {
+          "id": "col4-l1-int-2",
+          "question": "How does java.util.concurrent.BlockingQueue extend the java.util.Queue contract?",
+          "answer": "BlockingQueue adds blocking operations for producer-consumer multi-threading: `put(e)` blocks until space becomes available if the queue is full, and `take()` blocks until an element becomes available if the queue is empty. It also provides time-bounded overloads like `offer(e, timeout, unit)` and `poll(timeout, unit)`."
+        },
+        {
+          "id": "col4-l1-int-3",
+          "question": "What is the time complexity of add, poll, and peek in ArrayDeque and LinkedList?",
+          "answer": "Both ArrayDeque and LinkedList achieve O(1) time complexity for add, poll, and peek at the head and tail. However, ArrayDeque has a much lower constant factor: it uses a contiguous circular array with zero object allocations, whereas LinkedList allocates a 24-byte Node object on every insertion, incurring pointer dereferencing and memory fragmentation."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l1-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Queue Contract",
+      "checklist": [
+        "I can categorize the 6 Queue methods into throwing vs special-value pairs (add/offer, remove/poll, element/peek)",
+        "I understand why null elements are rejected by modern Queue implementations",
+        "I can implement FIFO producer-consumer buffers using ArrayDeque"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col4-l1-1",
+      "title": "Drain Queue to List",
+      "difficulty": "beginner",
+      "problemStatement": "Implement drainQueue(Queue<String> queue) that polls elements one-by-one from the queue and returns them in a List in FIFO order until the queue is empty.",
+      "starterCode": "import java.util.Queue;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class QueueDrainer {\n    public static List<String> drainQueue(Queue<String> queue) {\n        // TODO: Drain queue in FIFO order\n        return List.of();\n    }\n}",
+      "solutionCode": "import java.util.Queue;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class QueueDrainer {\n    public static List<String> drainQueue(Queue<String> queue) {\n        List<String> result = new ArrayList<>();\n        if (queue != null) {\n            while (!queue.isEmpty()) {\n                result.add(queue.poll());\n            }\n        }\n        return result;\n    }\n}",
+      "expectedOutput": "['A', 'B', 'C']",
+      "testCases": [
+        {
+          "input": "queue containing ['A', 'B', 'C']",
+          "expected": "['A', 'B', 'C']"
+        }
+      ],
+      "hints": [
+        "Use while (!queue.isEmpty()) result.add(queue.poll());"
+      ]
+    },
+    {
+      "id": "prob-col4-l1-2",
+      "title": "Safe Peek with Fallback",
+      "difficulty": "beginner",
+      "problemStatement": "Implement inspectHead(Queue<String> queue, String fallback) returning the head element via peek() if present, or fallback if the queue is empty or null.",
+      "starterCode": "import java.util.Queue;\n\npublic class QueueInspector {\n    public static String inspectHead(Queue<String> queue, String fallback) {\n        // TODO: Return peek or fallback\n        return fallback;\n    }\n}",
+      "solutionCode": "import java.util.Queue;\n\npublic class QueueInspector {\n    public static String inspectHead(Queue<String> queue, String fallback) {\n        if (queue == null) return fallback;\n        String val = queue.peek();\n        return val != null ? val : fallback;\n    }\n}",
+      "expectedOutput": "head element or fallback",
+      "testCases": [
+        {
+          "input": "queue = ['Item1'], fallback = 'EMPTY'",
+          "expected": "'Item1'"
+        },
+        {
+          "input": "queue = [], fallback = 'EMPTY'",
+          "expected": "'EMPTY'"
+        }
+      ],
+      "hints": [
+        "Call queue.peek(). If null, return fallback."
+      ]
+    },
+    {
+      "id": "prob-col4-l1-3",
+      "title": "Batch Processing Queue",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement processBatch(Queue<Integer> queue, int batchSize) that polls up to batchSize items from the queue and returns their sum.",
+      "starterCode": "import java.util.Queue;\n\npublic class BatchProcessor {\n    public static int processBatch(Queue<Integer> queue, int batchSize) {\n        // TODO: Poll up to batchSize items and sum\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.Queue;\n\npublic class BatchProcessor {\n    public static int processBatch(Queue<Integer> queue, int batchSize) {\n        if (queue == null || batchSize <= 0) return 0;\n        int sum = 0;\n        int count = 0;\n        while (!queue.isEmpty() && count < batchSize) {\n            Integer item = queue.poll();\n            if (item != null) {\n                sum += item;\n                count++;\n            }\n        }\n        return sum;\n    }\n}",
+      "expectedOutput": "30",
+      "testCases": [
+        {
+          "input": "queue = [10, 20, 30, 40], batchSize = 2",
+          "expected": "30"
+        }
+      ],
+      "hints": [
+        "Loop while (!queue.isEmpty() && count < batchSize).",
+        "Accumulate queue.poll()."
+      ]
+    },
+    {
+      "id": "prob-col4-l1-4",
+      "title": "Recent Event Buffer",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement a class RecentEventBuffer that holds at most N events. When a new event arrives and the buffer is full, remove the oldest event before adding the new one.",
+      "starterCode": "import java.util.ArrayDeque;\nimport java.util.Queue;\n\npublic class RecentEventBuffer {\n    private final Queue<String> buffer = new ArrayDeque<>();\n    private final int capacity;\n\n    public RecentEventBuffer(int capacity) {\n        this.capacity = capacity;\n    }\n\n    public void addEvent(String event) {\n        // TODO: Evict oldest if full, then add event\n    }\n\n    public int size() { return buffer.size(); }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\nimport java.util.Queue;\n\npublic class RecentEventBuffer {\n    private final Queue<String> buffer = new ArrayDeque<>();\n    private final int capacity;\n\n    public RecentEventBuffer(int capacity) {\n        this.capacity = capacity;\n    }\n\n    public void addEvent(String event) {\n        if (event == null) return;\n        if (buffer.size() >= capacity) {\n            buffer.poll(); // Evict oldest\n        }\n        buffer.offer(event);\n    }\n\n    public int size() { return buffer.size(); }\n}",
+      "expectedOutput": "Buffer maintains size <= capacity",
+      "testCases": [
+        {
+          "input": "capacity = 2, add('E1'), add('E2'), add('E3')",
+          "expected": "size() is 2, contains ['E2', 'E3']"
+        }
+      ],
+      "hints": [
+        "If buffer.size() >= capacity, call buffer.poll() first.",
+        "Then call buffer.offer(event)."
+      ]
+    },
+    {
+      "id": "prob-col4-l1-5",
+      "title": "Count Elements Matching Condition Without Emptying Queue",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a Queue<Integer>, count how many elements are even numbers without permanently altering the queue contents or ordering.",
+      "starterCode": "import java.util.Queue;\n\npublic class QueueCounter {\n    public static int countEven(Queue<Integer> queue) {\n        // TODO: Count evens preserving original queue\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.Queue;\n\npublic class QueueCounter {\n    public static int countEven(Queue<Integer> queue) {\n        if (queue == null || queue.isEmpty()) return 0;\n        int evens = 0;\n        int size = queue.size();\n        for (int i = 0; i < size; i++) {\n            Integer item = queue.poll();\n            if (item != null && item % 2 == 0) {\n                evens++;\n            }\n            queue.offer(item); // Cycle back to tail to restore order\n        }\n        return evens;\n    }\n}",
+      "expectedOutput": "2",
+      "testCases": [
+        {
+          "input": "queue = [1, 2, 3, 4, 5]",
+          "expected": "2"
+        }
+      ],
+      "hints": [
+        "Poll each element, test condition, and offer it back to the tail.",
+        "Repeat exactly queue.size() times to restore original sequence."
+      ]
+    }
+  ]
+}

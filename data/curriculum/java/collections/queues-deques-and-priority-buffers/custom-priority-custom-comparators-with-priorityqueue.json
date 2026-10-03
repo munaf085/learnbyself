@@ -1,0 +1,214 @@
+{
+  "id": "les-col-priorityqueue-custom",
+  "slug": "custom-priority-custom-comparators-with-priorityqueue",
+  "sectionSlug": "collections",
+  "moduleSlug": "queues-deques-and-priority-buffers",
+  "languageSlug": "java",
+  "title": "Custom Priority: PriorityQueue with Custom Comparators",
+  "summary": "Control queue priority using custom Comparator lambdas: implementing Max-Heaps, multi-level priority (urgency + timestamp), and hospital triage queues.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "prerequisites": [
+    "PriorityQueue: Min-Heaps & Priority Processing",
+    "The Comparable & Comparator Interfaces"
+  ],
+  "learningObjectives": [
+    "Construct Max-Heaps using Collections.reverseOrder() and lambda-based comparators",
+    "Design robust compound comparators with Comparator.comparing().thenComparing()",
+    "Diagnose the integer subtraction overflow pitfall: why (a, b) -> a - b causes bugs",
+    "Understand FIFO tie-breaking mechanics to achieve deterministic priority queue dispatch"
+  ],
+  "expectedOutcomes": [
+    "Ability to architect multi-criteria priority queues for enterprise task engines",
+    "Mastery of comparator edge-cases including overflow and stability guarantees"
+  ],
+  "activities": [
+    {
+      "id": "act-col4-l5-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Air Traffic Controller Landing Stacks",
+      "analogy": {
+        "headline": "Practical Context: Air Traffic Controller Landing Stacks",
+        "story": "Air traffic control centers hold inbound aircraft in holding stacks. Primary priority is assigned by fuel reserves: an aircraft with a 'Mayday - Fuel Low' transponder code preempts all standard scheduled flights (Primary tier).\n\nIf two aircraft hold identical fuel status, the flight that entered the regional airspace perimeter first receives landing clearance first (FIFO tie-breaker). This multi-tier protocol prevents starvation while averting disasters.",
+        "keyTakeaway": "Real-world priority decisions rely on compound rules: primary urgency criteria combined with deterministic secondary tie-breakers."
+      },
+      "content": "Air traffic control centers hold inbound aircraft in holding stacks. Primary priority is assigned by fuel reserves: an aircraft with a 'Mayday - Fuel Low' transponder code preempts all standard scheduled flights (Primary tier).\n\nIf two aircraft hold identical fuel status, the flight that entered the regional airspace perimeter first receives landing clearance first (FIFO tie-breaker). This multi-tier protocol prevents starvation while averting disasters."
+    },
+    {
+      "id": "act-col4-l5-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Custom Comparators, Max-Heaps, and Tie-Breaking Invariants",
+      "breakdown": {
+        "keyTakeaways": [
+          "Passing Collections.reverseOrder() or (a, b) -> b.compareTo(a) transforms PriorityQueue into a Max-Heap",
+          "Compound comparators chain .comparingInt().thenComparingLong() for multi-level priority evaluation",
+          "Never subtract integers (a - b) in comparators; integer underflow/overflow causes catastrophic sign inversion",
+          "PriorityQueue is NOT stable by default: tie-breaking equal priorities requires explicit monotonic sequence numbers"
+        ]
+      },
+      "content": "### Constructing Max-Heaps in PriorityQueue\n\nBy default, `PriorityQueue` roots the smallest element (`compare(parent, child) <= 0`). To create a **Max-Heap** where the largest element occupies the root:\n1. `Collections.reverseOrder()`: Inverts the natural ordering of `Comparable` objects.\n2. Lambda / Method Reference: `(a, b) -> Integer.compare(b, a)` or `Comparator.reverseOrder()`.\n\n---\n\n### The Integer Overflow Subtraction Anti-Pattern\n\nA critical bug in junior Java implementations is using subtraction in comparators:\n```java\n// SEVERE BUG: Fails on numeric boundary extremes!\nComparator<Integer> broken = (a, b) -> a - b;\n// If a = -2_000_000_000 and b = 1_000_000_000:\n// a - b underflows to +1_294_967_296, falsely claiming a > b!\n```\nAlways use static helper methods:\n```java\nComparator<Integer> safe = Integer::compare;\nComparator<Long> safeLong = Long::compare;\n```\n\n---\n\n### Deterministic FIFO Tie-Breaking\n\n`PriorityQueue` is **not stable**. When two elements evaluate to `compare(a, b) == 0`, heap rebalancing makes no guarantee about which element will be polled first. In enterprise job dispatchers, when two jobs share identical priority scores, fairness dictates FIFO dispatch.\nTo guarantee stability, attach a monotonic sequence counter (`long sequenceId`) to every task and chain:\n```java\nComparator<Task> stableComparator = Comparator\n    .comparingInt(Task::getPriority)\n    .thenComparingLong(Task::getSequenceId);\n```\n\n---\n\n### Executable Demonstration: Production Incident Triage",
+      "codeExample": "import java.util.PriorityQueue;\nimport java.util.Comparator;\n\npublic class CustomPriorityDemo {\n    static class Incident {\n        final String ticketId;\n        final int severity; // 1 = Critical, 2 = High, 3 = Normal\n        final long timestamp;\n\n        Incident(String ticketId, int severity, long timestamp) {\n            this.ticketId = ticketId;\n            this.severity = severity;\n            this.timestamp = timestamp;\n        }\n\n        @Override\n        public String toString() {\n            return String.format(\"[%s: P%d, t=%d]\", ticketId, severity, timestamp);\n        }\n    }\n\n    public static void main(String[] args) {\n        // Primary: lower severity number = higher priority;\n        // Secondary tie-breaker: earlier timestamp first (FIFO)\n        Comparator<Incident> triageComparator = Comparator\n            .comparingInt((Incident i) -> i.severity)\n            .thenComparingLong(i -> i.timestamp);\n\n        PriorityQueue<Incident> triageQueue = new PriorityQueue<>(triageComparator);\n\n        triageQueue.offer(new Incident(\"INC-101\", 3, 1000L)); // Normal, t=1000\n        triageQueue.offer(new Incident(\"INC-102\", 1, 1050L)); // Critical, t=1050\n        triageQueue.offer(new Incident(\"INC-103\", 2, 1020L)); // High, t=1020\n        triageQueue.offer(new Incident(\"INC-104\", 1, 1010L)); // Critical, t=1010\n\n        System.out.println(\"Dispatched Incidents:\");\n        while (!triageQueue.isEmpty()) {\n            System.out.println(\"Processing: \" + triageQueue.poll());\n        }\n    }\n}\n// Expected Output:\n// Dispatched Incidents:\n// Processing: [INC-104: P1, t=1010]\n// Processing: [INC-102: P1, t=1050]\n// Processing: [INC-103: P2, t=1020]\n// Processing: [INC-101: P3, t=1000]"
+    },
+    {
+      "id": "act-col4-l5-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Max-Heap Top Scores Extraction",
+      "description": "Trace a leaderboard engine extracting the top scoring players using a Max-Heap PriorityQueue.",
+      "code": "import java.util.PriorityQueue;\nimport java.util.Collections;\n\npublic class LeaderboardEngine {\n    public static void main(String[] args) {\n        // Construct Max-Heap using Collections.reverseOrder()\n        PriorityQueue<Integer> maxScores = new PriorityQueue<>(Collections.reverseOrder());\n\n        maxScores.offer(450);\n        maxScores.offer(1200);\n        maxScores.offer(890);\n        maxScores.offer(2100);\n        maxScores.offer(650);\n\n        System.out.println(\"Highest score (peek): \" + maxScores.peek()); // 2100\n\n        System.out.println(\"Extracting leaderboard ranks:\");\n        int rank = 1;\n        while (!maxScores.isEmpty() && rank <= 3) {\n            System.out.printf(\"Rank %d: %d points%n\", rank++, maxScores.poll());\n        }\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "6-7",
+          "description": "Initialize PriorityQueue with Collections.reverseOrder(), which inverts comparisons so the maximum element occupies index 0."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "9-13",
+          "description": "Offer scores. 2100 sifts up to become the root maximum."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "17-21",
+          "description": "Sequential poll() drains scores descending: 2100, 1200, 890."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l5-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Comparator & Overflow Assessment",
+      "questions": [
+        {
+          "id": "col4-l5-q1",
+          "question": "What is the primary danger of using (a, b) -> a - b as a Comparator for integers?",
+          "options": [
+            "It cannot compile in Java 8+",
+            "Numeric underflow or overflow can flip the sign of the subtraction result, corrupting the heap",
+            "It forces the PriorityQueue to sort in descending order",
+            "It triggers a ConcurrentModificationException"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "If a is Integer.MIN_VALUE and b is positive, a - b underflows and wraps around to a positive integer, incorrectly stating that a > b. Always use Integer.compare(a, b)."
+        },
+        {
+          "id": "col4-l5-q2",
+          "question": "How do you configure PriorityQueue to function as a Max-Heap?",
+          "options": [
+            "Call priorityQueue.invert()",
+            "Pass Collections.reverseOrder() or (a, b) -> b.compareTo(a) to the constructor",
+            "Use the MaxPriorityQueue class from java.util.concurrent",
+            "Override the grow() method"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "PriorityQueue takes an optional Comparator in its constructor. Passing Collections.reverseOrder() reverses the natural order, transforming it into a Max-Heap."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l5-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Achieving FIFO Stability in PriorityQueue",
+      "qaList": [
+        {
+          "question": "Java's PriorityQueue is documented as non-stable. If two incoming tasks have the exact same priority value, how do you architect a PriorityQueue that strictly guarantees FIFO dispatch order among equals?",
+          "answer": "To guarantee FIFO stability in a PriorityQueue: wrap each task inside an OrderedTask container that attaches an incrementing monotonic sequence number (private static final AtomicLong SEQ = new AtomicLong(); private final long seq = SEQ.getAndIncrement();). Supply a compound comparator: Comparator.comparing(OrderedTask::getPriority).thenComparingLong(OrderedTask::getSeq). Because the sequence counter is strictly monotonically increasing, no two objects will ever evaluate as equal. When business priorities match, the lower sequence number (earlier arrival) strictly wins, guaranteeing deterministic FIFO ordering."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l5-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know how to construct a Max-Heap using Collections.reverseOrder() and lambda comparators",
+        "I understand why subtracting integers (a - b) in comparators causes catastrophic overflow bugs",
+        "I know how to chain Comparator.comparing() and thenComparing() for multi-tier sorting",
+        "I know how to achieve deterministic FIFO stability for equal-priority items using monotonic sequence IDs"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "pq-top-k-frequent-elements",
+      "title": "Top K Frequent Elements",
+      "difficulty": "medium",
+      "problemStatement": "Given an integer array nums and an integer k, return the k most frequent elements using a min-heap PriorityQueue ordered by frequency. Achieve O(N log K) time complexity.",
+      "starterCode": "import java.util.*;\n\npublic class TopKFrequent {\n    public static int[] topKFrequent(int[] nums, int k) {\n        return new int[0];\n    }\n\n    public static void main(String[] args) {\n        int[] nums = {1, 1, 1, 2, 2, 3};\n        System.out.println(Arrays.toString(topKFrequent(nums, 2))); // [1, 2] or [2, 1]\n    }\n}",
+      "solutionCode": "import java.util.*;\n\npublic class TopKFrequent {\n    public static int[] topKFrequent(int[] nums, int k) {\n        Map<Integer, Integer> freqMap = new HashMap<>();\n        for (int n : nums) {\n            freqMap.put(n, freqMap.getOrDefault(n, 0) + 1);\n        }\n\n        PriorityQueue<Map.Entry<Integer, Integer>> minHeap = new PriorityQueue<>(\n            Comparator.comparingInt(Map.Entry::getValue)\n        );\n\n        for (Map.Entry<Integer, Integer> entry : freqMap.entrySet()) {\n            minHeap.offer(entry);\n            if (minHeap.size() > k) {\n                minHeap.poll();\n            }\n        }\n\n        int[] result = new int[k];\n        int i = 0;\n        while (!minHeap.isEmpty()) {\n            result[i++] = minHeap.poll().getKey();\n        }\n        return result;\n    }\n\n    public static void main(String[] args) {\n        int[] nums = {1, 1, 1, 2, 2, 3};\n        int[] res = topKFrequent(nums, 2);\n        Arrays.sort(res);\n        System.out.println(Arrays.toString(res));\n    }\n}",
+      "testCases": [
+        {
+          "input": "nums = [1, 1, 1, 2, 2, 3], k = 2",
+          "expectedOutput": "[1, 2]"
+        }
+      ],
+      "expectedOutput": "[1, 2]"
+    },
+    {
+      "id": "pq-k-closest-points-origin",
+      "title": "K Closest Points to Origin",
+      "difficulty": "medium",
+      "problemStatement": "Given an array of points where points[i] = [x_i, y_i] represents a point on the X-Y plane and an integer k, return the k closest points to the origin (0, 0) using a max-heap of size k.",
+      "starterCode": "import java.util.PriorityQueue;\nimport java.util.Arrays;\n\npublic class KClosestPoints {\n    public static int[][] kClosest(int[][] points, int k) {\n        return new int[0][0];\n    }\n\n    public static void main(String[] args) {\n        int[][] points = {{3, 3}, {5, -1}, {-2, 4}};\n        int[][] closest = kClosest(points, 2);\n        System.out.println(closest.length);\n    }\n}",
+      "solutionCode": "import java.util.PriorityQueue;\nimport java.util.Arrays;\n\npublic class KClosestPoints {\n    public static int[][] kClosest(int[][] points, int k) {\n        PriorityQueue<int[]> maxHeap = new PriorityQueue<>(\n            (p1, p2) -> Integer.compare(p2[0]*p2[0] + p2[1]*p2[1], p1[0]*p1[0] + p1[1]*p1[1])\n        );\n\n        for (int[] point : points) {\n            maxHeap.offer(point);\n            if (maxHeap.size() > k) {\n                maxHeap.poll();\n            }\n        }\n\n        int[][] result = new int[k][2];\n        int i = 0;\n        while (!maxHeap.isEmpty()) {\n            result[i++] = maxHeap.poll();\n        }\n        return result;\n    }\n\n    public static void main(String[] args) {\n        int[][] points = {{3, 3}, {5, -1}, {-2, 4}};\n        int[][] closest = kClosest(points, 2);\n        System.out.println(closest.length);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[[3, 3], [5, -1], [-2, 4]], k = 2",
+          "expectedOutput": "2"
+        }
+      ],
+      "expectedOutput": "2"
+    },
+    {
+      "id": "pq-stable-event-dispatcher",
+      "title": "Deterministic Stable FIFO Priority Dispatcher",
+      "difficulty": "medium",
+      "problemStatement": "Implement a StablePriorityQueue<T> that accepts elements with an integer priority and guarantees that elements with the same priority are polled strictly in First-In, First-Out (FIFO) arrival order.",
+      "starterCode": "import java.util.PriorityQueue;\nimport java.util.Comparator;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class StablePriorityQueue<T> {\n    public void offer(T item, int priority) {\n    }\n\n    public T poll() {\n        return null;\n    }\n\n    public boolean isEmpty() {\n        return true;\n    }\n\n    public static void main(String[] args) {\n        StablePriorityQueue<String> spq = new StablePriorityQueue<>();\n        spq.offer(\"JobA\", 2);\n        spq.offer(\"JobB\", 1);\n        spq.offer(\"JobC\", 2);\n        spq.offer(\"JobD\", 1);\n\n        while (!spq.isEmpty()) {\n            System.out.print(spq.poll() + \" \"); // JobB JobD JobA JobC\n        }\n        System.out.println();\n    }\n}",
+      "solutionCode": "import java.util.PriorityQueue;\nimport java.util.Comparator;\nimport java.util.concurrent.atomic.AtomicLong;\n\npublic class StablePriorityQueue<T> {\n    private static final AtomicLong SEQ_GENERATOR = new AtomicLong();\n\n    private static class Entry<T> {\n        final T item;\n        final int priority;\n        final long sequenceNumber;\n\n        Entry(T item, int priority, long sequenceNumber) {\n            this.item = item;\n            this.priority = priority;\n            this.sequenceNumber = sequenceNumber;\n        }\n    }\n\n    private final PriorityQueue<Entry<T>> pq = new PriorityQueue<>(\n        Comparator.<Entry<T>>comparingInt(e -> e.priority)\n                  .thenComparingLong(e -> e.sequenceNumber)\n    );\n\n    public void offer(T item, int priority) {\n        pq.offer(new Entry<>(item, priority, SEQ_GENERATOR.getAndIncrement()));\n    }\n\n    public T poll() {\n        Entry<T> entry = pq.poll();\n        return entry != null ? entry.item : null;\n    }\n\n    public boolean isEmpty() {\n        return pq.isEmpty();\n    }\n\n    public static void main(String[] args) {\n        StablePriorityQueue<String> spq = new StablePriorityQueue<>();\n        spq.offer(\"JobA\", 2);\n        spq.offer(\"JobB\", 1);\n        spq.offer(\"JobC\", 2);\n        spq.offer(\"JobD\", 1);\n\n        while (!spq.isEmpty()) {\n            System.out.print(spq.poll() + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "JobA(2), JobB(1), JobC(2), JobD(1)",
+          "expectedOutput": "JobB JobD JobA JobC "
+        }
+      ],
+      "expectedOutput": "JobB JobD JobA JobC "
+    },
+    {
+      "id": "pq-reorganize-string-no-adjacent",
+      "title": "Reorganize String to Prevent Adjacent Duplicates",
+      "difficulty": "hard",
+      "problemStatement": "Given a string s, rearrange the characters of s so that any two adjacent characters are not the same. Return any possible rearrangement, or return empty string \"\" if not possible. Use a max-heap tracking character frequencies.",
+      "starterCode": "import java.util.PriorityQueue;\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class ReorganizeString {\n    public static String reorganizeString(String s) {\n        return \"\";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(reorganizeString(\"aab\"));  // \"aba\"\n        System.out.println(reorganizeString(\"aaab\")); // \"\"\n    }\n}",
+      "solutionCode": "import java.util.PriorityQueue;\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class ReorganizeString {\n    public static String reorganizeString(String s) {\n        Map<Character, Integer> counts = new HashMap<>();\n        for (char c : s.toCharArray()) {\n            counts.put(c, counts.getOrDefault(c, 0) + 1);\n        }\n\n        PriorityQueue<Map.Entry<Character, Integer>> maxHeap = new PriorityQueue<>(\n            (a, b) -> Integer.compare(b.getValue(), a.getValue())\n        );\n        maxHeap.addAll(counts.entrySet());\n\n        StringBuilder sb = new StringBuilder();\n        Map.Entry<Character, Integer> prev = null;\n\n        while (!maxHeap.isEmpty()) {\n            Map.Entry<Character, Integer> current = maxHeap.poll();\n            sb.append(current.getKey());\n            current.setValue(current.getValue() - 1);\n\n            if (prev != null && prev.getValue() > 0) {\n                maxHeap.offer(prev);\n            }\n            prev = current;\n        }\n\n        return sb.length() == s.length() ? sb.toString() : \"\";\n    }\n\n    public static void main(String[] args) {\n        System.out.println(reorganizeString(\"aab\"));\n        System.out.println(reorganizeString(\"aaab\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "\"aab\", \"aaab\"",
+          "expectedOutput": "aba\n"
+        }
+      ],
+      "expectedOutput": "aba\n"
+    },
+    {
+      "id": "pq-find-median-data-stream",
+      "title": "Continuous Median from Data Stream (Two Heaps)",
+      "difficulty": "hard",
+      "problemStatement": "Implement a MedianFinder class that calculates the median of numbers dynamically added to a stream in O(log N) insertion time and O(1) median query time using two heaps: a max-heap for the lower half and a min-heap for the upper half.",
+      "starterCode": "import java.util.PriorityQueue;\nimport java.util.Collections;\n\npublic class MedianFinder {\n    public void addNum(int num) {\n    }\n\n    public double findMedian() {\n        return 0.0;\n    }\n\n    public static void main(String[] args) {\n        MedianFinder mf = new MedianFinder();\n        mf.addNum(1);\n        mf.addNum(2);\n        System.out.println(mf.findMedian()); // 1.5\n        mf.addNum(3);\n        System.out.println(mf.findMedian()); // 2.0\n    }\n}",
+      "solutionCode": "import java.util.PriorityQueue;\nimport java.util.Collections;\n\npublic class MedianFinder {\n    private final PriorityQueue<Integer> maxHeap = new PriorityQueue<>(Collections.reverseOrder());\n    private final PriorityQueue<Integer> minHeap = new PriorityQueue<>();\n\n    public void addNum(int num) {\n        if (maxHeap.isEmpty() || num <= maxHeap.peek()) {\n            maxHeap.offer(num);\n        } else {\n            minHeap.offer(num);\n        }\n\n        if (maxHeap.size() > minHeap.size() + 1) {\n            minHeap.offer(maxHeap.poll());\n        } else if (minHeap.size() > maxHeap.size()) {\n            maxHeap.offer(minHeap.poll());\n        }\n    }\n\n    public double findMedian() {\n        if (maxHeap.size() == minHeap.size()) {\n            return (maxHeap.peek() + minHeap.peek()) / 2.0;\n        }\n        return (double) maxHeap.peek();\n    }\n\n    public static void main(String[] args) {\n        MedianFinder mf = new MedianFinder();\n        mf.addNum(1);\n        mf.addNum(2);\n        System.out.println(mf.findMedian());\n        mf.addNum(3);\n        System.out.println(mf.findMedian());\n    }\n}",
+      "testCases": [
+        {
+          "input": "addNum(1), addNum(2), findMedian(), addNum(3), findMedian()",
+          "expectedOutput": "1.5\n2.0"
+        }
+      ],
+      "expectedOutput": "1.5\n2.0"
+    }
+  ]
+}

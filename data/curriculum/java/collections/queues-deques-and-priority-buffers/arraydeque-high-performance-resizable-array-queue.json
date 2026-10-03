@@ -1,0 +1,279 @@
+{
+  "id": "les-col-arraydeque-internals",
+  "slug": "arraydeque-high-performance-resizable-array-queue",
+  "sectionSlug": "collections",
+  "moduleSlug": "queues-deques-and-priority-buffers",
+  "languageSlug": "java",
+  "title": "ArrayDeque: High-Performance Resizable Array Queue",
+  "summary": "Why ArrayDeque is the gold-standard queue: circular array mechanics, zero node allocation overhead, and superior speed over LinkedList.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "The Queue Contract & FIFO Buffer Processing",
+    "ArrayList vs LinkedList: Performance & CPU Caching",
+    "Understanding Big-O Time Complexity"
+  ],
+  "learningObjectives": [
+    "Understand the circular array architecture of java.util.ArrayDeque",
+    "Trace head and tail pointer bitmask wrapping: (tail + 1) & (elements.length - 1)",
+    "Explain power-of-two capacity sizing and doubling expansion mechanics",
+    "Analyze why ArrayDeque outperforms LinkedList in cache locality and memory footprint"
+  ],
+  "expectedOutcomes": [
+    "Complete mastery of circular buffer pointer arithmetic in technical engineering interviews",
+    "Ability to architect zero-allocation queues for low-latency Java applications"
+  ],
+  "activities": [
+    {
+      "id": "act-col4-l2-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Rotary Turntable Conveyor Belt",
+      "analogy": {
+        "headline": "Practical Context: Rotary Turntable Conveyor Belt",
+        "story": "Imagine a circular luggage carousel at an airport. Luggage enters at the tail pointer, moves along the belt, and passengers pick it up at the head pointer. When the tail reaches the physical end of the track, the belt does not stop or build new track\u2014it simply loops back seamlessly to slot 0.\n\nOnly if the entire carousel becomes 100% full (head meets tail) does airport maintenance pause to insert an entire outer ring of track, doubling capacity. Unlike a train with individual railcars (LinkedList) requiring uncoupling and coupling, the circular turntable is a single continuous ring of memory.",
+        "keyTakeaway": "ArrayDeque uses a contiguous circular array with head and tail indices wrapping around via bitwise masking, delivering blistering speed with zero node allocations."
+      },
+      "content": "Imagine a circular luggage carousel at an airport. Luggage enters at the tail pointer, moves along the belt, and passengers pick it up at the head pointer. When the tail reaches the physical end of the track, the belt does not stop or build new track\u2014it simply loops back seamlessly to slot 0.\n\nOnly if the entire carousel becomes 100% full (head meets tail) does airport maintenance pause to insert an entire outer ring of track, doubling capacity. Unlike a train with individual railcars (LinkedList) requiring uncoupling and coupling, the circular turntable is a single continuous ring of memory."
+    },
+    {
+      "id": "act-col4-l2-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "ArrayDeque Architecture: Circular Arrays & Bitwise Pointer Wrapping",
+      "breakdown": {
+        "keyTakeaways": [
+          "ArrayDeque is backed by a circular Object[] elements array with head and tail int pointers",
+          "Capacity is strictly maintained as a power of two (e.g. 16, 32, 64)",
+          "Pointer wrapping uses bitwise AND: (tail + 1) & (elements.length - 1) instead of expensive modulo division",
+          "ArrayDeque outperforms LinkedList across both Queue and Stack workloads due to contiguous CPU cache locality"
+        ]
+      },
+      "content": "### Definition of ArrayDeque & Circular Array Architecture\n\nA **`java.util.ArrayDeque<E>`** is a resizable, double-ended array queue that implements the `Deque<E>` interface. It is the gold-standard recommendation in modern Java for both FIFO queues and LIFO stacks.\n\nInternally, `ArrayDeque` uses a circular array buffer:\n```java\n// OpenJDK ArrayDeque Storage Fields\ntransient Object[] elements;\ntransient int head;\ntransient int tail;\n```\nElements are inserted and removed using two integer indices:\n* `head`: Index of the current first element.\n* `tail`: Index at which the next element will be added via `addLast()`.\n\n---\n\n### Blazing-Fast Bitmask Pointer Arithmetic\n\nBecause capacity is guaranteed to always be a power of two ($2^k$), the bitmask `(elements.length - 1)` contains all 1s in binary (e.g., $16 - 1 = 15 = \\text{00001111}_2$).\n\nWhen advancing the tail pointer:\n$$\\text{tail} = (\\text{tail} + 1) \\& (\\text{elements.length} - 1)$$\nWhen moving the head pointer backward:\n$$\\text{head} = (\\text{head} - 1) \\& (\\text{elements.length} - 1)$$\nIf `tail` is $15$ in a 16-element array, $(15 + 1) \\& 15 = 16 \\& 15 = 0$. The pointer wraps back to index $0$ in a single CPU cycle without branching or division!\n\n---\n\n### ArrayDeque vs LinkedList: Why ArrayDeque Wins\n\n| Metric | `ArrayDeque<E>` | `LinkedList<E>` |\n| :--- | :--- | :--- |\n| **Backing Storage** | Contiguous `Object[]` array | Dispersed `Node` objects on Heap |\n| **Allocation Cost** | 0 allocations on add/poll | 1 new `Node` object allocated per `add()` |\n| **Memory per Element** | 4\u20138 bytes (array slot reference) | 24\u201332 bytes (`item`, `prev`, `next`, header) |\n| **CPU Cache Locality** | Optimal (sequential L1/L2 prefetching) | Poor (pointer chasing across heap) |\n| **Null Elements** | Prohibited (throws `NullPointerException`) | Permitted |\n\n```java\nimport java.util.ArrayDeque;\nimport java.util.Deque;\n\npublic class ArrayDequeInternalsDemo {\n    public static void main(String[] args) {\n        Deque<String> circularQueue = new ArrayDeque<>(4);\n\n        // Enqueue 3 items\n        circularQueue.offer(\"Task_1\");\n        circularQueue.offer(\"Task_2\");\n        circularQueue.offer(\"Task_3\");\n        System.out.println(\"Queue content: \" + circularQueue);\n\n        // Poll 1 item (head advances)\n        System.out.println(\"Polled head: \" + circularQueue.poll());\n\n        // Add 2 more items (tail wraps around circular buffer!)\n        circularQueue.offer(\"Task_4\");\n        circularQueue.offer(\"Task_5\");\n\n        System.out.println(\"After wrap-around: \" + circularQueue);\n        System.out.println(\"Next to process:  \" + circularQueue.peek());\n    }\n}\n```\n\n**Console Output:**\n```text\nQueue content: [Task_1, Task_2, Task_3]\nPolled head: Task_1\nAfter wrap-around: [Task_2, Task_3, Task_4, Task_5]\nNext to process:  Task_2\n```"
+    },
+    {
+      "id": "act-col4-l2-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Simulating a Circular Array Queue in Pure Java",
+      "description": "Trace the circular buffer pointer wrapping algorithm to observe how indices cycle from capacity-1 back to 0.",
+      "code": "public class CircularArraySimulator {\n    public static void main(String[] args) {\n        int capacity = 8; // Must be power of 2\n        int mask = capacity - 1; // 7 (binary: 00000111)\n\n        int head = 0;\n        int tail = 0;\n\n        // Simulate 10 sequential insertions and 4 deletions\n        System.out.printf(\"%-10s | %-6s | %-6s | %-12s%n\", \"Action\", \"Head\", \"Tail\", \"Pointer Math\");\n        System.out.println(\"-\".repeat(40));\n\n        for (int i = 1; i <= 6; i++) {\n            System.out.printf(\"Insert #%-3d | %-6d | %-6d | tail -> (%d+1)&7 = %d%n\",\n                              i, head, tail, tail, (tail + 1) & mask);\n            tail = (tail + 1) & mask;\n        }\n\n        // Poll 3 items\n        for (int i = 1; i <= 3; i++) {\n            System.out.printf(\"Poll   #%-3d | %-6d | %-6d | head -> (%d+1)&7 = %d%n\",\n                              i, head, tail, head, (head + 1) & mask);\n            head = (head + 1) & mask;\n        }\n\n        // Insert 4 more items (causes tail to wrap around index 0!)\n        for (int i = 7; i <= 10; i++) {\n            System.out.printf(\"Insert #%-3d | %-6d | %-6d | tail -> (%d+1)&7 = %d%n\",\n                              i, head, tail, tail, (tail + 1) & mask);\n            tail = (tail + 1) & mask;\n        }\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "3-4",
+          "description": "Define power-of-two capacity 8 and bitmask 7 (capacity - 1)."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "12-16",
+          "description": "Simulate adding items: tail advances sequentially via (tail + 1) & mask."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "19-23",
+          "description": "Simulate polling items: head advances sequentially, freeing front slots."
+        },
+        {
+          "stepNumber": 4,
+          "focusLines": "26-30",
+          "description": "Insert additional items: when tail reaches 7, (7 + 1) & 7 wraps tail cleanly back to 0."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l2-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "ArrayDeque Internals Assessment",
+      "questions": [
+        {
+          "id": "col4-l2-q1",
+          "question": "How does ArrayDeque wrap pointer indices around the circular buffer without using modulo division?",
+          "options": [
+            "Using an if-statement: if (tail == length) tail = 0",
+            "Using bitwise AND: (tail + 1) & (elements.length - 1)",
+            "Using a recursive function",
+            "By clearing the array"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Because capacity is strictly a power of two, (elements.length - 1) acts as a bitmask, wrapping the pointer in 1 CPU instruction."
+        },
+        {
+          "id": "col4-l2-q2",
+          "question": "Why does ArrayDeque generally outperform LinkedList for queue and stack operations?",
+          "options": [
+            "Because LinkedList is deprecated in Java",
+            "Because ArrayDeque stores elements in a contiguous memory array with superior CPU cache locality and zero node allocation overhead",
+            "Because ArrayDeque uses multi-threading",
+            "Because ArrayDeque compresses strings"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "LinkedList allocates a 24-byte Node object for every element added, causing cache misses and GC overhead. ArrayDeque uses flat arrays with optimal cache prefetching."
+        },
+        {
+          "id": "col4-l2-q3",
+          "question": "What condition signals that an ArrayDeque's backing circular array is full and must resize?",
+          "options": [
+            "tail == elements.length",
+            "head == tail",
+            "head == 0 && tail == 0",
+            "elements[tail] != null"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In a circular buffer, when tail advances to equal head, all slots in the array are occupied and the array must double its capacity."
+        },
+        {
+          "id": "col4-l2-q4",
+          "question": "What happens if you attempt to insert null into an ArrayDeque?",
+          "options": [
+            "It is placed at the head",
+            "A NullPointerException is thrown",
+            "It returns false",
+            "The queue clears itself"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "ArrayDeque explicitly prohibits null elements; calling addFirst(null) or offerLast(null) throws NullPointerException."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l2-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: ArrayDeque vs LinkedList",
+      "questions": [
+        {
+          "id": "col4-l2-int-1",
+          "question": "Why should you virtually never use LinkedList as a Queue or Stack in modern Java?",
+          "answer": "LinkedList allocates a separate Node object for every single insertion. Each Node contains two 8-byte reference pointers (prev, next), an 8-byte value pointer, and an object header, consuming 24-32 bytes of heap per element. Furthermore, Node objects are scattered across heap memory, defeating CPU hardware prefetchers and causing severe cache misses. ArrayDeque stores references contiguously in a flat array, has zero per-element allocation overhead, and runs 2x-5x faster in real-world benchmarks."
+        },
+        {
+          "id": "col4-l2-int-2",
+          "question": "How does ArrayDeque handle resizing when head == tail?",
+          "answer": "When head meets tail, doubleCapacity() is triggered. A new array of double the size (newCap = oldCap << 1) is allocated. Elements from head to the end of the old array are copied to the beginning of the new array, and elements from 0 to head are copied immediately after. head is reset to 0 and tail is set to the old array length. This maintains contiguous logical ordering."
+        },
+        {
+          "id": "col4-l2-int-3",
+          "question": "Is ArrayDeque bounded or unbounded?",
+          "answer": "ArrayDeque is unbounded. While its internal backing array has a fixed capacity at any given moment, it automatically doubles whenever it fills up, bounded only by available JVM heap memory."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l2-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: ArrayDeque Internals",
+      "checklist": [
+        "I can explain circular buffer pointer wrapping using (index + 1) & (capacity - 1)",
+        "I understand why head == tail signals that the circular array is full",
+        "I can explain why ArrayDeque is superior to LinkedList in cache locality and memory footprint"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col4-l2-1",
+      "title": "Compute Wrapped Circular Index",
+      "difficulty": "beginner",
+      "problemStatement": "Implement nextIndex(int currentIndex, int capacity) using the power-of-two bitmask formula to calculate the next circular buffer index.",
+      "starterCode": "public class CircularIndexCalculator {\n    public static int nextIndex(int current, int capacity) {\n        // TODO: Return (current + 1) wrapped around capacity\n        return 0;\n    }\n}",
+      "solutionCode": "public class CircularIndexCalculator {\n    public static int nextIndex(int current, int capacity) {\n        return (current + 1) & (capacity - 1);\n    }\n}",
+      "expectedOutput": "0",
+      "testCases": [
+        {
+          "input": "current = 15, capacity = 16",
+          "expected": "0"
+        },
+        {
+          "input": "current = 4, capacity = 16",
+          "expected": "5"
+        }
+      ],
+      "hints": [
+        "Use (current + 1) & (capacity - 1)."
+      ]
+    },
+    {
+      "id": "prob-col4-l2-2",
+      "title": "Compute Preceding Circular Index",
+      "difficulty": "beginner",
+      "problemStatement": "Implement prevIndex(int currentIndex, int capacity) using bitwise masking to calculate the preceding circular buffer index (wrapping 0 to capacity - 1).",
+      "starterCode": "public class PrevIndexCalculator {\n    public static int prevIndex(int current, int capacity) {\n        // TODO: Return (current - 1) wrapped around capacity\n        return 0;\n    }\n}",
+      "solutionCode": "public class PrevIndexCalculator {\n    public static int prevIndex(int current, int capacity) {\n        return (current - 1) & (capacity - 1);\n    }\n}",
+      "expectedOutput": "15",
+      "testCases": [
+        {
+          "input": "current = 0, capacity = 16",
+          "expected": "15"
+        },
+        {
+          "input": "current = 5, capacity = 16",
+          "expected": "4"
+        }
+      ],
+      "hints": [
+        "Use (current - 1) & (capacity - 1)."
+      ]
+    },
+    {
+      "id": "prob-col4-l2-3",
+      "title": "Implement Fixed Circular Int Queue",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement a simple FixedCircularQueue with capacity 4 supporting enqueue(int val) and dequeue() returning the oldest int, or -1 if empty.",
+      "starterCode": "public class FixedCircularQueue {\n    private final int[] data = new int[4];\n    private int head = 0;\n    private int tail = 0;\n    private int count = 0;\n\n    public boolean enqueue(int val) {\n        // TODO: Add element if not full\n        return false;\n    }\n\n    public int dequeue() {\n        // TODO: Remove and return head or -1\n        return -1;\n    }\n}",
+      "solutionCode": "public class FixedCircularQueue {\n    private final int[] data = new int[4];\n    private int head = 0;\n    private int tail = 0;\n    private int count = 0;\n\n    public boolean enqueue(int val) {\n        if (count == 4) return false;\n        data[tail] = val;\n        tail = (tail + 1) & 3;\n        count++;\n        return true;\n    }\n\n    public int dequeue() {\n        if (count == 0) return -1;\n        int val = data[head];\n        head = (head + 1) & 3;\n        count--;\n        return val;\n    }\n}",
+      "expectedOutput": "true, then dequeued value",
+      "testCases": [
+        {
+          "input": "enqueue(10), enqueue(20), dequeue()",
+          "expected": "10"
+        }
+      ],
+      "hints": [
+        "Capacity 4 has mask 3.",
+        "Update tail = (tail + 1) & 3 on enqueue and head = (head + 1) & 3 on dequeue."
+      ]
+    },
+    {
+      "id": "prob-col4-l2-4",
+      "title": "Build Deque Ingestion Buffer",
+      "difficulty": "beginner",
+      "problemStatement": "Write a method createQueueFromTokens(String[] tokens) that returns an ArrayDeque containing all non-null tokens in incoming order.",
+      "starterCode": "import java.util.ArrayDeque;\n\npublic class TokenQueueFactory {\n    public static ArrayDeque<String> createQueue(String[] tokens) {\n        // TODO: Build ArrayDeque discarding nulls\n        return new ArrayDeque<>();\n    }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\n\npublic class TokenQueueFactory {\n    public static ArrayDeque<String> createQueue(String[] tokens) {\n        ArrayDeque<String> deque = new ArrayDeque<>();\n        if (tokens != null) {\n            for (String t : tokens) {\n                if (t != null) {\n                    deque.offer(t);\n                }\n            }\n        }\n        return deque;\n    }\n}",
+      "expectedOutput": "ArrayDeque of tokens",
+      "testCases": [
+        {
+          "input": "['A', null, 'B']",
+          "expected": "deque containing ['A', 'B']"
+        }
+      ],
+      "hints": [
+        "ArrayDeque throws NullPointerException if null is passed to offer/add.",
+        "Check t != null before offer."
+      ]
+    },
+    {
+      "id": "prob-col4-l2-5",
+      "title": "Reverse Queue Elements Using Deque",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an ArrayDeque<Integer>, reverse its elements in-place using double-ended operations.",
+      "starterCode": "import java.util.ArrayDeque;\n\npublic class QueueReverser {\n    public static void reverseQueue(ArrayDeque<Integer> deque) {\n        // TODO: Reverse elements in-place\n    }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\n\npublic class QueueReverser {\n    public static void reverseQueue(ArrayDeque<Integer> deque) {\n        if (deque == null || deque.size() <= 1) return;\n        ArrayDeque<Integer> stack = new ArrayDeque<>();\n        while (!deque.isEmpty()) {\n            stack.push(deque.poll());\n        }\n        while (!stack.isEmpty()) {\n            deque.offer(stack.pop());\n        }\n    }\n}",
+      "expectedOutput": "Reversed queue",
+      "testCases": [
+        {
+          "input": "deque = [1, 2, 3]",
+          "expected": "deque becomes [3, 2, 1]"
+        }
+      ],
+      "hints": [
+        "Pushing to a stack reverses order.",
+        "Pop elements back to deque."
+      ]
+    }
+  ]
+}

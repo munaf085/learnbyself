@@ -1,0 +1,216 @@
+{
+  "id": "les-col-generic-methods",
+  "slug": "generic-methods-and-method-level-type-inference",
+  "sectionSlug": "collections",
+  "moduleSlug": "generics-and-type-safety",
+  "languageSlug": "java",
+  "title": "Generic Methods & Method-Level Type Inference",
+  "summary": "Define generic methods independent of class-level types: <T> returnType methodName(T arg), type inference, and static generic utility methods.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "prerequisites": [
+    "Generic Classes: Building Type-Safe Containers",
+    "Java Methods & Return Values",
+    "Understanding Static Scopes"
+  ],
+  "learningObjectives": [
+    "Master the generic method syntax: declaring <T> immediately before the return type",
+    "Define static generic utility methods inside both generic and non-generic classes",
+    "Analyze javac type inference algorithms and when explicit type witnesses (<Type>) are required",
+    "Avoid the dangerous type variable shadowing pitfall between class-level and method-level parameters"
+  ],
+  "expectedOutcomes": [
+    "Ability to build high-performance, reusable utility libraries like java.util.Collections",
+    "Mastery of method-level type argument inference and compile-time resolution"
+  ],
+  "activities": [
+    {
+      "id": "act-col5-l3-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Universal Luggage Baggage Scale at Airport Check-In",
+      "analogy": {
+        "headline": "Practical Context: Universal Luggage Baggage Scale at Airport Check-In",
+        "story": "At an international airport check-in desk, the baggage scale does not care what kind of bag is placed on it: a hardshell suitcase, a golf club duffle bag, a musical cello case, or a cardboard box. The scale mechanism (the method) is parameterized by the incoming object.\n\nIt accepts item T, reads its mass, stamps a baggage tag of type Tag<T>, and hands it back. The check-in desk building itself (the class) does not need to be a 'SuitcaseBuilding' or 'CelloBuilding'. The method independently adapts to whatever specific baggage type is presented in that single transaction.",
+        "keyTakeaway": "A generic method introduces its own type parameter scoped strictly to that single method execution, independent of whether the enclosing class is generic."
+      },
+      "content": "At an international airport check-in desk, the baggage scale does not care what kind of bag is placed on it: a hardshell suitcase, a golf club duffle bag, a musical cello case, or a cardboard box. The scale mechanism (the method) is parameterized by the incoming object.\n\nIt accepts item T, reads its mass, stamps a baggage tag of type Tag<T>, and hands it back. The check-in desk building itself (the class) does not need to be a 'SuitcaseBuilding' or 'CelloBuilding'. The method independently adapts to whatever specific baggage type is presented in that single transaction."
+    },
+    {
+      "id": "act-col5-l3-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Generic Method Syntax, Type Witnesses & Shadowing Traps",
+      "breakdown": {
+        "keyTakeaways": [
+          "Generic methods declare formal type parameters BEFORE the return type: public static <T> void swap(T[] arr, int i, int j)",
+          "Generic methods can exist inside non-generic classes, enabling standalone utility libraries",
+          "The Java compiler infers type arguments automatically from invocation parameters and target assignment types",
+          "Type witnesses (Collections.<String>emptyList()) supply explicit type arguments when inference context is ambiguous",
+          "A method-level <T> shadows a class-level <T>, creating confusing compilation diagnostics"
+        ]
+      },
+      "content": "### Generic Method Declaration Syntax\n\nA generic method introduces its own type parameters. The type parameter section is enclosed in angle brackets and **must appear before the method's return type**:\n```java\npublic class ArrayUtils {\n    // <T> before return type declares T as a method-level type parameter\n    public static <T> void swap(T[] array, int i, int j) {\n        T temp = array[i];\n        array[i] = array[j];\n        array[j] = temp;\n    }\n}\n```\nNotice that `ArrayUtils` is a normal, non-generic class, yet `swap` is fully generic and works for `String[]`, `Integer[]`, or `Customer[]`.\n\n---\n\n### Compiler Type Inference & Explicit Type Witnesses\n\nWhen invoking a generic method, you rarely need to specify the type argument explicitly because the compiler's **Type Inference** algorithm analyzes the argument types:\n```java\nString[] names = {\"Alice\", \"Bob\"};\nArrayUtils.swap(names, 0, 1); // javac infers T as String\n```\nHowever, when a method produces a generic value without input arguments, or in complex chained expressions, type inference may lack sufficient context. In such cases, an **explicit type witness** is supplied immediately before the method name:\n```java\n// Without type witness (may infer as List<Object>):\nList<String> list1 = Collections.emptyList(); // Inferred from target type in Java 8+\n\n// Explicit type witness syntax (guarantees T = String):\nList<String> list2 = Collections.<String>emptyList();\n```\n\n---\n\n### The Type Variable Shadowing Pitfall\n\nA dangerous bug occurs when an instance method inside a generic class declares a method-level type parameter with the exact same name as the class-level parameter:\n```java\npublic class Box<T> {\n    private T item;\n\n    // SHADOWING BUG: This <T> is a DIFFERENT type that shadows class-level T!\n    public <T> void replaceItem(T newItem) {\n        // this.item = newItem; // COMPILE ERROR: Type mismatch: cannot convert T to T\n    }\n}\n```\nIn the code above, the method-level `<T>` completely hides the class-level `T`. To avoid this, never re-declare `<T>` on instance methods that intend to use the class's type parameter.\n\n---\n\n### Executable Demonstration: Generic Utility Library",
+      "codeExample": "import java.util.Arrays;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class GenericMethodDemo {\n    // Generic utility: converts an array of any reference type to an ArrayList\n    public static <E> List<E> toArrayList(E[] array) {\n        List<E> list = new ArrayList<>(array.length);\n        for (E element : array) {\n            list.add(element);\n        }\n        return list;\n    }\n\n    // Generic swap on any reference array\n    public static <T> void swap(T[] a, int i, int j) {\n        T temp = a[i];\n        a[i] = a[j];\n        a[j] = temp;\n    }\n\n    public static void main(String[] args) {\n        String[] fruits = {\"Apple\", \"Banana\", \"Cherry\"};\n        swap(fruits, 0, 2); // Inferred T = String\n        System.out.println(\"After swap: \" + Arrays.toString(fruits));\n\n        Integer[] numbers = {10, 20, 30};\n        List<Integer> numList = toArrayList(numbers); // Inferred E = Integer\n        System.out.println(\"Converted to List: \" + numList);\n\n        // Explicit type witness invocation\n        List<String> explicitList = GenericMethodDemo.<String>toArrayList(fruits);\n        System.out.println(\"Explicit witness list: \" + explicitList);\n    }\n}\n// Expected Output:\n// After swap: [Cherry, Banana, Apple]\n// Converted to List: [10, 20, 30]\n// Explicit witness list: [Cherry, Banana, Apple]"
+    },
+    {
+      "id": "act-col5-l3-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Generic Array Reversal Utility",
+      "description": "Trace a static generic array reversal method operating across diverse reference types.",
+      "code": "import java.util.Arrays;\n\npublic class ArrayReverser {\n    public static <T> void reverse(T[] array) {\n        if (array == null || array.length <= 1) return;\n        int left = 0;\n        int right = array.length - 1;\n        while (left < right) {\n            T temp = array[left];\n            array[left] = array[right];\n            array[right] = temp;\n            left++;\n            right--;\n        }\n    }\n\n    public static void main(String[] args) {\n        String[] tokens = {\"Alpha\", \"Beta\", \"Gamma\", \"Delta\"};\n        reverse(tokens);\n        System.out.println(\"Reversed tokens: \" + Arrays.toString(tokens));\n\n        Double[] values = {1.1, 2.2, 3.3};\n        reverse(values);\n        System.out.println(\"Reversed values: \" + Arrays.toString(values));\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "4",
+          "description": "Define <T> immediately before void. This introduces type parameter T scoped strictly to reverse()."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "7-13",
+          "description": "Two-pointer swap algorithm. Variable temp is of type T, safely holding elements without casting."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "18-24",
+          "description": "Compiler automatically infers T as String on tokens and T as Double on values."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l3-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Generic Method Syntax & Resolution Assessment",
+      "questions": [
+        {
+          "id": "col5-l3-q1",
+          "question": "Where must the formal type parameter section <T> be placed in a generic method declaration?",
+          "options": [
+            "After the method parameter list: public void doSomething(int x)<T>",
+            "Before the return type: public <T> void doSomething(T x)",
+            "Inside the class header only",
+            "At the beginning of the file above imports"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In Java syntax, a generic method's type parameter section (<T>) must be declared immediately before the return type of the method."
+        },
+        {
+          "id": "col5-l3-q2",
+          "question": "What is the syntax for supplying an explicit type witness when calling a static generic method 'create()' on class Factory?",
+          "options": [
+            "Factory.create<String>()",
+            "Factory.<String>create()",
+            "Factory.create().<String>",
+            "<String>Factory.create()"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "An explicit type witness is placed between the dot and the method name: Factory.<String>create()."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l3-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Static Methods & Generic Classes",
+      "qaList": [
+        {
+          "question": "Why can a static method inside a generic class 'Holder<T>' declare its own '<T> static void process(T val)', and does this method-level 'T' have any relationship to the class-level 'T'?",
+          "answer": "A static method cannot access the class-level type parameter 'T' because static methods belong to the loaded class archetype and are shared across all instances (e.g., Holder<String> and Holder<Integer> share the exact same static method). However, a static method can introduce its OWN independent type parameter by declaring '<T>'. Even though both use the letter 'T', they are completely distinct and independent type variables: the method-level 'T' shadows the class-level 'T'. To eliminate developer confusion and warnings, best practice is to rename the method-level type parameter to '<E>' or '<U>'."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l3-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the exact placement of <T> before the return type in generic methods",
+        "I understand how the Java compiler infers method type arguments automatically",
+        "I know how and when to provide an explicit type witness: Class.<Type>method()",
+        "I understand the difference between class-level and method-level type parameter scopes"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "gen-method-element-counter",
+      "title": "Generic Element Frequency Counter",
+      "difficulty": "easy",
+      "problemStatement": "Implement a generic static method countOccurrences(T[] array, T target) that returns the number of elements in the array that are equal to the target using Objects.equals().",
+      "starterCode": "import java.util.Objects;\n\npublic class ElementCounter {\n    public static <T> int countOccurrences(T[] array, T target) {\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        String[] words = {\"cat\", \"dog\", \"cat\", \"bird\", \"cat\"};\n        System.out.println(countOccurrences(words, \"cat\")); // 3\n        \n        Integer[] nums = {1, 2, 3, 2, 2, 5};\n        System.out.println(countOccurrences(nums, 2));     // 3\n    }\n}",
+      "solutionCode": "import java.util.Objects;\n\npublic class ElementCounter {\n    public static <T> int countOccurrences(T[] array, T target) {\n        if (array == null) return 0;\n        int count = 0;\n        for (T item : array) {\n            if (Objects.equals(item, target)) {\n                count++;\n            }\n        }\n        return count;\n    }\n\n    public static void main(String[] args) {\n        String[] words = {\"cat\", \"dog\", \"cat\", \"bird\", \"cat\"};\n        System.out.println(countOccurrences(words, \"cat\"));\n        \n        Integer[] nums = {1, 2, 3, 2, 2, 5};\n        System.out.println(countOccurrences(nums, 2));\n    }\n}",
+      "testCases": [
+        {
+          "input": "words = [\"cat\", \"dog\", \"cat\", \"bird\", \"cat\"], target = \"cat\"",
+          "expectedOutput": "3"
+        }
+      ],
+      "expectedOutput": "3\n3"
+    },
+    {
+      "id": "gen-method-list-zipper",
+      "title": "Generic Dual-List Zipper",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic static method zip(List<A> listA, List<B> listB) that pairs corresponding elements from two lists into a List of Pairs until the shorter list is exhausted.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class ListZipper {\n    public static class Pair<A, B> {\n        final A a;\n        final B b;\n        Pair(A a, B b) { this.a = a; this.b = b; }\n        @Override public String toString() { return \"(\" + a + \",\" + b + \")\"; }\n    }\n\n    public static <A, B> List<Pair<A, B>> zip(List<A> listA, List<B> listB) {\n        return new ArrayList<>();\n    }\n\n    public static void main(String[] args) {\n        List<String> names = List.of(\"Alice\", \"Bob\", \"Charlie\");\n        List<Integer> ages = List.of(25, 30);\n        System.out.println(zip(names, ages)); // [(Alice,25), (Bob,30)]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class ListZipper {\n    public static class Pair<A, B> {\n        final A a;\n        final B b;\n        Pair(A a, B b) { this.a = a; this.b = b; }\n        @Override public String toString() { return \"(\" + a + \",\" + b + \")\"; }\n    }\n\n    public static <A, B> List<Pair<A, B>> zip(List<A> listA, List<B> listB) {\n        List<Pair<A, B>> result = new ArrayList<>();\n        if (listA == null || listB == null) return result;\n        int limit = Math.min(listA.size(), listB.size());\n        for (int i = 0; i < limit; i++) {\n            result.add(new Pair<>(listA.get(i), listB.get(i)));\n        }\n        return result;\n    }\n\n    public static void main(String[] args) {\n        List<String> names = List.of(\"Alice\", \"Bob\", \"Charlie\");\n        List<Integer> ages = List.of(25, 30);\n        System.out.println(zip(names, ages));\n    }\n}",
+      "testCases": [
+        {
+          "input": "names = [\"Alice\", \"Bob\", \"Charlie\"], ages = [25, 30]",
+          "expectedOutput": "[(Alice,25), (Bob,30)]"
+        }
+      ],
+      "expectedOutput": "[(Alice,25), (Bob,30)]"
+    },
+    {
+      "id": "gen-method-max-comparable",
+      "title": "Generic Maximum of Three Elements",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic static method maxOfThree(T a, T b, T c) that determines and returns the greatest of three values of any type T that implements Comparable<T>.",
+      "starterCode": "public class MaxUtility {\n    public static <T extends Comparable<T>> T maxOfThree(T a, T b, T c) {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(maxOfThree(10, 45, 23));       // 45\n        System.out.println(maxOfThree(\"pear\", \"apple\", \"zebra\")); // zebra\n    }\n}",
+      "solutionCode": "public class MaxUtility {\n    public static <T extends Comparable<T>> T maxOfThree(T a, T b, T c) {\n        T max = a;\n        if (b.compareTo(max) > 0) {\n            max = b;\n        }\n        if (c.compareTo(max) > 0) {\n            max = c;\n        }\n        return max;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(maxOfThree(10, 45, 23));\n        System.out.println(maxOfThree(\"pear\", \"apple\", \"zebra\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "maxOfThree(10, 45, 23), maxOfThree(\"pear\", \"apple\", \"zebra\")",
+          "expectedOutput": "45\nzebra"
+        }
+      ],
+      "expectedOutput": "45\nzebra"
+    },
+    {
+      "id": "gen-method-array-to-set",
+      "title": "Generic Array to Unique Set Converter",
+      "difficulty": "easy",
+      "problemStatement": "Implement a generic static method arrayToSet(T[] array) that converts any array of reference types into a java.util.HashSet<T>, preserving unique elements.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\nimport java.util.Collections;\n\npublic class ArraySetConverter {\n    public static <T> Set<T> arrayToSet(T[] array) {\n        return new HashSet<>();\n    }\n\n    public static void main(String[] args) {\n        String[] items = {\"alpha\", \"beta\", \"alpha\", \"gamma\"};\n        Set<String> set = arrayToSet(items);\n        System.out.println(set.size()); // 3\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\nimport java.util.Collections;\n\npublic class ArraySetConverter {\n    public static <T> Set<T> arrayToSet(T[] array) {\n        Set<T> set = new HashSet<>();\n        if (array == null) return set;\n        Collections.addAll(set, array);\n        return set;\n    }\n\n    public static void main(String[] args) {\n        String[] items = {\"alpha\", \"beta\", \"alpha\", \"gamma\"};\n        Set<String> set = arrayToSet(items);\n        System.out.println(set.size());\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"alpha\", \"beta\", \"alpha\", \"gamma\"]",
+          "expectedOutput": "3"
+        }
+      ],
+      "expectedOutput": "3"
+    },
+    {
+      "id": "gen-method-coalesce",
+      "title": "Generic First Non-Null Coalescer",
+      "difficulty": "easy",
+      "problemStatement": "Implement a generic static method coalesce(T... values) that inspects a varargs sequence of elements and returns the first non-null element, or null if all elements are null.",
+      "starterCode": "public class Coalescer {\n    @SafeVarargs\n    public static <T> T coalesce(T... values) {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        String str = coalesce(null, null, \"ActiveUser\", \"Fallback\");\n        System.out.println(str); // \"ActiveUser\"\n        \n        Integer num = coalesce(null, 42, 100);\n        System.out.println(num); // 42\n    }\n}",
+      "solutionCode": "public class Coalescer {\n    @SafeVarargs\n    public static <T> T coalesce(T... values) {\n        if (values == null) return null;\n        for (T val : values) {\n            if (val != null) return val;\n        }\n        return null;\n    }\n\n    public static void main(String[] args) {\n        String str = coalesce(null, null, \"ActiveUser\", \"Fallback\");\n        System.out.println(str);\n        \n        Integer num = coalesce(null, 42, 100);\n        System.out.println(num);\n    }\n}",
+      "testCases": [
+        {
+          "input": "coalesce(null, null, \"ActiveUser\", \"Fallback\"), coalesce(null, 42, 100)",
+          "expectedOutput": "ActiveUser\n42"
+        }
+      ],
+      "expectedOutput": "ActiveUser\n42"
+    }
+  ]
+}

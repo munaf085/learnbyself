@@ -1,0 +1,216 @@
+{
+  "id": "les-col-upper-wildcards-covariance",
+  "slug": "upper-bounded-wildcards-and-covariance",
+  "sectionSlug": "collections",
+  "moduleSlug": "generics-and-type-safety",
+  "languageSlug": "java",
+  "title": "Upper Bounded Wildcards (? extends T) & Covariance",
+  "summary": "Master <? extends T>: reading elements safely as type T, preventing adding elements (except null), and covariance in method parameters.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "Wildcards: The Unbounded Wildcard (?)",
+    "Bounded Type Parameters: Enforcing Upper Bounds",
+    "Polymorphism & Reference Subtyping"
+  ],
+  "learningObjectives": [
+    "Master the upper bounded wildcard syntax: List<? extends T>",
+    "Understand covariance: enabling flexible polymorphic reads across subclass collections",
+    "Analyze why writing elements to a <? extends T> collection is strictly prohibited by the compiler",
+    "Recognize the Producer role in API design: using ? extends T when collections produce data"
+  ],
+  "expectedOutcomes": [
+    "Ability to design flexible, covariant read-only API method signatures in production",
+    "Clear understanding of why write prohibition guarantees total heap type safety"
+  ],
+  "activities": [
+    {
+      "id": "act-col5-l6-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Digital Audio Streaming Player",
+      "analogy": {
+        "headline": "Practical Context: Digital Audio Streaming Player",
+        "story": "Consider a digital audio player library containing a playlist of audio tracks: `Playlist<? extends AudioTrack>`. The player can accept a playlist of MP3Track, FLACLosslessTrack, or PodcastEpisodeTrack.\n\nThe audio player's decoding engine reads tracks sequentially and streams them to the speakers (`track.playPcmStream()`). Because every track is guaranteed to be at least an `AudioTrack`, playback succeeds with zero type casting.\n\nHowever, the player is not allowed to insert a new `WavTrack` into the playlist during playback: the playlist might be a specialized `Playlist<FLACLosslessTrack>`, and inserting an uncompressed WAV would corrupt the user's high-res audio library.",
+        "keyTakeaway": "Upper bounded wildcards (? extends T) make collections read-safe providers (producers). You can read elements as type T, but you cannot insert elements into them."
+      },
+      "content": "Consider a digital audio player library containing a playlist of audio tracks: `Playlist<? extends AudioTrack>`. The player can accept a playlist of MP3Track, FLACLosslessTrack, or PodcastEpisodeTrack.\n\nThe audio player's decoding engine reads tracks sequentially and streams them to the speakers (`track.playPcmStream()`). Because every track is guaranteed to be at least an `AudioTrack`, playback succeeds with zero type casting.\n\nHowever, the player is not allowed to insert a new `WavTrack` into the playlist during playback: the playlist might be a specialized `Playlist<FLACLosslessTrack>`, and inserting an uncompressed WAV would corrupt the user's high-res audio library."
+    },
+    {
+      "id": "act-col5-l6-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Covariance with <? extends T>: Read Safety & Write Prohibition",
+      "breakdown": {
+        "keyTakeaways": [
+          "Upper bounded wildcards (? extends T) introduce covariance to Java generics",
+          "List<? extends Number> accepts List<Integer>, List<Double>, List<Float>, and List<Number>",
+          "Elements read from List<? extends T> are guaranteed to be of type T (or subclasses)",
+          "Writing any object (except literal null) into List<? extends T> causes a compile-time error",
+          "This is the 'P' (Producer) in the PECS principle: Producer Extends"
+        ]
+      },
+      "content": "### What Is Covariance?\n\nA type system is **covariant** if it preserves the subtyping relationship of its component types: if `Sub` is a subtype of `Super`, then `Container<Sub>` is treated as a subtype of `Container<Super>`.\n\nWhile generics are strictly invariant by default, **upper bounded wildcards (`<? extends T>`) introduce safe covariance** to method parameters:\n```java\n// Invariant: only accepts List<Number>, REJECTS List<Integer>:\nvoid processInvariant(List<Number> list) { ... }\n\n// Covariant: ACCEPTS List<Number>, List<Integer>, List<Double>, etc.:\nvoid processCovariant(List<? extends Number> list) { ... }\n```\n\n---\n\n### Why Writing Is Strictly Prohibited\n\nWhy does the Java compiler forbid calling `list.add(e)` on `List<? extends Number>`?\n\n**The Concrete Type Dilemma:**\nConsider what happens if writing were permitted:\n```java\nList<Double> doubleList = new ArrayList<>();\nList<? extends Number> numList = doubleList; // Valid covariant assignment\n\n// Suppose the compiler allowed this:\nnumList.add(Integer.valueOf(10)); // Adding an Integer!\n\n// Now doubleList contains an Integer! When we read:\nDouble val = doubleList.get(0); // Crashes with ClassCastException!\n```\nBecause `numList` could be pointing to a `List<Integer>`, a `List<Double>`, or a `List<BigDecimal>`, there is no object in Java (other than `null`) that is guaranteed to be a valid subtype of *whatever unknown subtype* `? extends Number` represents! Therefore, the compiler bans all insertions.\n\n---\n\n### The Producer Contract: Read-Only Data Source\n\nWhen a method accepts `List<? extends T>`, that collection acts strictly as a **Producer**: it produces data for the method to consume (read).\n```java\npublic static double sum(List<? extends Number> numbers) {\n    double total = 0.0;\n    for (Number n : numbers) { // Perfectly safe: every element is a Number\n        total += n.doubleValue();\n    }\n    return total;\n}\n```\n\n---\n\n### Executable Demonstration: Covariant Sensor Telemetry Aggregation",
+      "codeExample": "import java.util.List;\n\npublic class CovarianceDemo {\n    // Base domain model\n    static class SensorReading {\n        final double value;\n        SensorReading(double value) { this.value = value; }\n        public double getValue() { return value; }\n    }\n\n    static class TemperatureReading extends SensorReading {\n        TemperatureReading(double val) { super(val); }\n    }\n\n    static class PressureReading extends SensorReading {\n        PressureReading(double val) { super(val); }\n    }\n\n    // Covariant method: accepts List of SensorReading OR ANY of its subclasses!\n    public static double computeAverage(List<? extends SensorReading> readings) {\n        if (readings == null || readings.isEmpty()) return 0.0;\n        double sum = 0.0;\n        for (SensorReading r : readings) {\n            // Safe reading guaranteed by upper bound!\n            sum += r.getValue();\n        }\n        return sum / readings.size();\n    }\n\n    public static void main(String[] args) {\n        List<TemperatureReading> temps = List.of(\n            new TemperatureReading(21.5),\n            new TemperatureReading(22.0),\n            new TemperatureReading(20.5)\n        );\n\n        List<PressureReading> pressures = List.of(\n            new PressureReading(1013.25),\n            new PressureReading(1014.10)\n        );\n\n        // Both specific sub-type lists are passed directly to computeAverage:\n        System.out.printf(\"Avg Temp:     %.2f\u00b0C%n\", computeAverage(temps));\n        System.out.printf(\"Avg Pressure: %.2f hPa%n\", computeAverage(pressures));\n    }\n}\n// Expected Output:\n// Avg Temp:     21.33\u00b0C\n// Avg Pressure: 1013.68 hPa"
+    },
+    {
+      "id": "act-col5-l6-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Covariant Number Range Aggregator",
+      "description": "Trace a method aggregating numeric data across diverse List<Integer> and List<Double> instances.",
+      "code": "import java.util.List;\n\npublic class NumberAggregator {\n    public static double calculateSum(List<? extends Number> numbers) {\n        double total = 0.0;\n        for (Number num : numbers) {\n            if (num != null) {\n                total += num.doubleValue();\n            }\n        }\n        return total;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> intList = List.of(10, 20, 30);\n        List<Double> dblList = List.of(1.5, 2.5, 3.5);\n\n        System.out.println(\"Integer sum: \" + calculateSum(intList)); // 60.0\n        System.out.println(\"Double sum:  \" + calculateSum(dblList)); // 7.5\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "4",
+          "description": "Declare calculateSum(List<? extends Number> numbers). This enables covariance: List<Integer> and List<Double> are both accepted."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "6-10",
+          "description": "Read each element as type Number. Calling num.doubleValue() is verified at compile-time."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "18-20",
+          "description": "Both intList and dblList invoke calculateSum cleanly with zero compiler warnings."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l6-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Covariance & Upper Bounds Assessment",
+      "questions": [
+        {
+          "id": "col5-l6-q1",
+          "question": "Given the declaration 'List<? extends Number> list = new ArrayList<Integer>();', which of the following lines will compile without error?",
+          "options": [
+            "list.add(10);",
+            "list.add(Double.valueOf(3.14));",
+            "list.add(null);",
+            "list.add(new Object());"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "Because list is declared as List<? extends Number>, the compiler cannot verify what concrete subtype list actually points to (it could be List<Double>). Therefore, no object can be added except null, which is the only universal literal."
+        },
+        {
+          "id": "col5-l6-q2",
+          "question": "What is the primary role of a collection parameterized with '<? extends T>' in a method signature?",
+          "options": [
+            "A Consumer that receives newly created elements",
+            "A Producer that provides (reads) elements of type T to the method",
+            "A Bi-directional cache for reading and writing simultaneously",
+            "A Thread-safe synchronized container"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In accordance with Joshua Bloch's PECS rule (Producer Extends, Consumer Super), '? extends T' is used when the collection is a Producer\u2014it produces items of type T for your method to read."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l6-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Why Covariant Collections Are Read-Only",
+      "qaList": [
+        {
+          "question": "Why did Java designers choose to make 'List<? extends T>' strictly read-only with respect to adding elements, and what bug would occur if this restriction were lifted?",
+          "answer": "If Java allowed adding elements to 'List<? extends T>', it would destroy the foundation of compile-time type safety. For example, if 'List<? extends Number>' allowed calling 'list.add(10)', and that reference happened to point to a 'List<Double>' created elsewhere, the underlying list would now contain an Integer. When subsequent code reading from 'List<Double>' executed 'Double d = list.get(0)', the JVM would crash with a ClassCastException. By disallowing all writes to '<? extends T>' (except null), Java mathematically guarantees that a collection's contents can never be contaminated by an incompatible sibling type."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l6-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand how <? extends T> introduces covariance to generic method parameters",
+        "I know why List<Integer> can be passed to List<? extends Number>",
+        "I understand why the compiler prevents adding elements into a <? extends T> collection",
+        "I recognize the Producer role in PECS: Producer Extends"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "gen-cov-max-number",
+      "title": "Find Maximum Value in Number Subtype List",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method findMaxAsDouble(List<? extends Number> numbers) that returns the maximum doubleValue() among all elements, or Double.NaN if the list is null or empty.",
+      "starterCode": "import java.util.List;\n\npublic class MaxNumberFinder {\n    public static double findMaxAsDouble(List<? extends Number> numbers) {\n        return Double.NaN;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(10, 50, 20);\n        List<Double> doubles = List.of(1.5, 9.9, 4.2);\n        System.out.println(findMaxAsDouble(ints));    // 50.0\n        System.out.println(findMaxAsDouble(doubles)); // 9.9\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class MaxNumberFinder {\n    public static double findMaxAsDouble(List<? extends Number> numbers) {\n        if (numbers == null || numbers.isEmpty()) return Double.NaN;\n        double max = Double.NEGATIVE_INFINITY;\n        for (Number num : numbers) {\n            if (num != null && num.doubleValue() > max) {\n                max = num.doubleValue();\n            }\n        }\n        return max == Double.NEGATIVE_INFINITY ? Double.NaN : max;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(10, 50, 20);\n        List<Double> doubles = List.of(1.5, 9.9, 4.2);\n        System.out.println(findMaxAsDouble(ints));\n        System.out.println(findMaxAsDouble(doubles));\n    }\n}",
+      "testCases": [
+        {
+          "input": "ints = [10, 50, 20], doubles = [1.5, 9.9, 4.2]",
+          "expectedOutput": "50.0\n9.9"
+        }
+      ],
+      "expectedOutput": "50.0\n9.9"
+    },
+    {
+      "id": "gen-cov-count-greater-than",
+      "title": "Count Elements Exceeding Threshold",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method countExceeding(List<? extends Number> numbers, double threshold) that counts how many numbers have doubleValue() strictly greater than threshold.",
+      "starterCode": "import java.util.List;\n\npublic class ThresholdCounter {\n    public static int countExceeding(List<? extends Number> numbers, double threshold) {\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(5, 12, 18, 3, 25);\n        System.out.println(countExceeding(ints, 10.0)); // 3 (12, 18, 25)\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class ThresholdCounter {\n    public static int countExceeding(List<? extends Number> numbers, double threshold) {\n        if (numbers == null) return 0;\n        int count = 0;\n        for (Number num : numbers) {\n            if (num != null && num.doubleValue() > threshold) {\n                count++;\n            }\n        }\n        return count;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(5, 12, 18, 3, 25);\n        System.out.println(countExceeding(ints, 10.0));\n    }\n}",
+      "testCases": [
+        {
+          "input": "ints = [5, 12, 18, 3, 25], threshold = 10.0",
+          "expectedOutput": "3"
+        }
+      ],
+      "expectedOutput": "3"
+    },
+    {
+      "id": "gen-cov-filter-evens-sum",
+      "title": "Sum Even Integers Across Number Providers",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method sumEvenInts(List<? extends Number> numbers) that extracts each number's intValue() and returns the sum of all even integers.",
+      "starterCode": "import java.util.List;\n\npublic class EvenNumberSum {\n    public static long sumEvenInts(List<? extends Number> numbers) {\n        return 0L;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(1, 2, 3, 4, 5, 6);\n        System.out.println(sumEvenInts(ints)); // 12 (2+4+6)\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class EvenNumberSum {\n    public static long sumEvenInts(List<? extends Number> numbers) {\n        if (numbers == null) return 0L;\n        long sum = 0L;\n        for (Number num : numbers) {\n            if (num != null) {\n                int val = num.intValue();\n                if (val % 2 == 0) {\n                    sum += val;\n                }\n            }\n        }\n        return sum;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(1, 2, 3, 4, 5, 6);\n        System.out.println(sumEvenInts(ints));\n    }\n}",
+      "testCases": [
+        {
+          "input": "ints = [1, 2, 3, 4, 5, 6]",
+          "expectedOutput": "12"
+        }
+      ],
+      "expectedOutput": "12"
+    },
+    {
+      "id": "gen-cov-all-positive",
+      "title": "Verify All Numbers Positive",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method areAllPositive(List<? extends Number> numbers) that returns true if all non-null numbers in the list have doubleValue() > 0. Returns true for empty list.",
+      "starterCode": "import java.util.List;\n\npublic class PositiveChecker {\n    public static boolean areAllPositive(List<? extends Number> numbers) {\n        return false;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(areAllPositive(List.of(1, 2.5, 30L)));   // true\n        System.out.println(areAllPositive(List.of(1, -2.5, 30L)));  // false\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class PositiveChecker {\n    public static boolean areAllPositive(List<? extends Number> numbers) {\n        if (numbers == null) return true;\n        for (Number num : numbers) {\n            if (num != null && num.doubleValue() <= 0) {\n                return false;\n            }\n        }\n        return true;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(areAllPositive(List.of(1, 2.5, 30L)));\n        System.out.println(areAllPositive(List.of(1, -2.5, 30L)));\n    }\n}",
+      "testCases": [
+        {
+          "input": "[1, 2.5, 30L], [1, -2.5, 30L]",
+          "expectedOutput": "true\nfalse"
+        }
+      ],
+      "expectedOutput": "true\nfalse"
+    },
+    {
+      "id": "gen-cov-first-matching-prefix",
+      "title": "Find First Element With Prefix in String Provider",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method findWithPrefix(List<? extends CharSequence> list, String prefix) that returns the first CharSequence that starts with prefix, or null if none match.",
+      "starterCode": "import java.util.List;\n\npublic class PrefixMatcher {\n    public static CharSequence findWithPrefix(List<? extends CharSequence> list, String prefix) {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        List<String> words = List.of(\"apple\", \"banana\", \"apricot\");\n        System.out.println(findWithPrefix(words, \"ap\")); // \"apple\"\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class PrefixMatcher {\n    public static CharSequence findWithPrefix(List<? extends CharSequence> list, String prefix) {\n        if (list == null || prefix == null) return null;\n        for (CharSequence cs : list) {\n            if (cs != null && cs.toString().startsWith(prefix)) {\n                return cs;\n            }\n        }\n        return null;\n    }\n\n    public static void main(String[] args) {\n        List<String> words = List.of(\"apple\", \"banana\", \"apricot\");\n        System.out.println(findWithPrefix(words, \"ap\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "words = [\"apple\", \"banana\", \"apricot\"], prefix = \"ap\"",
+          "expectedOutput": "apple"
+        }
+      ],
+      "expectedOutput": "apple"
+    }
+  ]
+}

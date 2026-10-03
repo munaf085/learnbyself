@@ -1,0 +1,215 @@
+{
+  "id": "les-col-generic-classes",
+  "slug": "generic-classes-building-type-safe-containers",
+  "sectionSlug": "collections",
+  "moduleSlug": "generics-and-type-safety",
+  "languageSlug": "java",
+  "title": "Generic Classes: Building Type-Safe Containers",
+  "summary": "Create generic classes: type parameter naming conventions (<T>, <E>, <K, V>), instantiating generic types, and type-safe Box and Pair classes.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "Why Generics? Safety vs ClassCastException",
+    "Classes & Objects in Java",
+    "Constructors & Initialization"
+  ],
+  "learningObjectives": [
+    "Declare custom generic classes with single and multiple formal type parameters: Box<T>, Pair<K, V>",
+    "Apply standard Java type parameter naming conventions: E, K, V, T, U, N",
+    "Leverage the Diamond operator (<>) for clean, type-inferred constructor invocations",
+    "Understand why static fields and methods cannot reference class-level type parameters"
+  ],
+  "expectedOutcomes": [
+    "Ability to architect reusable, strongly typed container classes and data structures",
+    "Understanding of JVM class loading vs generic instantiation boundaries"
+  ],
+  "activities": [
+    {
+      "id": "act-col5-l2-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Standardized Shipping Container Specifications",
+      "analogy": {
+        "headline": "Practical Context: Standardized Shipping Container Specifications",
+        "story": "Consider intermodal shipping containers transported by cargo ships and freight trains. A container's structural chassis is universal (corner castings, steel doors, standardized dimensions). However, each container is designated for a specific cargo type: RefrigeratedContainer<PerishableProduce>, LiquidTankContainer<Petroleum>, or SecureContainer<Electronics>.\n\nThe container hardware itself does not need to be redesigned from scratch for every new product. Instead, the container framework is parameterizable, enforcing strict safety rules on what goes inside while sharing identical locking and hoisting mechanisms across all freight operations.",
+        "keyTakeaway": "A generic class defines a reusable architectural blueprint where the concrete payload type is decoupled and parameterized at instantiation time."
+      },
+      "content": "Consider intermodal shipping containers transported by cargo ships and freight trains. A container's structural chassis is universal (corner castings, steel doors, standardized dimensions). However, each container is designated for a specific cargo type: RefrigeratedContainer<PerishableProduce>, LiquidTankContainer<Petroleum>, or SecureContainer<Electronics>.\n\nThe container hardware itself does not need to be redesigned from scratch for every new product. Instead, the container framework is parameterizable, enforcing strict safety rules on what goes inside while sharing identical locking and hoisting mechanisms across all freight operations."
+    },
+    {
+      "id": "act-col5-l2-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Generic Class Architecture: Declaration, Naming, and Static Boundaries",
+      "breakdown": {
+        "keyTakeaways": [
+          "A generic class is declared with type parameters following class name: class Box<T> { ... }",
+          "Standard naming conventions: E (element), K (key), V (value), T (type), N (number), S/U/V (2nd/3rd types)",
+          "Java 7+ Diamond operator (<>) enables compiler type inference during constructor calls",
+          "Static members cannot access class type parameters because static fields/methods belong to the class, not instances"
+        ]
+      },
+      "content": "### Declaring a Generic Class\n\nA generic class is defined with a **type parameter section** delimited by angle brackets (`<T>`) immediately following the class name. The formal type parameter `T` serves as a placeholder for a concrete type specified by caller code:\n```java\npublic class Box<T> {\n    private T content;\n\n    public void set(T content) {\n        this.content = content;\n    }\n\n    public T get() {\n        return content;\n    }\n}\n```\n\n---\n\n### Standard Type Parameter Naming Conventions\n\nBy convention in Java software engineering, type parameter names are single, uppercase letters:\n* **`E`**: Element (extensively used by the Java Collections Framework, e.g., `List<E>`, `Set<E>`)\n* **`K`**: Key (used in maps, e.g., `Map<K, V>`)\n* **`V`**: Value (used in maps, e.g., `Map<K, V>`)\n* **`T`**: Type (general-purpose first type parameter)\n* **`U`, `S`**: 2nd and 3rd general-purpose type parameters\n* **`N`**: Number (used for numeric types)\n\n---\n\n### Multi-Type Containers: The Pair Pattern\n\nClasses can accept multiple type parameters separated by commas. A classic example is the immutable `Pair<K, V>` tuple container:\n```java\npublic class Pair<K, V> {\n    private final K key;\n    private final V value;\n\n    public Pair(K key, V value) {\n        this.key = key;\n        this.value = value;\n    }\n\n    public K getKey() { return key; }\n    public V getValue() { return value; }\n}\n```\n\n---\n\n### Critical Boundary: The Static Context Restriction\n\nA universal rule in Java: **A static field or static method cannot reference a class-level type parameter `T`**.\n```java\npublic class Box<T> {\n    // COMPILE ERROR: Cannot make a static reference to the non-static type T\n    private static T sharedItem;\n\n    // COMPILE ERROR: Cannot make a static reference to the non-static type T\n    public static T getShared() { return sharedItem; }\n}\n```\n**Why?** Static members are shared across all instances of `Box`. If caller A creates `Box<String>` and caller B creates `Box<Integer>`, there is only ONE `Box.class` loaded in JVM memory. If `sharedItem` were static, what type would it hold? `String` or `Integer`? Because types are erased at runtime and static members belong to the class rather than instance, class-level type variables are strictly prohibited in static scopes.\n\n---\n\n### Executable Demonstration: Type-Safe Result Wrapper Pattern",
+      "codeExample": "public class GenericClassDemo {\n    // A generic Result container modeling Success or Failure\n    static class Result<T> {\n        private final T data;\n        private final String errorMessage;\n        private final boolean success;\n\n        private Result(T data, String errorMessage, boolean success) {\n            this.data = data;\n            this.errorMessage = errorMessage;\n            this.success = success;\n        }\n\n        public static <T> Result<T> ok(T data) {\n            return new Result<>(data, null, true);\n        }\n\n        public static <T> Result<T> fail(String error) {\n            return new Result<>(null, error, false);\n        }\n\n        public boolean isSuccess() { return success; }\n        public T getData() { return data; }\n        public String getErrorMessage() { return errorMessage; }\n    }\n\n    public static void main(String[] args) {\n        // Diamond operator <> automatically infers types\n        Result<String> userResult = Result.ok(\"User_Alice_Authenticated\");\n        Result<Integer> balanceResult = Result.ok(15000);\n        Result<Double> failedResult = Result.fail(\"Insufficient funds\");\n\n        if (userResult.isSuccess()) {\n            System.out.println(\"User Data: \" + userResult.getData().toLowerCase());\n        }\n        if (balanceResult.isSuccess()) {\n            System.out.println(\"Balance:   $\" + balanceResult.getData());\n        }\n        if (!failedResult.isSuccess()) {\n            System.out.println(\"Error:     \" + failedResult.getErrorMessage());\n        }\n    }\n}\n// Expected Output:\n// User Data: user_alice_authenticated\n// Balance:   $15000\n// Error:     Insufficient funds"
+    },
+    {
+      "id": "act-col5-l2-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Immutable Pair Container Implementation",
+      "description": "Trace the construction and type inference of a two-parameter generic container Pair<K, V>.",
+      "code": "public class PairDemo {\n    public static class Pair<A, B> {\n        private final A first;\n        private final B second;\n\n        public Pair(A first, B second) {\n            this.first = first;\n            this.second = second;\n        }\n\n        public A getFirst() { return first; }\n        public B getSecond() { return second; }\n\n        @Override\n        public String toString() {\n            return \"(\" + first + \", \" + second + \")\";\n        }\n    }\n\n    public static void main(String[] args) {\n        Pair<String, Integer> studentGrade = new Pair<>(\"Alice\", 98);\n        Pair<Integer, Boolean> flag = new Pair<>(404, false);\n\n        System.out.println(\"Student: \" + studentGrade.getFirst() + \", Score: \" + studentGrade.getSecond());\n        System.out.println(\"Status:  \" + flag);\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "2-4",
+          "description": "Declare Pair with formal parameters <A, B>. Fields are declared final to enforce immutability."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "19-20",
+          "description": "Instantiate Pair using diamond syntax new Pair<>('Alice', 98). The compiler infers A as String and B as Integer."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "22-23",
+          "description": "Access fields via getters. studentGrade.getFirst() returns String directly with no casting."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l2-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Generic Class Constraints Assessment",
+      "questions": [
+        {
+          "id": "col5-l2-q1",
+          "question": "Why is 'private static T instance;' not permitted inside a generic class 'public class Holder<T>'?",
+          "options": [
+            "Because static variables cannot be private",
+            "Because static fields belong to the raw loaded class and are shared across all instantiations regardless of their type arguments",
+            "Because Java does not support static variables inside classes",
+            "Because T must implement Serializable"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "At runtime, Holder.class is loaded once by the JVM. If a static field referenced T, it would be impossible to know what type it should be if one instance is Holder<String> and another is Holder<Integer>."
+        },
+        {
+          "id": "col5-l2-q2",
+          "question": "What is the primary function of the diamond operator (<>) introduced in Java 7?",
+          "options": [
+            "It forces the JVM to optimize garbage collection for generic objects",
+            "It allows the compiler to automatically infer type arguments for generic constructors from the variable declaration context",
+            "It permits primitive types in generics like List<int>",
+            "It bypasses type erasure at runtime"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "The diamond operator (<>) enables constructor type inference: instead of writing 'new Box<String>()', you write 'new Box<>()', reducing boilerplate while preserving complete compile-time type safety."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l2-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Creating Generic Instances",
+      "qaList": [
+        {
+          "question": "Why cannot a generic class instantiate its type parameter directly using 'new T()' or 'new T[10]', and how do production frameworks solve this?",
+          "answer": "A generic class cannot instantiate 'new T()' or 'new T[10]' because of Java's Type Erasure. At compile time, type parameter T is erased to Object (or its bound). The JVM bytecode instructions 'new' and 'anewarray' require an explicit reified runtime class token to know how many bytes to allocate. Because T does not exist at runtime, the compiler cannot generate the appropriate instantiation bytecode.\n\nProduction frameworks solve this using Type Tokens: pass 'Class<T> clazz' into the constructor and invoke reflection: 'clazz.getDeclaredConstructor().newInstance()'. For arrays, use 'Array.newInstance(clazz, capacity)' with an explicit cast '(T[]) Array.newInstance(clazz, capacity)'."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l2-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can declare custom generic classes with single and multiple type parameters",
+        "I follow standard naming conventions: E, K, V, T, U, N",
+        "I understand why static fields and methods cannot reference class-level type parameters",
+        "I know why 'new T()' is illegal in Java due to type erasure"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "gen-stack-container",
+      "title": "Generic Array-Backed LIFO Stack",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic stack class GenericStack<T> with push(T item), pop(), peek(), and isEmpty() methods, managing an internal Object[] array and casting safely upon retrieval.",
+      "starterCode": "public class GenericStack<T> {\n    private Object[] elements;\n    private int size = 0;\n\n    public GenericStack(int capacity) {\n        elements = new Object[capacity];\n    }\n\n    public void push(T item) {\n    }\n\n    public T pop() {\n        return null;\n    }\n\n    public T peek() {\n        return null;\n    }\n\n    public boolean isEmpty() {\n        return true;\n    }\n\n    public static void main(String[] args) {\n        GenericStack<String> stack = new GenericStack<>(5);\n        stack.push(\"A\");\n        stack.push(\"B\");\n        System.out.println(stack.peek()); // \"B\"\n        System.out.println(stack.pop());  // \"B\"\n        System.out.println(stack.pop());  // \"A\"\n    }\n}",
+      "solutionCode": "public class GenericStack<T> {\n    private Object[] elements;\n    private int size = 0;\n\n    public GenericStack(int capacity) {\n        elements = new Object[capacity];\n    }\n\n    public void push(T item) {\n        if (size == elements.length) {\n            throw new IllegalStateException(\"Stack is full\");\n        }\n        elements[size++] = item;\n    }\n\n    @SuppressWarnings(\"unchecked\")\n    public T pop() {\n        if (isEmpty()) throw new IllegalStateException(\"Stack is empty\");\n        T item = (T) elements[--size];\n        elements[size] = null; // Prevent memory leak\n        return item;\n    }\n\n    @SuppressWarnings(\"unchecked\")\n    public T peek() {\n        if (isEmpty()) throw new IllegalStateException(\"Stack is empty\");\n        return (T) elements[size - 1];\n    }\n\n    public boolean isEmpty() {\n        return size == 0;\n    }\n\n    public static void main(String[] args) {\n        GenericStack<String> stack = new GenericStack<>(5);\n        stack.push(\"A\");\n        stack.push(\"B\");\n        System.out.println(stack.peek());\n        System.out.println(stack.pop());\n        System.out.println(stack.pop());\n    }\n}",
+      "testCases": [
+        {
+          "input": "push(\"A\"), push(\"B\"), peek(), pop(), pop()",
+          "expectedOutput": "B\nB\nA"
+        }
+      ],
+      "expectedOutput": "B\nB\nA"
+    },
+    {
+      "id": "gen-optional-wrapper",
+      "title": "Custom Type-Safe Maybe<T> Monad",
+      "difficulty": "medium",
+      "problemStatement": "Implement a simplified custom Maybe<T> container with static factory methods Maybe.of(T value) and Maybe.empty(), plus methods isPresent(), get(), and orElse(T fallback).",
+      "starterCode": "public class Maybe<T> {\n    // Implement custom Optional/Maybe container\n\n    public static <T> Maybe<T> of(T value) {\n        return null;\n    }\n\n    public static <T> Maybe<T> empty() {\n        return null;\n    }\n\n    public boolean isPresent() {\n        return false;\n    }\n\n    public T get() {\n        return null;\n    }\n\n    public T orElse(T fallback) {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        Maybe<String> present = Maybe.of(\"Configured\");\n        Maybe<String> empty = Maybe.empty();\n        System.out.println(present.get());                // \"Configured\"\n        System.out.println(empty.orElse(\"DefaultValue\")); // \"DefaultValue\"\n    }\n}",
+      "solutionCode": "public class Maybe<T> {\n    private final T value;\n    private final boolean present;\n\n    private Maybe(T value, boolean present) {\n        this.value = value;\n        this.present = present;\n    }\n\n    public static <T> Maybe<T> of(T value) {\n        if (value == null) throw new NullPointerException(\"Value cannot be null\");\n        return new Maybe<>(value, true);\n    }\n\n    public static <T> Maybe<T> empty() {\n        return new Maybe<>(null, false);\n    }\n\n    public boolean isPresent() {\n        return present;\n    }\n\n    public T get() {\n        if (!present) throw new IllegalStateException(\"No value present\");\n        return value;\n    }\n\n    public T orElse(T fallback) {\n        return present ? value : fallback;\n    }\n\n    public static void main(String[] args) {\n        Maybe<String> present = Maybe.of(\"Configured\");\n        Maybe<String> empty = Maybe.empty();\n        System.out.println(present.get());\n        System.out.println(empty.orElse(\"DefaultValue\"));\n    }\n}",
+      "testCases": [
+        {
+          "input": "Maybe.of(\"Configured\").get(), Maybe.empty().orElse(\"DefaultValue\")",
+          "expectedOutput": "Configured\nDefaultValue"
+        }
+      ],
+      "expectedOutput": "Configured\nDefaultValue"
+    },
+    {
+      "id": "gen-triplet-tuple",
+      "title": "Three-Element Generic Tuple (Triplet)",
+      "difficulty": "easy",
+      "problemStatement": "Implement an immutable Triplet<A, B, C> class that stores three distinct types and provides getters getFirst(), getSecond(), and getThird().",
+      "starterCode": "public class Triplet<A, B, C> {\n    // Implement immutable Triplet container\n\n    public static void main(String[] args) {\n        Triplet<String, Integer, Boolean> trip = new Triplet<>(\"Server_1\", 8080, true);\n        System.out.printf(\"%s:%d (active=%b)%n\", trip.getFirst(), trip.getSecond(), trip.getThird());\n    }\n}",
+      "solutionCode": "public class Triplet<A, B, C> {\n    private final A first;\n    private final B second;\n    private final C third;\n\n    public Triplet(A first, B second, C third) {\n        this.first = first;\n        this.second = second;\n        this.third = third;\n    }\n\n    public A getFirst() { return first; }\n    public B getSecond() { return second; }\n    public C getThird() { return third; }\n\n    public static void main(String[] args) {\n        Triplet<String, Integer, Boolean> trip = new Triplet<>(\"Server_1\", 8080, true);\n        System.out.printf(\"%s:%d (active=%b)%n\", trip.getFirst(), trip.getSecond(), trip.getThird());\n    }\n}",
+      "testCases": [
+        {
+          "input": "Triplet(\"Server_1\", 8080, true)",
+          "expectedOutput": "Server_1:8080 (active=true)"
+        }
+      ],
+      "expectedOutput": "Server_1:8080 (active=true)"
+    },
+    {
+      "id": "gen-ring-buffer-container",
+      "title": "Generic Circular Ring Buffer",
+      "difficulty": "hard",
+      "problemStatement": "Implement a generic RingBuffer<T> with fixed capacity that overwrites the oldest element when full. Implement offer(T item), poll(), and size().",
+      "starterCode": "public class RingBuffer<T> {\n    public RingBuffer(int capacity) {\n    }\n\n    public void offer(T item) {\n    }\n\n    public T poll() {\n        return null;\n    }\n\n    public int size() {\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        RingBuffer<Integer> rb = new RingBuffer<>(3);\n        rb.offer(1);\n        rb.offer(2);\n        rb.offer(3);\n        rb.offer(4); // Overwrites 1!\n        System.out.println(rb.poll()); // 2\n        System.out.println(rb.poll()); // 3\n        System.out.println(rb.poll()); // 4\n    }\n}",
+      "solutionCode": "public class RingBuffer<T> {\n    private final Object[] buffer;\n    private final int capacity;\n    private int head = 0;\n    private int tail = 0;\n    private int count = 0;\n\n    public RingBuffer(int capacity) {\n        this.capacity = capacity;\n        this.buffer = new Object[capacity];\n    }\n\n    public void offer(T item) {\n        if (count == capacity) {\n            head = (head + 1) % capacity; // Overwrite oldest\n            count--;\n        }\n        buffer[tail] = item;\n        tail = (tail + 1) % capacity;\n        count++;\n    }\n\n    @SuppressWarnings(\"unchecked\")\n    public T poll() {\n        if (count == 0) return null;\n        T item = (T) buffer[head];\n        buffer[head] = null;\n        head = (head + 1) % capacity;\n        count--;\n        return item;\n    }\n\n    public int size() {\n        return count;\n    }\n\n    public static void main(String[] args) {\n        RingBuffer<Integer> rb = new RingBuffer<>(3);\n        rb.offer(1);\n        rb.offer(2);\n        rb.offer(3);\n        rb.offer(4);\n        System.out.println(rb.poll());\n        System.out.println(rb.poll());\n        System.out.println(rb.poll());\n    }\n}",
+      "testCases": [
+        {
+          "input": "offer(1), offer(2), offer(3), offer(4), poll(), poll(), poll()",
+          "expectedOutput": "2\n3\n4"
+        }
+      ],
+      "expectedOutput": "2\n3\n4"
+    },
+    {
+      "id": "gen-swappable-holder",
+      "title": "Type-Safe Value Swapper",
+      "difficulty": "easy",
+      "problemStatement": "Implement a class Holder<T> that holds a single value. Add a method swap(Holder<T> other) that swaps the values stored inside two holders of the same type.",
+      "starterCode": "public class Holder<T> {\n    private T value;\n\n    public Holder(T value) {\n        this.value = value;\n    }\n\n    public T get() {\n        return value;\n    }\n\n    public void swap(Holder<T> other) {\n    }\n\n    public static void main(String[] args) {\n        Holder<String> h1 = new Holder<>(\"First\");\n        Holder<String> h2 = new Holder<>(\"Second\");\n        h1.swap(h2);\n        System.out.println(h1.get()); // \"Second\"\n        System.out.println(h2.get()); // \"First\"\n    }\n}",
+      "solutionCode": "public class Holder<T> {\n    private T value;\n\n    public Holder(T value) {\n        this.value = value;\n    }\n\n    public T get() {\n        return value;\n    }\n\n    public void swap(Holder<T> other) {\n        if (other != null) {\n            T temp = this.value;\n            this.value = other.value;\n            other.value = temp;\n        }\n    }\n\n    public static void main(String[] args) {\n        Holder<String> h1 = new Holder<>(\"First\");\n        Holder<String> h2 = new Holder<>(\"Second\");\n        h1.swap(h2);\n        System.out.println(h1.get());\n        System.out.println(h2.get());\n    }\n}",
+      "testCases": [
+        {
+          "input": "Holder(\"First\"), Holder(\"Second\"), swap()",
+          "expectedOutput": "Second\nFirst"
+        }
+      ],
+      "expectedOutput": "Second\nFirst"
+    }
+  ]
+}

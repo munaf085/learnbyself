@@ -1,0 +1,216 @@
+{
+  "id": "les-col-lower-wildcards-contravariance",
+  "slug": "lower-bounded-wildcards-and-contravariance",
+  "sectionSlug": "collections",
+  "moduleSlug": "generics-and-type-safety",
+  "languageSlug": "java",
+  "title": "Lower Bounded Wildcards (? super T) & Contravariance",
+  "summary": "Master <? super T>: writing elements of type T safely into consumer collections, and contravariance in flexible API design.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "prerequisites": [
+    "Upper Bounded Wildcards (? extends T) & Covariance",
+    "Wildcards: The Unbounded Wildcard (?)",
+    "Polymorphism & Reference Subtyping"
+  ],
+  "learningObjectives": [
+    "Master the lower bounded wildcard syntax: List<? super T>",
+    "Understand contravariance: inverting the subtyping hierarchy for consumer collections",
+    "Analyze why writing elements of type T to a <? super T> collection is 100% type-safe",
+    "Recognize the reading limitation: elements read from <? super T> can only be typed as Object"
+  ],
+  "expectedOutcomes": [
+    "Ability to design flexible consumer sinks and data populators using contravariant generics",
+    "Mastery of the 'C' (Consumer) in the PECS architectural principle"
+  ],
+  "activities": [
+    {
+      "id": "act-col5-l7-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Standard Electronic Recycling Disposal Chutes",
+      "analogy": {
+        "headline": "Practical Context: Standard Electronic Recycling Disposal Chutes",
+        "story": "Imagine a recycling center with a chute designated for disposing of obsolete smartphones: `DisposalChute<? super Smartphone>`. The chute could lead to a bin strictly for smartphones, a larger container for portable electronics, or a massive industrial crusher for all solid consumer goods.\n\nNo matter which of those three bins is attached below, you can safely drop your smartphone down the chute. Because a smartphone is an electronic device, and also a physical solid good, it is completely compatible with any of those bins (safe write).\n\nHowever, if you reach your hand blindly into the bottom of that chute to pull out an item, you have no guarantee what you will pull out: it might be a toaster, a microwave, or a laptop. The only thing you can be certain of is that it is a physical Object (read yields Object).",
+        "keyTakeaway": "Lower bounded wildcards (? super T) make collections safe consumers (sinks). You can safely insert elements of type T, but reading only yields Object."
+      },
+      "content": "Imagine a recycling center with a chute designated for disposing of obsolete smartphones: `DisposalChute<? super Smartphone>`. The chute could lead to a bin strictly for smartphones, a larger container for portable electronics, or a massive industrial crusher for all solid consumer goods.\n\nNo matter which of those three bins is attached below, you can safely drop your smartphone down the chute. Because a smartphone is an electronic device, and also a physical solid good, it is completely compatible with any of those bins (safe write).\n\nHowever, if you reach your hand blindly into the bottom of that chute to pull out an item, you have no guarantee what you will pull out: it might be a toaster, a microwave, or a laptop. The only thing you can be certain of is that it is a physical Object (read yields Object)."
+    },
+    {
+      "id": "act-col5-l7-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Contravariance with <? super T>: Safe Insertion & Object Bounds",
+      "breakdown": {
+        "keyTakeaways": [
+          "Lower bounded wildcards (? super T) introduce contravariance to Java generics",
+          "List<? super Integer> accepts List<Integer>, List<Number>, and List<Object>",
+          "Writing elements of type T (or any subtype of T) into List<? super T> is 100% type-safe",
+          "Reading from List<? super T> only guarantees the return type is java.lang.Object",
+          "This is the 'C' (Consumer) in the PECS principle: Consumer Super"
+        ]
+      },
+      "content": "### What Is Contravariance?\n\nA type system is **contravariant** if it inverts the subtyping relationship: if `Sub` is a subtype of `Super`, then `Consumer<Super>` is treated as a subtype of `Consumer<Sub>`.\n\nIn Java, **lower bounded wildcards (`<? super T>`)** introduce contravariance to generic method parameters. A parameter `List<? super Integer>` can accept:\n* `List<Integer>`\n* `List<Number>`\n* `List<Object>`\n\n---\n\n### Why Insertion into `<? super T>` Is Always Type-Safe\n\nWhen a method accepts `List<? super Integer>`, what is the most specific type the underlying list could be? It could be `List<Integer>`, or a broader supertype like `List<Number>` or `List<Object>`.\n\n```java\npublic static void addNumbers(List<? super Integer> consumer) {\n    consumer.add(Integer.valueOf(10)); // 100% COMPILE SAFE!\n    consumer.add(Integer.valueOf(20)); // 100% COMPILE SAFE!\n}\n```\nBecause `Integer` is compatible with `Integer`, and `Integer` is a valid `Number`, and `Integer` is a valid `Object`, **no matter what concrete collection was passed in, inserting an `Integer` can never corrupt the underlying list!**\n\n---\n\n### The Read Restriction on `<? super T>`\n\nConversely, what happens if you attempt to read an element from `List<? super Integer>`?\n```java\nList<? super Integer> list = ...;\n// Integer x = list.get(0); // COMPILE ERROR!\n// Number n = list.get(0);  // COMPILE ERROR!\nObject obj = list.get(0);   // ALLOWED: The ONLY safe read!\n```\nBecause the list might actually be `List<Object>`, the compiler has no guarantee that the element stored at index 0 is an `Integer` or even a `Number`. Therefore, all reads from a `<? super T>` collection are typed strictly as **`java.lang.Object`**.\n\n---\n\n### The Consumer Contract: Data Destination Sink\n\nWhenever a method's job is to write data into a collection (the collection consumes elements), always use `<? super T>`:\n```java\npublic static void populateEvens(int count, List<? super Integer> destination) {\n    for (int i = 0; i < count; i++) {\n        destination.add(i * 2);\n    }\n}\n```\nThis allows callers to pass a `List<Integer>`, a `List<Number>`, or a `List<Object>` into `populateEvens` seamlessly.\n\n---\n\n### Executable Demonstration: Flexible Consumer Sink",
+      "codeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class ContravarianceDemo {\n    // Consumer Sink: fills destination with generated sequence numbers\n    public static void generateMultiples(int count, int multiplier, List<? super Integer> sink) {\n        for (int i = 1; i <= count; i++) {\n            // Safe writing: Integer is compatible with ? super Integer\n            sink.add(i * multiplier);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Integer> integerList = new ArrayList<>();\n        List<Number> numberList = new ArrayList<>();\n        List<Object> objectList = new ArrayList<>();\n\n        // The exact same method writes into all three collections seamlessly!\n        generateMultiples(3, 5, integerList); // List<Integer>\n        generateMultiples(3, 10, numberList); // List<Number>\n        generateMultiples(3, 100, objectList); // List<Object>\n\n        System.out.println(\"Integer sink: \" + integerList); // [5, 10, 15]\n        System.out.println(\"Number sink:  \" + numberList);  // [10, 20, 30]\n        System.out.println(\"Object sink:  \" + objectList);  // [100, 200, 300]\n    }\n}\n// Expected Output:\n// Integer sink: [5, 10, 15]\n// Number sink:  [10, 20, 30]\n// Object sink:  [100, 200, 300]"
+    },
+    {
+      "id": "act-col5-l7-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Stream Collector to Contravariant Consumer",
+      "description": "Trace a string accumulator method writing into List<String>, List<CharSequence>, and List<Object>.",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class StringAccumulator {\n    public static void collectTags(String[] tags, List<? super String> destination) {\n        if (tags == null || destination == null) return;\n        for (String tag : tags) {\n            if (tag != null && !tag.isBlank()) {\n                destination.add(tag.trim().toLowerCase());\n            }\n        }\n    }\n\n    public static void main(String[] args) {\n        String[] rawTags = {\" Java \", \" Collections \", \"\"};\n\n        List<String> strSink = new ArrayList<>();\n        List<Object> objSink = new ArrayList<>();\n\n        collectTags(rawTags, strSink);\n        collectTags(rawTags, objSink);\n\n        System.out.println(\"strSink size: \" + strSink.size() + \", items: \" + strSink);\n        System.out.println(\"objSink size: \" + objSink.size() + \", items: \" + objSink);\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "4",
+          "description": "Declare destination as List<? super String>. This enables callers to pass List<String>, List<CharSequence>, or List<Object>."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "8",
+          "description": "Invoke destination.add(cleanedTag). The compiler verifies cleanedTag is a String, which is guaranteed compatible with ? super String."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "18-22",
+          "description": "Demonstrates consumer flexibility: the same method populates both a List<String> and a List<Object> with zero code duplication."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l7-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Contravariance & Lower Bounds Assessment",
+      "questions": [
+        {
+          "id": "col5-l7-q1",
+          "question": "Which of the following method invocations will compile if the method signature is 'void sink(List<? super Integer> list)'?",
+          "options": [
+            "sink(new ArrayList<Double>())",
+            "sink(new ArrayList<Number>())",
+            "sink(new ArrayList<Float>())",
+            "sink(new ArrayList<String>())"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "<? super Integer> specifies an unknown type that is a supertype of Integer. Since Number is a direct superclass of Integer, ArrayList<Number> is assignable to List<? super Integer>. Double and Float are siblings, not supertypes."
+        },
+        {
+          "id": "col5-l7-q2",
+          "question": "What is the return type when invoking list.get(0) on a collection declared as 'List<? super String>'?",
+          "options": [
+            "String",
+            "CharSequence",
+            "java.lang.Object",
+            "It triggers a compile error because get() cannot be called at all"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "Because List<? super String> could point to a List<Object>, the compiler has no guarantee of any specific subtype. The only type that all possible bounds share in common is java.lang.Object."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l7-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Why Lower Bounds Are Prohibited on Class Declarations",
+      "qaList": [
+        {
+          "question": "Why does Java support lower bounds on wildcards ('<? super T>') but strictly forbids lower bounds on class and method type parameter declarations ('<T super Integer>')?",
+          "answer": "Lower bounded type parameters ('<T super Integer>') are semantically meaningless and redundant for classes and methods. An upper bound like '<T extends Number>' restricts T to a specific subtree of the class hierarchy, allowing you to invoke methods of Number (like doubleValue()). However, a lower bound like '<T super Integer>' would mean T could be Integer, Number, or Object. Because the only methods common to all supertypes of Integer are the methods of Object, declaring '<T super Integer>' gives the compiler no extra method capabilities beyond plain Object. On wildcards, however, '<? super T>' is critical because it tells the compiler which objects can be safely PASSED AS ARGUMENTS into methods like list.add(T), enabling safe contravariant writing."
+        }
+      ]
+    },
+    {
+      "id": "act-col5-l7-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand how <? super T> introduces contravariance to Java generics",
+        "I know why writing elements of type T to List<? super T> is completely type-safe",
+        "I understand why reading from List<? super T> yields only java.lang.Object",
+        "I recognize the Consumer role in PECS: Consumer Super"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "gen-contra-fill-sequence",
+      "title": "Contravariant Natural Number Generator",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method fillSequence(List<? super Integer> sink, int n) that adds integers from 1 up to n (inclusive) into the provided sink list.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class SequenceGenerator {\n    public static void fillSequence(List<? super Integer> sink, int n) {\n        // Populate sink with 1 to n\n    }\n\n    public static void main(String[] args) {\n        List<Number> numList = new ArrayList<>();\n        fillSequence(numList, 4);\n        System.out.println(numList); // [1, 2, 3, 4]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class SequenceGenerator {\n    public static void fillSequence(List<? super Integer> sink, int n) {\n        if (sink == null || n < 1) return;\n        for (int i = 1; i <= n; i++) {\n            sink.add(i);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Number> numList = new ArrayList<>();\n        fillSequence(numList, 4);\n        System.out.println(numList);\n    }\n}",
+      "testCases": [
+        {
+          "input": "numList, n = 4",
+          "expectedOutput": "[1, 2, 3, 4]"
+        }
+      ],
+      "expectedOutput": "[1, 2, 3, 4]"
+    },
+    {
+      "id": "gen-contra-append-all",
+      "title": "Transfer Elements from Producer to Consumer",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic method transferAll(List<? extends T> producer, List<? super T> consumer) that copies all elements from producer to consumer using the PECS principle.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class TransferUtility {\n    public static <T> void transferAll(List<? extends T> producer, List<? super T> consumer) {\n        // Copy from producer to consumer\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(10, 20, 30);\n        List<Number> numbers = new ArrayList<>();\n        transferAll(ints, numbers);\n        System.out.println(numbers); // [10, 20, 30]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class TransferUtility {\n    public static <T> void transferAll(List<? extends T> producer, List<? super T> consumer) {\n        if (producer == null || consumer == null) return;\n        for (T item : producer) {\n            consumer.add(item);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Integer> ints = List.of(10, 20, 30);\n        List<Number> numbers = new ArrayList<>();\n        transferAll(ints, numbers);\n        System.out.println(numbers);\n    }\n}",
+      "testCases": [
+        {
+          "input": "ints = [10, 20, 30], numbers = []",
+          "expectedOutput": "[10, 20, 30]"
+        }
+      ],
+      "expectedOutput": "[10, 20, 30]"
+    },
+    {
+      "id": "gen-contra-copy-evens-only",
+      "title": "Filter Evens into Consumer Sink",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method copyEvens(List<Integer> source, List<? super Integer> sink) that copies all even integers from source into sink.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class EvenFilterSink {\n    public static void copyEvens(List<Integer> source, List<? super Integer> sink) {\n    }\n\n    public static void main(String[] args) {\n        List<Integer> src = List.of(1, 2, 3, 4, 5, 6);\n        List<Object> dst = new ArrayList<>();\n        copyEvens(src, dst);\n        System.out.println(dst); // [2, 4, 6]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class EvenFilterSink {\n    public static void copyEvens(List<Integer> source, List<? super Integer> sink) {\n        if (source == null || sink == null) return;\n        for (Integer num : source) {\n            if (num != null && num % 2 == 0) {\n                sink.add(num);\n            }\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Integer> src = List.of(1, 2, 3, 4, 5, 6);\n        List<Object> dst = new ArrayList<>();\n        copyEvens(src, dst);\n        System.out.println(dst);\n    }\n}",
+      "testCases": [
+        {
+          "input": "src = [1, 2, 3, 4, 5, 6]",
+          "expectedOutput": "[2, 4, 6]"
+        }
+      ],
+      "expectedOutput": "[2, 4, 6]"
+    },
+    {
+      "id": "gen-contra-add-if-absent",
+      "title": "Contravariant Safe Ingestion If Absent",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method addIfAbsent(List<? super String> sink, List<?> existing, String item) that adds item to sink only if item does not exist in the existing list.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class IngestionGuard {\n    public static void addIfAbsent(List<? super String> sink, List<?> existing, String item) {\n    }\n\n    public static void main(String[] args) {\n        List<Object> sink = new ArrayList<>();\n        List<String> current = List.of(\"alpha\", \"beta\");\n        addIfAbsent(sink, current, \"beta\");  // Not added\n        addIfAbsent(sink, current, \"gamma\"); // Added\n        System.out.println(sink); // [\"gamma\"]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class IngestionGuard {\n    public static void addIfAbsent(List<? super String> sink, List<?> existing, String item) {\n        if (sink == null || existing == null || item == null) return;\n        if (!existing.contains(item)) {\n            sink.add(item);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Object> sink = new ArrayList<>();\n        List<String> current = List.of(\"alpha\", \"beta\");\n        addIfAbsent(sink, current, \"beta\");\n        addIfAbsent(sink, current, \"gamma\");\n        System.out.println(sink);\n    }\n}",
+      "testCases": [
+        {
+          "input": "addIfAbsent(\"beta\"), addIfAbsent(\"gamma\")",
+          "expectedOutput": "[gamma]"
+        }
+      ],
+      "expectedOutput": "[gamma]"
+    },
+    {
+      "id": "gen-contra-repeat-element",
+      "title": "Contravariant Element Replicator",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method replicate(List<? super T> sink, T element, int count) that appends element into sink count times.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class ElementReplicator {\n    public static <T> void replicate(List<? super T> sink, T element, int count) {\n    }\n\n    public static void main(String[] args) {\n        List<Object> sink = new ArrayList<>();\n        replicate(sink, \"Repeat\", 3);\n        System.out.println(sink); // [Repeat, Repeat, Repeat]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\n\npublic class ElementReplicator {\n    public static <T> void replicate(List<? super T> sink, T element, int count) {\n        if (sink == null || count <= 0) return;\n        for (int i = 0; i < count; i++) {\n            sink.add(element);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Object> sink = new ArrayList<>();\n        replicate(sink, \"Repeat\", 3);\n        System.out.println(sink);\n    }\n}",
+      "testCases": [
+        {
+          "input": "replicate(sink, \"Repeat\", 3)",
+          "expectedOutput": "[Repeat, Repeat, Repeat]"
+        }
+      ],
+      "expectedOutput": "[Repeat, Repeat, Repeat]"
+    }
+  ]
+}

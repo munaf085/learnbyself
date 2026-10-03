@@ -1,0 +1,276 @@
+{
+  "id": "les-col-deque-stacks",
+  "slug": "the-deque-interface-double-ended-queues-and-stacks",
+  "sectionSlug": "collections",
+  "moduleSlug": "queues-deques-and-priority-buffers",
+  "languageSlug": "java",
+  "title": "The Deque Interface: Double-Ended Queues & Stacks",
+  "summary": "Double-ended queues (addFirst, addLast, pollFirst, pollLast). Why java.util.Stack is a legacy anti-pattern and Deque is the modern stack.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "prerequisites": [
+    "The Queue Contract & FIFO Buffer Processing",
+    "ArrayDeque: High-Performance Resizable Array Queue",
+    "Classes & Object Basics"
+  ],
+  "learningObjectives": [
+    "Master the java.util.Deque double-ended interface contract across both endpoints",
+    "Analyze why legacy java.util.Stack is an architectural anti-pattern in modern Java",
+    "Implement high-performance Last-In-First-Out (LIFO) stacks using Deque and ArrayDeque",
+    "Solve classic parsing and navigation algorithms (browser history, syntax validation)"
+  ],
+  "expectedOutcomes": [
+    "Complete technical mastery of double-ended queue operations",
+    "Ability to explain why Stack extends Vector is a classic design flaw in technical interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-col4-l3-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Two-Way Train Tunnel vs Stack of Cafeteria Trays",
+      "analogy": {
+        "headline": "Practical Context: Two-Way Train Tunnel vs Stack of Cafeteria Trays",
+        "story": "Imagine a railway tunnel with open ends on both sides. Trains can enter from either East or West and exit from either East or West. This flexibility allows the tunnel to operate as a standard FIFO queue (enter East, exit West) OR as a LIFO dead-end siding (enter East, back out East).\n\nIn Java, the Deque interface provides this exact two-way capability. When constrained to only one side (push and pop at the top), it acts as a high-speed stack of cafeteria trays without the baggage of obsolete legacy synchronization.",
+        "keyTakeaway": "Deque supports insertion and extraction at both ends. It unifies FIFO queue operations and modern LIFO stack operations into a single clean interface."
+      },
+      "content": "Imagine a railway tunnel with open ends on both sides. Trains can enter from either East or West and exit from either East or West. This flexibility allows the tunnel to operate as a standard FIFO queue (enter East, exit West) OR as a LIFO dead-end siding (enter East, back out East).\n\nIn Java, the Deque interface provides this exact two-way capability. When constrained to only one side (push and pop at the top), it acts as a high-speed stack of cafeteria trays without the baggage of obsolete legacy synchronization."
+    },
+    {
+      "id": "act-col4-l3-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Deque Architecture: Double-Ended Operations & The Modern LIFO Stack",
+      "breakdown": {
+        "keyTakeaways": [
+          "Deque supports insertion, extraction, and inspection at both head and tail",
+          "java.util.Stack is an obsolete legacy class that extends Vector, causing severe synchronization overhead and architectural flaws",
+          "Modern Java uses Deque<T> stack = new ArrayDeque<>() for all LIFO stack workloads",
+          "Deque Stack methods: push() calls addFirst(), pop() calls removeFirst(), peek() calls peekFirst()"
+        ]
+      },
+      "content": "### Definition of the java.util.Deque Interface\n\nA **`java.util.Deque<E>`** (pronounced 'deck', short for *Double-Ended Queue*) is a linear collection that supports element insertion and removal at both endpoints. It extends `Queue<E>` and provides a comprehensive set of operations for head and tail:\n\n| Operation | Head (First Element) | Tail (Last Element) |\n| :--- | :--- | :--- |\n| **Insert** | `addFirst(e)` / `offerFirst(e)` | `addLast(e)` / `offerLast(e)` |\n| **Remove** | `removeFirst()` / `pollFirst()` | `removeLast()` / `pollLast()` |\n| **Examine** | `getFirst()` / `peekFirst()` | `getLast()` / `peekLast()` |\n\n---\n\n### Why java.util.Stack is Broken: The 3 Fatal Design Flaws\n\nMany introductory tutorials still mistakenly teach `java.util.Stack`. In production Java engineering, `java.util.Stack` is an **anti-pattern** for three major reasons:\n\n1. **Inherits from `Vector` (Bad Inheritance)**: `Stack` extends `Vector`. Because `Vector` is a random-access positional list, anyone can call `stack.get(0)`, `stack.remove(0)`, or `stack.insertElementAt(item, 2)`. This directly violates the fundamental LIFO contract (which dictates you can ONLY access the top element)!\n2. **Synchronized Locking Overhead**: Every method in `Vector` and `Stack` is `synchronized`. In single-threaded applications, acquiring and releasing monitor locks on every `push()` and `pop()` degrades throughput by over 300%.\n3. **No Interface Separation**: `Stack` is a concrete class, not an interface, making it impossible to swap implementations or mock in unit tests.\n\n**The Modern Solution**: Always declare stacks as:\n```java\nDeque<String> stack = new ArrayDeque<>();\nstack.push(\"A\");\nString top = stack.pop();\n```\n\n---\n\n### Executable Code Walkthrough: Parentheses Syntax Validator\n\n```java\nimport java.util.ArrayDeque;\nimport java.util.Deque;\n\npublic class BalancedParenthesesValidator {\n    public static boolean isBalanced(String expression) {\n        if (expression == null) return false;\n\n        Deque<Character> stack = new ArrayDeque<>();\n        for (char ch : expression.toCharArray()) {\n            if (ch == '(' || ch == '{' || ch == '[') {\n                stack.push(ch); // LIFO push\n            } else if (ch == ')' || ch == '}' || ch == ']') {\n                if (stack.isEmpty()) return false;\n                char top = stack.pop(); // LIFO pop\n                if (ch == ')' && top != '(') return false;\n                if (ch == '}' && top != '{') return false;\n                if (ch == ']' && top != '[') return false;\n            }\n        }\n        return stack.isEmpty();\n    }\n\n    public static void main(String[] args) {\n        System.out.println(\"Valid '{[()]}': \" + isBalanced(\"{[()]}\")); // true\n        System.out.println(\"Invalid '([)]':  \" + isBalanced(\"([)]\"));   // false\n        System.out.println(\"Unclosed '(':     \" + isBalanced(\"(\"));      // false\n    }\n}\n```\n\n**Console Output:**\n```text\nValid '{[()]}': true\nInvalid '([)]':  false\nUnclosed '(':     false\n```\n\n---\n\n### Deque Method Mapping: Queue vs Stack\n\n| Stack Method | Deque Equivalent | Behavior |\n| :--- | :--- | :--- |\n| **`push(e)`** | `addFirst(e)` | Inserts at the top (head) |\n| **`pop()`** | `removeFirst()` | Removes from top (throws if empty) |\n| **`peek()`** | `peekFirst()` | Inspects top without removal (null if empty) |"
+    },
+    {
+      "id": "act-col4-l3-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Browser Back-Forward Navigation Engine",
+      "description": "Trace a web browser history manager implementing Back and Forward buttons using two ArrayDeques.",
+      "code": "import java.util.ArrayDeque;\nimport java.util.Deque;\n\npublic class BrowserHistory {\n    private String currentPage;\n    private final Deque<String> backStack = new ArrayDeque<>();\n    private final Deque<String> forwardStack = new ArrayDeque<>();\n\n    public BrowserHistory(String homepage) {\n        this.currentPage = homepage;\n    }\n\n    public void visit(String url) {\n        backStack.push(currentPage);\n        forwardStack.clear(); // Visiting a new page clears forward history\n        currentPage = url;\n    }\n\n    public String back() {\n        if (!backStack.isEmpty()) {\n            forwardStack.push(currentPage);\n            currentPage = backStack.pop();\n        }\n        return currentPage;\n    }\n\n    public String forward() {\n        if (!forwardStack.isEmpty()) {\n            backStack.push(currentPage);\n            currentPage = forwardStack.pop();\n        }\n        return currentPage;\n    }\n\n    public static void main(String[] args) {\n        BrowserHistory browser = new BrowserHistory(\"google.com\");\n        browser.visit(\"github.com\");\n        browser.visit(\"stackoverflow.com\");\n\n        System.out.println(\"Current: \" + browser.currentPage);     // stackoverflow.com\n        System.out.println(\"Back:    \" + browser.back());            // github.com\n        System.out.println(\"Back:    \" + browser.back());            // google.com\n        System.out.println(\"Forward: \" + browser.forward());         // github.com\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5-6",
+          "description": "Initialize two ArrayDeque stacks: backStack and forwardStack."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "12-16",
+          "description": "When visiting a new URL, push currentPage to backStack and clear forwardStack."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "18-30",
+          "description": "Implement back() and forward() by pushing to one stack and popping from the other in O(1) time."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l3-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Deque & Stack Assessment",
+      "questions": [
+        {
+          "id": "col4-l3-q1",
+          "question": "Why is java.util.Stack considered an architectural anti-pattern in Java?",
+          "options": [
+            "It does not support generics",
+            "It extends Vector, inheriting synchronized lock overhead and exposing index methods like get(0) that break the LIFO contract",
+            "It is restricted to storing strings only",
+            "It cannot be garbage collected"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Stack extends Vector, making all methods synchronized and allowing arbitrary index access (e.g. stack.get(0)), violating the LIFO abstraction."
+        },
+        {
+          "id": "col4-l3-q2",
+          "question": "What is the recommended modern way to instantiate a Stack in Java?",
+          "options": [
+            "Stack<T> stack = new Stack<>()",
+            "Deque<T> stack = new ArrayDeque<>()",
+            "List<T> stack = new ArrayList<>()",
+            "Queue<T> stack = new PriorityQueue<>()"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Java API documentation explicitly recommends: 'A more complete and consistent set of LIFO stack operations is provided by the Deque interface and its implementations, which should be used in preference to this class: Deque<T> stack = new ArrayDeque<T>();'"
+        },
+        {
+          "id": "col4-l3-q3",
+          "question": "Which Deque method corresponds to the LIFO stack push() operation?",
+          "options": [
+            "addLast(e)",
+            "addFirst(e)",
+            "offerLast(e)",
+            "pollFirst()"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "push() inserts the element at the front of the deque (addFirst(e)), making it the top of the stack."
+        },
+        {
+          "id": "col4-l3-q4",
+          "question": "What does stack.pop() do when invoked on an empty ArrayDeque?",
+          "options": [
+            "Returns null",
+            "Throws NoSuchElementException",
+            "Blocks the thread",
+            "Returns -1"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "pop() calls removeFirst(), which throws a NoSuchElementException if the deque is empty. To avoid exceptions, check isEmpty() or use pollFirst() which returns null."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l3-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Deque & Modern Stacks",
+      "questions": [
+        {
+          "id": "col4-l3-int-1",
+          "question": "Explain the Liskov Substitution Principle violation in java.util.Stack.",
+          "answer": "Stack extends Vector, which means Stack IS-A Vector according to OOP inheritance. However, a Vector represents an indexed array where any element can be read, inserted, or removed at any index (e.g. vector.insertElementAt(item, 0)). A Stack, by definition, restricts access strictly to the top. By inheriting from Vector, Stack violates LSP because code expecting a Vector can mutate elements at arbitrary indices, destroying the Stack's internal LIFO invariants."
+        },
+        {
+          "id": "col4-l3-int-2",
+          "question": "How can a Deque be used to check if a string is a palindrome?",
+          "answer": "Insert all characters into a Deque: `for (char c : str.toCharArray()) deque.addLast(c);`. In a while loop `while (deque.size() > 1)`, call `pollFirst()` and `pollLast()`. If the characters do not match, the string is not a palindrome. If the loop completes with size 0 or 1, it is a valid palindrome. This runs in O(N) time and O(N) space."
+        },
+        {
+          "id": "col4-l3-int-3",
+          "question": "What is the difference between ArrayDeque and LinkedList when implementing a Deque?",
+          "answer": "ArrayDeque is backed by a circular array; LinkedList is backed by doubly-linked nodes. ArrayDeque has significantly lower memory overhead (no Node objects), superior cache locality (contiguous memory), and runs faster for both stack (push/pop) and queue (offer/poll) operations. LinkedList should only be preferred if you require concurrent removal during iteration via an active ListIterator, or need to hold null elements (which ArrayDeque prohibits)."
+        }
+      ]
+    },
+    {
+      "id": "act-col4-l3-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Deque & Stacks",
+      "checklist": [
+        "I understand all 6 double-ended method pairs across head and tail in Deque",
+        "I can articulate why java.util.Stack is an obsolete anti-pattern in Java",
+        "I know how to implement robust LIFO stacks and palindrome checks using ArrayDeque"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col4-l3-1",
+      "title": "Verify Valid Parentheses String",
+      "difficulty": "beginner",
+      "problemStatement": "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid using a Deque stack.",
+      "starterCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class ParenthesesValidator {\n    public static boolean isValid(String s) {\n        // TODO: Validate parentheses with Deque\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class ParenthesesValidator {\n    public static boolean isValid(String s) {\n        if (s == null) return false;\n        Deque<Character> stack = new ArrayDeque<>();\n        for (char c : s.toCharArray()) {\n            if (c == '(' || c == '{' || c == '[') {\n                stack.push(c);\n            } else if (c == ')' || c == '}' || c == ']') {\n                if (stack.isEmpty()) return false;\n                char top = stack.pop();\n                if (c == ')' && top != '(') return false;\n                if (c == '}' && top != '{') return false;\n                if (c == ']' && top != '[') return false;\n            }\n        }\n        return stack.isEmpty();\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "\"()[]{}\"",
+          "expected": "true"
+        },
+        {
+          "input": "\"(]\"",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Push opening brackets onto Deque stack.",
+        "On closing bracket, check stack.isEmpty() and compare with stack.pop()."
+      ]
+    },
+    {
+      "id": "prob-col4-l3-2",
+      "title": "Palindrome Verification with Deque",
+      "difficulty": "beginner",
+      "problemStatement": "Implement isPalindrome(String text) using double-ended Deque operations (pollFirst and pollLast) to check if a lowercase string is a palindrome.",
+      "starterCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class DequePalindrome {\n    public static boolean isPalindrome(String text) {\n        // TODO: Check palindrome using Deque\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class DequePalindrome {\n    public static boolean isPalindrome(String text) {\n        if (text == null) return false;\n        Deque<Character> deque = new ArrayDeque<>();\n        for (char c : text.toCharArray()) {\n            deque.addLast(c);\n        }\n        while (deque.size() > 1) {\n            Character first = deque.pollFirst();\n            Character last = deque.pollLast();\n            if (!first.equals(last)) {\n                return false;\n            }\n        }\n        return true;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "\"racecar\"",
+          "expected": "true"
+        },
+        {
+          "input": "\"hello\"",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Add all characters via addLast.",
+        "While deque.size() > 1, compare pollFirst() and pollLast()."
+      ]
+    },
+    {
+      "id": "prob-col4-l3-3",
+      "title": "Reverse String Using LIFO Stack",
+      "difficulty": "beginner",
+      "problemStatement": "Given a string, return the reversed string using an ArrayDeque as a LIFO stack.",
+      "starterCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class StringStackReverser {\n    public static String reverse(String input) {\n        // TODO: Reverse using Deque stack\n        return \"\";\n    }\n}",
+      "solutionCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class StringStackReverser {\n    public static String reverse(String input) {\n        if (input == null || input.isEmpty()) return \"\";\n        Deque<Character> stack = new ArrayDeque<>();\n        for (char c : input.toCharArray()) {\n            stack.push(c);\n        }\n        StringBuilder sb = new StringBuilder();\n        while (!stack.isEmpty()) {\n            sb.append(stack.pop());\n        }\n        return sb.toString();\n    }\n}",
+      "expectedOutput": "\"olleh\"",
+      "testCases": [
+        {
+          "input": "\"hello\"",
+          "expected": "\"olleh\""
+        }
+      ],
+      "hints": [
+        "Push characters onto stack.",
+        "Pop characters into a StringBuilder."
+      ]
+    },
+    {
+      "id": "prob-col4-l3-4",
+      "title": "Evaluate Reverse Polish Notation",
+      "difficulty": "intermediate",
+      "problemStatement": "Evaluate the value of an arithmetic expression in Reverse Polish Notation (tokens containing integers and '+', '-', '*', '/').",
+      "starterCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class RpnEvaluator {\n    public static int evalRPN(String[] tokens) {\n        // TODO: Evaluate RPN expression\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class RpnEvaluator {\n    public static int evalRPN(String[] tokens) {\n        if (tokens == null || tokens.length == 0) return 0;\n        Deque<Integer> stack = new ArrayDeque<>();\n        for (String t : tokens) {\n            if (t.equals(\"+\")) {\n                stack.push(stack.pop() + stack.pop());\n            } else if (t.equals(\"*\")) {\n                stack.push(stack.pop() * stack.pop());\n            } else if (t.equals(\"-\")) {\n                int b = stack.pop();\n                int a = stack.pop();\n                stack.push(a - b);\n            } else if (t.equals(\"/\")) {\n                int b = stack.pop();\n                int a = stack.pop();\n                stack.push(a / b);\n            } else {\n                stack.push(Integer.parseInt(t));\n            }\n        }\n        return stack.pop();\n    }\n}",
+      "expectedOutput": "9",
+      "testCases": [
+        {
+          "input": "[\"2\", \"1\", \"+\", \"3\", \"*\"]",
+          "expected": "9"
+        }
+      ],
+      "hints": [
+        "For '-' and '/', note operand order: second popped is left operand, first popped is right operand."
+      ]
+    },
+    {
+      "id": "prob-col4-l3-5",
+      "title": "Simplify Unix File Path",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an absolute Unix-style file path, simplify it using a Deque stack (handling '.', '..', and duplicate slashes).",
+      "starterCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class PathSimplifier {\n    public static String simplifyPath(String path) {\n        // TODO: Simplify path using Deque\n        return \"/\";\n    }\n}",
+      "solutionCode": "import java.util.Deque;\nimport java.util.ArrayDeque;\n\npublic class PathSimplifier {\n    public static String simplifyPath(String path) {\n        if (path == null) return \"/\";\n        Deque<String> stack = new ArrayDeque<>();\n        String[] parts = path.split(\"/\");\n        for (String p : parts) {\n            if (p.equals(\"..\")) {\n                if (!stack.isEmpty()) stack.pop();\n            } else if (!p.isEmpty() && !p.equals(\".\")) {\n                stack.push(p);\n            }\n        }\n        if (stack.isEmpty()) return \"/\";\n        StringBuilder sb = new StringBuilder();\n        while (!stack.isEmpty()) {\n            sb.append(\"/\").append(stack.pollLast()); // Read from bottom of stack\n        }\n        return sb.toString();\n    }\n}",
+      "expectedOutput": "\"/home/user\"",
+      "testCases": [
+        {
+          "input": "\"/home//foo/../user/\"",
+          "expected": "\"/home/user\""
+        }
+      ],
+      "hints": [
+        "Split by '/'.",
+        "If token is '..', pop from stack. If not empty and not '.', push to stack.",
+        "Read bottom to top via pollLast()."
+      ]
+    }
+  ]
+}
