@@ -137,8 +137,8 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* 1. HERO CARD (Clean white with platform branding) */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-7 shadow-subtle space-y-4">
+      {/* 1. HERO CARD (Clean, compact, developer-focused) */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-subtle space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200/80">
@@ -159,6 +159,10 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
             >
               {projectBrief.difficulty}
             </span>
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs text-slate-500 bg-slate-50 border border-slate-200/60">
+              <Laptop className="w-3 h-3 text-slate-400" />
+              VS Code / IntelliJ / CLI
+            </span>
           </div>
 
           <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
@@ -168,26 +172,13 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
           </div>
         </div>
 
-        <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+        <div>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
             {project.title}
           </h1>
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl">
+          <p className="text-slate-600 text-xs sm:text-sm leading-normal max-w-2xl mt-1">
             {projectBrief.problemItSolves}
           </p>
-        </div>
-
-        {/* Motivating note in friendly clean card */}
-        <div className="bg-slate-50 border-l-3 border-brand-500 p-3 sm:p-4 rounded-r-xl text-xs sm:text-sm text-slate-700 italic">
-          &ldquo;{projectBrief.motivatingQuote}&rdquo;
-        </div>
-
-        {/* Works in any IDE / Editor Banner */}
-        <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50/90 border border-slate-200/80 text-xs text-slate-700">
-          <Laptop className="w-4 h-4 text-brand-600 shrink-0" />
-          <span>
-            <strong>Build in your favorite tool:</strong> You can code this project in <strong>VS Code</strong>, <strong>IntelliJ IDEA</strong>, <strong>Eclipse</strong>, <strong>NetBeans</strong>, or using the <strong>command line</strong> (`javac` & `java`).
-          </span>
         </div>
       </div>
 
@@ -227,40 +218,40 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
       {activeStage === 'overview' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Story & Context */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-subtle space-y-3">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-subtle space-y-2.5">
             <div className="flex items-center gap-2 text-brand-600 font-bold text-xs uppercase tracking-wider">
               <Sparkles className="w-4 h-4" />
               The Scenario
             </div>
-            <h2 className="text-xl font-bold text-slate-900">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">
               {realWorldScenario.headline}
             </h2>
-            <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+            <div className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-line">
               {realWorldScenario.story}
             </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700">
               <strong>Context: </strong>{realWorldScenario.context}
             </div>
           </div>
 
           {/* What you are building & finished app */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-2">
-              <div className="flex items-center gap-2 text-brand-600 font-semibold text-sm">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-subtle space-y-2">
+              <div className="flex items-center gap-2 text-brand-600 font-semibold text-xs sm:text-sm">
                 <Rocket className="w-4 h-4" />
                 What You Will Build
               </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 {projectBrief.whatAreWeBuilding}
               </p>
             </div>
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-subtle space-y-2">
-              <div className="flex items-center gap-2 text-emerald-600 font-semibold text-sm">
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-subtle space-y-2">
+              <div className="flex items-center gap-2 text-emerald-600 font-semibold text-xs sm:text-sm">
                 <CheckCircle2 className="w-4 h-4" />
                 What the Finished App Does
               </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 {projectBrief.finishedAppDescription}
               </p>
             </div>
