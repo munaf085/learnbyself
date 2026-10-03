@@ -1,0 +1,842 @@
+{
+  "id": "les-oop-mini-1-student-profile",
+  "slug": "student-profile-academic-system",
+  "sectionSlug": "oop",
+  "moduleSlug": "mini-projects",
+  "title": "Student Profile & Academic System (Level 1: Guided Build)",
+  "summary": "Build a multi-student registry modeling student state, GPA calculation, status transitions, and formatted academic reports.",
+  "difficulty": "easy",
+  "estimatedMinutes": 35,
+  "orderIndex": 1,
+  "prerequisites": [],
+  "subtopics": [
+    "Encapsulation & Domain Invariants",
+    "Class Design & Architecture",
+    "State Validation & Defense",
+    "Production README & Portfolio Deployment"
+  ],
+  "learningOutcomes": [
+    "Build a complete, portfolio-grade Student Profile & Academic System (Level 1: Guided Build) application in Java",
+    "Implement defensive invariants and encapsulation patterns",
+    "Publish an industry-standard GitHub repository with clean commit history"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "les-oop-mini-1-student-profile",
+    "slug": "student-profile-academic-system",
+    "title": "Student Profile & Academic System (Level 1: Guided Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "A modular Java registry system that encapsulates student academic profiles, computes cumulative GPAs, handles academic standing transitions (Good Standing, Honors, Academic Probation), and outputs formatted grade cards.",
+      "problemItSolves": "Procedural systems scatter student grades and personal details across loose arrays. This project models cohesive domain objects where data fields and academic state transitions are bundled together.",
+      "finishedAppDescription": "An interactive console application managing multiple Student instances. Users can register students, assign course letter grades, calculate weighted GPAs on a 4.0 scale, evaluate academic standing, and print structured transcripts.",
+      "estimatedTime": "35–45 minutes",
+      "difficulty": "easy",
+      "javaFundamentals": [
+        "Class declaration and instance variable modeling",
+        "Encapsulation with private fields and public accessors",
+        "Constructor initialization with validation guards",
+        "State transitions and derived computations (GPA calculation)",
+        "Formatted console reporting and array/list management",
+        "Separation of domain entities from CLI driver"
+      ],
+      "motivatingQuote": "Mastering classes and encapsulation is where code turns into modeled reality."
+    },
+    "realWorldScenario": {
+      "headline": "University Registrar Academic Profile Engine",
+      "story": "The university registrar requires a reliable core service to record undergraduate course completions, maintain cumulative grade points, and automatically update academic standing flags without exposing raw grade variables to arbitrary mutation.",
+      "context": "Academic enterprise records demand strict validation: GPAs must stay within 0.00 to 4.00, credit totals cannot be negative, and standing updates must follow faculty policies."
+    },
+    "requirements": {
+      "functional": [
+        "Define a Student class with private fields: id, fullName, major, totalCredits, totalQualityPoints, and academicStanding.",
+        "Provide a constructor requiring student ID, full name, and major with non-blank validation.",
+        "Implement addCourseGrade(double gradePoint, int creditHours) that updates quality points and total credits with defensive validation (0.0 <= gradePoint <= 4.0 and creditHours > 0).",
+        "Implement computeGPA() returning quality points divided by total credits (or 0.00 if zero credits completed).",
+        "Implement updateStanding() setting standing to 'HONORS' if GPA >= 3.75, 'GOOD STANDING' if GPA >= 2.0, or 'ACADEMIC PROBATION' if GPA < 2.0.",
+        "Implement printTranscript() displaying student details, total credits, GPA formatted to 2 decimals, and current standing.",
+        "Provide a StudentRegistry driver class allowing interactive registration of multiple students and batch transcript generation."
+      ],
+      "technicalConstraints": [
+        "All instance variables in Student must be declared private.",
+        "Field updates must strictly route through validated constructor or mutator methods.",
+        "GPA computation must guard against division by zero (return 0.0 if totalCredits == 0).",
+        "No raw state exposure: do not provide an unchecked setGPA() mutator; GPA must be a derived value."
+      ],
+      "userDecisions": [
+        "Choose whether to store individual course names or just aggregate credit/quality points.",
+        "Decide whether to add warning messages when a student falls below 2.00 into probation.",
+        "Select console banner styles and transcript formatting width."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Student identification number (String, e.g. 'STU-101')",
+        "Student full name and declared academic major (Strings)",
+        "Grade point (double: 0.0 to 4.0) and credit hours (int: 1 to 5) for each course completed"
+      ],
+      "outputsRequired": [
+        "Computed cumulative GPA formatted to 2 decimal places (e.g. '3.85')",
+        "Dynamic academic standing status label (e.g. 'HONORS')",
+        "Formatted ASCII transcript card with aligned borders"
+      ],
+      "variablesNeeded": [
+        "String id, fullName, major: student identity fields",
+        "int totalCredits: accumulated credit hours",
+        "double totalQualityPoints: accumulated sum of (gradePoint * creditHours)",
+        "String academicStanding: current evaluation status"
+      ],
+      "conditionalLogic": [
+        "Constructor validation: check that id and fullName are non-null and not empty",
+        "addCourseGrade validation: if gradePoint < 0.0 || gradePoint > 4.0 || creditHours <= 0 throw IllegalArgumentException or return false",
+        "updateStanding branch: if (gpa >= 3.75) ... else if (gpa >= 2.0) ... else ..."
+      ],
+      "loopStructures": [
+        "Interactive menu loop (while running) for adding courses and printing transcripts",
+        "Enhanced for-loop over registered students in the registry driver"
+      ],
+      "recommendedMethods": [
+        "public Student(String id, String fullName, String major)",
+        "public boolean addCourseGrade(double gradePoint, int creditHours)",
+        "public double calculateGPA()",
+        "public void updateStanding()",
+        "public void printTranscript()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Define Student Entity & Constructor",
+        "objective": "Establish the Student class with private fields, validation guards in the constructor, and public getters.",
+        "tasks": [
+          "Declare private fields: id, fullName, major, totalCredits, totalQualityPoints, academicStanding.",
+          "Implement public Student(String id, String fullName, String major) with non-null checks.",
+          "Initialize totalCredits and totalQualityPoints to 0, and standing to 'GOOD STANDING'.",
+          "Add clean getter methods for all read-only properties."
+        ],
+        "acceptanceCriteria": [
+          "Instances cannot be created with null or empty ID/Name; getters return initialized values."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Course Grading & GPA Derivation",
+        "objective": "Implement the core academic math and state transitions.",
+        "tasks": [
+          "Write addCourseGrade(double gradePoint, int creditHours) validating boundaries.",
+          "Update totalQualityPoints += (gradePoint * creditHours) and totalCredits += creditHours.",
+          "Implement calculateGPA() returning quality points / credits with zero-credit division protection.",
+          "Implement updateStanding() setting HONORS (>= 3.75), GOOD STANDING (>= 2.0), or PROBATION."
+        ],
+        "acceptanceCriteria": [
+          "A student with 3 credits of 4.0 and 3 credits of 3.0 computes a GPA of 3.50 with status 'GOOD STANDING'."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Formatted Transcript & Reporting",
+        "objective": "Build a clean ASCII transcript renderer method.",
+        "tasks": [
+          "Create printTranscript() using String.format with fixed column widths.",
+          "Include Student ID, Name, Major, Total Credits, Cumulative GPA, and Standing.",
+          "Test output readability on the console."
+        ],
+        "acceptanceCriteria": [
+          "Console output displays a cleanly aligned academic grade card."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Registry Driver & CLI Simulation",
+        "objective": "Write the Main driver simulating multiple students and running test scenarios.",
+        "tasks": [
+          "Create StudentRegistryMain with an array or list of Student objects.",
+          "Simulate normal students, honors students, and probation cases.",
+          "Verify state isolation: updating one student's grades never affects another."
+        ],
+        "acceptanceCriteria": [
+          "Main runs cleanly, demonstrating multi-instance isolation and accurate standing transitions."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why shouldn't the Student class have a public setGPA(double gpa) method?",
+        "mentorInsight": "GPA is a derived state. If an external caller can set gpa = 4.0 directly without completing course credits, the object's internal state becomes inconsistent with its credit history. Derived values should always be calculated from ground-truth source fields."
+      },
+      {
+        "question": "What is quality points, and why do we accumulate them instead of averaging raw grades?",
+        "mentorInsight": "A 4-credit course has double the academic weight of a 2-credit course. Quality points equal (grade * credits). Cumulative GPA is totalQualityPoints / totalCredits. Simply averaging grades would distort the true weighted average."
+      },
+      {
+        "question": "Why make fields private instead of package-private or public in our domain class?",
+        "mentorInsight": "Private fields enforce encapsulation. Any code outside the class is prevented from directly altering totalCredits or setting negative numbers, protecting the invariant rules of our academic domain."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Safe GPA Calculation",
+        "level1Conceptual": "Check for zero completed credits before dividing to avoid 0.0/0.0 NaN results.",
+        "level2Implementation": "If totalCredits is 0, return 0.0. Otherwise compute totalQualityPoints / totalCredits.",
+        "level3JavaSyntax": "public double calculateGPA() {\n    if (totalCredits == 0) return 0.0;\n    return totalQualityPoints / totalCredits;\n}"
+      },
+      {
+        "topic": "Constructor Validation",
+        "level1Conceptual": "Reject null or whitespace-only strings before assigning to instance variables.",
+        "level2Implementation": "Use id.trim().isEmpty() checks and throw IllegalArgumentException.",
+        "level3JavaSyntax": "if (id == null || id.trim().isEmpty()) {\n    throw new IllegalArgumentException(\"Student ID cannot be empty.\");\n}\nthis.id = id.trim();"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Student Alex: 4 credits of 4.0 (A) + 3 credits of 3.0 (B) -> GPA: 3.57, Standing: GOOD STANDING",
+        "Student Sarah: 4 credits of 4.0 (A) + 4 credits of 4.0 (A) -> GPA: 4.00, Standing: HONORS",
+        "Student Jordan: 3 credits of 1.0 (D) + 3 credits of 1.0 (D) -> GPA: 1.00, Standing: ACADEMIC PROBATION"
+      ],
+      "boundaryCases": [
+        "Newly registered student with 0 credits completed -> GPA: 0.00 without NaN or crash",
+        "Student exactly at 3.75 boundary -> Standing transitions to HONORS",
+        "Student exactly at 2.00 boundary -> Standing stays GOOD STANDING"
+      ],
+      "invalidInputCases": [
+        "Attempting to instantiate Student with null or blank ID -> Throws IllegalArgumentException",
+        "Attempting to add grade point 4.5 or -0.5 -> Rejected with validation error",
+        "Attempting to add course with 0 or negative credit hours -> Rejected with validation error"
+      ],
+      "edgeCases": [
+        "Multiple students registered: modifying Student A does not change Student B's credits or GPA",
+        "Student recovering from PROBATION to GOOD STANDING after adding higher grades"
+      ]
+    },
+    "debuggingGuide": [
+      "Are your credits stored as integers and quality points as doubles? Integer division (e.g. 15 / 4) truncates to 3 instead of 3.75 if both are ints.",
+      "Did you remember this.fieldName = fieldName in your constructor? Omitting this leaves instance fields at their default values (null or 0).",
+      "Does calculateGPA() return 0.0 when totalCredits == 0? Guarding against zero-division avoids unexpected NaN results in formatted strings.",
+      "Are multiple Student instances sharing state? Ensure your fields are NOT marked static; every student needs their own instance memory."
+    ],
+    "projectPolish": [
+      "Use String.format(\"%.2f\", calculateGPA()) for consistent 2-decimal grade point display.",
+      "Wrap transcript output in clean ASCII box borders with double horizontal rules.",
+      "Add a clear status transition message whenever updateStanding() changes a student's status."
+    ],
+    "gitHubReady": {
+      "repoName": "student-profile-academic-system",
+      "commitMessages": [
+        "feat: scaffold Student entity with private encapsulated fields and constructor guards",
+        "feat: implement quality point accumulation and zero-safe GPA calculation",
+        "feat: implement academic standing state transitions (Honors, Good Standing, Probation)",
+        "feat: add formatted ASCII transcript generator",
+        "test: add multi-student registry simulation driver with boundary tests",
+        "docs: create comprehensive README with domain architecture and usage instructions"
+      ],
+      "readmeTemplate": "# Student Profile & Academic System (Java OOP)\n\n## Overview\nA robust, object-oriented academic management registry built in Java. It models student entity state, enforces strict encapsulation, computes credit-weighted cumulative GPAs, handles academic standing transitions, and generates formatted transcripts.\n\n## Architecture Blueprint\n```\n+-------------------------------------------------------------+\n|                          Student                            |\n+-------------------------------------------------------------+\n| - id: String                                                |\n| - fullName: String                                          |\n| - major: String                                             |\n| - totalCredits: int                                         |\n| - totalQualityPoints: double                                |\n| - academicStanding: String                                  |\n+-------------------------------------------------------------+\n| + Student(id: String, fullName: String, major: String)      |\n| + addCourseGrade(gradePoint: double, creditHours: int): bool|\n| + calculateGPA(): double                                    |\n| + updateStanding(): void                                    |\n| + printTranscript(): void                                   |\n| + [getters for read-only fields]                            |\n+-------------------------------------------------------------+\n```\n\n## Key Features\n- **Strict Encapsulation**: Private fields protected against direct external tampering.\n- **Zero-Safe Derived Math**: GPA computed dynamically from quality points without division-by-zero risk.\n- **Business Invariant Rules**: Rejection of negative credits and out-of-range grade points (0.0 to 4.0).\n- **State Transitions**: Automatic promotion to Honors, Good Standing, or Academic Probation.\n- **Clean CLI Transcripts**: Formatted tabular output for registrar auditing.\n\n## How to Run\n```bash\n# 1. Compile the project\njavac Student.java StudentRegistryMain.java\n\n# 2. Run the application\njava StudentRegistryMain\n```\n\n## Sample Output\n```text\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-2026-089\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     16\nCumulative GPA:    3.88\nAcademic Standing: HONORS\nStatus:            Active / In Good Standing\n=======================================================\n```\n\n## Lessons Learned\n- Why derived fields like GPA should never have public setters.\n- How to enforce constructor validation guards against null/empty strings.\n- The importance of object-level state isolation in multi-instance applications.\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes a local Git repository in your project directory."
+        },
+        {
+          "command": "git add Student.java StudentRegistryMain.java README.md",
+          "explanation": "Stages the source code and documentation files."
+        },
+        {
+          "command": "git commit -m \"feat: complete student profile academic registry with encapsulation\"",
+          "explanation": "Records the verified initial milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets the default primary branch to 'main'."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/student-profile-academic-system.git",
+          "explanation": "Links your local repository to your remote GitHub portfolio."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes your project to GitHub for recruiters and hiring managers to review."
+        }
+      ],
+      "suggestedReadme": "# Student Profile & Academic System (Java OOP)\n\n## Overview\nA robust, object-oriented academic management registry built in Java. It models student entity state, enforces strict encapsulation, computes credit-weighted cumulative GPAs, handles academic standing transitions, and generates formatted transcripts.\n\n## Architecture Blueprint\n```\n+-------------------------------------------------------------+\n|                          Student                            |\n+-------------------------------------------------------------+\n| - id: String                                                |\n| - fullName: String                                          |\n| - major: String                                             |\n| - totalCredits: int                                         |\n| - totalQualityPoints: double                                |\n| - academicStanding: String                                  |\n+-------------------------------------------------------------+\n| + Student(id: String, fullName: String, major: String)      |\n| + addCourseGrade(gradePoint: double, creditHours: int): bool|\n| + calculateGPA(): double                                    |\n| + updateStanding(): void                                    |\n| + printTranscript(): void                                   |\n| + [getters for read-only fields]                            |\n+-------------------------------------------------------------+\n```\n\n## Key Features\n- **Strict Encapsulation**: Private fields protected against direct external tampering.\n- **Zero-Safe Derived Math**: GPA computed dynamically from quality points without division-by-zero risk.\n- **Business Invariant Rules**: Rejection of negative credits and out-of-range grade points (0.0 to 4.0).\n- **State Transitions**: Automatic promotion to Honors, Good Standing, or Academic Probation.\n- **Clean CLI Transcripts**: Formatted tabular output for registrar auditing.\n\n## How to Run\n```bash\n# 1. Compile the project\njavac Student.java StudentRegistryMain.java\n\n# 2. Run the application\njava StudentRegistryMain\n```\n\n## Sample Output\n```text\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-2026-089\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     16\nCumulative GPA:    3.88\nAcademic Standing: HONORS\nStatus:            Active / In Good Standing\n=======================================================\n```\n\n## Lessons Learned\n- Why derived fields like GPA should never have public setters.\n- How to enforce constructor validation guards against null/empty strings.\n- The importance of object-level state isolation in multi-instance applications.\n"
+    },
+    "portfolioChecklist": [
+      "Student class fields are all strictly private",
+      "Constructor contains guard checks rejecting null or blank strings",
+      "addCourseGrade() defends against invalid grades (< 0.0 or > 4.0) and non-positive credits",
+      "calculateGPA() handles 0 completed credits gracefully without returning NaN",
+      "updateStanding() correctly updates honors (>=3.75), good standing (>=2.0), and probation (<2.0)",
+      "Driver program verifies multiple independent Student instances",
+      "README.md includes class diagram, feature breakdown, and execution steps",
+      "Repository pushed to public GitHub with clean commit history"
+    ],
+    "explainYourProject": [
+      "Why is GPA a derived calculation instead of a stored field with a public setter?",
+      "How do private fields and public getters ensure data integrity in this system?",
+      "What happens if an invalid grade like 5.5 is passed to addCourseGrade?",
+      "How does constructor chaining or defensive assignment prevent null identifier errors?",
+      "How do multiple Student instances maintain separate states in JVM Heap memory?",
+      "If the registrar adds a 'Dean's List' tier requiring GPA >= 3.90, where would you make that change?"
+    ],
+    "projectCompletion": {
+      "headline": "Academic Profile System Completed!",
+      "congratulations": "You built a clean, encapsulated domain model that enforces real-world academic invariants, calculates weighted GPAs safely, and outputs professional transcripts.",
+      "skillsDemonstrated": [
+        "Object State Encapsulation",
+        "Defensive Parameter Validation",
+        "Derived State Computations",
+        "State Transition Logic",
+        "Object Isolation in Heap Memory",
+        "Git Portfolio Publishing"
+      ],
+      "nextStepAction": "Stage, commit, and push your code to GitHub with the provided README template!"
+    },
+    "scaffoldingCode": "public class Student {\n    // 1. Declare private instance variables\n    private String id;\n    private String fullName;\n    private String major;\n    private int totalCredits;\n    private double totalQualityPoints;\n    private String academicStanding;\n\n    // 2. Parameterized constructor with validation\n    public Student(String id, String fullName, String major) {\n        if (id == null || id.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"Student ID cannot be null or empty.\");\n        }\n        if (fullName == null || fullName.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"Student name cannot be null or empty.\");\n        }\n        this.id = id.trim();\n        this.fullName = fullName.trim();\n        this.major = (major != null) ? major.trim() : \"Undeclared\";\n        this.totalCredits = 0;\n        this.totalQualityPoints = 0.0;\n        this.academicStanding = \"GOOD STANDING\";\n    }\n\n    // 3. Add course grade with validation\n    public boolean addCourseGrade(double gradePoint, int creditHours) {\n        if (gradePoint < 0.0 || gradePoint > 4.0 || creditHours <= 0) {\n            System.err.println(\"Invalid grade or credit hours provided.\");\n            return false;\n        }\n        this.totalQualityPoints += (gradePoint * creditHours);\n        this.totalCredits += creditHours;\n        updateStanding();\n        return true;\n    }\n\n    // 4. Calculate GPA safely\n    public double calculateGPA() {\n        if (this.totalCredits == 0) return 0.0;\n        return this.totalQualityPoints / this.totalCredits;\n    }\n\n    // 5. Update academic standing\n    public void updateStanding() {\n        double gpa = calculateGPA();\n        if (this.totalCredits == 0) {\n            this.academicStanding = \"GOOD STANDING\";\n        } else if (gpa >= 3.75) {\n            this.academicStanding = \"HONORS\";\n        } else if (gpa >= 2.00) {\n            this.academicStanding = \"GOOD STANDING\";\n        } else {\n            this.academicStanding = \"ACADEMIC PROBATION\";\n        }\n    }\n\n    // 6. Formatted transcript output\n    public void printTranscript() {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"           OFFICIAL ACADEMIC TRANSCRIPT               \");\n        System.out.println(\"=======================================================\");\n        System.out.printf(\"Student ID:        %s%n\", id);\n        System.out.printf(\"Full Name:         %s%n\", fullName);\n        System.out.printf(\"Academic Major:    %s%n\", major);\n        System.out.printf(\"Total Credits:     %d%n\", totalCredits);\n        System.out.printf(\"Cumulative GPA:    %.2f%n\", calculateGPA());\n        System.out.printf(\"Academic Standing: %s%n\", academicStanding);\n        System.out.println(\"=======================================================\\n\");\n    }\n\n    // Getters\n    public String getId() { return id; }\n    public String getFullName() { return fullName; }\n    public String getMajor() { return major; }\n    public int getTotalCredits() { return totalCredits; }\n    public String getAcademicStanding() { return academicStanding; }\n}",
+    "sampleConsoleRun": "=== STUDENT ACADEMIC REGISTRY SIMULATION ===\nRegistering student STU-101 (Sarah Jenkins, Computer Science)...\nEnrolling in CS101 (4 credits, Grade: 4.0)...\nEnrolling in MATH201 (4 credits, Grade: 3.7)...\nEnrolling in ENG105 (3 credits, Grade: 4.0)...\n\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-101\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     11\nCumulative GPA:    3.89\nAcademic Standing: HONORS\n=======================================================\n\nRegistering student STU-102 (Jordan Cole, Physics)...\nEnrolling in PHYS101 (4 credits, Grade: 1.0)...\nEnrolling in CHEM101 (4 credits, Grade: 1.5)...\n\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-102\nFull Name:         Jordan Cole\nAcademic Major:    Physics\nTotal Credits:     8\nCumulative GPA:    1.25\nAcademic Standing: ACADEMIC PROBATION\n=======================================================\nStatus: All students processed with verified state isolation."
+  },
+  "miniProject": {
+    "id": "les-oop-mini-1-student-profile",
+    "slug": "student-profile-academic-system",
+    "title": "Student Profile & Academic System (Level 1: Guided Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "A modular Java registry system that encapsulates student academic profiles, computes cumulative GPAs, handles academic standing transitions (Good Standing, Honors, Academic Probation), and outputs formatted grade cards.",
+      "problemItSolves": "Procedural systems scatter student grades and personal details across loose arrays. This project models cohesive domain objects where data fields and academic state transitions are bundled together.",
+      "finishedAppDescription": "An interactive console application managing multiple Student instances. Users can register students, assign course letter grades, calculate weighted GPAs on a 4.0 scale, evaluate academic standing, and print structured transcripts.",
+      "estimatedTime": "35–45 minutes",
+      "difficulty": "easy",
+      "javaFundamentals": [
+        "Class declaration and instance variable modeling",
+        "Encapsulation with private fields and public accessors",
+        "Constructor initialization with validation guards",
+        "State transitions and derived computations (GPA calculation)",
+        "Formatted console reporting and array/list management",
+        "Separation of domain entities from CLI driver"
+      ],
+      "motivatingQuote": "Mastering classes and encapsulation is where code turns into modeled reality."
+    },
+    "realWorldScenario": {
+      "headline": "University Registrar Academic Profile Engine",
+      "story": "The university registrar requires a reliable core service to record undergraduate course completions, maintain cumulative grade points, and automatically update academic standing flags without exposing raw grade variables to arbitrary mutation.",
+      "context": "Academic enterprise records demand strict validation: GPAs must stay within 0.00 to 4.00, credit totals cannot be negative, and standing updates must follow faculty policies."
+    },
+    "requirements": {
+      "functional": [
+        "Define a Student class with private fields: id, fullName, major, totalCredits, totalQualityPoints, and academicStanding.",
+        "Provide a constructor requiring student ID, full name, and major with non-blank validation.",
+        "Implement addCourseGrade(double gradePoint, int creditHours) that updates quality points and total credits with defensive validation (0.0 <= gradePoint <= 4.0 and creditHours > 0).",
+        "Implement computeGPA() returning quality points divided by total credits (or 0.00 if zero credits completed).",
+        "Implement updateStanding() setting standing to 'HONORS' if GPA >= 3.75, 'GOOD STANDING' if GPA >= 2.0, or 'ACADEMIC PROBATION' if GPA < 2.0.",
+        "Implement printTranscript() displaying student details, total credits, GPA formatted to 2 decimals, and current standing.",
+        "Provide a StudentRegistry driver class allowing interactive registration of multiple students and batch transcript generation."
+      ],
+      "technicalConstraints": [
+        "All instance variables in Student must be declared private.",
+        "Field updates must strictly route through validated constructor or mutator methods.",
+        "GPA computation must guard against division by zero (return 0.0 if totalCredits == 0).",
+        "No raw state exposure: do not provide an unchecked setGPA() mutator; GPA must be a derived value."
+      ],
+      "userDecisions": [
+        "Choose whether to store individual course names or just aggregate credit/quality points.",
+        "Decide whether to add warning messages when a student falls below 2.00 into probation.",
+        "Select console banner styles and transcript formatting width."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Student identification number (String, e.g. 'STU-101')",
+        "Student full name and declared academic major (Strings)",
+        "Grade point (double: 0.0 to 4.0) and credit hours (int: 1 to 5) for each course completed"
+      ],
+      "outputsRequired": [
+        "Computed cumulative GPA formatted to 2 decimal places (e.g. '3.85')",
+        "Dynamic academic standing status label (e.g. 'HONORS')",
+        "Formatted ASCII transcript card with aligned borders"
+      ],
+      "variablesNeeded": [
+        "String id, fullName, major: student identity fields",
+        "int totalCredits: accumulated credit hours",
+        "double totalQualityPoints: accumulated sum of (gradePoint * creditHours)",
+        "String academicStanding: current evaluation status"
+      ],
+      "conditionalLogic": [
+        "Constructor validation: check that id and fullName are non-null and not empty",
+        "addCourseGrade validation: if gradePoint < 0.0 || gradePoint > 4.0 || creditHours <= 0 throw IllegalArgumentException or return false",
+        "updateStanding branch: if (gpa >= 3.75) ... else if (gpa >= 2.0) ... else ..."
+      ],
+      "loopStructures": [
+        "Interactive menu loop (while running) for adding courses and printing transcripts",
+        "Enhanced for-loop over registered students in the registry driver"
+      ],
+      "recommendedMethods": [
+        "public Student(String id, String fullName, String major)",
+        "public boolean addCourseGrade(double gradePoint, int creditHours)",
+        "public double calculateGPA()",
+        "public void updateStanding()",
+        "public void printTranscript()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Define Student Entity & Constructor",
+        "objective": "Establish the Student class with private fields, validation guards in the constructor, and public getters.",
+        "tasks": [
+          "Declare private fields: id, fullName, major, totalCredits, totalQualityPoints, academicStanding.",
+          "Implement public Student(String id, String fullName, String major) with non-null checks.",
+          "Initialize totalCredits and totalQualityPoints to 0, and standing to 'GOOD STANDING'.",
+          "Add clean getter methods for all read-only properties."
+        ],
+        "acceptanceCriteria": [
+          "Instances cannot be created with null or empty ID/Name; getters return initialized values."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Course Grading & GPA Derivation",
+        "objective": "Implement the core academic math and state transitions.",
+        "tasks": [
+          "Write addCourseGrade(double gradePoint, int creditHours) validating boundaries.",
+          "Update totalQualityPoints += (gradePoint * creditHours) and totalCredits += creditHours.",
+          "Implement calculateGPA() returning quality points / credits with zero-credit division protection.",
+          "Implement updateStanding() setting HONORS (>= 3.75), GOOD STANDING (>= 2.0), or PROBATION."
+        ],
+        "acceptanceCriteria": [
+          "A student with 3 credits of 4.0 and 3 credits of 3.0 computes a GPA of 3.50 with status 'GOOD STANDING'."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Formatted Transcript & Reporting",
+        "objective": "Build a clean ASCII transcript renderer method.",
+        "tasks": [
+          "Create printTranscript() using String.format with fixed column widths.",
+          "Include Student ID, Name, Major, Total Credits, Cumulative GPA, and Standing.",
+          "Test output readability on the console."
+        ],
+        "acceptanceCriteria": [
+          "Console output displays a cleanly aligned academic grade card."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Registry Driver & CLI Simulation",
+        "objective": "Write the Main driver simulating multiple students and running test scenarios.",
+        "tasks": [
+          "Create StudentRegistryMain with an array or list of Student objects.",
+          "Simulate normal students, honors students, and probation cases.",
+          "Verify state isolation: updating one student's grades never affects another."
+        ],
+        "acceptanceCriteria": [
+          "Main runs cleanly, demonstrating multi-instance isolation and accurate standing transitions."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why shouldn't the Student class have a public setGPA(double gpa) method?",
+        "mentorInsight": "GPA is a derived state. If an external caller can set gpa = 4.0 directly without completing course credits, the object's internal state becomes inconsistent with its credit history. Derived values should always be calculated from ground-truth source fields."
+      },
+      {
+        "question": "What is quality points, and why do we accumulate them instead of averaging raw grades?",
+        "mentorInsight": "A 4-credit course has double the academic weight of a 2-credit course. Quality points equal (grade * credits). Cumulative GPA is totalQualityPoints / totalCredits. Simply averaging grades would distort the true weighted average."
+      },
+      {
+        "question": "Why make fields private instead of package-private or public in our domain class?",
+        "mentorInsight": "Private fields enforce encapsulation. Any code outside the class is prevented from directly altering totalCredits or setting negative numbers, protecting the invariant rules of our academic domain."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Safe GPA Calculation",
+        "level1Conceptual": "Check for zero completed credits before dividing to avoid 0.0/0.0 NaN results.",
+        "level2Implementation": "If totalCredits is 0, return 0.0. Otherwise compute totalQualityPoints / totalCredits.",
+        "level3JavaSyntax": "public double calculateGPA() {\n    if (totalCredits == 0) return 0.0;\n    return totalQualityPoints / totalCredits;\n}"
+      },
+      {
+        "topic": "Constructor Validation",
+        "level1Conceptual": "Reject null or whitespace-only strings before assigning to instance variables.",
+        "level2Implementation": "Use id.trim().isEmpty() checks and throw IllegalArgumentException.",
+        "level3JavaSyntax": "if (id == null || id.trim().isEmpty()) {\n    throw new IllegalArgumentException(\"Student ID cannot be empty.\");\n}\nthis.id = id.trim();"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Student Alex: 4 credits of 4.0 (A) + 3 credits of 3.0 (B) -> GPA: 3.57, Standing: GOOD STANDING",
+        "Student Sarah: 4 credits of 4.0 (A) + 4 credits of 4.0 (A) -> GPA: 4.00, Standing: HONORS",
+        "Student Jordan: 3 credits of 1.0 (D) + 3 credits of 1.0 (D) -> GPA: 1.00, Standing: ACADEMIC PROBATION"
+      ],
+      "boundaryCases": [
+        "Newly registered student with 0 credits completed -> GPA: 0.00 without NaN or crash",
+        "Student exactly at 3.75 boundary -> Standing transitions to HONORS",
+        "Student exactly at 2.00 boundary -> Standing stays GOOD STANDING"
+      ],
+      "invalidInputCases": [
+        "Attempting to instantiate Student with null or blank ID -> Throws IllegalArgumentException",
+        "Attempting to add grade point 4.5 or -0.5 -> Rejected with validation error",
+        "Attempting to add course with 0 or negative credit hours -> Rejected with validation error"
+      ],
+      "edgeCases": [
+        "Multiple students registered: modifying Student A does not change Student B's credits or GPA",
+        "Student recovering from PROBATION to GOOD STANDING after adding higher grades"
+      ]
+    },
+    "debuggingGuide": [
+      "Are your credits stored as integers and quality points as doubles? Integer division (e.g. 15 / 4) truncates to 3 instead of 3.75 if both are ints.",
+      "Did you remember this.fieldName = fieldName in your constructor? Omitting this leaves instance fields at their default values (null or 0).",
+      "Does calculateGPA() return 0.0 when totalCredits == 0? Guarding against zero-division avoids unexpected NaN results in formatted strings.",
+      "Are multiple Student instances sharing state? Ensure your fields are NOT marked static; every student needs their own instance memory."
+    ],
+    "projectPolish": [
+      "Use String.format(\"%.2f\", calculateGPA()) for consistent 2-decimal grade point display.",
+      "Wrap transcript output in clean ASCII box borders with double horizontal rules.",
+      "Add a clear status transition message whenever updateStanding() changes a student's status."
+    ],
+    "gitHubReady": {
+      "repoName": "student-profile-academic-system",
+      "commitMessages": [
+        "feat: scaffold Student entity with private encapsulated fields and constructor guards",
+        "feat: implement quality point accumulation and zero-safe GPA calculation",
+        "feat: implement academic standing state transitions (Honors, Good Standing, Probation)",
+        "feat: add formatted ASCII transcript generator",
+        "test: add multi-student registry simulation driver with boundary tests",
+        "docs: create comprehensive README with domain architecture and usage instructions"
+      ],
+      "readmeTemplate": "# Student Profile & Academic System (Java OOP)\n\n## Overview\nA robust, object-oriented academic management registry built in Java. It models student entity state, enforces strict encapsulation, computes credit-weighted cumulative GPAs, handles academic standing transitions, and generates formatted transcripts.\n\n## Architecture Blueprint\n```\n+-------------------------------------------------------------+\n|                          Student                            |\n+-------------------------------------------------------------+\n| - id: String                                                |\n| - fullName: String                                          |\n| - major: String                                             |\n| - totalCredits: int                                         |\n| - totalQualityPoints: double                                |\n| - academicStanding: String                                  |\n+-------------------------------------------------------------+\n| + Student(id: String, fullName: String, major: String)      |\n| + addCourseGrade(gradePoint: double, creditHours: int): bool|\n| + calculateGPA(): double                                    |\n| + updateStanding(): void                                    |\n| + printTranscript(): void                                   |\n| + [getters for read-only fields]                            |\n+-------------------------------------------------------------+\n```\n\n## Key Features\n- **Strict Encapsulation**: Private fields protected against direct external tampering.\n- **Zero-Safe Derived Math**: GPA computed dynamically from quality points without division-by-zero risk.\n- **Business Invariant Rules**: Rejection of negative credits and out-of-range grade points (0.0 to 4.0).\n- **State Transitions**: Automatic promotion to Honors, Good Standing, or Academic Probation.\n- **Clean CLI Transcripts**: Formatted tabular output for registrar auditing.\n\n## How to Run\n```bash\n# 1. Compile the project\njavac Student.java StudentRegistryMain.java\n\n# 2. Run the application\njava StudentRegistryMain\n```\n\n## Sample Output\n```text\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-2026-089\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     16\nCumulative GPA:    3.88\nAcademic Standing: HONORS\nStatus:            Active / In Good Standing\n=======================================================\n```\n\n## Lessons Learned\n- Why derived fields like GPA should never have public setters.\n- How to enforce constructor validation guards against null/empty strings.\n- The importance of object-level state isolation in multi-instance applications.\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes a local Git repository in your project directory."
+        },
+        {
+          "command": "git add Student.java StudentRegistryMain.java README.md",
+          "explanation": "Stages the source code and documentation files."
+        },
+        {
+          "command": "git commit -m \"feat: complete student profile academic registry with encapsulation\"",
+          "explanation": "Records the verified initial milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets the default primary branch to 'main'."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/student-profile-academic-system.git",
+          "explanation": "Links your local repository to your remote GitHub portfolio."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes your project to GitHub for recruiters and hiring managers to review."
+        }
+      ],
+      "suggestedReadme": "# Student Profile & Academic System (Java OOP)\n\n## Overview\nA robust, object-oriented academic management registry built in Java. It models student entity state, enforces strict encapsulation, computes credit-weighted cumulative GPAs, handles academic standing transitions, and generates formatted transcripts.\n\n## Architecture Blueprint\n```\n+-------------------------------------------------------------+\n|                          Student                            |\n+-------------------------------------------------------------+\n| - id: String                                                |\n| - fullName: String                                          |\n| - major: String                                             |\n| - totalCredits: int                                         |\n| - totalQualityPoints: double                                |\n| - academicStanding: String                                  |\n+-------------------------------------------------------------+\n| + Student(id: String, fullName: String, major: String)      |\n| + addCourseGrade(gradePoint: double, creditHours: int): bool|\n| + calculateGPA(): double                                    |\n| + updateStanding(): void                                    |\n| + printTranscript(): void                                   |\n| + [getters for read-only fields]                            |\n+-------------------------------------------------------------+\n```\n\n## Key Features\n- **Strict Encapsulation**: Private fields protected against direct external tampering.\n- **Zero-Safe Derived Math**: GPA computed dynamically from quality points without division-by-zero risk.\n- **Business Invariant Rules**: Rejection of negative credits and out-of-range grade points (0.0 to 4.0).\n- **State Transitions**: Automatic promotion to Honors, Good Standing, or Academic Probation.\n- **Clean CLI Transcripts**: Formatted tabular output for registrar auditing.\n\n## How to Run\n```bash\n# 1. Compile the project\njavac Student.java StudentRegistryMain.java\n\n# 2. Run the application\njava StudentRegistryMain\n```\n\n## Sample Output\n```text\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-2026-089\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     16\nCumulative GPA:    3.88\nAcademic Standing: HONORS\nStatus:            Active / In Good Standing\n=======================================================\n```\n\n## Lessons Learned\n- Why derived fields like GPA should never have public setters.\n- How to enforce constructor validation guards against null/empty strings.\n- The importance of object-level state isolation in multi-instance applications.\n"
+    },
+    "portfolioChecklist": [
+      "Student class fields are all strictly private",
+      "Constructor contains guard checks rejecting null or blank strings",
+      "addCourseGrade() defends against invalid grades (< 0.0 or > 4.0) and non-positive credits",
+      "calculateGPA() handles 0 completed credits gracefully without returning NaN",
+      "updateStanding() correctly updates honors (>=3.75), good standing (>=2.0), and probation (<2.0)",
+      "Driver program verifies multiple independent Student instances",
+      "README.md includes class diagram, feature breakdown, and execution steps",
+      "Repository pushed to public GitHub with clean commit history"
+    ],
+    "explainYourProject": [
+      "Why is GPA a derived calculation instead of a stored field with a public setter?",
+      "How do private fields and public getters ensure data integrity in this system?",
+      "What happens if an invalid grade like 5.5 is passed to addCourseGrade?",
+      "How does constructor chaining or defensive assignment prevent null identifier errors?",
+      "How do multiple Student instances maintain separate states in JVM Heap memory?",
+      "If the registrar adds a 'Dean's List' tier requiring GPA >= 3.90, where would you make that change?"
+    ],
+    "projectCompletion": {
+      "headline": "Academic Profile System Completed!",
+      "congratulations": "You built a clean, encapsulated domain model that enforces real-world academic invariants, calculates weighted GPAs safely, and outputs professional transcripts.",
+      "skillsDemonstrated": [
+        "Object State Encapsulation",
+        "Defensive Parameter Validation",
+        "Derived State Computations",
+        "State Transition Logic",
+        "Object Isolation in Heap Memory",
+        "Git Portfolio Publishing"
+      ],
+      "nextStepAction": "Stage, commit, and push your code to GitHub with the provided README template!"
+    },
+    "scaffoldingCode": "public class Student {\n    // 1. Declare private instance variables\n    private String id;\n    private String fullName;\n    private String major;\n    private int totalCredits;\n    private double totalQualityPoints;\n    private String academicStanding;\n\n    // 2. Parameterized constructor with validation\n    public Student(String id, String fullName, String major) {\n        if (id == null || id.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"Student ID cannot be null or empty.\");\n        }\n        if (fullName == null || fullName.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"Student name cannot be null or empty.\");\n        }\n        this.id = id.trim();\n        this.fullName = fullName.trim();\n        this.major = (major != null) ? major.trim() : \"Undeclared\";\n        this.totalCredits = 0;\n        this.totalQualityPoints = 0.0;\n        this.academicStanding = \"GOOD STANDING\";\n    }\n\n    // 3. Add course grade with validation\n    public boolean addCourseGrade(double gradePoint, int creditHours) {\n        if (gradePoint < 0.0 || gradePoint > 4.0 || creditHours <= 0) {\n            System.err.println(\"Invalid grade or credit hours provided.\");\n            return false;\n        }\n        this.totalQualityPoints += (gradePoint * creditHours);\n        this.totalCredits += creditHours;\n        updateStanding();\n        return true;\n    }\n\n    // 4. Calculate GPA safely\n    public double calculateGPA() {\n        if (this.totalCredits == 0) return 0.0;\n        return this.totalQualityPoints / this.totalCredits;\n    }\n\n    // 5. Update academic standing\n    public void updateStanding() {\n        double gpa = calculateGPA();\n        if (this.totalCredits == 0) {\n            this.academicStanding = \"GOOD STANDING\";\n        } else if (gpa >= 3.75) {\n            this.academicStanding = \"HONORS\";\n        } else if (gpa >= 2.00) {\n            this.academicStanding = \"GOOD STANDING\";\n        } else {\n            this.academicStanding = \"ACADEMIC PROBATION\";\n        }\n    }\n\n    // 6. Formatted transcript output\n    public void printTranscript() {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"           OFFICIAL ACADEMIC TRANSCRIPT               \");\n        System.out.println(\"=======================================================\");\n        System.out.printf(\"Student ID:        %s%n\", id);\n        System.out.printf(\"Full Name:         %s%n\", fullName);\n        System.out.printf(\"Academic Major:    %s%n\", major);\n        System.out.printf(\"Total Credits:     %d%n\", totalCredits);\n        System.out.printf(\"Cumulative GPA:    %.2f%n\", calculateGPA());\n        System.out.printf(\"Academic Standing: %s%n\", academicStanding);\n        System.out.println(\"=======================================================\\n\");\n    }\n\n    // Getters\n    public String getId() { return id; }\n    public String getFullName() { return fullName; }\n    public String getMajor() { return major; }\n    public int getTotalCredits() { return totalCredits; }\n    public String getAcademicStanding() { return academicStanding; }\n}",
+    "sampleConsoleRun": "=== STUDENT ACADEMIC REGISTRY SIMULATION ===\nRegistering student STU-101 (Sarah Jenkins, Computer Science)...\nEnrolling in CS101 (4 credits, Grade: 4.0)...\nEnrolling in MATH201 (4 credits, Grade: 3.7)...\nEnrolling in ENG105 (3 credits, Grade: 4.0)...\n\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-101\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     11\nCumulative GPA:    3.89\nAcademic Standing: HONORS\n=======================================================\n\nRegistering student STU-102 (Jordan Cole, Physics)...\nEnrolling in PHYS101 (4 credits, Grade: 1.0)...\nEnrolling in CHEM101 (4 credits, Grade: 1.5)...\n\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-102\nFull Name:         Jordan Cole\nAcademic Major:    Physics\nTotal Credits:     8\nCumulative GPA:    1.25\nAcademic Standing: ACADEMIC PROBATION\n=======================================================\nStatus: All students processed with verified state isolation."
+  },
+  "activities": [
+    {
+      "id": "act-student-profile-academic-system",
+      "orderIndex": 1,
+      "type": "mini_project",
+      "title": "Student Profile & Academic System (Level 1: Guided Build)",
+      "project": {
+        "id": "les-oop-mini-1-student-profile",
+        "slug": "student-profile-academic-system",
+        "title": "Student Profile & Academic System (Level 1: Guided Build)",
+        "projectBrief": {
+          "whatAreWeBuilding": "A modular Java registry system that encapsulates student academic profiles, computes cumulative GPAs, handles academic standing transitions (Good Standing, Honors, Academic Probation), and outputs formatted grade cards.",
+          "problemItSolves": "Procedural systems scatter student grades and personal details across loose arrays. This project models cohesive domain objects where data fields and academic state transitions are bundled together.",
+          "finishedAppDescription": "An interactive console application managing multiple Student instances. Users can register students, assign course letter grades, calculate weighted GPAs on a 4.0 scale, evaluate academic standing, and print structured transcripts.",
+          "estimatedTime": "35–45 minutes",
+          "difficulty": "easy",
+          "javaFundamentals": [
+            "Class declaration and instance variable modeling",
+            "Encapsulation with private fields and public accessors",
+            "Constructor initialization with validation guards",
+            "State transitions and derived computations (GPA calculation)",
+            "Formatted console reporting and array/list management",
+            "Separation of domain entities from CLI driver"
+          ],
+          "motivatingQuote": "Mastering classes and encapsulation is where code turns into modeled reality."
+        },
+        "realWorldScenario": {
+          "headline": "University Registrar Academic Profile Engine",
+          "story": "The university registrar requires a reliable core service to record undergraduate course completions, maintain cumulative grade points, and automatically update academic standing flags without exposing raw grade variables to arbitrary mutation.",
+          "context": "Academic enterprise records demand strict validation: GPAs must stay within 0.00 to 4.00, credit totals cannot be negative, and standing updates must follow faculty policies."
+        },
+        "requirements": {
+          "functional": [
+            "Define a Student class with private fields: id, fullName, major, totalCredits, totalQualityPoints, and academicStanding.",
+            "Provide a constructor requiring student ID, full name, and major with non-blank validation.",
+            "Implement addCourseGrade(double gradePoint, int creditHours) that updates quality points and total credits with defensive validation (0.0 <= gradePoint <= 4.0 and creditHours > 0).",
+            "Implement computeGPA() returning quality points divided by total credits (or 0.00 if zero credits completed).",
+            "Implement updateStanding() setting standing to 'HONORS' if GPA >= 3.75, 'GOOD STANDING' if GPA >= 2.0, or 'ACADEMIC PROBATION' if GPA < 2.0.",
+            "Implement printTranscript() displaying student details, total credits, GPA formatted to 2 decimals, and current standing.",
+            "Provide a StudentRegistry driver class allowing interactive registration of multiple students and batch transcript generation."
+          ],
+          "technicalConstraints": [
+            "All instance variables in Student must be declared private.",
+            "Field updates must strictly route through validated constructor or mutator methods.",
+            "GPA computation must guard against division by zero (return 0.0 if totalCredits == 0).",
+            "No raw state exposure: do not provide an unchecked setGPA() mutator; GPA must be a derived value."
+          ],
+          "userDecisions": [
+            "Choose whether to store individual course names or just aggregate credit/quality points.",
+            "Decide whether to add warning messages when a student falls below 2.00 into probation.",
+            "Select console banner styles and transcript formatting width."
+          ]
+        },
+        "beforeYouCode": {
+          "inputsRequired": [
+            "Student identification number (String, e.g. 'STU-101')",
+            "Student full name and declared academic major (Strings)",
+            "Grade point (double: 0.0 to 4.0) and credit hours (int: 1 to 5) for each course completed"
+          ],
+          "outputsRequired": [
+            "Computed cumulative GPA formatted to 2 decimal places (e.g. '3.85')",
+            "Dynamic academic standing status label (e.g. 'HONORS')",
+            "Formatted ASCII transcript card with aligned borders"
+          ],
+          "variablesNeeded": [
+            "String id, fullName, major: student identity fields",
+            "int totalCredits: accumulated credit hours",
+            "double totalQualityPoints: accumulated sum of (gradePoint * creditHours)",
+            "String academicStanding: current evaluation status"
+          ],
+          "conditionalLogic": [
+            "Constructor validation: check that id and fullName are non-null and not empty",
+            "addCourseGrade validation: if gradePoint < 0.0 || gradePoint > 4.0 || creditHours <= 0 throw IllegalArgumentException or return false",
+            "updateStanding branch: if (gpa >= 3.75) ... else if (gpa >= 2.0) ... else ..."
+          ],
+          "loopStructures": [
+            "Interactive menu loop (while running) for adding courses and printing transcripts",
+            "Enhanced for-loop over registered students in the registry driver"
+          ],
+          "recommendedMethods": [
+            "public Student(String id, String fullName, String major)",
+            "public boolean addCourseGrade(double gradePoint, int creditHours)",
+            "public double calculateGPA()",
+            "public void updateStanding()",
+            "public void printTranscript()"
+          ]
+        },
+        "buildRoadmap": [
+          {
+            "milestoneNumber": 1,
+            "title": "Define Student Entity & Constructor",
+            "objective": "Establish the Student class with private fields, validation guards in the constructor, and public getters.",
+            "tasks": [
+              "Declare private fields: id, fullName, major, totalCredits, totalQualityPoints, academicStanding.",
+              "Implement public Student(String id, String fullName, String major) with non-null checks.",
+              "Initialize totalCredits and totalQualityPoints to 0, and standing to 'GOOD STANDING'.",
+              "Add clean getter methods for all read-only properties."
+            ],
+            "acceptanceCriteria": [
+              "Instances cannot be created with null or empty ID/Name; getters return initialized values."
+            ]
+          },
+          {
+            "milestoneNumber": 2,
+            "title": "Course Grading & GPA Derivation",
+            "objective": "Implement the core academic math and state transitions.",
+            "tasks": [
+              "Write addCourseGrade(double gradePoint, int creditHours) validating boundaries.",
+              "Update totalQualityPoints += (gradePoint * creditHours) and totalCredits += creditHours.",
+              "Implement calculateGPA() returning quality points / credits with zero-credit division protection.",
+              "Implement updateStanding() setting HONORS (>= 3.75), GOOD STANDING (>= 2.0), or PROBATION."
+            ],
+            "acceptanceCriteria": [
+              "A student with 3 credits of 4.0 and 3 credits of 3.0 computes a GPA of 3.50 with status 'GOOD STANDING'."
+            ]
+          },
+          {
+            "milestoneNumber": 3,
+            "title": "Formatted Transcript & Reporting",
+            "objective": "Build a clean ASCII transcript renderer method.",
+            "tasks": [
+              "Create printTranscript() using String.format with fixed column widths.",
+              "Include Student ID, Name, Major, Total Credits, Cumulative GPA, and Standing.",
+              "Test output readability on the console."
+            ],
+            "acceptanceCriteria": [
+              "Console output displays a cleanly aligned academic grade card."
+            ]
+          },
+          {
+            "milestoneNumber": 4,
+            "title": "Registry Driver & CLI Simulation",
+            "objective": "Write the Main driver simulating multiple students and running test scenarios.",
+            "tasks": [
+              "Create StudentRegistryMain with an array or list of Student objects.",
+              "Simulate normal students, honors students, and probation cases.",
+              "Verify state isolation: updating one student's grades never affects another."
+            ],
+            "acceptanceCriteria": [
+              "Main runs cleanly, demonstrating multi-instance isolation and accurate standing transitions."
+            ]
+          }
+        ],
+        "thinkBeforeYouCode": [
+          {
+            "question": "Why shouldn't the Student class have a public setGPA(double gpa) method?",
+            "mentorInsight": "GPA is a derived state. If an external caller can set gpa = 4.0 directly without completing course credits, the object's internal state becomes inconsistent with its credit history. Derived values should always be calculated from ground-truth source fields."
+          },
+          {
+            "question": "What is quality points, and why do we accumulate them instead of averaging raw grades?",
+            "mentorInsight": "A 4-credit course has double the academic weight of a 2-credit course. Quality points equal (grade * credits). Cumulative GPA is totalQualityPoints / totalCredits. Simply averaging grades would distort the true weighted average."
+          },
+          {
+            "question": "Why make fields private instead of package-private or public in our domain class?",
+            "mentorInsight": "Private fields enforce encapsulation. Any code outside the class is prevented from directly altering totalCredits or setting negative numbers, protecting the invariant rules of our academic domain."
+          }
+        ],
+        "hintSystem": [
+          {
+            "topic": "Safe GPA Calculation",
+            "level1Conceptual": "Check for zero completed credits before dividing to avoid 0.0/0.0 NaN results.",
+            "level2Implementation": "If totalCredits is 0, return 0.0. Otherwise compute totalQualityPoints / totalCredits.",
+            "level3JavaSyntax": "public double calculateGPA() {\n    if (totalCredits == 0) return 0.0;\n    return totalQualityPoints / totalCredits;\n}"
+          },
+          {
+            "topic": "Constructor Validation",
+            "level1Conceptual": "Reject null or whitespace-only strings before assigning to instance variables.",
+            "level2Implementation": "Use id.trim().isEmpty() checks and throw IllegalArgumentException.",
+            "level3JavaSyntax": "if (id == null || id.trim().isEmpty()) {\n    throw new IllegalArgumentException(\"Student ID cannot be empty.\");\n}\nthis.id = id.trim();"
+          }
+        ],
+        "testYourProject": {
+          "normalCases": [
+            "Student Alex: 4 credits of 4.0 (A) + 3 credits of 3.0 (B) -> GPA: 3.57, Standing: GOOD STANDING",
+            "Student Sarah: 4 credits of 4.0 (A) + 4 credits of 4.0 (A) -> GPA: 4.00, Standing: HONORS",
+            "Student Jordan: 3 credits of 1.0 (D) + 3 credits of 1.0 (D) -> GPA: 1.00, Standing: ACADEMIC PROBATION"
+          ],
+          "boundaryCases": [
+            "Newly registered student with 0 credits completed -> GPA: 0.00 without NaN or crash",
+            "Student exactly at 3.75 boundary -> Standing transitions to HONORS",
+            "Student exactly at 2.00 boundary -> Standing stays GOOD STANDING"
+          ],
+          "invalidInputCases": [
+            "Attempting to instantiate Student with null or blank ID -> Throws IllegalArgumentException",
+            "Attempting to add grade point 4.5 or -0.5 -> Rejected with validation error",
+            "Attempting to add course with 0 or negative credit hours -> Rejected with validation error"
+          ],
+          "edgeCases": [
+            "Multiple students registered: modifying Student A does not change Student B's credits or GPA",
+            "Student recovering from PROBATION to GOOD STANDING after adding higher grades"
+          ]
+        },
+        "debuggingGuide": [
+          "Are your credits stored as integers and quality points as doubles? Integer division (e.g. 15 / 4) truncates to 3 instead of 3.75 if both are ints.",
+          "Did you remember this.fieldName = fieldName in your constructor? Omitting this leaves instance fields at their default values (null or 0).",
+          "Does calculateGPA() return 0.0 when totalCredits == 0? Guarding against zero-division avoids unexpected NaN results in formatted strings.",
+          "Are multiple Student instances sharing state? Ensure your fields are NOT marked static; every student needs their own instance memory."
+        ],
+        "projectPolish": [
+          "Use String.format(\"%.2f\", calculateGPA()) for consistent 2-decimal grade point display.",
+          "Wrap transcript output in clean ASCII box borders with double horizontal rules.",
+          "Add a clear status transition message whenever updateStanding() changes a student's status."
+        ],
+        "gitHubReady": {
+          "repoName": "student-profile-academic-system",
+          "commitMessages": [
+            "feat: scaffold Student entity with private encapsulated fields and constructor guards",
+            "feat: implement quality point accumulation and zero-safe GPA calculation",
+            "feat: implement academic standing state transitions (Honors, Good Standing, Probation)",
+            "feat: add formatted ASCII transcript generator",
+            "test: add multi-student registry simulation driver with boundary tests",
+            "docs: create comprehensive README with domain architecture and usage instructions"
+          ],
+          "readmeTemplate": "# Student Profile & Academic System (Java OOP)\n\n## Overview\nA robust, object-oriented academic management registry built in Java. It models student entity state, enforces strict encapsulation, computes credit-weighted cumulative GPAs, handles academic standing transitions, and generates formatted transcripts.\n\n## Architecture Blueprint\n```\n+-------------------------------------------------------------+\n|                          Student                            |\n+-------------------------------------------------------------+\n| - id: String                                                |\n| - fullName: String                                          |\n| - major: String                                             |\n| - totalCredits: int                                         |\n| - totalQualityPoints: double                                |\n| - academicStanding: String                                  |\n+-------------------------------------------------------------+\n| + Student(id: String, fullName: String, major: String)      |\n| + addCourseGrade(gradePoint: double, creditHours: int): bool|\n| + calculateGPA(): double                                    |\n| + updateStanding(): void                                    |\n| + printTranscript(): void                                   |\n| + [getters for read-only fields]                            |\n+-------------------------------------------------------------+\n```\n\n## Key Features\n- **Strict Encapsulation**: Private fields protected against direct external tampering.\n- **Zero-Safe Derived Math**: GPA computed dynamically from quality points without division-by-zero risk.\n- **Business Invariant Rules**: Rejection of negative credits and out-of-range grade points (0.0 to 4.0).\n- **State Transitions**: Automatic promotion to Honors, Good Standing, or Academic Probation.\n- **Clean CLI Transcripts**: Formatted tabular output for registrar auditing.\n\n## How to Run\n```bash\n# 1. Compile the project\njavac Student.java StudentRegistryMain.java\n\n# 2. Run the application\njava StudentRegistryMain\n```\n\n## Sample Output\n```text\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-2026-089\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     16\nCumulative GPA:    3.88\nAcademic Standing: HONORS\nStatus:            Active / In Good Standing\n=======================================================\n```\n\n## Lessons Learned\n- Why derived fields like GPA should never have public setters.\n- How to enforce constructor validation guards against null/empty strings.\n- The importance of object-level state isolation in multi-instance applications.\n",
+          "gitCommands": [
+            {
+              "command": "git init",
+              "explanation": "Initializes a local Git repository in your project directory."
+            },
+            {
+              "command": "git add Student.java StudentRegistryMain.java README.md",
+              "explanation": "Stages the source code and documentation files."
+            },
+            {
+              "command": "git commit -m \"feat: complete student profile academic registry with encapsulation\"",
+              "explanation": "Records the verified initial milestone commit."
+            },
+            {
+              "command": "git branch -M main",
+              "explanation": "Sets the default primary branch to 'main'."
+            },
+            {
+              "command": "git remote add origin https://github.com/YOUR_USERNAME/student-profile-academic-system.git",
+              "explanation": "Links your local repository to your remote GitHub portfolio."
+            },
+            {
+              "command": "git push -u origin main",
+              "explanation": "Publishes your project to GitHub for recruiters and hiring managers to review."
+            }
+          ],
+          "suggestedReadme": "# Student Profile & Academic System (Java OOP)\n\n## Overview\nA robust, object-oriented academic management registry built in Java. It models student entity state, enforces strict encapsulation, computes credit-weighted cumulative GPAs, handles academic standing transitions, and generates formatted transcripts.\n\n## Architecture Blueprint\n```\n+-------------------------------------------------------------+\n|                          Student                            |\n+-------------------------------------------------------------+\n| - id: String                                                |\n| - fullName: String                                          |\n| - major: String                                             |\n| - totalCredits: int                                         |\n| - totalQualityPoints: double                                |\n| - academicStanding: String                                  |\n+-------------------------------------------------------------+\n| + Student(id: String, fullName: String, major: String)      |\n| + addCourseGrade(gradePoint: double, creditHours: int): bool|\n| + calculateGPA(): double                                    |\n| + updateStanding(): void                                    |\n| + printTranscript(): void                                   |\n| + [getters for read-only fields]                            |\n+-------------------------------------------------------------+\n```\n\n## Key Features\n- **Strict Encapsulation**: Private fields protected against direct external tampering.\n- **Zero-Safe Derived Math**: GPA computed dynamically from quality points without division-by-zero risk.\n- **Business Invariant Rules**: Rejection of negative credits and out-of-range grade points (0.0 to 4.0).\n- **State Transitions**: Automatic promotion to Honors, Good Standing, or Academic Probation.\n- **Clean CLI Transcripts**: Formatted tabular output for registrar auditing.\n\n## How to Run\n```bash\n# 1. Compile the project\njavac Student.java StudentRegistryMain.java\n\n# 2. Run the application\njava StudentRegistryMain\n```\n\n## Sample Output\n```text\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-2026-089\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     16\nCumulative GPA:    3.88\nAcademic Standing: HONORS\nStatus:            Active / In Good Standing\n=======================================================\n```\n\n## Lessons Learned\n- Why derived fields like GPA should never have public setters.\n- How to enforce constructor validation guards against null/empty strings.\n- The importance of object-level state isolation in multi-instance applications.\n"
+        },
+        "portfolioChecklist": [
+          "Student class fields are all strictly private",
+          "Constructor contains guard checks rejecting null or blank strings",
+          "addCourseGrade() defends against invalid grades (< 0.0 or > 4.0) and non-positive credits",
+          "calculateGPA() handles 0 completed credits gracefully without returning NaN",
+          "updateStanding() correctly updates honors (>=3.75), good standing (>=2.0), and probation (<2.0)",
+          "Driver program verifies multiple independent Student instances",
+          "README.md includes class diagram, feature breakdown, and execution steps",
+          "Repository pushed to public GitHub with clean commit history"
+        ],
+        "explainYourProject": [
+          "Why is GPA a derived calculation instead of a stored field with a public setter?",
+          "How do private fields and public getters ensure data integrity in this system?",
+          "What happens if an invalid grade like 5.5 is passed to addCourseGrade?",
+          "How does constructor chaining or defensive assignment prevent null identifier errors?",
+          "How do multiple Student instances maintain separate states in JVM Heap memory?",
+          "If the registrar adds a 'Dean's List' tier requiring GPA >= 3.90, where would you make that change?"
+        ],
+        "projectCompletion": {
+          "headline": "Academic Profile System Completed!",
+          "congratulations": "You built a clean, encapsulated domain model that enforces real-world academic invariants, calculates weighted GPAs safely, and outputs professional transcripts.",
+          "skillsDemonstrated": [
+            "Object State Encapsulation",
+            "Defensive Parameter Validation",
+            "Derived State Computations",
+            "State Transition Logic",
+            "Object Isolation in Heap Memory",
+            "Git Portfolio Publishing"
+          ],
+          "nextStepAction": "Stage, commit, and push your code to GitHub with the provided README template!"
+        },
+        "scaffoldingCode": "public class Student {\n    // 1. Declare private instance variables\n    private String id;\n    private String fullName;\n    private String major;\n    private int totalCredits;\n    private double totalQualityPoints;\n    private String academicStanding;\n\n    // 2. Parameterized constructor with validation\n    public Student(String id, String fullName, String major) {\n        if (id == null || id.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"Student ID cannot be null or empty.\");\n        }\n        if (fullName == null || fullName.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"Student name cannot be null or empty.\");\n        }\n        this.id = id.trim();\n        this.fullName = fullName.trim();\n        this.major = (major != null) ? major.trim() : \"Undeclared\";\n        this.totalCredits = 0;\n        this.totalQualityPoints = 0.0;\n        this.academicStanding = \"GOOD STANDING\";\n    }\n\n    // 3. Add course grade with validation\n    public boolean addCourseGrade(double gradePoint, int creditHours) {\n        if (gradePoint < 0.0 || gradePoint > 4.0 || creditHours <= 0) {\n            System.err.println(\"Invalid grade or credit hours provided.\");\n            return false;\n        }\n        this.totalQualityPoints += (gradePoint * creditHours);\n        this.totalCredits += creditHours;\n        updateStanding();\n        return true;\n    }\n\n    // 4. Calculate GPA safely\n    public double calculateGPA() {\n        if (this.totalCredits == 0) return 0.0;\n        return this.totalQualityPoints / this.totalCredits;\n    }\n\n    // 5. Update academic standing\n    public void updateStanding() {\n        double gpa = calculateGPA();\n        if (this.totalCredits == 0) {\n            this.academicStanding = \"GOOD STANDING\";\n        } else if (gpa >= 3.75) {\n            this.academicStanding = \"HONORS\";\n        } else if (gpa >= 2.00) {\n            this.academicStanding = \"GOOD STANDING\";\n        } else {\n            this.academicStanding = \"ACADEMIC PROBATION\";\n        }\n    }\n\n    // 6. Formatted transcript output\n    public void printTranscript() {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"           OFFICIAL ACADEMIC TRANSCRIPT               \");\n        System.out.println(\"=======================================================\");\n        System.out.printf(\"Student ID:        %s%n\", id);\n        System.out.printf(\"Full Name:         %s%n\", fullName);\n        System.out.printf(\"Academic Major:    %s%n\", major);\n        System.out.printf(\"Total Credits:     %d%n\", totalCredits);\n        System.out.printf(\"Cumulative GPA:    %.2f%n\", calculateGPA());\n        System.out.printf(\"Academic Standing: %s%n\", academicStanding);\n        System.out.println(\"=======================================================\\n\");\n    }\n\n    // Getters\n    public String getId() { return id; }\n    public String getFullName() { return fullName; }\n    public String getMajor() { return major; }\n    public int getTotalCredits() { return totalCredits; }\n    public String getAcademicStanding() { return academicStanding; }\n}",
+        "sampleConsoleRun": "=== STUDENT ACADEMIC REGISTRY SIMULATION ===\nRegistering student STU-101 (Sarah Jenkins, Computer Science)...\nEnrolling in CS101 (4 credits, Grade: 4.0)...\nEnrolling in MATH201 (4 credits, Grade: 3.7)...\nEnrolling in ENG105 (3 credits, Grade: 4.0)...\n\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-101\nFull Name:         Sarah Jenkins\nAcademic Major:    Computer Science\nTotal Credits:     11\nCumulative GPA:    3.89\nAcademic Standing: HONORS\n=======================================================\n\nRegistering student STU-102 (Jordan Cole, Physics)...\nEnrolling in PHYS101 (4 credits, Grade: 1.0)...\nEnrolling in CHEM101 (4 credits, Grade: 1.5)...\n\n=======================================================\n           OFFICIAL ACADEMIC TRANSCRIPT               \n=======================================================\nStudent ID:        STU-102\nFull Name:         Jordan Cole\nAcademic Major:    Physics\nTotal Credits:     8\nCumulative GPA:    1.25\nAcademic Standing: ACADEMIC PROBATION\n=======================================================\nStatus: All students processed with verified state isolation."
+      }
+    }
+  ]
+}

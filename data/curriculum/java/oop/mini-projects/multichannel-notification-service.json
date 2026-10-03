@@ -1,0 +1,818 @@
+{
+  "id": "les-oop-mini-7-notification-service",
+  "slug": "multichannel-notification-service",
+  "sectionSlug": "oop",
+  "moduleSlug": "mini-projects",
+  "title": "Multi-Channel Notification Service (Level 2: Requirement Build)",
+  "summary": "Decouple delivery mechanisms using interfaces and abstract senders for Email, SMS, and Push notifications.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 45,
+  "orderIndex": 7,
+  "prerequisites": [],
+  "subtopics": [
+    "Advanced OOP Architecture",
+    "Polymorphism & Abstraction",
+    "Entity Collaboration & Composition",
+    "Production Portfolio Deployment"
+  ],
+  "learningOutcomes": [
+    "Architect a complete, portfolio-grade Multi-Channel Notification Service (Level 2: Requirement Build) application in Java",
+    "Implement enterprise OOP design patterns and invariants",
+    "Publish an industry-standard GitHub repository with clean commit history"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "les-oop-mini-7-notification-service",
+    "slug": "multichannel-notification-service",
+    "title": "Multi-Channel Notification Service (Level 2: Requirement Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "An enterprise messaging and notification dispatcher that routes alerts across Email, SMS, and Mobile Push channels using abstract classes, interfaces, and template method design patterns.",
+      "problemItSolves": "Hardcoding communication methods inside application business logic leads to tight coupling. If the SMS provider changes or Slack notifications are introduced, business logic breaks. This project decouples alert generation from message delivery.",
+      "finishedAppDescription": "A robust multi-channel notification engine where an abstract BaseNotificationSender manages rate limits, formatting templates, and delivery logging, while concrete senders handle provider-specific transmission (Email formatting with subject/body, SMS character limit truncation, and Push JSON payloads).",
+      "estimatedTime": "45–55 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "Abstract classes vs interfaces in architecture design",
+        "Template Method pattern (abstract send logic with concrete steps)",
+        "Decoupled message dispatching and multi-channel routing",
+        "Interface-driven dependency injection principles",
+        "Batch dispatching across heterogeneous communication channels"
+      ],
+      "motivatingQuote": "Abstraction hides delivery complexity, letting your business domain communicate cleanly with the world."
+    },
+    "realWorldScenario": {
+      "headline": "Cloud Infrastructure Alert Dispatcher",
+      "story": "A cloud monitoring service detects production anomalies. Critical database alerts must trigger SMS to on-call engineers, security advisories must be emailed to DevOps managers, and performance summaries are pushed to mobile devices.",
+      "context": "Modern microservices require unified notification interfaces so that alert sources don't care whether messages travel through Twilio, SendGrid, or Firebase."
+    },
+    "requirements": {
+      "functional": [
+        "Create a NotificationSender interface with send(String recipient, String message) and getChannelName().",
+        "Create an abstract class BaseSender implementing NotificationSender that encapsulates rate-limiting, delivery logging, and pre-transmission validation.",
+        "Implement EmailSender: requires valid email address format ('@'), prepends an automated subject line, and formats HTML/text body.",
+        "Implement SmsSender: requires 10-digit phone number, enforces a 160-character maximum limit (truncating with '...' if exceeded).",
+        "Implement PushSender: requires a device token (32+ chars) and structures output as a mobile push payload.",
+        "Implement NotificationDispatcher that manages registered channels and broadcasts high-priority alerts to multiple channels simultaneously.",
+        "Provide a simulation driver testing single and broadcast dispatches with audit logs."
+      ],
+      "technicalConstraints": [
+        "BaseSender must define abstract boolean deliver(String recipient, String formattedMessage) for subclasses to implement.",
+        "send() in BaseSender must handle common logging and recipient validation before delegating to deliver().",
+        "SmsSender must safely truncate messages exceeding 160 characters without throwing exceptions.",
+        "Dispatcher must accept any list of NotificationSender objects dynamically."
+      ],
+      "userDecisions": [
+        "Decide whether to add simulated network latency or retry attempts upon delivery failure.",
+        "Choose recipient validation rules (regex vs string operations).",
+        "Decide whether to support priority tags (e.g. [URGENT], [INFO])."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Recipient identifier (Email address, phone number, or device push token)",
+        "Notification message body (String)",
+        "Priority level (INFO, WARN, CRITICAL)"
+      ],
+      "outputsRequired": [
+        "Channel-specific formatted transmission log",
+        "Delivery confirmation receipt with timestamp",
+        "Broadcast summary showing successful transmissions per channel"
+      ],
+      "variablesNeeded": [
+        "String recipient, messageBody, priority",
+        "List<NotificationSender> activeChannels",
+        "int deliveryCounter, failedCounter"
+      ],
+      "conditionalLogic": [
+        "Email check: recipient must contain '@' and '.'",
+        "SMS check: recipient must be numeric/phone format; message truncated if length > 160",
+        "Push check: token length >= 32"
+      ],
+      "loopStructures": [
+        "Enhanced for-loop over activeChannels in broadcastAlert()"
+      ],
+      "recommendedMethods": [
+        "public interface NotificationSender",
+        "public abstract class BaseSender implements NotificationSender",
+        "protected abstract boolean deliver(String recipient, String content)",
+        "public void registerChannel(NotificationSender sender)",
+        "public void broadcast(String message, Map<String, String> recipients)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Define Notification Contract & Abstract Base",
+        "objective": "Build NotificationSender interface and BaseSender abstract class.",
+        "tasks": [
+          "Declare interface NotificationSender with send() and getChannelName().",
+          "Create abstract class BaseSender implementing NotificationSender.",
+          "Implement common validation and logging in BaseSender.send().",
+          "Declare protected abstract boolean deliver(recipient, content)."
+        ],
+        "acceptanceCriteria": [
+          "BaseSender enforces delivery template; subclasses only need to implement deliver()."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Concrete Senders (Email, SMS, Push)",
+        "objective": "Implement the three distinct channel senders extending BaseSender.",
+        "tasks": [
+          "Implement EmailSender with email address check and subject header.",
+          "Implement SmsSender with phone check and 160-char truncation.",
+          "Implement PushSender with token validation and JSON payload simulation."
+        ],
+        "acceptanceCriteria": [
+          "Each sender handles its own formatting and transport constraints correctly."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "NotificationDispatcher Service",
+        "objective": "Build the central dispatcher that routes and broadcasts messages.",
+        "tasks": [
+          "Create NotificationDispatcher with a list of registered senders.",
+          "Implement registerSender(NotificationSender s).",
+          "Implement broadcastAlert(String alertMessage) dispatching to all registered channels."
+        ],
+        "acceptanceCriteria": [
+          "Dispatcher cleanly broadcasts alerts to all channels without coupling to concrete types."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Dispatcher Simulation Driver",
+        "objective": "Run comprehensive alert scenarios in NotificationAppMain.",
+        "tasks": [
+          "Simulate normal alerts, oversized SMS truncation, and broadcast delivery.",
+          "Verify console audit logs show channel-specific formatted messages."
+        ],
+        "acceptanceCriteria": [
+          "Driver runs end-to-end, proving clean abstraction and decoupling."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "What is the Template Method pattern, and how does BaseSender use it?",
+        "mentorInsight": "In BaseSender, the public send() method defines the invariant execution template: 1. Validate recipient -> 2. Format log -> 3. Call abstract deliver() -> 4. Record result. Subclasses only supply step 3, guaranteeing uniform logging and validation across all channels."
+      },
+      {
+        "question": "Why use an abstract class in addition to an interface?",
+        "mentorInsight": "The interface defines the public API contract (send), while the abstract class provides reusable behavior (common validation and audit logging) that all concrete senders share, avoiding duplicate code."
+      },
+      {
+        "question": "How does this architecture support adding Slack or Discord notifications?",
+        "mentorInsight": "You simply create a new class SlackSender extends BaseSender and implement deliver(). You can register it with NotificationDispatcher without changing a single line of dispatcher code."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Template Method Structure",
+        "level1Conceptual": "In the abstract class, send() validates and logs, then delegates to deliver().",
+        "level2Implementation": "Make send() final so subclasses cannot accidentally bypass the audit log.",
+        "level3JavaSyntax": "public final boolean send(String to, String msg) {\n    if (to == null || to.isEmpty()) return false;\n    System.out.println(\"Audit: Preparing \" + getChannelName());\n    return deliver(to, msg);\n}"
+      },
+      {
+        "topic": "SMS 160-Character Safe Truncation",
+        "level1Conceptual": "Check length; if > 160, slice first 157 characters and add '...'.",
+        "level2Implementation": "Use substring(0, 157) + \"...\".",
+        "level3JavaSyntax": "String text = (msg.length() > 160) ? msg.substring(0, 157) + \"...\" : msg;"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Email alert sent to devops@company.com -> Delivered with subject 'SYSTEM ALERT: Database latency elevated'",
+        "SMS sent to +15550192831 (45 chars) -> Delivered intact without truncation",
+        "Push notification sent to 32-char token -> Formatted and dispatched to mobile notification center"
+      ],
+      "boundaryCases": [
+        "SMS with exactly 160 characters -> Delivered intact with 0 characters truncated",
+        "SMS with 161 characters -> Safely truncated to 157 characters + '...'"
+      ],
+      "invalidInputCases": [
+        "Email recipient without '@' (e.g. 'alex_company') -> Validation fails, delivery aborted",
+        "Push notification with empty or null device token -> Rejected safely"
+      ],
+      "edgeCases": [
+        "Broadcasting a critical security alert across Email, SMS, and Push simultaneously with verified audit trails"
+      ]
+    },
+    "debuggingGuide": [
+      "Cannot instantiate the type BaseSender: Remember abstract classes cannot be directly instantiated with 'new BaseSender()'; you must instantiate concrete subclasses.",
+      "Subclass does not implement inherited abstract method: Ensure your subclasses provide an implementation of protected abstract boolean deliver().",
+      "StringIndexOutOfBoundsException in SMS truncation: Only call substring(0, 157) when message.length() > 160.",
+      "Overriding final template method: If send() is marked final in the base class, subclasses must override deliver() instead of send()."
+    ],
+    "projectPolish": [
+      "Include channel-specific icons or ASCII tags (e.g. [EMAIL], [SMS], [PUSH]).",
+      "Include timestamp in audit log messages.",
+      "Display a clean broadcast summary table showing delivery status across channels."
+    ],
+    "gitHubReady": {
+      "repoName": "multichannel-notification-service",
+      "commitMessages": [
+        "feat: define NotificationSender interface and abstract BaseSender template",
+        "feat: implement EmailSender with subject formatting and validation",
+        "feat: implement SmsSender with 160-char truncation and PushSender with token validation",
+        "feat: build NotificationDispatcher for multi-channel broadcasting",
+        "test: create alert simulation driver testing single and broadcast dispatches",
+        "docs: create comprehensive README with Template Method design pattern overview"
+      ],
+      "readmeTemplate": "# Multi-Channel Notification Service (Java OOP)\n\n## Overview\nA decoupled, enterprise alert dispatching engine in Java demonstrating abstraction, interface-driven routing, and the Template Method pattern across Email, SMS, and Push notification channels.\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |     NotificationSender          |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) |\n                                | + getChannelName(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n                                +---------------------------------+\n                                |       <<abstract class>>        |\n                                |           BaseSender            |\n                                +---------------------------------+\n                                | - deliveryCount: int            |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) | (Template Method)\n                                | # deliver(to: Str, msg: Str): b | (Abstract)\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|      EmailSender      |              |       SmsSender       |              |      PushSender       |\n+-----------------------+              +-----------------------+              +-----------------------+\n| # deliver(...): bool  |              | # deliver(...): bool  |              | # deliver(...): bool  |\n| (Subject + Body)      |              | (160-char truncation) |              | (Push JSON Payload)   |\n+-----------------------+              +-----------------------+              +-----------------------+\n```\n\n## Key Architectural Patterns\n- **Template Method Pattern**: `BaseSender.send()` implements invariant audit and validation logic before calling subclass `deliver()`.\n- **Decoupled Dispatcher**: `NotificationDispatcher` routes alerts polymorphically to registered channels.\n- **Extensibility**: Adding new channels (e.g. Slack, Webhook) requires zero changes to core dispatcher code.\n\n## How to Run\n```bash\njavac NotificationSender.java BaseSender.java EmailSender.java SmsSender.java PushSender.java NotificationDispatcher.java AlertApp.java\njava AlertApp\n```\n\n## Sample Console Output\n```text\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> devops-team@cloudcorp.com\n  Subject: [CRITICAL ALERT] Database latency exceeded 500ms\n  Body: Production replica node latency is critical. Immediate response required.\n  Status: DELIVERED\n\n[SMS] -> +15550198822\n  Message: [CRITICAL ALERT] Production replica latency critical. Immed...\n  Length: 68/160 chars | Status: DELIVERED\n\n[PUSH] -> fcm-device-tok-84920492849284928492\n  Payload: {\"title\":\"CRITICAL ALERT\",\"body\":\"Replica latency critical\"}\n  Status: DELIVERED\n=======================================================\nBroadcast Summary: 3/3 channels delivered successfully.\n```\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git repository in the notification project."
+        },
+        {
+          "command": "git add *.java README.md",
+          "explanation": "Stages all source code and the README."
+        },
+        {
+          "command": "git commit -m \"feat: complete multi-channel notification engine with template method pattern\"",
+          "explanation": "Records the milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets branch to main."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/multichannel-notification-service.git",
+          "explanation": "Links local repo to GitHub."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes project to GitHub."
+        }
+      ],
+      "suggestedReadme": "# Multi-Channel Notification Service (Java OOP)\n\n## Overview\nA decoupled, enterprise alert dispatching engine in Java demonstrating abstraction, interface-driven routing, and the Template Method pattern across Email, SMS, and Push notification channels.\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |     NotificationSender          |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) |\n                                | + getChannelName(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n                                +---------------------------------+\n                                |       <<abstract class>>        |\n                                |           BaseSender            |\n                                +---------------------------------+\n                                | - deliveryCount: int            |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) | (Template Method)\n                                | # deliver(to: Str, msg: Str): b | (Abstract)\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|      EmailSender      |              |       SmsSender       |              |      PushSender       |\n+-----------------------+              +-----------------------+              +-----------------------+\n| # deliver(...): bool  |              | # deliver(...): bool  |              | # deliver(...): bool  |\n| (Subject + Body)      |              | (160-char truncation) |              | (Push JSON Payload)   |\n+-----------------------+              +-----------------------+              +-----------------------+\n```\n\n## Key Architectural Patterns\n- **Template Method Pattern**: `BaseSender.send()` implements invariant audit and validation logic before calling subclass `deliver()`.\n- **Decoupled Dispatcher**: `NotificationDispatcher` routes alerts polymorphically to registered channels.\n- **Extensibility**: Adding new channels (e.g. Slack, Webhook) requires zero changes to core dispatcher code.\n\n## How to Run\n```bash\njavac NotificationSender.java BaseSender.java EmailSender.java SmsSender.java PushSender.java NotificationDispatcher.java AlertApp.java\njava AlertApp\n```\n\n## Sample Console Output\n```text\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> devops-team@cloudcorp.com\n  Subject: [CRITICAL ALERT] Database latency exceeded 500ms\n  Body: Production replica node latency is critical. Immediate response required.\n  Status: DELIVERED\n\n[SMS] -> +15550198822\n  Message: [CRITICAL ALERT] Production replica latency critical. Immed...\n  Length: 68/160 chars | Status: DELIVERED\n\n[PUSH] -> fcm-device-tok-84920492849284928492\n  Payload: {\"title\":\"CRITICAL ALERT\",\"body\":\"Replica latency critical\"}\n  Status: DELIVERED\n=======================================================\nBroadcast Summary: 3/3 channels delivered successfully.\n```\n"
+    },
+    "portfolioChecklist": [
+      "NotificationSender is a public interface defining send() and getChannelName()",
+      "BaseSender is an abstract class implementing the Template Method pattern in send()",
+      "deliver() is declared protected abstract boolean in BaseSender",
+      "EmailSender enforces recipient contains '@' and formats subject lines",
+      "SmsSender enforces 160-character truncation without throwing exceptions",
+      "PushSender validates minimum token length (>= 32 chars)",
+      "NotificationDispatcher broadcasts to multiple channels polymorphically",
+      "README.md documents the Template Method pattern and class diagram"
+    ],
+    "explainYourProject": [
+      "What is the Template Method pattern and where is it used in this project?",
+      "Why is send() in BaseSender declared final while deliver() is abstract?",
+      "How does this design decouple alert generation from delivery mechanics?",
+      "Why is an abstract class preferred over an interface for sharing logging code?",
+      "How does SmsSender handle messages longer than 160 characters safely?",
+      "How would you integrate a Slack webhook channel into this architecture?"
+    ],
+    "projectCompletion": {
+      "headline": "Notification Dispatcher Complete!",
+      "congratulations": "You built an enterprise-grade notification service combining abstract classes, interfaces, and the Template Method pattern.",
+      "skillsDemonstrated": [
+        "Abstract Classes & Template Method Pattern",
+        "Interface Contract Decoupling",
+        "Channel-Specific Transport Constraints",
+        "Defensive Message Truncation",
+        "Broadcast Dispatch Architecture",
+        "Production GitHub Documentation"
+      ],
+      "nextStepAction": "Commit and push your notification service to GitHub!"
+    },
+    "scaffoldingCode": "public interface NotificationSender {\n    boolean send(String recipient, String message);\n    String getChannelName();\n}\n\n// 1. Abstract Base Sender implementing Template Method pattern\nabstract class BaseSender implements NotificationSender {\n    private int deliveryCount = 0;\n\n    // Template method: final to enforce invariant logging & validation\n    @Override\n    public final boolean send(String recipient, String message) {\n        if (recipient == null || recipient.trim().isEmpty()) {\n            System.err.printf(\"[%s] Error: Recipient cannot be empty.%n\", getChannelName());\n            return false;\n        }\n        if (message == null || message.trim().isEmpty()) {\n            System.err.printf(\"[%s] Error: Message body cannot be empty.%n\", getChannelName());\n            return false;\n        }\n\n        // Delegate channel-specific delivery to subclass\n        boolean success = deliver(recipient.trim(), message.trim());\n        if (success) {\n            deliveryCount++;\n        }\n        return success;\n    }\n\n    // Primitive step to be implemented by concrete channels\n    protected abstract boolean deliver(String recipient, String message);\n\n    public int getDeliveryCount() { return deliveryCount; }\n}\n\n// 2. Email Sender Implementation\nclass EmailSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"EMAIL\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        if (!recipient.contains(\"@\") || !recipient.contains(\".\")) {\n            System.err.printf(\"[EMAIL] Delivery failed: Invalid email format '%s'.%n\", recipient);\n            return false;\n        }\n        System.out.printf(\"[EMAIL] -> %s%n  Subject: [ALERT] System Notification%n  Body: %s%n  Status: DELIVERED%n\", \n            recipient, message);\n        return true;\n    }\n}\n\n// 3. SMS Sender Implementation (160-char truncation)\nclass SmsSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"SMS\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        // Safe 160-character truncation\n        String payload = message;\n        if (payload.length() > 160) {\n            payload = payload.substring(0, 157) + \"...\";\n        }\n        System.out.printf(\"[SMS] -> %s%n  Text: %s (%d/160 chars)%n  Status: DELIVERED%n\", \n            recipient, payload, payload.length());\n        return true;\n    }\n}\n\n// 4. Push Notification Sender\nclass PushSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"PUSH\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        if (recipient.length() < 10) {\n            System.err.println(\"[PUSH] Delivery failed: Device token too short.\");\n            return false;\n        }\n        System.out.printf(\"[PUSH] -> Token: %s...%n  Payload: {\"alert\":\"%s\"}%n  Status: DELIVERED%n\", \n            recipient.substring(0, 8), message);\n        return true;\n    }\n}\n\n// 5. Central Dispatcher\nclass NotificationDispatcher {\n    private java.util.List<NotificationSender> senders = new java.util.ArrayList<>();\n\n    public void registerChannel(NotificationSender sender) {\n        if (sender != null) senders.add(sender);\n    }\n\n    public void broadcast(String alertMessage, java.util.Map<String, String> channelRecipients) {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"           SYSTEM ALERT BROADCAST DISPATCH             \");\n        System.out.println(\"=======================================================\");\n        int sent = 0;\n        for (NotificationSender sender : senders) {\n            String recipient = channelRecipients.get(sender.getChannelName());\n            if (recipient != null) {\n                if (sender.send(recipient, alertMessage)) sent++;\n                System.out.println();\n            }\n        }\n        System.out.printf(\"Broadcast Complete: %d/%d channels delivered successfully.%n\", sent, senders.size());\n        System.out.println(\"=======================================================\\n\");\n    }\n}",
+    "sampleConsoleRun": "=== MULTI-CHANNEL NOTIFICATION ENGINE SIMULATION ===\nRegistering notification channels: Email, SMS, Push...\n\nBroadcasting critical infrastructure alert:\n'Production replica node database latency exceeded 500ms. Failover initiated.'\n\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> oncall-lead@enterprise.com\n  Subject: [ALERT] System Notification\n  Body: Production replica node database latency exceeded 500ms. Failover initiated.\n  Status: DELIVERED\n\n[SMS] -> +15550192831\n  Text: Production replica node database latency exceeded 500ms. Failover initiated. (75/160 chars)\n  Status: DELIVERED\n\n[PUSH] -> Token: fcm-tok-...\n  Payload: {\"alert\":\"Production replica node database latency exceeded 500ms. Failover initiated.\"}\n  Status: DELIVERED\n\nBroadcast Complete: 3/3 channels delivered successfully.\n=======================================================\nStatus: Multi-channel broadcast and Template Method execution verified."
+  },
+  "miniProject": {
+    "id": "les-oop-mini-7-notification-service",
+    "slug": "multichannel-notification-service",
+    "title": "Multi-Channel Notification Service (Level 2: Requirement Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "An enterprise messaging and notification dispatcher that routes alerts across Email, SMS, and Mobile Push channels using abstract classes, interfaces, and template method design patterns.",
+      "problemItSolves": "Hardcoding communication methods inside application business logic leads to tight coupling. If the SMS provider changes or Slack notifications are introduced, business logic breaks. This project decouples alert generation from message delivery.",
+      "finishedAppDescription": "A robust multi-channel notification engine where an abstract BaseNotificationSender manages rate limits, formatting templates, and delivery logging, while concrete senders handle provider-specific transmission (Email formatting with subject/body, SMS character limit truncation, and Push JSON payloads).",
+      "estimatedTime": "45–55 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "Abstract classes vs interfaces in architecture design",
+        "Template Method pattern (abstract send logic with concrete steps)",
+        "Decoupled message dispatching and multi-channel routing",
+        "Interface-driven dependency injection principles",
+        "Batch dispatching across heterogeneous communication channels"
+      ],
+      "motivatingQuote": "Abstraction hides delivery complexity, letting your business domain communicate cleanly with the world."
+    },
+    "realWorldScenario": {
+      "headline": "Cloud Infrastructure Alert Dispatcher",
+      "story": "A cloud monitoring service detects production anomalies. Critical database alerts must trigger SMS to on-call engineers, security advisories must be emailed to DevOps managers, and performance summaries are pushed to mobile devices.",
+      "context": "Modern microservices require unified notification interfaces so that alert sources don't care whether messages travel through Twilio, SendGrid, or Firebase."
+    },
+    "requirements": {
+      "functional": [
+        "Create a NotificationSender interface with send(String recipient, String message) and getChannelName().",
+        "Create an abstract class BaseSender implementing NotificationSender that encapsulates rate-limiting, delivery logging, and pre-transmission validation.",
+        "Implement EmailSender: requires valid email address format ('@'), prepends an automated subject line, and formats HTML/text body.",
+        "Implement SmsSender: requires 10-digit phone number, enforces a 160-character maximum limit (truncating with '...' if exceeded).",
+        "Implement PushSender: requires a device token (32+ chars) and structures output as a mobile push payload.",
+        "Implement NotificationDispatcher that manages registered channels and broadcasts high-priority alerts to multiple channels simultaneously.",
+        "Provide a simulation driver testing single and broadcast dispatches with audit logs."
+      ],
+      "technicalConstraints": [
+        "BaseSender must define abstract boolean deliver(String recipient, String formattedMessage) for subclasses to implement.",
+        "send() in BaseSender must handle common logging and recipient validation before delegating to deliver().",
+        "SmsSender must safely truncate messages exceeding 160 characters without throwing exceptions.",
+        "Dispatcher must accept any list of NotificationSender objects dynamically."
+      ],
+      "userDecisions": [
+        "Decide whether to add simulated network latency or retry attempts upon delivery failure.",
+        "Choose recipient validation rules (regex vs string operations).",
+        "Decide whether to support priority tags (e.g. [URGENT], [INFO])."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Recipient identifier (Email address, phone number, or device push token)",
+        "Notification message body (String)",
+        "Priority level (INFO, WARN, CRITICAL)"
+      ],
+      "outputsRequired": [
+        "Channel-specific formatted transmission log",
+        "Delivery confirmation receipt with timestamp",
+        "Broadcast summary showing successful transmissions per channel"
+      ],
+      "variablesNeeded": [
+        "String recipient, messageBody, priority",
+        "List<NotificationSender> activeChannels",
+        "int deliveryCounter, failedCounter"
+      ],
+      "conditionalLogic": [
+        "Email check: recipient must contain '@' and '.'",
+        "SMS check: recipient must be numeric/phone format; message truncated if length > 160",
+        "Push check: token length >= 32"
+      ],
+      "loopStructures": [
+        "Enhanced for-loop over activeChannels in broadcastAlert()"
+      ],
+      "recommendedMethods": [
+        "public interface NotificationSender",
+        "public abstract class BaseSender implements NotificationSender",
+        "protected abstract boolean deliver(String recipient, String content)",
+        "public void registerChannel(NotificationSender sender)",
+        "public void broadcast(String message, Map<String, String> recipients)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Define Notification Contract & Abstract Base",
+        "objective": "Build NotificationSender interface and BaseSender abstract class.",
+        "tasks": [
+          "Declare interface NotificationSender with send() and getChannelName().",
+          "Create abstract class BaseSender implementing NotificationSender.",
+          "Implement common validation and logging in BaseSender.send().",
+          "Declare protected abstract boolean deliver(recipient, content)."
+        ],
+        "acceptanceCriteria": [
+          "BaseSender enforces delivery template; subclasses only need to implement deliver()."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Concrete Senders (Email, SMS, Push)",
+        "objective": "Implement the three distinct channel senders extending BaseSender.",
+        "tasks": [
+          "Implement EmailSender with email address check and subject header.",
+          "Implement SmsSender with phone check and 160-char truncation.",
+          "Implement PushSender with token validation and JSON payload simulation."
+        ],
+        "acceptanceCriteria": [
+          "Each sender handles its own formatting and transport constraints correctly."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "NotificationDispatcher Service",
+        "objective": "Build the central dispatcher that routes and broadcasts messages.",
+        "tasks": [
+          "Create NotificationDispatcher with a list of registered senders.",
+          "Implement registerSender(NotificationSender s).",
+          "Implement broadcastAlert(String alertMessage) dispatching to all registered channels."
+        ],
+        "acceptanceCriteria": [
+          "Dispatcher cleanly broadcasts alerts to all channels without coupling to concrete types."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Dispatcher Simulation Driver",
+        "objective": "Run comprehensive alert scenarios in NotificationAppMain.",
+        "tasks": [
+          "Simulate normal alerts, oversized SMS truncation, and broadcast delivery.",
+          "Verify console audit logs show channel-specific formatted messages."
+        ],
+        "acceptanceCriteria": [
+          "Driver runs end-to-end, proving clean abstraction and decoupling."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "What is the Template Method pattern, and how does BaseSender use it?",
+        "mentorInsight": "In BaseSender, the public send() method defines the invariant execution template: 1. Validate recipient -> 2. Format log -> 3. Call abstract deliver() -> 4. Record result. Subclasses only supply step 3, guaranteeing uniform logging and validation across all channels."
+      },
+      {
+        "question": "Why use an abstract class in addition to an interface?",
+        "mentorInsight": "The interface defines the public API contract (send), while the abstract class provides reusable behavior (common validation and audit logging) that all concrete senders share, avoiding duplicate code."
+      },
+      {
+        "question": "How does this architecture support adding Slack or Discord notifications?",
+        "mentorInsight": "You simply create a new class SlackSender extends BaseSender and implement deliver(). You can register it with NotificationDispatcher without changing a single line of dispatcher code."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Template Method Structure",
+        "level1Conceptual": "In the abstract class, send() validates and logs, then delegates to deliver().",
+        "level2Implementation": "Make send() final so subclasses cannot accidentally bypass the audit log.",
+        "level3JavaSyntax": "public final boolean send(String to, String msg) {\n    if (to == null || to.isEmpty()) return false;\n    System.out.println(\"Audit: Preparing \" + getChannelName());\n    return deliver(to, msg);\n}"
+      },
+      {
+        "topic": "SMS 160-Character Safe Truncation",
+        "level1Conceptual": "Check length; if > 160, slice first 157 characters and add '...'.",
+        "level2Implementation": "Use substring(0, 157) + \"...\".",
+        "level3JavaSyntax": "String text = (msg.length() > 160) ? msg.substring(0, 157) + \"...\" : msg;"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Email alert sent to devops@company.com -> Delivered with subject 'SYSTEM ALERT: Database latency elevated'",
+        "SMS sent to +15550192831 (45 chars) -> Delivered intact without truncation",
+        "Push notification sent to 32-char token -> Formatted and dispatched to mobile notification center"
+      ],
+      "boundaryCases": [
+        "SMS with exactly 160 characters -> Delivered intact with 0 characters truncated",
+        "SMS with 161 characters -> Safely truncated to 157 characters + '...'"
+      ],
+      "invalidInputCases": [
+        "Email recipient without '@' (e.g. 'alex_company') -> Validation fails, delivery aborted",
+        "Push notification with empty or null device token -> Rejected safely"
+      ],
+      "edgeCases": [
+        "Broadcasting a critical security alert across Email, SMS, and Push simultaneously with verified audit trails"
+      ]
+    },
+    "debuggingGuide": [
+      "Cannot instantiate the type BaseSender: Remember abstract classes cannot be directly instantiated with 'new BaseSender()'; you must instantiate concrete subclasses.",
+      "Subclass does not implement inherited abstract method: Ensure your subclasses provide an implementation of protected abstract boolean deliver().",
+      "StringIndexOutOfBoundsException in SMS truncation: Only call substring(0, 157) when message.length() > 160.",
+      "Overriding final template method: If send() is marked final in the base class, subclasses must override deliver() instead of send()."
+    ],
+    "projectPolish": [
+      "Include channel-specific icons or ASCII tags (e.g. [EMAIL], [SMS], [PUSH]).",
+      "Include timestamp in audit log messages.",
+      "Display a clean broadcast summary table showing delivery status across channels."
+    ],
+    "gitHubReady": {
+      "repoName": "multichannel-notification-service",
+      "commitMessages": [
+        "feat: define NotificationSender interface and abstract BaseSender template",
+        "feat: implement EmailSender with subject formatting and validation",
+        "feat: implement SmsSender with 160-char truncation and PushSender with token validation",
+        "feat: build NotificationDispatcher for multi-channel broadcasting",
+        "test: create alert simulation driver testing single and broadcast dispatches",
+        "docs: create comprehensive README with Template Method design pattern overview"
+      ],
+      "readmeTemplate": "# Multi-Channel Notification Service (Java OOP)\n\n## Overview\nA decoupled, enterprise alert dispatching engine in Java demonstrating abstraction, interface-driven routing, and the Template Method pattern across Email, SMS, and Push notification channels.\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |     NotificationSender          |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) |\n                                | + getChannelName(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n                                +---------------------------------+\n                                |       <<abstract class>>        |\n                                |           BaseSender            |\n                                +---------------------------------+\n                                | - deliveryCount: int            |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) | (Template Method)\n                                | # deliver(to: Str, msg: Str): b | (Abstract)\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|      EmailSender      |              |       SmsSender       |              |      PushSender       |\n+-----------------------+              +-----------------------+              +-----------------------+\n| # deliver(...): bool  |              | # deliver(...): bool  |              | # deliver(...): bool  |\n| (Subject + Body)      |              | (160-char truncation) |              | (Push JSON Payload)   |\n+-----------------------+              +-----------------------+              +-----------------------+\n```\n\n## Key Architectural Patterns\n- **Template Method Pattern**: `BaseSender.send()` implements invariant audit and validation logic before calling subclass `deliver()`.\n- **Decoupled Dispatcher**: `NotificationDispatcher` routes alerts polymorphically to registered channels.\n- **Extensibility**: Adding new channels (e.g. Slack, Webhook) requires zero changes to core dispatcher code.\n\n## How to Run\n```bash\njavac NotificationSender.java BaseSender.java EmailSender.java SmsSender.java PushSender.java NotificationDispatcher.java AlertApp.java\njava AlertApp\n```\n\n## Sample Console Output\n```text\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> devops-team@cloudcorp.com\n  Subject: [CRITICAL ALERT] Database latency exceeded 500ms\n  Body: Production replica node latency is critical. Immediate response required.\n  Status: DELIVERED\n\n[SMS] -> +15550198822\n  Message: [CRITICAL ALERT] Production replica latency critical. Immed...\n  Length: 68/160 chars | Status: DELIVERED\n\n[PUSH] -> fcm-device-tok-84920492849284928492\n  Payload: {\"title\":\"CRITICAL ALERT\",\"body\":\"Replica latency critical\"}\n  Status: DELIVERED\n=======================================================\nBroadcast Summary: 3/3 channels delivered successfully.\n```\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git repository in the notification project."
+        },
+        {
+          "command": "git add *.java README.md",
+          "explanation": "Stages all source code and the README."
+        },
+        {
+          "command": "git commit -m \"feat: complete multi-channel notification engine with template method pattern\"",
+          "explanation": "Records the milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets branch to main."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/multichannel-notification-service.git",
+          "explanation": "Links local repo to GitHub."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes project to GitHub."
+        }
+      ],
+      "suggestedReadme": "# Multi-Channel Notification Service (Java OOP)\n\n## Overview\nA decoupled, enterprise alert dispatching engine in Java demonstrating abstraction, interface-driven routing, and the Template Method pattern across Email, SMS, and Push notification channels.\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |     NotificationSender          |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) |\n                                | + getChannelName(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n                                +---------------------------------+\n                                |       <<abstract class>>        |\n                                |           BaseSender            |\n                                +---------------------------------+\n                                | - deliveryCount: int            |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) | (Template Method)\n                                | # deliver(to: Str, msg: Str): b | (Abstract)\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|      EmailSender      |              |       SmsSender       |              |      PushSender       |\n+-----------------------+              +-----------------------+              +-----------------------+\n| # deliver(...): bool  |              | # deliver(...): bool  |              | # deliver(...): bool  |\n| (Subject + Body)      |              | (160-char truncation) |              | (Push JSON Payload)   |\n+-----------------------+              +-----------------------+              +-----------------------+\n```\n\n## Key Architectural Patterns\n- **Template Method Pattern**: `BaseSender.send()` implements invariant audit and validation logic before calling subclass `deliver()`.\n- **Decoupled Dispatcher**: `NotificationDispatcher` routes alerts polymorphically to registered channels.\n- **Extensibility**: Adding new channels (e.g. Slack, Webhook) requires zero changes to core dispatcher code.\n\n## How to Run\n```bash\njavac NotificationSender.java BaseSender.java EmailSender.java SmsSender.java PushSender.java NotificationDispatcher.java AlertApp.java\njava AlertApp\n```\n\n## Sample Console Output\n```text\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> devops-team@cloudcorp.com\n  Subject: [CRITICAL ALERT] Database latency exceeded 500ms\n  Body: Production replica node latency is critical. Immediate response required.\n  Status: DELIVERED\n\n[SMS] -> +15550198822\n  Message: [CRITICAL ALERT] Production replica latency critical. Immed...\n  Length: 68/160 chars | Status: DELIVERED\n\n[PUSH] -> fcm-device-tok-84920492849284928492\n  Payload: {\"title\":\"CRITICAL ALERT\",\"body\":\"Replica latency critical\"}\n  Status: DELIVERED\n=======================================================\nBroadcast Summary: 3/3 channels delivered successfully.\n```\n"
+    },
+    "portfolioChecklist": [
+      "NotificationSender is a public interface defining send() and getChannelName()",
+      "BaseSender is an abstract class implementing the Template Method pattern in send()",
+      "deliver() is declared protected abstract boolean in BaseSender",
+      "EmailSender enforces recipient contains '@' and formats subject lines",
+      "SmsSender enforces 160-character truncation without throwing exceptions",
+      "PushSender validates minimum token length (>= 32 chars)",
+      "NotificationDispatcher broadcasts to multiple channels polymorphically",
+      "README.md documents the Template Method pattern and class diagram"
+    ],
+    "explainYourProject": [
+      "What is the Template Method pattern and where is it used in this project?",
+      "Why is send() in BaseSender declared final while deliver() is abstract?",
+      "How does this design decouple alert generation from delivery mechanics?",
+      "Why is an abstract class preferred over an interface for sharing logging code?",
+      "How does SmsSender handle messages longer than 160 characters safely?",
+      "How would you integrate a Slack webhook channel into this architecture?"
+    ],
+    "projectCompletion": {
+      "headline": "Notification Dispatcher Complete!",
+      "congratulations": "You built an enterprise-grade notification service combining abstract classes, interfaces, and the Template Method pattern.",
+      "skillsDemonstrated": [
+        "Abstract Classes & Template Method Pattern",
+        "Interface Contract Decoupling",
+        "Channel-Specific Transport Constraints",
+        "Defensive Message Truncation",
+        "Broadcast Dispatch Architecture",
+        "Production GitHub Documentation"
+      ],
+      "nextStepAction": "Commit and push your notification service to GitHub!"
+    },
+    "scaffoldingCode": "public interface NotificationSender {\n    boolean send(String recipient, String message);\n    String getChannelName();\n}\n\n// 1. Abstract Base Sender implementing Template Method pattern\nabstract class BaseSender implements NotificationSender {\n    private int deliveryCount = 0;\n\n    // Template method: final to enforce invariant logging & validation\n    @Override\n    public final boolean send(String recipient, String message) {\n        if (recipient == null || recipient.trim().isEmpty()) {\n            System.err.printf(\"[%s] Error: Recipient cannot be empty.%n\", getChannelName());\n            return false;\n        }\n        if (message == null || message.trim().isEmpty()) {\n            System.err.printf(\"[%s] Error: Message body cannot be empty.%n\", getChannelName());\n            return false;\n        }\n\n        // Delegate channel-specific delivery to subclass\n        boolean success = deliver(recipient.trim(), message.trim());\n        if (success) {\n            deliveryCount++;\n        }\n        return success;\n    }\n\n    // Primitive step to be implemented by concrete channels\n    protected abstract boolean deliver(String recipient, String message);\n\n    public int getDeliveryCount() { return deliveryCount; }\n}\n\n// 2. Email Sender Implementation\nclass EmailSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"EMAIL\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        if (!recipient.contains(\"@\") || !recipient.contains(\".\")) {\n            System.err.printf(\"[EMAIL] Delivery failed: Invalid email format '%s'.%n\", recipient);\n            return false;\n        }\n        System.out.printf(\"[EMAIL] -> %s%n  Subject: [ALERT] System Notification%n  Body: %s%n  Status: DELIVERED%n\", \n            recipient, message);\n        return true;\n    }\n}\n\n// 3. SMS Sender Implementation (160-char truncation)\nclass SmsSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"SMS\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        // Safe 160-character truncation\n        String payload = message;\n        if (payload.length() > 160) {\n            payload = payload.substring(0, 157) + \"...\";\n        }\n        System.out.printf(\"[SMS] -> %s%n  Text: %s (%d/160 chars)%n  Status: DELIVERED%n\", \n            recipient, payload, payload.length());\n        return true;\n    }\n}\n\n// 4. Push Notification Sender\nclass PushSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"PUSH\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        if (recipient.length() < 10) {\n            System.err.println(\"[PUSH] Delivery failed: Device token too short.\");\n            return false;\n        }\n        System.out.printf(\"[PUSH] -> Token: %s...%n  Payload: {\"alert\":\"%s\"}%n  Status: DELIVERED%n\", \n            recipient.substring(0, 8), message);\n        return true;\n    }\n}\n\n// 5. Central Dispatcher\nclass NotificationDispatcher {\n    private java.util.List<NotificationSender> senders = new java.util.ArrayList<>();\n\n    public void registerChannel(NotificationSender sender) {\n        if (sender != null) senders.add(sender);\n    }\n\n    public void broadcast(String alertMessage, java.util.Map<String, String> channelRecipients) {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"           SYSTEM ALERT BROADCAST DISPATCH             \");\n        System.out.println(\"=======================================================\");\n        int sent = 0;\n        for (NotificationSender sender : senders) {\n            String recipient = channelRecipients.get(sender.getChannelName());\n            if (recipient != null) {\n                if (sender.send(recipient, alertMessage)) sent++;\n                System.out.println();\n            }\n        }\n        System.out.printf(\"Broadcast Complete: %d/%d channels delivered successfully.%n\", sent, senders.size());\n        System.out.println(\"=======================================================\\n\");\n    }\n}",
+    "sampleConsoleRun": "=== MULTI-CHANNEL NOTIFICATION ENGINE SIMULATION ===\nRegistering notification channels: Email, SMS, Push...\n\nBroadcasting critical infrastructure alert:\n'Production replica node database latency exceeded 500ms. Failover initiated.'\n\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> oncall-lead@enterprise.com\n  Subject: [ALERT] System Notification\n  Body: Production replica node database latency exceeded 500ms. Failover initiated.\n  Status: DELIVERED\n\n[SMS] -> +15550192831\n  Text: Production replica node database latency exceeded 500ms. Failover initiated. (75/160 chars)\n  Status: DELIVERED\n\n[PUSH] -> Token: fcm-tok-...\n  Payload: {\"alert\":\"Production replica node database latency exceeded 500ms. Failover initiated.\"}\n  Status: DELIVERED\n\nBroadcast Complete: 3/3 channels delivered successfully.\n=======================================================\nStatus: Multi-channel broadcast and Template Method execution verified."
+  },
+  "activities": [
+    {
+      "id": "act-multichannel-notification-service",
+      "orderIndex": 1,
+      "type": "mini_project",
+      "title": "Multi-Channel Notification Service (Level 2: Requirement Build)",
+      "project": {
+        "id": "les-oop-mini-7-notification-service",
+        "slug": "multichannel-notification-service",
+        "title": "Multi-Channel Notification Service (Level 2: Requirement Build)",
+        "projectBrief": {
+          "whatAreWeBuilding": "An enterprise messaging and notification dispatcher that routes alerts across Email, SMS, and Mobile Push channels using abstract classes, interfaces, and template method design patterns.",
+          "problemItSolves": "Hardcoding communication methods inside application business logic leads to tight coupling. If the SMS provider changes or Slack notifications are introduced, business logic breaks. This project decouples alert generation from message delivery.",
+          "finishedAppDescription": "A robust multi-channel notification engine where an abstract BaseNotificationSender manages rate limits, formatting templates, and delivery logging, while concrete senders handle provider-specific transmission (Email formatting with subject/body, SMS character limit truncation, and Push JSON payloads).",
+          "estimatedTime": "45–55 minutes",
+          "difficulty": "intermediate",
+          "javaFundamentals": [
+            "Abstract classes vs interfaces in architecture design",
+            "Template Method pattern (abstract send logic with concrete steps)",
+            "Decoupled message dispatching and multi-channel routing",
+            "Interface-driven dependency injection principles",
+            "Batch dispatching across heterogeneous communication channels"
+          ],
+          "motivatingQuote": "Abstraction hides delivery complexity, letting your business domain communicate cleanly with the world."
+        },
+        "realWorldScenario": {
+          "headline": "Cloud Infrastructure Alert Dispatcher",
+          "story": "A cloud monitoring service detects production anomalies. Critical database alerts must trigger SMS to on-call engineers, security advisories must be emailed to DevOps managers, and performance summaries are pushed to mobile devices.",
+          "context": "Modern microservices require unified notification interfaces so that alert sources don't care whether messages travel through Twilio, SendGrid, or Firebase."
+        },
+        "requirements": {
+          "functional": [
+            "Create a NotificationSender interface with send(String recipient, String message) and getChannelName().",
+            "Create an abstract class BaseSender implementing NotificationSender that encapsulates rate-limiting, delivery logging, and pre-transmission validation.",
+            "Implement EmailSender: requires valid email address format ('@'), prepends an automated subject line, and formats HTML/text body.",
+            "Implement SmsSender: requires 10-digit phone number, enforces a 160-character maximum limit (truncating with '...' if exceeded).",
+            "Implement PushSender: requires a device token (32+ chars) and structures output as a mobile push payload.",
+            "Implement NotificationDispatcher that manages registered channels and broadcasts high-priority alerts to multiple channels simultaneously.",
+            "Provide a simulation driver testing single and broadcast dispatches with audit logs."
+          ],
+          "technicalConstraints": [
+            "BaseSender must define abstract boolean deliver(String recipient, String formattedMessage) for subclasses to implement.",
+            "send() in BaseSender must handle common logging and recipient validation before delegating to deliver().",
+            "SmsSender must safely truncate messages exceeding 160 characters without throwing exceptions.",
+            "Dispatcher must accept any list of NotificationSender objects dynamically."
+          ],
+          "userDecisions": [
+            "Decide whether to add simulated network latency or retry attempts upon delivery failure.",
+            "Choose recipient validation rules (regex vs string operations).",
+            "Decide whether to support priority tags (e.g. [URGENT], [INFO])."
+          ]
+        },
+        "beforeYouCode": {
+          "inputsRequired": [
+            "Recipient identifier (Email address, phone number, or device push token)",
+            "Notification message body (String)",
+            "Priority level (INFO, WARN, CRITICAL)"
+          ],
+          "outputsRequired": [
+            "Channel-specific formatted transmission log",
+            "Delivery confirmation receipt with timestamp",
+            "Broadcast summary showing successful transmissions per channel"
+          ],
+          "variablesNeeded": [
+            "String recipient, messageBody, priority",
+            "List<NotificationSender> activeChannels",
+            "int deliveryCounter, failedCounter"
+          ],
+          "conditionalLogic": [
+            "Email check: recipient must contain '@' and '.'",
+            "SMS check: recipient must be numeric/phone format; message truncated if length > 160",
+            "Push check: token length >= 32"
+          ],
+          "loopStructures": [
+            "Enhanced for-loop over activeChannels in broadcastAlert()"
+          ],
+          "recommendedMethods": [
+            "public interface NotificationSender",
+            "public abstract class BaseSender implements NotificationSender",
+            "protected abstract boolean deliver(String recipient, String content)",
+            "public void registerChannel(NotificationSender sender)",
+            "public void broadcast(String message, Map<String, String> recipients)"
+          ]
+        },
+        "buildRoadmap": [
+          {
+            "milestoneNumber": 1,
+            "title": "Define Notification Contract & Abstract Base",
+            "objective": "Build NotificationSender interface and BaseSender abstract class.",
+            "tasks": [
+              "Declare interface NotificationSender with send() and getChannelName().",
+              "Create abstract class BaseSender implementing NotificationSender.",
+              "Implement common validation and logging in BaseSender.send().",
+              "Declare protected abstract boolean deliver(recipient, content)."
+            ],
+            "acceptanceCriteria": [
+              "BaseSender enforces delivery template; subclasses only need to implement deliver()."
+            ]
+          },
+          {
+            "milestoneNumber": 2,
+            "title": "Concrete Senders (Email, SMS, Push)",
+            "objective": "Implement the three distinct channel senders extending BaseSender.",
+            "tasks": [
+              "Implement EmailSender with email address check and subject header.",
+              "Implement SmsSender with phone check and 160-char truncation.",
+              "Implement PushSender with token validation and JSON payload simulation."
+            ],
+            "acceptanceCriteria": [
+              "Each sender handles its own formatting and transport constraints correctly."
+            ]
+          },
+          {
+            "milestoneNumber": 3,
+            "title": "NotificationDispatcher Service",
+            "objective": "Build the central dispatcher that routes and broadcasts messages.",
+            "tasks": [
+              "Create NotificationDispatcher with a list of registered senders.",
+              "Implement registerSender(NotificationSender s).",
+              "Implement broadcastAlert(String alertMessage) dispatching to all registered channels."
+            ],
+            "acceptanceCriteria": [
+              "Dispatcher cleanly broadcasts alerts to all channels without coupling to concrete types."
+            ]
+          },
+          {
+            "milestoneNumber": 4,
+            "title": "Dispatcher Simulation Driver",
+            "objective": "Run comprehensive alert scenarios in NotificationAppMain.",
+            "tasks": [
+              "Simulate normal alerts, oversized SMS truncation, and broadcast delivery.",
+              "Verify console audit logs show channel-specific formatted messages."
+            ],
+            "acceptanceCriteria": [
+              "Driver runs end-to-end, proving clean abstraction and decoupling."
+            ]
+          }
+        ],
+        "thinkBeforeYouCode": [
+          {
+            "question": "What is the Template Method pattern, and how does BaseSender use it?",
+            "mentorInsight": "In BaseSender, the public send() method defines the invariant execution template: 1. Validate recipient -> 2. Format log -> 3. Call abstract deliver() -> 4. Record result. Subclasses only supply step 3, guaranteeing uniform logging and validation across all channels."
+          },
+          {
+            "question": "Why use an abstract class in addition to an interface?",
+            "mentorInsight": "The interface defines the public API contract (send), while the abstract class provides reusable behavior (common validation and audit logging) that all concrete senders share, avoiding duplicate code."
+          },
+          {
+            "question": "How does this architecture support adding Slack or Discord notifications?",
+            "mentorInsight": "You simply create a new class SlackSender extends BaseSender and implement deliver(). You can register it with NotificationDispatcher without changing a single line of dispatcher code."
+          }
+        ],
+        "hintSystem": [
+          {
+            "topic": "Template Method Structure",
+            "level1Conceptual": "In the abstract class, send() validates and logs, then delegates to deliver().",
+            "level2Implementation": "Make send() final so subclasses cannot accidentally bypass the audit log.",
+            "level3JavaSyntax": "public final boolean send(String to, String msg) {\n    if (to == null || to.isEmpty()) return false;\n    System.out.println(\"Audit: Preparing \" + getChannelName());\n    return deliver(to, msg);\n}"
+          },
+          {
+            "topic": "SMS 160-Character Safe Truncation",
+            "level1Conceptual": "Check length; if > 160, slice first 157 characters and add '...'.",
+            "level2Implementation": "Use substring(0, 157) + \"...\".",
+            "level3JavaSyntax": "String text = (msg.length() > 160) ? msg.substring(0, 157) + \"...\" : msg;"
+          }
+        ],
+        "testYourProject": {
+          "normalCases": [
+            "Email alert sent to devops@company.com -> Delivered with subject 'SYSTEM ALERT: Database latency elevated'",
+            "SMS sent to +15550192831 (45 chars) -> Delivered intact without truncation",
+            "Push notification sent to 32-char token -> Formatted and dispatched to mobile notification center"
+          ],
+          "boundaryCases": [
+            "SMS with exactly 160 characters -> Delivered intact with 0 characters truncated",
+            "SMS with 161 characters -> Safely truncated to 157 characters + '...'"
+          ],
+          "invalidInputCases": [
+            "Email recipient without '@' (e.g. 'alex_company') -> Validation fails, delivery aborted",
+            "Push notification with empty or null device token -> Rejected safely"
+          ],
+          "edgeCases": [
+            "Broadcasting a critical security alert across Email, SMS, and Push simultaneously with verified audit trails"
+          ]
+        },
+        "debuggingGuide": [
+          "Cannot instantiate the type BaseSender: Remember abstract classes cannot be directly instantiated with 'new BaseSender()'; you must instantiate concrete subclasses.",
+          "Subclass does not implement inherited abstract method: Ensure your subclasses provide an implementation of protected abstract boolean deliver().",
+          "StringIndexOutOfBoundsException in SMS truncation: Only call substring(0, 157) when message.length() > 160.",
+          "Overriding final template method: If send() is marked final in the base class, subclasses must override deliver() instead of send()."
+        ],
+        "projectPolish": [
+          "Include channel-specific icons or ASCII tags (e.g. [EMAIL], [SMS], [PUSH]).",
+          "Include timestamp in audit log messages.",
+          "Display a clean broadcast summary table showing delivery status across channels."
+        ],
+        "gitHubReady": {
+          "repoName": "multichannel-notification-service",
+          "commitMessages": [
+            "feat: define NotificationSender interface and abstract BaseSender template",
+            "feat: implement EmailSender with subject formatting and validation",
+            "feat: implement SmsSender with 160-char truncation and PushSender with token validation",
+            "feat: build NotificationDispatcher for multi-channel broadcasting",
+            "test: create alert simulation driver testing single and broadcast dispatches",
+            "docs: create comprehensive README with Template Method design pattern overview"
+          ],
+          "readmeTemplate": "# Multi-Channel Notification Service (Java OOP)\n\n## Overview\nA decoupled, enterprise alert dispatching engine in Java demonstrating abstraction, interface-driven routing, and the Template Method pattern across Email, SMS, and Push notification channels.\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |     NotificationSender          |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) |\n                                | + getChannelName(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n                                +---------------------------------+\n                                |       <<abstract class>>        |\n                                |           BaseSender            |\n                                +---------------------------------+\n                                | - deliveryCount: int            |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) | (Template Method)\n                                | # deliver(to: Str, msg: Str): b | (Abstract)\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|      EmailSender      |              |       SmsSender       |              |      PushSender       |\n+-----------------------+              +-----------------------+              +-----------------------+\n| # deliver(...): bool  |              | # deliver(...): bool  |              | # deliver(...): bool  |\n| (Subject + Body)      |              | (160-char truncation) |              | (Push JSON Payload)   |\n+-----------------------+              +-----------------------+              +-----------------------+\n```\n\n## Key Architectural Patterns\n- **Template Method Pattern**: `BaseSender.send()` implements invariant audit and validation logic before calling subclass `deliver()`.\n- **Decoupled Dispatcher**: `NotificationDispatcher` routes alerts polymorphically to registered channels.\n- **Extensibility**: Adding new channels (e.g. Slack, Webhook) requires zero changes to core dispatcher code.\n\n## How to Run\n```bash\njavac NotificationSender.java BaseSender.java EmailSender.java SmsSender.java PushSender.java NotificationDispatcher.java AlertApp.java\njava AlertApp\n```\n\n## Sample Console Output\n```text\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> devops-team@cloudcorp.com\n  Subject: [CRITICAL ALERT] Database latency exceeded 500ms\n  Body: Production replica node latency is critical. Immediate response required.\n  Status: DELIVERED\n\n[SMS] -> +15550198822\n  Message: [CRITICAL ALERT] Production replica latency critical. Immed...\n  Length: 68/160 chars | Status: DELIVERED\n\n[PUSH] -> fcm-device-tok-84920492849284928492\n  Payload: {\"title\":\"CRITICAL ALERT\",\"body\":\"Replica latency critical\"}\n  Status: DELIVERED\n=======================================================\nBroadcast Summary: 3/3 channels delivered successfully.\n```\n",
+          "gitCommands": [
+            {
+              "command": "git init",
+              "explanation": "Initializes Git repository in the notification project."
+            },
+            {
+              "command": "git add *.java README.md",
+              "explanation": "Stages all source code and the README."
+            },
+            {
+              "command": "git commit -m \"feat: complete multi-channel notification engine with template method pattern\"",
+              "explanation": "Records the milestone commit."
+            },
+            {
+              "command": "git branch -M main",
+              "explanation": "Sets branch to main."
+            },
+            {
+              "command": "git remote add origin https://github.com/YOUR_USERNAME/multichannel-notification-service.git",
+              "explanation": "Links local repo to GitHub."
+            },
+            {
+              "command": "git push -u origin main",
+              "explanation": "Publishes project to GitHub."
+            }
+          ],
+          "suggestedReadme": "# Multi-Channel Notification Service (Java OOP)\n\n## Overview\nA decoupled, enterprise alert dispatching engine in Java demonstrating abstraction, interface-driven routing, and the Template Method pattern across Email, SMS, and Push notification channels.\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |     NotificationSender          |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) |\n                                | + getChannelName(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n                                +---------------------------------+\n                                |       <<abstract class>>        |\n                                |           BaseSender            |\n                                +---------------------------------+\n                                | - deliveryCount: int            |\n                                +---------------------------------+\n                                | + send(to: String, msg: String) | (Template Method)\n                                | # deliver(to: Str, msg: Str): b | (Abstract)\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|      EmailSender      |              |       SmsSender       |              |      PushSender       |\n+-----------------------+              +-----------------------+              +-----------------------+\n| # deliver(...): bool  |              | # deliver(...): bool  |              | # deliver(...): bool  |\n| (Subject + Body)      |              | (160-char truncation) |              | (Push JSON Payload)   |\n+-----------------------+              +-----------------------+              +-----------------------+\n```\n\n## Key Architectural Patterns\n- **Template Method Pattern**: `BaseSender.send()` implements invariant audit and validation logic before calling subclass `deliver()`.\n- **Decoupled Dispatcher**: `NotificationDispatcher` routes alerts polymorphically to registered channels.\n- **Extensibility**: Adding new channels (e.g. Slack, Webhook) requires zero changes to core dispatcher code.\n\n## How to Run\n```bash\njavac NotificationSender.java BaseSender.java EmailSender.java SmsSender.java PushSender.java NotificationDispatcher.java AlertApp.java\njava AlertApp\n```\n\n## Sample Console Output\n```text\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> devops-team@cloudcorp.com\n  Subject: [CRITICAL ALERT] Database latency exceeded 500ms\n  Body: Production replica node latency is critical. Immediate response required.\n  Status: DELIVERED\n\n[SMS] -> +15550198822\n  Message: [CRITICAL ALERT] Production replica latency critical. Immed...\n  Length: 68/160 chars | Status: DELIVERED\n\n[PUSH] -> fcm-device-tok-84920492849284928492\n  Payload: {\"title\":\"CRITICAL ALERT\",\"body\":\"Replica latency critical\"}\n  Status: DELIVERED\n=======================================================\nBroadcast Summary: 3/3 channels delivered successfully.\n```\n"
+        },
+        "portfolioChecklist": [
+          "NotificationSender is a public interface defining send() and getChannelName()",
+          "BaseSender is an abstract class implementing the Template Method pattern in send()",
+          "deliver() is declared protected abstract boolean in BaseSender",
+          "EmailSender enforces recipient contains '@' and formats subject lines",
+          "SmsSender enforces 160-character truncation without throwing exceptions",
+          "PushSender validates minimum token length (>= 32 chars)",
+          "NotificationDispatcher broadcasts to multiple channels polymorphically",
+          "README.md documents the Template Method pattern and class diagram"
+        ],
+        "explainYourProject": [
+          "What is the Template Method pattern and where is it used in this project?",
+          "Why is send() in BaseSender declared final while deliver() is abstract?",
+          "How does this design decouple alert generation from delivery mechanics?",
+          "Why is an abstract class preferred over an interface for sharing logging code?",
+          "How does SmsSender handle messages longer than 160 characters safely?",
+          "How would you integrate a Slack webhook channel into this architecture?"
+        ],
+        "projectCompletion": {
+          "headline": "Notification Dispatcher Complete!",
+          "congratulations": "You built an enterprise-grade notification service combining abstract classes, interfaces, and the Template Method pattern.",
+          "skillsDemonstrated": [
+            "Abstract Classes & Template Method Pattern",
+            "Interface Contract Decoupling",
+            "Channel-Specific Transport Constraints",
+            "Defensive Message Truncation",
+            "Broadcast Dispatch Architecture",
+            "Production GitHub Documentation"
+          ],
+          "nextStepAction": "Commit and push your notification service to GitHub!"
+        },
+        "scaffoldingCode": "public interface NotificationSender {\n    boolean send(String recipient, String message);\n    String getChannelName();\n}\n\n// 1. Abstract Base Sender implementing Template Method pattern\nabstract class BaseSender implements NotificationSender {\n    private int deliveryCount = 0;\n\n    // Template method: final to enforce invariant logging & validation\n    @Override\n    public final boolean send(String recipient, String message) {\n        if (recipient == null || recipient.trim().isEmpty()) {\n            System.err.printf(\"[%s] Error: Recipient cannot be empty.%n\", getChannelName());\n            return false;\n        }\n        if (message == null || message.trim().isEmpty()) {\n            System.err.printf(\"[%s] Error: Message body cannot be empty.%n\", getChannelName());\n            return false;\n        }\n\n        // Delegate channel-specific delivery to subclass\n        boolean success = deliver(recipient.trim(), message.trim());\n        if (success) {\n            deliveryCount++;\n        }\n        return success;\n    }\n\n    // Primitive step to be implemented by concrete channels\n    protected abstract boolean deliver(String recipient, String message);\n\n    public int getDeliveryCount() { return deliveryCount; }\n}\n\n// 2. Email Sender Implementation\nclass EmailSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"EMAIL\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        if (!recipient.contains(\"@\") || !recipient.contains(\".\")) {\n            System.err.printf(\"[EMAIL] Delivery failed: Invalid email format '%s'.%n\", recipient);\n            return false;\n        }\n        System.out.printf(\"[EMAIL] -> %s%n  Subject: [ALERT] System Notification%n  Body: %s%n  Status: DELIVERED%n\", \n            recipient, message);\n        return true;\n    }\n}\n\n// 3. SMS Sender Implementation (160-char truncation)\nclass SmsSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"SMS\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        // Safe 160-character truncation\n        String payload = message;\n        if (payload.length() > 160) {\n            payload = payload.substring(0, 157) + \"...\";\n        }\n        System.out.printf(\"[SMS] -> %s%n  Text: %s (%d/160 chars)%n  Status: DELIVERED%n\", \n            recipient, payload, payload.length());\n        return true;\n    }\n}\n\n// 4. Push Notification Sender\nclass PushSender extends BaseSender {\n    @Override\n    public String getChannelName() { return \"PUSH\"; }\n\n    @Override\n    protected boolean deliver(String recipient, String message) {\n        if (recipient.length() < 10) {\n            System.err.println(\"[PUSH] Delivery failed: Device token too short.\");\n            return false;\n        }\n        System.out.printf(\"[PUSH] -> Token: %s...%n  Payload: {\"alert\":\"%s\"}%n  Status: DELIVERED%n\", \n            recipient.substring(0, 8), message);\n        return true;\n    }\n}\n\n// 5. Central Dispatcher\nclass NotificationDispatcher {\n    private java.util.List<NotificationSender> senders = new java.util.ArrayList<>();\n\n    public void registerChannel(NotificationSender sender) {\n        if (sender != null) senders.add(sender);\n    }\n\n    public void broadcast(String alertMessage, java.util.Map<String, String> channelRecipients) {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"           SYSTEM ALERT BROADCAST DISPATCH             \");\n        System.out.println(\"=======================================================\");\n        int sent = 0;\n        for (NotificationSender sender : senders) {\n            String recipient = channelRecipients.get(sender.getChannelName());\n            if (recipient != null) {\n                if (sender.send(recipient, alertMessage)) sent++;\n                System.out.println();\n            }\n        }\n        System.out.printf(\"Broadcast Complete: %d/%d channels delivered successfully.%n\", sent, senders.size());\n        System.out.println(\"=======================================================\\n\");\n    }\n}",
+        "sampleConsoleRun": "=== MULTI-CHANNEL NOTIFICATION ENGINE SIMULATION ===\nRegistering notification channels: Email, SMS, Push...\n\nBroadcasting critical infrastructure alert:\n'Production replica node database latency exceeded 500ms. Failover initiated.'\n\n=======================================================\n           SYSTEM ALERT BROADCAST DISPATCH             \n=======================================================\n[EMAIL] -> oncall-lead@enterprise.com\n  Subject: [ALERT] System Notification\n  Body: Production replica node database latency exceeded 500ms. Failover initiated.\n  Status: DELIVERED\n\n[SMS] -> +15550192831\n  Text: Production replica node database latency exceeded 500ms. Failover initiated. (75/160 chars)\n  Status: DELIVERED\n\n[PUSH] -> Token: fcm-tok-...\n  Payload: {\"alert\":\"Production replica node database latency exceeded 500ms. Failover initiated.\"}\n  Status: DELIVERED\n\nBroadcast Complete: 3/3 channels delivered successfully.\n=======================================================\nStatus: Multi-channel broadcast and Template Method execution verified."
+      }
+    }
+  ]
+}

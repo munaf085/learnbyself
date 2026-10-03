@@ -1,0 +1,840 @@
+{
+  "id": "les-oop-mini-10-immutable-order",
+  "slug": "immutable-order-cart-system",
+  "sectionSlug": "oop",
+  "moduleSlug": "mini-projects",
+  "title": "Immutable Order & Cart System (Level 2: Requirement Build)",
+  "summary": "Design thread-safe, defensive deep-copied immutable shopping carts and orders that resist reference leakage.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 50,
+  "orderIndex": 10,
+  "isFinal": false,
+  "prerequisites": [],
+  "subtopics": [
+    "Enterprise Architecture",
+    "Full OOP Synthesis",
+    "Production Packaging",
+    "Portfolio Ready Deployment"
+  ],
+  "learningOutcomes": [
+    "Build a complete, portfolio-grade Immutable Order & Cart System (Level 2: Requirement Build) application in Java",
+    "Synthesize all core OOP pillars in a production-ready application",
+    "Publish an industry-standard GitHub repository with clean commit history"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "les-oop-mini-10-immutable-order",
+    "slug": "immutable-order-cart-system",
+    "title": "Immutable Order & Cart System (Level 2: Requirement Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "An enterprise immutable order processing engine where Order, OrderItem, and Money objects are strictly immutable value objects, utilizing defensive copying in constructors and getters to prevent reference leakage and state tampering.",
+      "problemItSolves": "Passing mutable lists or objects allows external code to mutate internal object state after checkout ('Aliasing Bug'), modifying item prices or quantities on placed orders. Immutability guarantees complete thread-safety and audit integrity.",
+      "finishedAppDescription": "A robust financial e-commerce order system. Once an Order is created, its items, customer info, timestamps, and total amounts can never be altered. Attempts to modify external item lists after construction have zero effect on the Order, demonstrating defensive copying.",
+      "estimatedTime": "50–60 minutes",
+      "difficulty": "advanced",
+      "javaFundamentals": [
+        "The 5 Rules of Immutable Class Design in Java",
+        "Defensive copying in constructors and accessor methods",
+        "Unmodifiable collections (Collections.unmodifiableList)",
+        "Value Objects (Money, OrderItem) with zero mutators",
+        "Thread-safety through immutability without synchronization locks",
+        "Preventing reference leakage and aliasing vulnerabilities"
+      ],
+      "motivatingQuote": "An immutable object has only one state—the state in which it was created. It is inherently thread-safe and impossible to corrupt."
+    },
+    "realWorldScenario": {
+      "headline": "Fintech Audited Invoice & Order Settlement Ledger",
+      "story": "A payment settlement gateway receives finalized orders from shopping carts. Once an order is submitted and card charged, the record must be mathematically immutable. If the shopping cart frontend reuses or modifies the item list, the placed order must remain completely untouched.",
+      "context": "Financial compliance requires that invoice records cannot suffer from memory reference leakage or unauthorized mutation."
+    },
+    "requirements": {
+      "functional": [
+        "Create an immutable Money value object with final double amount and final String currency. Provide add(Money other) returning a new Money instance.",
+        "Create an immutable OrderItem class with final String sku, final String name, final int quantity, and final Money unitPrice. Provide getSubtotal() returning new Money(quantity * unitPrice).",
+        "Create an immutable Order class with final String orderId, final String customerId, final List<OrderItem> items, and final long timestamp.",
+        "In Order constructor, perform defensive deep copies of all OrderItem objects and wrap the internal list in Collections.unmodifiableList.",
+        "In getItems(), return either an unmodifiable list or a fresh defensive copy.",
+        "Implement computeTotal() returning an immutable Money instance summing all line item subtotals.",
+        "Demonstrate that modifying the original list passed to the constructor does NOT change the order (defensive copy test).",
+        "Demonstrate that calling .add() on getItems() throws UnsupportedOperationException."
+      ],
+      "technicalConstraints": [
+        "All classes (Money, OrderItem, Order) must be declared final to prevent subclassing.",
+        "All fields must be declared private final.",
+        "Zero mutator (setter) methods across all three classes.",
+        "Defensive copying: never store or return raw external mutable collection references."
+      ],
+      "userDecisions": [
+        "Choose currency representation (USD, EUR, GBP) and validation.",
+        "Decide whether to support tax calculations returning new Money instances.",
+        "Decide on invoice statement layout."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Order ID and Customer ID",
+        "List of OrderItem instances",
+        "Currency and amount values"
+      ],
+      "outputsRequired": [
+        "Immutable Order audit report",
+        "Line-item subtotal breakdown",
+        "Calculated order total with currency symbol"
+      ],
+      "variablesNeeded": [
+        "final String orderId, customerId: immutable order identifiers",
+        "final List<OrderItem> items: defensively copied and unmodifiable list",
+        "final Money totalAmount: immutable aggregated sum",
+        "final long timestamp: immutable order creation time"
+      ],
+      "conditionalLogic": [
+        "Money currency check: if (!this.currency.equals(other.currency)) throw IllegalArgumentException",
+        "Order items check: if (items == null || items.isEmpty()) throw IllegalArgumentException"
+      ],
+      "loopStructures": [
+        "For-loop in constructor performing defensive copies of each item",
+        "For-loop in computeTotal() summing Money line items"
+      ],
+      "recommendedMethods": [
+        "public final class Money",
+        "public final class OrderItem",
+        "public final class Order",
+        "public Money add(Money other)",
+        "public Money computeTotal()",
+        "public void printInvoice()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Immutable Money Value Object",
+        "objective": "Build final Money class with immutable fields and safe arithmetic returning new instances.",
+        "tasks": [
+          "Declare public final class Money.",
+          "Declare private final double amount and private final String currency.",
+          "Implement constructor with non-negative check.",
+          "Implement add(Money other) that validates currency matching and returns new Money(this.amount + other.amount, currency)."
+        ],
+        "acceptanceCriteria": [
+          "Money cannot be mutated; add() returns a distinct new instance."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Immutable OrderItem Class",
+        "objective": "Build OrderItem with immutable state and calculated subtotal.",
+        "tasks": [
+          "Declare public final class OrderItem.",
+          "Declare private final sku, name, quantity, unitPrice (Money).",
+          "Implement getSubtotal() returning new Money(quantity * unitPrice.getAmount(), currency)."
+        ],
+        "acceptanceCriteria": [
+          "OrderItem has no setters and computes line item subtotals cleanly."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Immutable Order with Defensive Copying",
+        "objective": "Build Order with constructor defensive copying and unmodifiable collection wrapping.",
+        "tasks": [
+          "Declare public final class Order.",
+          "In constructor: create new ArrayList, clone/copy each OrderItem, wrap in Collections.unmodifiableList.",
+          "Implement computeTotal() aggregating item subtotals into an immutable Money sum.",
+          "In getItems(), return unmodifiable list."
+        ],
+        "acceptanceCriteria": [
+          "Order resists external list mutation; getItems().add() throws UnsupportedOperationException."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Aliasing & Tamper Proof Test Harness",
+        "objective": "Run comprehensive defense tests in OrderAppMain.",
+        "tasks": [
+          "Create external ArrayList<OrderItem> and create Order.",
+          "Mutate external list by adding a fraudulent $0 item.",
+          "Verify Order size remains unchanged (proving defensive copying).",
+          "Attempt to mutate getItems() directly and assert exception."
+        ],
+        "acceptanceCriteria": [
+          "All immutability and anti-aliasing tests pass 100%."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "What are the 5 rules for creating an immutable class in Java?",
+        "mentorInsight": "1. Declare class as final (prevent subclass overriding). 2. Make all fields private and final. 3. Do not provide any mutator methods. 4. Ensure exclusive access to any mutable components via defensive copying in constructors and accessors. 5. Initialize all fields fully in constructors."
+      },
+      {
+        "question": "Why is Collections.unmodifiableList(list) not enough by itself in a constructor?",
+        "mentorInsight": "unmodifiableList wraps the list you give it, but it does NOT copy it! If the caller still holds a reference to the original ArrayList, they can call originalList.add(item) and the 'unmodifiable' wrapper will reflect the change! You must make a new copy first, THEN wrap it."
+      },
+      {
+        "question": "Why is immutability crucial in multithreaded systems?",
+        "mentorInsight": "Immutable objects cannot change state after construction. Multiple threads can read an immutable object simultaneously without synchronization locks, thread contention, or race conditions. They are inherently thread-safe."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Proper Defensive Copying Recipe",
+        "level1Conceptual": "Create a new list, copy elements into it, then wrap in unmodifiableList.",
+        "level2Implementation": "List<OrderItem> copy = new ArrayList<>(); for (OrderItem item : input) copy.add(item); this.items = Collections.unmodifiableList(copy);",
+        "level3JavaSyntax": "List<OrderItem> defensiveCopy = new ArrayList<>();\nfor (OrderItem item : externalList) {\n    defensiveCopy.add(item); // Item is already immutable\n}\nthis.items = Collections.unmodifiableList(defensiveCopy);"
+      },
+      {
+        "topic": "Money Arithmetic Returning New Instances",
+        "level1Conceptual": "Never change this.amount; return a new Money instance.",
+        "level2Implementation": "return new Money(this.amount + other.amount, this.currency);",
+        "level3JavaSyntax": "public Money add(Money other) {\n    if (!this.currency.equals(other.currency)) {\n        throw new IllegalArgumentException(\"Currency mismatch\");\n    }\n    return new Money(this.amount + other.amount, this.currency);\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Order with 2 items (Keyboard $100 x 1, Mouse $50 x 2) -> Total: $200.00 USD",
+        "Money addition: $15.50 USD + $4.50 USD -> Returns new Money($20.00 USD)",
+        "Order invoice prints line items and total correctly"
+      ],
+      "boundaryCases": [
+        "Order with single item -> Total computed accurately",
+        "Money instance with $0.00 -> Valid zero-balance value object"
+      ],
+      "invalidInputCases": [
+        "Adding Money with EUR to Money with USD -> Throws IllegalArgumentException (Currency mismatch)",
+        "Calling order.getItems().add(new OrderItem(...)) -> Throws UnsupportedOperationException",
+        "Modifying caller's list after passing to Order constructor -> Order remains completely unaffected"
+      ],
+      "edgeCases": [
+        "Multiple concurrent threads reading the same Order instance simultaneously without locking or race conditions"
+      ]
+    },
+    "debuggingGuide": [
+      "Order state changed when external list was modified: You wrapped the external list in unmodifiableList without copying first! Always do new ArrayList<>(externalList) before wrapping.",
+      "UnsupportedOperationException during construction: Make sure your internal defensive copy list is created as a normal mutable ArrayList before wrapping it in Collections.unmodifiableList.",
+      "Class can be extended: Remember to declare public final class Order, public final class Money, and public final class OrderItem.",
+      "Missing getters: Immutable classes still provide public getters; they just omit setters."
+    ],
+    "projectPolish": [
+      "Print an ASCII financial invoice with clean column dividers.",
+      "Format currency with ISO currency codes (e.g. '$200.00 USD').",
+      "Include timestamp in ISO-8601 UTC format on invoice."
+    ],
+    "gitHubReady": {
+      "repoName": "immutable-order-cart-system",
+      "commitMessages": [
+        "feat: implement immutable Money value object with safe arithmetic",
+        "feat: implement immutable OrderItem domain entity",
+        "feat: implement immutable Order with defensive copying and unmodifiable collections",
+        "test: create anti-aliasing and reference leakage defense test suite",
+        "docs: add comprehensive README with the 5 rules of immutability in Java"
+      ],
+      "readmeTemplate": "# Immutable Order & Cart System (Java OOP)\n\n## Overview\nA thread-safe financial order processing engine built in Java demonstrating strict immutability, Value Objects, and defensive copying to eliminate reference leakage and aliasing vulnerabilities.\n\n## The 5 Rules of Immutability Applied\n```\n+-------------------------------------------------------------+\n|                 5 Rules of Immutability                     |\n+-------------------------------------------------------------+\n| 1. Final Class:       Prevents subclass extension/override  |\n| 2. Final Fields:      Prevents post-construction mutation   |\n| 3. No Mutators:       Zero setter methods anywhere          |\n| 4. Defensive Copies:  Constructor copies mutable collections|\n| 5. Safe Accessors:    Returns Collections.unmodifiableList  |\n+-------------------------------------------------------------+\n```\n\n## Architecture Blueprint\n```\n+-----------------------+              +-----------------------+\n|       <<final>>       |              |       <<final>>       |\n|         Order         |<>----------->|       OrderItem       |\n+-----------------------+ (Defensive   +-----------------------+\n| - orderId: String     |  Copy)       | - sku: String         |\n| - customerId: String  |              | - name: String        |\n| - items: List<Item>   |              | - quantity: int       |\n| - timestamp: long     |              | - unitPrice: Money    |\n+-----------------------+              +-----------------------+\n| + computeTotal(): Mny |                         |\n| + getItems(): List    |                         v Has-A\n+-----------------------+              +-----------------------+\n                                       |       <<final>>       |\n                                       |         Money         |\n                                       +-----------------------+\n                                       | - amount: double      |\n                                       | - currency: String    |\n                                       +-----------------------+\n                                       | + add(Money): Money   |\n                                       +-----------------------+\n```\n\n## How to Run\n```bash\njavac Money.java OrderItem.java Order.java OrderApp.java\njava OrderApp\n```\n\n## Sample Invoice Output\n```text\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nTimestamp:   2026-10-03T10:15:00Z\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\nAnti-Aliasing Test: External list modified -> Placed Order is 100% UNCHANGED.\n```\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git repository in the immutable order project folder."
+        },
+        {
+          "command": "git add *.java README.md",
+          "explanation": "Stages source files and documentation."
+        },
+        {
+          "command": "git commit -m \"feat: complete immutable order cart system with defensive copying\"",
+          "explanation": "Records milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets branch to main."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/immutable-order-cart-system.git",
+          "explanation": "Connects to remote GitHub repository."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes to GitHub."
+        }
+      ],
+      "suggestedReadme": "# Immutable Order & Cart System (Java OOP)\n\n## Overview\nA thread-safe financial order processing engine built in Java demonstrating strict immutability, Value Objects, and defensive copying to eliminate reference leakage and aliasing vulnerabilities.\n\n## The 5 Rules of Immutability Applied\n```\n+-------------------------------------------------------------+\n|                 5 Rules of Immutability                     |\n+-------------------------------------------------------------+\n| 1. Final Class:       Prevents subclass extension/override  |\n| 2. Final Fields:      Prevents post-construction mutation   |\n| 3. No Mutators:       Zero setter methods anywhere          |\n| 4. Defensive Copies:  Constructor copies mutable collections|\n| 5. Safe Accessors:    Returns Collections.unmodifiableList  |\n+-------------------------------------------------------------+\n```\n\n## Architecture Blueprint\n```\n+-----------------------+              +-----------------------+\n|       <<final>>       |              |       <<final>>       |\n|         Order         |<>----------->|       OrderItem       |\n+-----------------------+ (Defensive   +-----------------------+\n| - orderId: String     |  Copy)       | - sku: String         |\n| - customerId: String  |              | - name: String        |\n| - items: List<Item>   |              | - quantity: int       |\n| - timestamp: long     |              | - unitPrice: Money    |\n+-----------------------+              +-----------------------+\n| + computeTotal(): Mny |                         |\n| + getItems(): List    |                         v Has-A\n+-----------------------+              +-----------------------+\n                                       |       <<final>>       |\n                                       |         Money         |\n                                       +-----------------------+\n                                       | - amount: double      |\n                                       | - currency: String    |\n                                       +-----------------------+\n                                       | + add(Money): Money   |\n                                       +-----------------------+\n```\n\n## How to Run\n```bash\njavac Money.java OrderItem.java Order.java OrderApp.java\njava OrderApp\n```\n\n## Sample Invoice Output\n```text\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nTimestamp:   2026-10-03T10:15:00Z\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\nAnti-Aliasing Test: External list modified -> Placed Order is 100% UNCHANGED.\n```\n"
+    },
+    "portfolioChecklist": [
+      "Money, OrderItem, and Order classes are all declared final",
+      "All fields are declared private final",
+      "Zero setter methods exist in any of the classes",
+      "Order constructor performs a defensive copy of the item list before wrapping in unmodifiableList",
+      "Order.getItems() returns an unmodifiable list",
+      "Money.add() returns a brand-new Money instance rather than mutating state",
+      "Anti-aliasing test verifies modifying external lists leaves the Order intact",
+      "README.md documents the 5 rules of immutability and architectural diagram"
+    ],
+    "explainYourProject": [
+      "What is an aliasing bug and how does defensive copying prevent it?",
+      "Why is wrapping a list in Collections.unmodifiableList not enough if you don't copy it first?",
+      "Why is the Money class declared final?",
+      "How does Money.add() maintain immutability?",
+      "Why are immutable objects considered naturally thread-safe?",
+      "What exception is thrown if code attempts to call getItems().add()?"
+    ],
+    "projectCompletion": {
+      "headline": "Immutable Order Engine Complete!",
+      "congratulations": "You built a bulletproof, thread-safe financial ordering engine following the 5 rules of immutable class design and defensive copying.",
+      "skillsDemonstrated": [
+        "Immutable Class Design (The 5 Rules)",
+        "Defensive Copying & Anti-Aliasing",
+        "Unmodifiable Collections",
+        "Financial Value Objects (Money)",
+        "Thread-Safety Without Locks",
+        "Production Portfolio Documentation"
+      ],
+      "nextStepAction": "Commit and push your immutable order engine to GitHub!"
+    },
+    "scaffoldingCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Immutable Money Value Object\npublic final class Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        if (amount < 0) throw new IllegalArgumentException(\"Amount cannot be negative.\");\n        this.amount = amount;\n        this.currency = (currency != null) ? currency.toUpperCase() : \"USD\";\n    }\n\n    public Money add(Money other) {\n        if (other == null || !this.currency.equals(other.currency)) {\n            throw new IllegalArgumentException(\"Currency mismatch or null Money object.\");\n        }\n        return new Money(this.amount + other.amount, this.currency);\n    }\n\n    public double getAmount() { return amount; }\n    public String getCurrency() { return currency; }\n\n    @Override\n    public String toString() {\n        return String.format(\"$%.2f %s\", amount, currency);\n    }\n}\n\n// 2. Immutable OrderItem\nfinal class OrderItem {\n    private final String sku;\n    private final String name;\n    private final int quantity;\n    private final Money unitPrice;\n\n    public OrderItem(String sku, String name, int quantity, Money unitPrice) {\n        if (quantity <= 0) throw new IllegalArgumentException(\"Quantity must be positive.\");\n        this.sku = sku;\n        this.name = name;\n        this.quantity = quantity;\n        this.unitPrice = unitPrice;\n    }\n\n    public Money getSubtotal() {\n        return new Money(quantity * unitPrice.getAmount(), unitPrice.getCurrency());\n    }\n\n    public String getSku() { return sku; }\n    public String getName() { return name; }\n    public int getQuantity() { return quantity; }\n    public Money getUnitPrice() { return unitPrice; }\n}\n\n// 3. Immutable Order with Defensive Copying\nfinal class Order {\n    private final String orderId;\n    private final String customerId;\n    private final List<OrderItem> items;\n    private final long timestamp;\n\n    public Order(String orderId, String customerId, List<OrderItem> items) {\n        if (items == null || items.isEmpty()) throw new IllegalArgumentException(\"Order items required.\");\n        this.orderId = orderId;\n        this.customerId = customerId;\n        this.timestamp = System.currentTimeMillis();\n\n        // DEFENSIVE COPY: Copy all items into a new list, then wrap in unmodifiableList\n        List<OrderItem> defensiveCopy = new ArrayList<>();\n        for (OrderItem item : items) {\n            defensiveCopy.add(item); // OrderItem is already immutable\n        }\n        this.items = Collections.unmodifiableList(defensiveCopy);\n    }\n\n    public Money computeTotal() {\n        Money total = new Money(0.0, \"USD\");\n        for (OrderItem item : items) {\n            total = total.add(item.getSubtotal());\n        }\n        return total;\n    }\n\n    public List<OrderItem> getItems() {\n        return items; // Already wrapped in unmodifiableList\n    }\n\n    public String getOrderId() { return orderId; }\n    public String getCustomerId() { return customerId; }\n    public long getTimestamp() { return timestamp; }\n}",
+    "sampleConsoleRun": "=== IMMUTABLE ORDER & DEFENSIVE COPYING SIMULATION ===\nCreating mutable external items list in shopping cart...\n- 1x Mechanical Keyboard @ $120.00 USD\n- 2x Optical Mouse @ $40.00 USD\n\nPlacing settled order ORD-2026-9042...\n\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00 USD\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00 USD\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\n\n[Security Test 1: External List Tampering]\nCaller attempts to inject fraudulent item into original cart list:\ncartList.add(new OrderItem(\"HACK\", \"Free Laptop\", 1, new Money(0.0, \"USD\")));\n\nChecking Order items count after external list mutation:\nOrder Items Count: 2 (Defensive copy protected the order!)\n\n[Security Test 2: Direct Order Mutation Attempt]\nCaller attempts: order.getItems().clear();\nResult: Exception caught: java.lang.UnsupportedOperationException!\nOrder is completely tamper-proof and thread-safe."
+  },
+  "miniProject": {
+    "id": "les-oop-mini-10-immutable-order",
+    "slug": "immutable-order-cart-system",
+    "title": "Immutable Order & Cart System (Level 2: Requirement Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "An enterprise immutable order processing engine where Order, OrderItem, and Money objects are strictly immutable value objects, utilizing defensive copying in constructors and getters to prevent reference leakage and state tampering.",
+      "problemItSolves": "Passing mutable lists or objects allows external code to mutate internal object state after checkout ('Aliasing Bug'), modifying item prices or quantities on placed orders. Immutability guarantees complete thread-safety and audit integrity.",
+      "finishedAppDescription": "A robust financial e-commerce order system. Once an Order is created, its items, customer info, timestamps, and total amounts can never be altered. Attempts to modify external item lists after construction have zero effect on the Order, demonstrating defensive copying.",
+      "estimatedTime": "50–60 minutes",
+      "difficulty": "advanced",
+      "javaFundamentals": [
+        "The 5 Rules of Immutable Class Design in Java",
+        "Defensive copying in constructors and accessor methods",
+        "Unmodifiable collections (Collections.unmodifiableList)",
+        "Value Objects (Money, OrderItem) with zero mutators",
+        "Thread-safety through immutability without synchronization locks",
+        "Preventing reference leakage and aliasing vulnerabilities"
+      ],
+      "motivatingQuote": "An immutable object has only one state—the state in which it was created. It is inherently thread-safe and impossible to corrupt."
+    },
+    "realWorldScenario": {
+      "headline": "Fintech Audited Invoice & Order Settlement Ledger",
+      "story": "A payment settlement gateway receives finalized orders from shopping carts. Once an order is submitted and card charged, the record must be mathematically immutable. If the shopping cart frontend reuses or modifies the item list, the placed order must remain completely untouched.",
+      "context": "Financial compliance requires that invoice records cannot suffer from memory reference leakage or unauthorized mutation."
+    },
+    "requirements": {
+      "functional": [
+        "Create an immutable Money value object with final double amount and final String currency. Provide add(Money other) returning a new Money instance.",
+        "Create an immutable OrderItem class with final String sku, final String name, final int quantity, and final Money unitPrice. Provide getSubtotal() returning new Money(quantity * unitPrice).",
+        "Create an immutable Order class with final String orderId, final String customerId, final List<OrderItem> items, and final long timestamp.",
+        "In Order constructor, perform defensive deep copies of all OrderItem objects and wrap the internal list in Collections.unmodifiableList.",
+        "In getItems(), return either an unmodifiable list or a fresh defensive copy.",
+        "Implement computeTotal() returning an immutable Money instance summing all line item subtotals.",
+        "Demonstrate that modifying the original list passed to the constructor does NOT change the order (defensive copy test).",
+        "Demonstrate that calling .add() on getItems() throws UnsupportedOperationException."
+      ],
+      "technicalConstraints": [
+        "All classes (Money, OrderItem, Order) must be declared final to prevent subclassing.",
+        "All fields must be declared private final.",
+        "Zero mutator (setter) methods across all three classes.",
+        "Defensive copying: never store or return raw external mutable collection references."
+      ],
+      "userDecisions": [
+        "Choose currency representation (USD, EUR, GBP) and validation.",
+        "Decide whether to support tax calculations returning new Money instances.",
+        "Decide on invoice statement layout."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Order ID and Customer ID",
+        "List of OrderItem instances",
+        "Currency and amount values"
+      ],
+      "outputsRequired": [
+        "Immutable Order audit report",
+        "Line-item subtotal breakdown",
+        "Calculated order total with currency symbol"
+      ],
+      "variablesNeeded": [
+        "final String orderId, customerId: immutable order identifiers",
+        "final List<OrderItem> items: defensively copied and unmodifiable list",
+        "final Money totalAmount: immutable aggregated sum",
+        "final long timestamp: immutable order creation time"
+      ],
+      "conditionalLogic": [
+        "Money currency check: if (!this.currency.equals(other.currency)) throw IllegalArgumentException",
+        "Order items check: if (items == null || items.isEmpty()) throw IllegalArgumentException"
+      ],
+      "loopStructures": [
+        "For-loop in constructor performing defensive copies of each item",
+        "For-loop in computeTotal() summing Money line items"
+      ],
+      "recommendedMethods": [
+        "public final class Money",
+        "public final class OrderItem",
+        "public final class Order",
+        "public Money add(Money other)",
+        "public Money computeTotal()",
+        "public void printInvoice()"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Immutable Money Value Object",
+        "objective": "Build final Money class with immutable fields and safe arithmetic returning new instances.",
+        "tasks": [
+          "Declare public final class Money.",
+          "Declare private final double amount and private final String currency.",
+          "Implement constructor with non-negative check.",
+          "Implement add(Money other) that validates currency matching and returns new Money(this.amount + other.amount, currency)."
+        ],
+        "acceptanceCriteria": [
+          "Money cannot be mutated; add() returns a distinct new instance."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Immutable OrderItem Class",
+        "objective": "Build OrderItem with immutable state and calculated subtotal.",
+        "tasks": [
+          "Declare public final class OrderItem.",
+          "Declare private final sku, name, quantity, unitPrice (Money).",
+          "Implement getSubtotal() returning new Money(quantity * unitPrice.getAmount(), currency)."
+        ],
+        "acceptanceCriteria": [
+          "OrderItem has no setters and computes line item subtotals cleanly."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Immutable Order with Defensive Copying",
+        "objective": "Build Order with constructor defensive copying and unmodifiable collection wrapping.",
+        "tasks": [
+          "Declare public final class Order.",
+          "In constructor: create new ArrayList, clone/copy each OrderItem, wrap in Collections.unmodifiableList.",
+          "Implement computeTotal() aggregating item subtotals into an immutable Money sum.",
+          "In getItems(), return unmodifiable list."
+        ],
+        "acceptanceCriteria": [
+          "Order resists external list mutation; getItems().add() throws UnsupportedOperationException."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Aliasing & Tamper Proof Test Harness",
+        "objective": "Run comprehensive defense tests in OrderAppMain.",
+        "tasks": [
+          "Create external ArrayList<OrderItem> and create Order.",
+          "Mutate external list by adding a fraudulent $0 item.",
+          "Verify Order size remains unchanged (proving defensive copying).",
+          "Attempt to mutate getItems() directly and assert exception."
+        ],
+        "acceptanceCriteria": [
+          "All immutability and anti-aliasing tests pass 100%."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "What are the 5 rules for creating an immutable class in Java?",
+        "mentorInsight": "1. Declare class as final (prevent subclass overriding). 2. Make all fields private and final. 3. Do not provide any mutator methods. 4. Ensure exclusive access to any mutable components via defensive copying in constructors and accessors. 5. Initialize all fields fully in constructors."
+      },
+      {
+        "question": "Why is Collections.unmodifiableList(list) not enough by itself in a constructor?",
+        "mentorInsight": "unmodifiableList wraps the list you give it, but it does NOT copy it! If the caller still holds a reference to the original ArrayList, they can call originalList.add(item) and the 'unmodifiable' wrapper will reflect the change! You must make a new copy first, THEN wrap it."
+      },
+      {
+        "question": "Why is immutability crucial in multithreaded systems?",
+        "mentorInsight": "Immutable objects cannot change state after construction. Multiple threads can read an immutable object simultaneously without synchronization locks, thread contention, or race conditions. They are inherently thread-safe."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Proper Defensive Copying Recipe",
+        "level1Conceptual": "Create a new list, copy elements into it, then wrap in unmodifiableList.",
+        "level2Implementation": "List<OrderItem> copy = new ArrayList<>(); for (OrderItem item : input) copy.add(item); this.items = Collections.unmodifiableList(copy);",
+        "level3JavaSyntax": "List<OrderItem> defensiveCopy = new ArrayList<>();\nfor (OrderItem item : externalList) {\n    defensiveCopy.add(item); // Item is already immutable\n}\nthis.items = Collections.unmodifiableList(defensiveCopy);"
+      },
+      {
+        "topic": "Money Arithmetic Returning New Instances",
+        "level1Conceptual": "Never change this.amount; return a new Money instance.",
+        "level2Implementation": "return new Money(this.amount + other.amount, this.currency);",
+        "level3JavaSyntax": "public Money add(Money other) {\n    if (!this.currency.equals(other.currency)) {\n        throw new IllegalArgumentException(\"Currency mismatch\");\n    }\n    return new Money(this.amount + other.amount, this.currency);\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Order with 2 items (Keyboard $100 x 1, Mouse $50 x 2) -> Total: $200.00 USD",
+        "Money addition: $15.50 USD + $4.50 USD -> Returns new Money($20.00 USD)",
+        "Order invoice prints line items and total correctly"
+      ],
+      "boundaryCases": [
+        "Order with single item -> Total computed accurately",
+        "Money instance with $0.00 -> Valid zero-balance value object"
+      ],
+      "invalidInputCases": [
+        "Adding Money with EUR to Money with USD -> Throws IllegalArgumentException (Currency mismatch)",
+        "Calling order.getItems().add(new OrderItem(...)) -> Throws UnsupportedOperationException",
+        "Modifying caller's list after passing to Order constructor -> Order remains completely unaffected"
+      ],
+      "edgeCases": [
+        "Multiple concurrent threads reading the same Order instance simultaneously without locking or race conditions"
+      ]
+    },
+    "debuggingGuide": [
+      "Order state changed when external list was modified: You wrapped the external list in unmodifiableList without copying first! Always do new ArrayList<>(externalList) before wrapping.",
+      "UnsupportedOperationException during construction: Make sure your internal defensive copy list is created as a normal mutable ArrayList before wrapping it in Collections.unmodifiableList.",
+      "Class can be extended: Remember to declare public final class Order, public final class Money, and public final class OrderItem.",
+      "Missing getters: Immutable classes still provide public getters; they just omit setters."
+    ],
+    "projectPolish": [
+      "Print an ASCII financial invoice with clean column dividers.",
+      "Format currency with ISO currency codes (e.g. '$200.00 USD').",
+      "Include timestamp in ISO-8601 UTC format on invoice."
+    ],
+    "gitHubReady": {
+      "repoName": "immutable-order-cart-system",
+      "commitMessages": [
+        "feat: implement immutable Money value object with safe arithmetic",
+        "feat: implement immutable OrderItem domain entity",
+        "feat: implement immutable Order with defensive copying and unmodifiable collections",
+        "test: create anti-aliasing and reference leakage defense test suite",
+        "docs: add comprehensive README with the 5 rules of immutability in Java"
+      ],
+      "readmeTemplate": "# Immutable Order & Cart System (Java OOP)\n\n## Overview\nA thread-safe financial order processing engine built in Java demonstrating strict immutability, Value Objects, and defensive copying to eliminate reference leakage and aliasing vulnerabilities.\n\n## The 5 Rules of Immutability Applied\n```\n+-------------------------------------------------------------+\n|                 5 Rules of Immutability                     |\n+-------------------------------------------------------------+\n| 1. Final Class:       Prevents subclass extension/override  |\n| 2. Final Fields:      Prevents post-construction mutation   |\n| 3. No Mutators:       Zero setter methods anywhere          |\n| 4. Defensive Copies:  Constructor copies mutable collections|\n| 5. Safe Accessors:    Returns Collections.unmodifiableList  |\n+-------------------------------------------------------------+\n```\n\n## Architecture Blueprint\n```\n+-----------------------+              +-----------------------+\n|       <<final>>       |              |       <<final>>       |\n|         Order         |<>----------->|       OrderItem       |\n+-----------------------+ (Defensive   +-----------------------+\n| - orderId: String     |  Copy)       | - sku: String         |\n| - customerId: String  |              | - name: String        |\n| - items: List<Item>   |              | - quantity: int       |\n| - timestamp: long     |              | - unitPrice: Money    |\n+-----------------------+              +-----------------------+\n| + computeTotal(): Mny |                         |\n| + getItems(): List    |                         v Has-A\n+-----------------------+              +-----------------------+\n                                       |       <<final>>       |\n                                       |         Money         |\n                                       +-----------------------+\n                                       | - amount: double      |\n                                       | - currency: String    |\n                                       +-----------------------+\n                                       | + add(Money): Money   |\n                                       +-----------------------+\n```\n\n## How to Run\n```bash\njavac Money.java OrderItem.java Order.java OrderApp.java\njava OrderApp\n```\n\n## Sample Invoice Output\n```text\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nTimestamp:   2026-10-03T10:15:00Z\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\nAnti-Aliasing Test: External list modified -> Placed Order is 100% UNCHANGED.\n```\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git repository in the immutable order project folder."
+        },
+        {
+          "command": "git add *.java README.md",
+          "explanation": "Stages source files and documentation."
+        },
+        {
+          "command": "git commit -m \"feat: complete immutable order cart system with defensive copying\"",
+          "explanation": "Records milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets branch to main."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/immutable-order-cart-system.git",
+          "explanation": "Connects to remote GitHub repository."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes to GitHub."
+        }
+      ],
+      "suggestedReadme": "# Immutable Order & Cart System (Java OOP)\n\n## Overview\nA thread-safe financial order processing engine built in Java demonstrating strict immutability, Value Objects, and defensive copying to eliminate reference leakage and aliasing vulnerabilities.\n\n## The 5 Rules of Immutability Applied\n```\n+-------------------------------------------------------------+\n|                 5 Rules of Immutability                     |\n+-------------------------------------------------------------+\n| 1. Final Class:       Prevents subclass extension/override  |\n| 2. Final Fields:      Prevents post-construction mutation   |\n| 3. No Mutators:       Zero setter methods anywhere          |\n| 4. Defensive Copies:  Constructor copies mutable collections|\n| 5. Safe Accessors:    Returns Collections.unmodifiableList  |\n+-------------------------------------------------------------+\n```\n\n## Architecture Blueprint\n```\n+-----------------------+              +-----------------------+\n|       <<final>>       |              |       <<final>>       |\n|         Order         |<>----------->|       OrderItem       |\n+-----------------------+ (Defensive   +-----------------------+\n| - orderId: String     |  Copy)       | - sku: String         |\n| - customerId: String  |              | - name: String        |\n| - items: List<Item>   |              | - quantity: int       |\n| - timestamp: long     |              | - unitPrice: Money    |\n+-----------------------+              +-----------------------+\n| + computeTotal(): Mny |                         |\n| + getItems(): List    |                         v Has-A\n+-----------------------+              +-----------------------+\n                                       |       <<final>>       |\n                                       |         Money         |\n                                       +-----------------------+\n                                       | - amount: double      |\n                                       | - currency: String    |\n                                       +-----------------------+\n                                       | + add(Money): Money   |\n                                       +-----------------------+\n```\n\n## How to Run\n```bash\njavac Money.java OrderItem.java Order.java OrderApp.java\njava OrderApp\n```\n\n## Sample Invoice Output\n```text\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nTimestamp:   2026-10-03T10:15:00Z\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\nAnti-Aliasing Test: External list modified -> Placed Order is 100% UNCHANGED.\n```\n"
+    },
+    "portfolioChecklist": [
+      "Money, OrderItem, and Order classes are all declared final",
+      "All fields are declared private final",
+      "Zero setter methods exist in any of the classes",
+      "Order constructor performs a defensive copy of the item list before wrapping in unmodifiableList",
+      "Order.getItems() returns an unmodifiable list",
+      "Money.add() returns a brand-new Money instance rather than mutating state",
+      "Anti-aliasing test verifies modifying external lists leaves the Order intact",
+      "README.md documents the 5 rules of immutability and architectural diagram"
+    ],
+    "explainYourProject": [
+      "What is an aliasing bug and how does defensive copying prevent it?",
+      "Why is wrapping a list in Collections.unmodifiableList not enough if you don't copy it first?",
+      "Why is the Money class declared final?",
+      "How does Money.add() maintain immutability?",
+      "Why are immutable objects considered naturally thread-safe?",
+      "What exception is thrown if code attempts to call getItems().add()?"
+    ],
+    "projectCompletion": {
+      "headline": "Immutable Order Engine Complete!",
+      "congratulations": "You built a bulletproof, thread-safe financial ordering engine following the 5 rules of immutable class design and defensive copying.",
+      "skillsDemonstrated": [
+        "Immutable Class Design (The 5 Rules)",
+        "Defensive Copying & Anti-Aliasing",
+        "Unmodifiable Collections",
+        "Financial Value Objects (Money)",
+        "Thread-Safety Without Locks",
+        "Production Portfolio Documentation"
+      ],
+      "nextStepAction": "Commit and push your immutable order engine to GitHub!"
+    },
+    "scaffoldingCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Immutable Money Value Object\npublic final class Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        if (amount < 0) throw new IllegalArgumentException(\"Amount cannot be negative.\");\n        this.amount = amount;\n        this.currency = (currency != null) ? currency.toUpperCase() : \"USD\";\n    }\n\n    public Money add(Money other) {\n        if (other == null || !this.currency.equals(other.currency)) {\n            throw new IllegalArgumentException(\"Currency mismatch or null Money object.\");\n        }\n        return new Money(this.amount + other.amount, this.currency);\n    }\n\n    public double getAmount() { return amount; }\n    public String getCurrency() { return currency; }\n\n    @Override\n    public String toString() {\n        return String.format(\"$%.2f %s\", amount, currency);\n    }\n}\n\n// 2. Immutable OrderItem\nfinal class OrderItem {\n    private final String sku;\n    private final String name;\n    private final int quantity;\n    private final Money unitPrice;\n\n    public OrderItem(String sku, String name, int quantity, Money unitPrice) {\n        if (quantity <= 0) throw new IllegalArgumentException(\"Quantity must be positive.\");\n        this.sku = sku;\n        this.name = name;\n        this.quantity = quantity;\n        this.unitPrice = unitPrice;\n    }\n\n    public Money getSubtotal() {\n        return new Money(quantity * unitPrice.getAmount(), unitPrice.getCurrency());\n    }\n\n    public String getSku() { return sku; }\n    public String getName() { return name; }\n    public int getQuantity() { return quantity; }\n    public Money getUnitPrice() { return unitPrice; }\n}\n\n// 3. Immutable Order with Defensive Copying\nfinal class Order {\n    private final String orderId;\n    private final String customerId;\n    private final List<OrderItem> items;\n    private final long timestamp;\n\n    public Order(String orderId, String customerId, List<OrderItem> items) {\n        if (items == null || items.isEmpty()) throw new IllegalArgumentException(\"Order items required.\");\n        this.orderId = orderId;\n        this.customerId = customerId;\n        this.timestamp = System.currentTimeMillis();\n\n        // DEFENSIVE COPY: Copy all items into a new list, then wrap in unmodifiableList\n        List<OrderItem> defensiveCopy = new ArrayList<>();\n        for (OrderItem item : items) {\n            defensiveCopy.add(item); // OrderItem is already immutable\n        }\n        this.items = Collections.unmodifiableList(defensiveCopy);\n    }\n\n    public Money computeTotal() {\n        Money total = new Money(0.0, \"USD\");\n        for (OrderItem item : items) {\n            total = total.add(item.getSubtotal());\n        }\n        return total;\n    }\n\n    public List<OrderItem> getItems() {\n        return items; // Already wrapped in unmodifiableList\n    }\n\n    public String getOrderId() { return orderId; }\n    public String getCustomerId() { return customerId; }\n    public long getTimestamp() { return timestamp; }\n}",
+    "sampleConsoleRun": "=== IMMUTABLE ORDER & DEFENSIVE COPYING SIMULATION ===\nCreating mutable external items list in shopping cart...\n- 1x Mechanical Keyboard @ $120.00 USD\n- 2x Optical Mouse @ $40.00 USD\n\nPlacing settled order ORD-2026-9042...\n\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00 USD\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00 USD\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\n\n[Security Test 1: External List Tampering]\nCaller attempts to inject fraudulent item into original cart list:\ncartList.add(new OrderItem(\"HACK\", \"Free Laptop\", 1, new Money(0.0, \"USD\")));\n\nChecking Order items count after external list mutation:\nOrder Items Count: 2 (Defensive copy protected the order!)\n\n[Security Test 2: Direct Order Mutation Attempt]\nCaller attempts: order.getItems().clear();\nResult: Exception caught: java.lang.UnsupportedOperationException!\nOrder is completely tamper-proof and thread-safe."
+  },
+  "activities": [
+    {
+      "id": "act-immutable-order-cart-system",
+      "orderIndex": 1,
+      "type": "mini_project",
+      "title": "Immutable Order & Cart System (Level 2: Requirement Build)",
+      "project": {
+        "id": "les-oop-mini-10-immutable-order",
+        "slug": "immutable-order-cart-system",
+        "title": "Immutable Order & Cart System (Level 2: Requirement Build)",
+        "projectBrief": {
+          "whatAreWeBuilding": "An enterprise immutable order processing engine where Order, OrderItem, and Money objects are strictly immutable value objects, utilizing defensive copying in constructors and getters to prevent reference leakage and state tampering.",
+          "problemItSolves": "Passing mutable lists or objects allows external code to mutate internal object state after checkout ('Aliasing Bug'), modifying item prices or quantities on placed orders. Immutability guarantees complete thread-safety and audit integrity.",
+          "finishedAppDescription": "A robust financial e-commerce order system. Once an Order is created, its items, customer info, timestamps, and total amounts can never be altered. Attempts to modify external item lists after construction have zero effect on the Order, demonstrating defensive copying.",
+          "estimatedTime": "50–60 minutes",
+          "difficulty": "advanced",
+          "javaFundamentals": [
+            "The 5 Rules of Immutable Class Design in Java",
+            "Defensive copying in constructors and accessor methods",
+            "Unmodifiable collections (Collections.unmodifiableList)",
+            "Value Objects (Money, OrderItem) with zero mutators",
+            "Thread-safety through immutability without synchronization locks",
+            "Preventing reference leakage and aliasing vulnerabilities"
+          ],
+          "motivatingQuote": "An immutable object has only one state—the state in which it was created. It is inherently thread-safe and impossible to corrupt."
+        },
+        "realWorldScenario": {
+          "headline": "Fintech Audited Invoice & Order Settlement Ledger",
+          "story": "A payment settlement gateway receives finalized orders from shopping carts. Once an order is submitted and card charged, the record must be mathematically immutable. If the shopping cart frontend reuses or modifies the item list, the placed order must remain completely untouched.",
+          "context": "Financial compliance requires that invoice records cannot suffer from memory reference leakage or unauthorized mutation."
+        },
+        "requirements": {
+          "functional": [
+            "Create an immutable Money value object with final double amount and final String currency. Provide add(Money other) returning a new Money instance.",
+            "Create an immutable OrderItem class with final String sku, final String name, final int quantity, and final Money unitPrice. Provide getSubtotal() returning new Money(quantity * unitPrice).",
+            "Create an immutable Order class with final String orderId, final String customerId, final List<OrderItem> items, and final long timestamp.",
+            "In Order constructor, perform defensive deep copies of all OrderItem objects and wrap the internal list in Collections.unmodifiableList.",
+            "In getItems(), return either an unmodifiable list or a fresh defensive copy.",
+            "Implement computeTotal() returning an immutable Money instance summing all line item subtotals.",
+            "Demonstrate that modifying the original list passed to the constructor does NOT change the order (defensive copy test).",
+            "Demonstrate that calling .add() on getItems() throws UnsupportedOperationException."
+          ],
+          "technicalConstraints": [
+            "All classes (Money, OrderItem, Order) must be declared final to prevent subclassing.",
+            "All fields must be declared private final.",
+            "Zero mutator (setter) methods across all three classes.",
+            "Defensive copying: never store or return raw external mutable collection references."
+          ],
+          "userDecisions": [
+            "Choose currency representation (USD, EUR, GBP) and validation.",
+            "Decide whether to support tax calculations returning new Money instances.",
+            "Decide on invoice statement layout."
+          ]
+        },
+        "beforeYouCode": {
+          "inputsRequired": [
+            "Order ID and Customer ID",
+            "List of OrderItem instances",
+            "Currency and amount values"
+          ],
+          "outputsRequired": [
+            "Immutable Order audit report",
+            "Line-item subtotal breakdown",
+            "Calculated order total with currency symbol"
+          ],
+          "variablesNeeded": [
+            "final String orderId, customerId: immutable order identifiers",
+            "final List<OrderItem> items: defensively copied and unmodifiable list",
+            "final Money totalAmount: immutable aggregated sum",
+            "final long timestamp: immutable order creation time"
+          ],
+          "conditionalLogic": [
+            "Money currency check: if (!this.currency.equals(other.currency)) throw IllegalArgumentException",
+            "Order items check: if (items == null || items.isEmpty()) throw IllegalArgumentException"
+          ],
+          "loopStructures": [
+            "For-loop in constructor performing defensive copies of each item",
+            "For-loop in computeTotal() summing Money line items"
+          ],
+          "recommendedMethods": [
+            "public final class Money",
+            "public final class OrderItem",
+            "public final class Order",
+            "public Money add(Money other)",
+            "public Money computeTotal()",
+            "public void printInvoice()"
+          ]
+        },
+        "buildRoadmap": [
+          {
+            "milestoneNumber": 1,
+            "title": "Immutable Money Value Object",
+            "objective": "Build final Money class with immutable fields and safe arithmetic returning new instances.",
+            "tasks": [
+              "Declare public final class Money.",
+              "Declare private final double amount and private final String currency.",
+              "Implement constructor with non-negative check.",
+              "Implement add(Money other) that validates currency matching and returns new Money(this.amount + other.amount, currency)."
+            ],
+            "acceptanceCriteria": [
+              "Money cannot be mutated; add() returns a distinct new instance."
+            ]
+          },
+          {
+            "milestoneNumber": 2,
+            "title": "Immutable OrderItem Class",
+            "objective": "Build OrderItem with immutable state and calculated subtotal.",
+            "tasks": [
+              "Declare public final class OrderItem.",
+              "Declare private final sku, name, quantity, unitPrice (Money).",
+              "Implement getSubtotal() returning new Money(quantity * unitPrice.getAmount(), currency)."
+            ],
+            "acceptanceCriteria": [
+              "OrderItem has no setters and computes line item subtotals cleanly."
+            ]
+          },
+          {
+            "milestoneNumber": 3,
+            "title": "Immutable Order with Defensive Copying",
+            "objective": "Build Order with constructor defensive copying and unmodifiable collection wrapping.",
+            "tasks": [
+              "Declare public final class Order.",
+              "In constructor: create new ArrayList, clone/copy each OrderItem, wrap in Collections.unmodifiableList.",
+              "Implement computeTotal() aggregating item subtotals into an immutable Money sum.",
+              "In getItems(), return unmodifiable list."
+            ],
+            "acceptanceCriteria": [
+              "Order resists external list mutation; getItems().add() throws UnsupportedOperationException."
+            ]
+          },
+          {
+            "milestoneNumber": 4,
+            "title": "Aliasing & Tamper Proof Test Harness",
+            "objective": "Run comprehensive defense tests in OrderAppMain.",
+            "tasks": [
+              "Create external ArrayList<OrderItem> and create Order.",
+              "Mutate external list by adding a fraudulent $0 item.",
+              "Verify Order size remains unchanged (proving defensive copying).",
+              "Attempt to mutate getItems() directly and assert exception."
+            ],
+            "acceptanceCriteria": [
+              "All immutability and anti-aliasing tests pass 100%."
+            ]
+          }
+        ],
+        "thinkBeforeYouCode": [
+          {
+            "question": "What are the 5 rules for creating an immutable class in Java?",
+            "mentorInsight": "1. Declare class as final (prevent subclass overriding). 2. Make all fields private and final. 3. Do not provide any mutator methods. 4. Ensure exclusive access to any mutable components via defensive copying in constructors and accessors. 5. Initialize all fields fully in constructors."
+          },
+          {
+            "question": "Why is Collections.unmodifiableList(list) not enough by itself in a constructor?",
+            "mentorInsight": "unmodifiableList wraps the list you give it, but it does NOT copy it! If the caller still holds a reference to the original ArrayList, they can call originalList.add(item) and the 'unmodifiable' wrapper will reflect the change! You must make a new copy first, THEN wrap it."
+          },
+          {
+            "question": "Why is immutability crucial in multithreaded systems?",
+            "mentorInsight": "Immutable objects cannot change state after construction. Multiple threads can read an immutable object simultaneously without synchronization locks, thread contention, or race conditions. They are inherently thread-safe."
+          }
+        ],
+        "hintSystem": [
+          {
+            "topic": "Proper Defensive Copying Recipe",
+            "level1Conceptual": "Create a new list, copy elements into it, then wrap in unmodifiableList.",
+            "level2Implementation": "List<OrderItem> copy = new ArrayList<>(); for (OrderItem item : input) copy.add(item); this.items = Collections.unmodifiableList(copy);",
+            "level3JavaSyntax": "List<OrderItem> defensiveCopy = new ArrayList<>();\nfor (OrderItem item : externalList) {\n    defensiveCopy.add(item); // Item is already immutable\n}\nthis.items = Collections.unmodifiableList(defensiveCopy);"
+          },
+          {
+            "topic": "Money Arithmetic Returning New Instances",
+            "level1Conceptual": "Never change this.amount; return a new Money instance.",
+            "level2Implementation": "return new Money(this.amount + other.amount, this.currency);",
+            "level3JavaSyntax": "public Money add(Money other) {\n    if (!this.currency.equals(other.currency)) {\n        throw new IllegalArgumentException(\"Currency mismatch\");\n    }\n    return new Money(this.amount + other.amount, this.currency);\n}"
+          }
+        ],
+        "testYourProject": {
+          "normalCases": [
+            "Order with 2 items (Keyboard $100 x 1, Mouse $50 x 2) -> Total: $200.00 USD",
+            "Money addition: $15.50 USD + $4.50 USD -> Returns new Money($20.00 USD)",
+            "Order invoice prints line items and total correctly"
+          ],
+          "boundaryCases": [
+            "Order with single item -> Total computed accurately",
+            "Money instance with $0.00 -> Valid zero-balance value object"
+          ],
+          "invalidInputCases": [
+            "Adding Money with EUR to Money with USD -> Throws IllegalArgumentException (Currency mismatch)",
+            "Calling order.getItems().add(new OrderItem(...)) -> Throws UnsupportedOperationException",
+            "Modifying caller's list after passing to Order constructor -> Order remains completely unaffected"
+          ],
+          "edgeCases": [
+            "Multiple concurrent threads reading the same Order instance simultaneously without locking or race conditions"
+          ]
+        },
+        "debuggingGuide": [
+          "Order state changed when external list was modified: You wrapped the external list in unmodifiableList without copying first! Always do new ArrayList<>(externalList) before wrapping.",
+          "UnsupportedOperationException during construction: Make sure your internal defensive copy list is created as a normal mutable ArrayList before wrapping it in Collections.unmodifiableList.",
+          "Class can be extended: Remember to declare public final class Order, public final class Money, and public final class OrderItem.",
+          "Missing getters: Immutable classes still provide public getters; they just omit setters."
+        ],
+        "projectPolish": [
+          "Print an ASCII financial invoice with clean column dividers.",
+          "Format currency with ISO currency codes (e.g. '$200.00 USD').",
+          "Include timestamp in ISO-8601 UTC format on invoice."
+        ],
+        "gitHubReady": {
+          "repoName": "immutable-order-cart-system",
+          "commitMessages": [
+            "feat: implement immutable Money value object with safe arithmetic",
+            "feat: implement immutable OrderItem domain entity",
+            "feat: implement immutable Order with defensive copying and unmodifiable collections",
+            "test: create anti-aliasing and reference leakage defense test suite",
+            "docs: add comprehensive README with the 5 rules of immutability in Java"
+          ],
+          "readmeTemplate": "# Immutable Order & Cart System (Java OOP)\n\n## Overview\nA thread-safe financial order processing engine built in Java demonstrating strict immutability, Value Objects, and defensive copying to eliminate reference leakage and aliasing vulnerabilities.\n\n## The 5 Rules of Immutability Applied\n```\n+-------------------------------------------------------------+\n|                 5 Rules of Immutability                     |\n+-------------------------------------------------------------+\n| 1. Final Class:       Prevents subclass extension/override  |\n| 2. Final Fields:      Prevents post-construction mutation   |\n| 3. No Mutators:       Zero setter methods anywhere          |\n| 4. Defensive Copies:  Constructor copies mutable collections|\n| 5. Safe Accessors:    Returns Collections.unmodifiableList  |\n+-------------------------------------------------------------+\n```\n\n## Architecture Blueprint\n```\n+-----------------------+              +-----------------------+\n|       <<final>>       |              |       <<final>>       |\n|         Order         |<>----------->|       OrderItem       |\n+-----------------------+ (Defensive   +-----------------------+\n| - orderId: String     |  Copy)       | - sku: String         |\n| - customerId: String  |              | - name: String        |\n| - items: List<Item>   |              | - quantity: int       |\n| - timestamp: long     |              | - unitPrice: Money    |\n+-----------------------+              +-----------------------+\n| + computeTotal(): Mny |                         |\n| + getItems(): List    |                         v Has-A\n+-----------------------+              +-----------------------+\n                                       |       <<final>>       |\n                                       |         Money         |\n                                       +-----------------------+\n                                       | - amount: double      |\n                                       | - currency: String    |\n                                       +-----------------------+\n                                       | + add(Money): Money   |\n                                       +-----------------------+\n```\n\n## How to Run\n```bash\njavac Money.java OrderItem.java Order.java OrderApp.java\njava OrderApp\n```\n\n## Sample Invoice Output\n```text\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nTimestamp:   2026-10-03T10:15:00Z\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\nAnti-Aliasing Test: External list modified -> Placed Order is 100% UNCHANGED.\n```\n",
+          "gitCommands": [
+            {
+              "command": "git init",
+              "explanation": "Initializes Git repository in the immutable order project folder."
+            },
+            {
+              "command": "git add *.java README.md",
+              "explanation": "Stages source files and documentation."
+            },
+            {
+              "command": "git commit -m \"feat: complete immutable order cart system with defensive copying\"",
+              "explanation": "Records milestone commit."
+            },
+            {
+              "command": "git branch -M main",
+              "explanation": "Sets branch to main."
+            },
+            {
+              "command": "git remote add origin https://github.com/YOUR_USERNAME/immutable-order-cart-system.git",
+              "explanation": "Connects to remote GitHub repository."
+            },
+            {
+              "command": "git push -u origin main",
+              "explanation": "Publishes to GitHub."
+            }
+          ],
+          "suggestedReadme": "# Immutable Order & Cart System (Java OOP)\n\n## Overview\nA thread-safe financial order processing engine built in Java demonstrating strict immutability, Value Objects, and defensive copying to eliminate reference leakage and aliasing vulnerabilities.\n\n## The 5 Rules of Immutability Applied\n```\n+-------------------------------------------------------------+\n|                 5 Rules of Immutability                     |\n+-------------------------------------------------------------+\n| 1. Final Class:       Prevents subclass extension/override  |\n| 2. Final Fields:      Prevents post-construction mutation   |\n| 3. No Mutators:       Zero setter methods anywhere          |\n| 4. Defensive Copies:  Constructor copies mutable collections|\n| 5. Safe Accessors:    Returns Collections.unmodifiableList  |\n+-------------------------------------------------------------+\n```\n\n## Architecture Blueprint\n```\n+-----------------------+              +-----------------------+\n|       <<final>>       |              |       <<final>>       |\n|         Order         |<>----------->|       OrderItem       |\n+-----------------------+ (Defensive   +-----------------------+\n| - orderId: String     |  Copy)       | - sku: String         |\n| - customerId: String  |              | - name: String        |\n| - items: List<Item>   |              | - quantity: int       |\n| - timestamp: long     |              | - unitPrice: Money    |\n+-----------------------+              +-----------------------+\n| + computeTotal(): Mny |                         |\n| + getItems(): List    |                         v Has-A\n+-----------------------+              +-----------------------+\n                                       |       <<final>>       |\n                                       |         Money         |\n                                       +-----------------------+\n                                       | - amount: double      |\n                                       | - currency: String    |\n                                       +-----------------------+\n                                       | + add(Money): Money   |\n                                       +-----------------------+\n```\n\n## How to Run\n```bash\njavac Money.java OrderItem.java Order.java OrderApp.java\njava OrderApp\n```\n\n## Sample Invoice Output\n```text\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nTimestamp:   2026-10-03T10:15:00Z\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\nAnti-Aliasing Test: External list modified -> Placed Order is 100% UNCHANGED.\n```\n"
+        },
+        "portfolioChecklist": [
+          "Money, OrderItem, and Order classes are all declared final",
+          "All fields are declared private final",
+          "Zero setter methods exist in any of the classes",
+          "Order constructor performs a defensive copy of the item list before wrapping in unmodifiableList",
+          "Order.getItems() returns an unmodifiable list",
+          "Money.add() returns a brand-new Money instance rather than mutating state",
+          "Anti-aliasing test verifies modifying external lists leaves the Order intact",
+          "README.md documents the 5 rules of immutability and architectural diagram"
+        ],
+        "explainYourProject": [
+          "What is an aliasing bug and how does defensive copying prevent it?",
+          "Why is wrapping a list in Collections.unmodifiableList not enough if you don't copy it first?",
+          "Why is the Money class declared final?",
+          "How does Money.add() maintain immutability?",
+          "Why are immutable objects considered naturally thread-safe?",
+          "What exception is thrown if code attempts to call getItems().add()?"
+        ],
+        "projectCompletion": {
+          "headline": "Immutable Order Engine Complete!",
+          "congratulations": "You built a bulletproof, thread-safe financial ordering engine following the 5 rules of immutable class design and defensive copying.",
+          "skillsDemonstrated": [
+            "Immutable Class Design (The 5 Rules)",
+            "Defensive Copying & Anti-Aliasing",
+            "Unmodifiable Collections",
+            "Financial Value Objects (Money)",
+            "Thread-Safety Without Locks",
+            "Production Portfolio Documentation"
+          ],
+          "nextStepAction": "Commit and push your immutable order engine to GitHub!"
+        },
+        "scaffoldingCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\n// 1. Immutable Money Value Object\npublic final class Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        if (amount < 0) throw new IllegalArgumentException(\"Amount cannot be negative.\");\n        this.amount = amount;\n        this.currency = (currency != null) ? currency.toUpperCase() : \"USD\";\n    }\n\n    public Money add(Money other) {\n        if (other == null || !this.currency.equals(other.currency)) {\n            throw new IllegalArgumentException(\"Currency mismatch or null Money object.\");\n        }\n        return new Money(this.amount + other.amount, this.currency);\n    }\n\n    public double getAmount() { return amount; }\n    public String getCurrency() { return currency; }\n\n    @Override\n    public String toString() {\n        return String.format(\"$%.2f %s\", amount, currency);\n    }\n}\n\n// 2. Immutable OrderItem\nfinal class OrderItem {\n    private final String sku;\n    private final String name;\n    private final int quantity;\n    private final Money unitPrice;\n\n    public OrderItem(String sku, String name, int quantity, Money unitPrice) {\n        if (quantity <= 0) throw new IllegalArgumentException(\"Quantity must be positive.\");\n        this.sku = sku;\n        this.name = name;\n        this.quantity = quantity;\n        this.unitPrice = unitPrice;\n    }\n\n    public Money getSubtotal() {\n        return new Money(quantity * unitPrice.getAmount(), unitPrice.getCurrency());\n    }\n\n    public String getSku() { return sku; }\n    public String getName() { return name; }\n    public int getQuantity() { return quantity; }\n    public Money getUnitPrice() { return unitPrice; }\n}\n\n// 3. Immutable Order with Defensive Copying\nfinal class Order {\n    private final String orderId;\n    private final String customerId;\n    private final List<OrderItem> items;\n    private final long timestamp;\n\n    public Order(String orderId, String customerId, List<OrderItem> items) {\n        if (items == null || items.isEmpty()) throw new IllegalArgumentException(\"Order items required.\");\n        this.orderId = orderId;\n        this.customerId = customerId;\n        this.timestamp = System.currentTimeMillis();\n\n        // DEFENSIVE COPY: Copy all items into a new list, then wrap in unmodifiableList\n        List<OrderItem> defensiveCopy = new ArrayList<>();\n        for (OrderItem item : items) {\n            defensiveCopy.add(item); // OrderItem is already immutable\n        }\n        this.items = Collections.unmodifiableList(defensiveCopy);\n    }\n\n    public Money computeTotal() {\n        Money total = new Money(0.0, \"USD\");\n        for (OrderItem item : items) {\n            total = total.add(item.getSubtotal());\n        }\n        return total;\n    }\n\n    public List<OrderItem> getItems() {\n        return items; // Already wrapped in unmodifiableList\n    }\n\n    public String getOrderId() { return orderId; }\n    public String getCustomerId() { return customerId; }\n    public long getTimestamp() { return timestamp; }\n}",
+        "sampleConsoleRun": "=== IMMUTABLE ORDER & DEFENSIVE COPYING SIMULATION ===\nCreating mutable external items list in shopping cart...\n- 1x Mechanical Keyboard @ $120.00 USD\n- 2x Optical Mouse @ $40.00 USD\n\nPlacing settled order ORD-2026-9042...\n\n=======================================================\n                  SETTLED INVOICE                      \n=======================================================\nOrder ID:    ORD-2026-9042\nCustomer ID: CUST-8812\nStatus:      FINALIZED / IMMUTABLE\n-------------------------------------------------------\nITEMS:\n 1. [SKU-KB]  Mechanical Keyboard   x1 @ $120.00 = $120.00 USD\n 2. [SKU-MS]  Optical Mouse         x2 @  $40.00 =  $80.00 USD\n-------------------------------------------------------\nTotal Amount Due: $200.00 USD\n=======================================================\n\n[Security Test 1: External List Tampering]\nCaller attempts to inject fraudulent item into original cart list:\ncartList.add(new OrderItem(\"HACK\", \"Free Laptop\", 1, new Money(0.0, \"USD\")));\n\nChecking Order items count after external list mutation:\nOrder Items Count: 2 (Defensive copy protected the order!)\n\n[Security Test 2: Direct Order Mutation Attempt]\nCaller attempts: order.getItems().clear();\nResult: Exception caught: java.lang.UnsupportedOperationException!\nOrder is completely tamper-proof and thread-safe."
+      }
+    }
+  ]
+}

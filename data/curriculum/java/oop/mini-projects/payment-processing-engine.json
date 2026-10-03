@@ -1,0 +1,827 @@
+{
+  "id": "les-oop-mini-6-payment-engine",
+  "slug": "payment-processing-engine",
+  "sectionSlug": "oop",
+  "moduleSlug": "mini-projects",
+  "title": "Payment Processing Engine (Level 2: Requirement Build)",
+  "summary": "Build an extensible payment gateway evaluating credit card, UPI, and crypto transactions polymorphically at runtime.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 45,
+  "orderIndex": 6,
+  "prerequisites": [],
+  "subtopics": [
+    "Advanced OOP Architecture",
+    "Polymorphism & Abstraction",
+    "Entity Collaboration & Composition",
+    "Production Portfolio Deployment"
+  ],
+  "learningOutcomes": [
+    "Architect a complete, portfolio-grade Payment Processing Engine (Level 2: Requirement Build) application in Java",
+    "Implement enterprise OOP design patterns and invariants",
+    "Publish an industry-standard GitHub repository with clean commit history"
+  ],
+  "isMiniProject": true,
+  "project": {
+    "id": "les-oop-mini-6-payment-engine",
+    "slug": "payment-processing-engine",
+    "title": "Payment Processing Engine (Level 2: Requirement Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "An extensible, decoupled payment processing gateway where transactions execute polymorphically through a unified PaymentMethod interface or abstract base, allowing seamless addition of Credit Card, UPI, and Cryptocurrency payment channels without modifying the core checkout engine.",
+      "problemItSolves": "Naive code uses massive if-else or switch ladders inspecting payment type strings ('IF CARD DO THIS, ELSE IF UPI DO THAT'). Polymorphism allows the checkout processor to treat all payment types identically at compile time while executing specialized validation and fee logic at runtime.",
+      "finishedAppDescription": "A robust payment gateway application handling checkout carts. The gateway accepts any valid PaymentMethod implementation, validates payment credentials (card Luhn checksum, UPI virtual payment address, crypto wallet hash), computes method-specific convenience fees, and generates transaction receipts.",
+      "estimatedTime": "45–55 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "Polymorphism and runtime dynamic method dispatch",
+        "Interface definition and contract enforcement",
+        "Decoupling checkout logic from payment implementations (Open-Closed Principle in action)",
+        "Method overriding and subtype substitutability",
+        "Transaction status models and audit receipt generation"
+      ],
+      "motivatingQuote": "Polymorphism lets you write code that doesn't care about what type it's dealing with, as long as it honors the contract."
+    },
+    "realWorldScenario": {
+      "headline": "E-Commerce Multi-Gateway Checkout Engine",
+      "story": "A global online retailer processes millions of orders daily. Customers check out using Visa credit cards, instant UPI QR transfers, or Bitcoin/Ethereum crypto wallets. The CheckoutService must process the transaction seamlessly without knowing the low-level mechanics of each payment rail.",
+      "context": "Fintech architectures rely on polymorphic interfaces so that introducing a new payment rail (e.g. Apple Pay, PayPal) requires zero edits to existing checkout code."
+    },
+    "requirements": {
+      "functional": [
+        "Define a PaymentMethod interface with methods: boolean validateCredentials(), double calculateFee(double amount), and boolean processPayment(double amount).",
+        "Implement CreditCardPayment supporting 16-digit card number, CVV, expiry date, and charging a 2.5% convenience fee.",
+        "Implement UpiPayment supporting virtual payment address format ('user@bank') and charging a flat $0.50 processing fee.",
+        "Implement CryptoPayment supporting wallet address format (40+ hex characters) and charging network gas fees.",
+        "Implement PaymentGateway class with processOrder(String orderId, double amount, PaymentMethod method) that validates credentials, computes final charged amount, executes payment, and generates a formatted receipt.",
+        "Create a driver demonstrating processing various transactions through the same gateway instance without type casting."
+      ],
+      "technicalConstraints": [
+        "PaymentGateway must NOT contain if-else checks or instanceof checks for specific payment subclasses.",
+        "All method interactions in the gateway must strictly occur through the PaymentMethod interface reference.",
+        "calculateFee() must always return non-negative fees.",
+        "processPayment must return false and abort if validateCredentials() fails."
+      ],
+      "userDecisions": [
+        "Decide whether to add simulated network latency or random failure simulation.",
+        "Choose receipt formatting layout and transaction ID generation style.",
+        "Decide whether to support partial refund operations on PaymentMethod."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Order identification (e.g. 'ORD-9821')",
+        "Order gross amount (double)",
+        "Payment details: card number/CVV, UPI VPA, or Crypto wallet address"
+      ],
+      "outputsRequired": [
+        "Transaction authorization status (APPROVED / REJECTED)",
+        "Fee breakdown and total amount charged",
+        "Cryptographic transaction hash or reference ID"
+      ],
+      "variablesNeeded": [
+        "double amount, fee, totalCharged",
+        "PaymentMethod activePaymentMethod (polymorphic interface reference)",
+        "String transactionId, status, timestamp"
+      ],
+      "conditionalLogic": [
+        "validateCredentials() checks: card length == 16, CVV length == 3, UPI contains '@', Crypto starts with '0x'",
+        "Gateway checkout check: if (!method.validateCredentials()) return TransactionResult.failed()"
+      ],
+      "loopStructures": [
+        "Iteration through an array or queue of checkout orders in Main"
+      ],
+      "recommendedMethods": [
+        "public interface PaymentMethod",
+        "public boolean validateCredentials()",
+        "public double calculateFee(double amount)",
+        "public boolean processPayment(double amount)",
+        "public TransactionReceipt processOrder(String orderId, double amount, PaymentMethod method)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Define PaymentMethod Interface Contract",
+        "objective": "Establish the interface defining required behaviors for all payment providers.",
+        "tasks": [
+          "Declare interface PaymentMethod.",
+          "Define boolean validateCredentials().",
+          "Define double calculateFee(double amount).",
+          "Define boolean processPayment(double amount).",
+          "Define String getPaymentType()."
+        ],
+        "acceptanceCriteria": [
+          "Interface compiles cleanly with standard contract method signatures."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Implement Concrete Payment Rails",
+        "objective": "Build CreditCardPayment, UpiPayment, and CryptoPayment classes implementing PaymentMethod.",
+        "tasks": [
+          "Implement CreditCardPayment with card number, CVV, expiry; 2.5% fee calculation.",
+          "Implement UpiPayment with VPA string validation; $0.50 flat fee calculation.",
+          "Implement CryptoPayment with 0x address validation and dynamic gas fee calculation.",
+          "Ensure all classes validate their respective credential formats."
+        ],
+        "acceptanceCriteria": [
+          "Each class fulfills the PaymentMethod contract with role-specific validation and fees."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Build Decoupled PaymentGateway",
+        "objective": "Implement PaymentGateway that processes orders polymorphically without knowing concrete types.",
+        "tasks": [
+          "Write processOrder(orderId, amount, PaymentMethod method).",
+          "Validate credentials via method.validateCredentials().",
+          "Compute fee = method.calculateFee(amount); total = amount + fee.",
+          "Execute method.processPayment(total) and format a TransactionReceipt."
+        ],
+        "acceptanceCriteria": [
+          "Gateway processes all 3 payment types with zero instanceof or type-casting checks."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Gateway Test Harness & CLI Simulation",
+        "objective": "Simulate e-commerce checkout scenarios in PaymentAppMain.",
+        "tasks": [
+          "Create orders with CreditCard, UPI, and Crypto payment instances.",
+          "Pass each into gateway.processOrder() and print receipts.",
+          "Test invalid credentials (e.g. invalid UPI format) and verify graceful failure."
+        ],
+        "acceptanceCriteria": [
+          "Driver runs all test transactions cleanly, verifying true runtime polymorphism."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why is avoiding 'instanceof' and switch statements so important in payment processors?",
+        "mentorInsight": "If your gateway uses switch(paymentType), every time your company adds a new payment method (like ApplePay), you must open and modify the core PaymentGateway code, violating the Open-Closed Principle and risking regressions in existing payment logic."
+      },
+      {
+        "question": "What happens under the hood during dynamic dispatch?",
+        "mentorInsight": "When gateway calls method.processPayment(amount), the JVM inspects the actual object on the Heap at runtime (e.g. CreditCardPayment vs CryptoPayment) and routes execution to that specific class's vtable implementation."
+      },
+      {
+        "question": "Why use an interface instead of an abstract class here?",
+        "mentorInsight": "An interface specifies a pure capability ('can process payments'). A class implementing PaymentMethod could also extend an AuditEntity or Serializable class. Interfaces allow flexible, multiple-inheritance-like contracts."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Polymorphic Parameter Passing",
+        "level1Conceptual": "Accept the interface type as the parameter in the gateway method.",
+        "level2Implementation": "Method signature: public void processOrder(double amount, PaymentMethod method).",
+        "level3JavaSyntax": "public void processOrder(String orderId, double amount, PaymentMethod method) {\n    if (method.validateCredentials()) {\n        double fee = method.calculateFee(amount);\n        method.processPayment(amount + fee);\n    }\n}"
+      },
+      {
+        "topic": "Credential Validation Rules",
+        "level1Conceptual": "Check format rules before authorizing payment.",
+        "level2Implementation": "For UPI, ensure the string contains '@' and has text on both sides.",
+        "level3JavaSyntax": "public boolean validateCredentials() {\n    return upiId != null && upiId.contains(\"@\") && upiId.length() >= 5;\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Credit Card on $100 order -> Fee: $2.50 (2.5%), Total Charged: $102.50, Status: APPROVED",
+        "UPI on $40 order -> Fee: $0.50 (flat), Total Charged: $40.50, Status: APPROVED",
+        "Crypto on $500 order -> Fee: $5.00 (gas fee), Total Charged: $505.00, Status: APPROVED"
+      ],
+      "boundaryCases": [
+        "Processing payment of minimum allowable amount ($1.00) -> Fee correctly calculated",
+        "Crypto address exactly 42 characters starting with '0x' -> Validation passes"
+      ],
+      "invalidInputCases": [
+        "Credit Card with 12 digits instead of 16 -> validateCredentials() returns false; transaction REJECTED",
+        "UPI ID without '@' symbol (e.g. 'johnbank') -> validateCredentials() returns false; transaction REJECTED",
+        "Passing negative order amount (-$50) -> Rejected before processing"
+      ],
+      "edgeCases": [
+        "Adding a brand-new payment type (e.g. GiftCardPayment) without touching a single line of PaymentGateway code"
+      ]
+    },
+    "debuggingGuide": [
+      "Calling concrete methods not in the interface: When programming to an interface, you can only invoke methods declared on PaymentMethod.",
+      "NullPointerException on payment method: Always verify method != null at the start of processOrder.",
+      "Fee calculation returning 0: Ensure percentage calculations divide by 100.0 (double) rather than integer 100.",
+      "instanceof code smells: If you find yourself writing if (method instanceof CreditCardPayment), stop! Move that specialized logic inside the CreditCardPayment class itself."
+    ],
+    "projectPolish": [
+      "Mask sensitive card details in receipt output (e.g. '************4412').",
+      "Generate unique timestamped transaction reference codes for approved receipts.",
+      "Display an ASCII checkout receipt with clear subtotal, fee, and total lines."
+    ],
+    "gitHubReady": {
+      "repoName": "payment-processing-engine",
+      "commitMessages": [
+        "feat: define PaymentMethod polymorphic interface contract",
+        "feat: implement CreditCardPayment with fee calculations and card masking",
+        "feat: implement UpiPayment and CryptoPayment concrete payment rails",
+        "feat: create decoupled PaymentGateway processor with zero instanceof checks",
+        "test: add PaymentAppMain checkout driver testing valid and invalid payments",
+        "docs: add comprehensive README with sequence diagram and polymorphism overview"
+      ],
+      "readmeTemplate": "# Payment Processing Engine (Java OOP)\n\n## Overview\nA decoupled, enterprise-grade payment gateway built in Java demonstrating runtime polymorphism, interface-driven design, and the Open-Closed Principle (OCP).\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |       PaymentMethod             |\n                                +---------------------------------+\n                                | + validateCredentials(): boolean|\n                                | + calculateFee(amt: double): dbl|\n                                | + processPayment(amt: dbl): bool|\n                                | + getPaymentType(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|   CreditCardPayment   |              |      UpiPayment       |              |     CryptoPayment     |\n+-----------------------+              +-----------------------+              +-----------------------+\n| - cardNumber: String  |              | - upiId: String       |              | - walletAddress: String|\n| - cvv: String         |              +-----------------------+              | - network: String     |\n+-----------------------+              | + [implements methods]|              +-----------------------+\n| + [implements methods]|              +-----------------------+              | + [implements methods]|\n+-----------------------+                                                     +-----------------------+\n\n                                +---------------------------------+\n                                |         PaymentGateway          |\n                                +---------------------------------+\n                                | + processOrder(orderId: String, |\n                                |     amount: double,             |\n                                |     method: PaymentMethod)      |\n                                +---------------------------------+\n```\n\n## Why Polymorphism Matters Here\n`PaymentGateway` interacts exclusively with the `PaymentMethod` interface. It contains **zero** `instanceof` statements and **zero** `if-else` type switches. To introduce a new payment method (e.g. `ApplePayPayment`), developers write one new class without modifying existing gateway code.\n\n## How to Run\n```bash\njavac PaymentMethod.java CreditCardPayment.java UpiPayment.java CryptoPayment.java PaymentGateway.java PaymentApp.java\njava PaymentApp\n```\n\n## Sample Receipt Output\n```text\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nTransaction ID:   TXN-2026-99014\nOrder ID:         ORD-8402\nPayment Rail:     CREDIT_CARD (Ending in *4412)\nBase Amount:      $120.00\nProcessing Fee:   $3.00 (2.5%)\nTotal Charged:    $123.00\nStatus:           AUTHORIZED / PAID\n=======================================================\n```\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git version control for the payment engine."
+        },
+        {
+          "command": "git add *.java README.md",
+          "explanation": "Stages source files and documentation."
+        },
+        {
+          "command": "git commit -m \"feat: complete polymorphic payment engine with zero-instanceof gateway\"",
+          "explanation": "Creates milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets branch to main."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/payment-processing-engine.git",
+          "explanation": "Connects to GitHub remote."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes to GitHub."
+        }
+      ],
+      "suggestedReadme": "# Payment Processing Engine (Java OOP)\n\n## Overview\nA decoupled, enterprise-grade payment gateway built in Java demonstrating runtime polymorphism, interface-driven design, and the Open-Closed Principle (OCP).\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |       PaymentMethod             |\n                                +---------------------------------+\n                                | + validateCredentials(): boolean|\n                                | + calculateFee(amt: double): dbl|\n                                | + processPayment(amt: dbl): bool|\n                                | + getPaymentType(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|   CreditCardPayment   |              |      UpiPayment       |              |     CryptoPayment     |\n+-----------------------+              +-----------------------+              +-----------------------+\n| - cardNumber: String  |              | - upiId: String       |              | - walletAddress: String|\n| - cvv: String         |              +-----------------------+              | - network: String     |\n+-----------------------+              | + [implements methods]|              +-----------------------+\n| + [implements methods]|              +-----------------------+              | + [implements methods]|\n+-----------------------+                                                     +-----------------------+\n\n                                +---------------------------------+\n                                |         PaymentGateway          |\n                                +---------------------------------+\n                                | + processOrder(orderId: String, |\n                                |     amount: double,             |\n                                |     method: PaymentMethod)      |\n                                +---------------------------------+\n```\n\n## Why Polymorphism Matters Here\n`PaymentGateway` interacts exclusively with the `PaymentMethod` interface. It contains **zero** `instanceof` statements and **zero** `if-else` type switches. To introduce a new payment method (e.g. `ApplePayPayment`), developers write one new class without modifying existing gateway code.\n\n## How to Run\n```bash\njavac PaymentMethod.java CreditCardPayment.java UpiPayment.java CryptoPayment.java PaymentGateway.java PaymentApp.java\njava PaymentApp\n```\n\n## Sample Receipt Output\n```text\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nTransaction ID:   TXN-2026-99014\nOrder ID:         ORD-8402\nPayment Rail:     CREDIT_CARD (Ending in *4412)\nBase Amount:      $120.00\nProcessing Fee:   $3.00 (2.5%)\nTotal Charged:    $123.00\nStatus:           AUTHORIZED / PAID\n=======================================================\n```\n"
+    },
+    "portfolioChecklist": [
+      "PaymentMethod is declared as a clean public interface",
+      "CreditCardPayment, UpiPayment, and CryptoPayment implement PaymentMethod",
+      "PaymentGateway contains no instanceof checks or type-based switch statements",
+      "CreditCardPayment masks card numbers (shows only last 4 digits)",
+      "UpiPayment validates the presence of '@' in the address",
+      "CryptoPayment validates '0x' hex wallet prefix",
+      "PaymentGateway safely rejects invalid credentials and negative amounts",
+      "README.md documents the Open-Closed Principle and interface architecture"
+    ],
+    "explainYourProject": [
+      "How does this project demonstrate runtime polymorphism?",
+      "What code smell does avoiding 'instanceof' prevent?",
+      "How would you add Apple Pay to this system without changing PaymentGateway?",
+      "What is dynamic dispatch and how does the JVM implement it?",
+      "Why is fee calculation delegated to each payment method rather than computed in the gateway?",
+      "How does credential masking in receipts protect user privacy?"
+    ],
+    "projectCompletion": {
+      "headline": "Payment Gateway Engine Complete!",
+      "congratulations": "You built a polymorphic, extensible payment gateway adhering to the Open-Closed Principle.",
+      "skillsDemonstrated": [
+        "Polymorphic Interface Design",
+        "Runtime Dynamic Method Dispatch",
+        "Decoupled Service Architecture",
+        "The Open-Closed Principle",
+        "Defensive Credential Validation",
+        "Production GitHub Documentation"
+      ],
+      "nextStepAction": "Commit and push your payment engine to GitHub!"
+    },
+    "scaffoldingCode": "public interface PaymentMethod {\n    // Contract methods for all payment rails\n    boolean validateCredentials();\n    double calculateFee(double amount);\n    boolean processPayment(double amount);\n    String getPaymentType();\n    String getMaskedIdentifier();\n}\n\n// 1. Credit Card Implementation\nclass CreditCardPayment implements PaymentMethod {\n    private String cardNumber;\n    private String cvv;\n    private String expiryDate;\n\n    public CreditCardPayment(String cardNumber, String cvv, String expiryDate) {\n        this.cardNumber = (cardNumber != null) ? cardNumber.replaceAll(\"\\\\s+\", \"\") : \"\";\n        this.cvv = cvv;\n        this.expiryDate = expiryDate;\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return cardNumber.length() == 16 && cvv != null && cvv.length() == 3;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return amount * 0.025; // 2.5% fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Routing $%.2f through Card Payment Network... Approved.%n\", amount);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"CREDIT_CARD\"; }\n\n    @Override\n    public String getMaskedIdentifier() {\n        if (cardNumber.length() >= 4) {\n            return \"************\" + cardNumber.substring(cardNumber.length() - 4);\n        }\n        return \"CARD-UNKNOWN\";\n    }\n}\n\n// 2. UPI Implementation\nclass UpiPayment implements PaymentMethod {\n    private String upiId;\n\n    public UpiPayment(String upiId) {\n        this.upiId = upiId;\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return upiId != null && upiId.contains(\"@\") && upiId.length() >= 5;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return 0.50; // $0.50 flat fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Routing $%.2f via UPI Instant Transfer (%s)... Approved.%n\", amount, upiId);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"UPI\"; }\n\n    @Override\n    public String getMaskedIdentifier() { return upiId; }\n}\n\n// 3. Crypto Implementation\nclass CryptoPayment implements PaymentMethod {\n    private String walletAddress;\n    private String network;\n\n    public CryptoPayment(String walletAddress, String network) {\n        this.walletAddress = walletAddress;\n        this.network = (network != null) ? network : \"Ethereum\";\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return walletAddress != null && walletAddress.startsWith(\"0x\") && walletAddress.length() >= 10;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return 4.50; // Network gas fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Broadcasting $%.2f transaction to %s blockchain... Confirmed.%n\", amount, network);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"CRYPTO_\" + network.toUpperCase(); }\n\n    @Override\n    public String getMaskedIdentifier() {\n        if (walletAddress.length() > 8) {\n            return walletAddress.substring(0, 6) + \"...\" + walletAddress.substring(walletAddress.length() - 4);\n        }\n        return walletAddress;\n    }\n}\n\n// 4. Decoupled Payment Gateway (Zero instanceof checks!)\nclass PaymentGateway {\n    public boolean processOrder(String orderId, double amount, PaymentMethod method) {\n        System.out.println(\"-------------------------------------------------------\");\n        System.out.printf(\"Processing Order %s | Amount: $%.2f%n\", orderId, amount);\n\n        if (method == null) {\n            System.err.println(\"Transaction Failed: No payment method selected.\");\n            return false;\n        }\n\n        if (!method.validateCredentials()) {\n            System.err.printf(\"Transaction Failed: Invalid credentials for %s.%n\", method.getPaymentType());\n            return false;\n        }\n\n        double fee = method.calculateFee(amount);\n        double total = amount + fee;\n\n        boolean success = method.processPayment(total);\n        if (success) {\n            printReceipt(orderId, method, amount, fee, total);\n            return true;\n        } else {\n            System.err.println(\"Transaction Failed: Payment network rejected charge.\");\n            return false;\n        }\n    }\n\n    private void printReceipt(String orderId, PaymentMethod method, double amt, double fee, double total) {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"                  PAYMENT RECEIPT                      \");\n        System.out.println(\"=======================================================\");\n        System.out.printf(\"Order ID:         %s%n\", orderId);\n        System.out.printf(\"Payment Method:   %s%n\", method.getPaymentType());\n        System.out.printf(\"Account Ref:      %s%n\", method.getMaskedIdentifier());\n        System.out.printf(\"Subtotal:         $%.2f%n\", amt);\n        System.out.printf(\"Processing Fee:   $%.2f%n\", fee);\n        System.out.printf(\"Total Charged:    $%.2f%n\", total);\n        System.out.println(\"Status:           AUTHORIZED / PAID\");\n        System.out.println(\"=======================================================\\n\");\n    }\n}",
+    "sampleConsoleRun": "=== PAYMENT PROCESSING GATEWAY SIMULATION ===\nInitializing PaymentGateway...\n\n[Test 1] Processing Credit Card Payment...\nRouting $102.50 through Card Payment Network... Approved.\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nOrder ID:         ORD-101\nPayment Method:   CREDIT_CARD\nAccount Ref:      ************4412\nSubtotal:         $100.00\nProcessing Fee:   $2.50\nTotal Charged:    $102.50\nStatus:           AUTHORIZED / PAID\n=======================================================\n\n[Test 2] Processing UPI Instant QR Payment...\nRouting $45.50 via UPI Instant Transfer (alex@okaxis)... Approved.\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nOrder ID:         ORD-102\nPayment Method:   UPI\nAccount Ref:      alex@okaxis\nSubtotal:         $45.00\nProcessing Fee:   $0.50\nTotal Charged:    $45.50\nStatus:           AUTHORIZED / PAID\n=======================================================\n\n[Test 3] Processing Invalid Credentials (Rejected)...\nTransaction Failed: Invalid credentials for CREDIT_CARD.\n\nStatus: All polymorphic transactions evaluated with zero instanceof checks."
+  },
+  "miniProject": {
+    "id": "les-oop-mini-6-payment-engine",
+    "slug": "payment-processing-engine",
+    "title": "Payment Processing Engine (Level 2: Requirement Build)",
+    "projectBrief": {
+      "whatAreWeBuilding": "An extensible, decoupled payment processing gateway where transactions execute polymorphically through a unified PaymentMethod interface or abstract base, allowing seamless addition of Credit Card, UPI, and Cryptocurrency payment channels without modifying the core checkout engine.",
+      "problemItSolves": "Naive code uses massive if-else or switch ladders inspecting payment type strings ('IF CARD DO THIS, ELSE IF UPI DO THAT'). Polymorphism allows the checkout processor to treat all payment types identically at compile time while executing specialized validation and fee logic at runtime.",
+      "finishedAppDescription": "A robust payment gateway application handling checkout carts. The gateway accepts any valid PaymentMethod implementation, validates payment credentials (card Luhn checksum, UPI virtual payment address, crypto wallet hash), computes method-specific convenience fees, and generates transaction receipts.",
+      "estimatedTime": "45–55 minutes",
+      "difficulty": "intermediate",
+      "javaFundamentals": [
+        "Polymorphism and runtime dynamic method dispatch",
+        "Interface definition and contract enforcement",
+        "Decoupling checkout logic from payment implementations (Open-Closed Principle in action)",
+        "Method overriding and subtype substitutability",
+        "Transaction status models and audit receipt generation"
+      ],
+      "motivatingQuote": "Polymorphism lets you write code that doesn't care about what type it's dealing with, as long as it honors the contract."
+    },
+    "realWorldScenario": {
+      "headline": "E-Commerce Multi-Gateway Checkout Engine",
+      "story": "A global online retailer processes millions of orders daily. Customers check out using Visa credit cards, instant UPI QR transfers, or Bitcoin/Ethereum crypto wallets. The CheckoutService must process the transaction seamlessly without knowing the low-level mechanics of each payment rail.",
+      "context": "Fintech architectures rely on polymorphic interfaces so that introducing a new payment rail (e.g. Apple Pay, PayPal) requires zero edits to existing checkout code."
+    },
+    "requirements": {
+      "functional": [
+        "Define a PaymentMethod interface with methods: boolean validateCredentials(), double calculateFee(double amount), and boolean processPayment(double amount).",
+        "Implement CreditCardPayment supporting 16-digit card number, CVV, expiry date, and charging a 2.5% convenience fee.",
+        "Implement UpiPayment supporting virtual payment address format ('user@bank') and charging a flat $0.50 processing fee.",
+        "Implement CryptoPayment supporting wallet address format (40+ hex characters) and charging network gas fees.",
+        "Implement PaymentGateway class with processOrder(String orderId, double amount, PaymentMethod method) that validates credentials, computes final charged amount, executes payment, and generates a formatted receipt.",
+        "Create a driver demonstrating processing various transactions through the same gateway instance without type casting."
+      ],
+      "technicalConstraints": [
+        "PaymentGateway must NOT contain if-else checks or instanceof checks for specific payment subclasses.",
+        "All method interactions in the gateway must strictly occur through the PaymentMethod interface reference.",
+        "calculateFee() must always return non-negative fees.",
+        "processPayment must return false and abort if validateCredentials() fails."
+      ],
+      "userDecisions": [
+        "Decide whether to add simulated network latency or random failure simulation.",
+        "Choose receipt formatting layout and transaction ID generation style.",
+        "Decide whether to support partial refund operations on PaymentMethod."
+      ]
+    },
+    "beforeYouCode": {
+      "inputsRequired": [
+        "Order identification (e.g. 'ORD-9821')",
+        "Order gross amount (double)",
+        "Payment details: card number/CVV, UPI VPA, or Crypto wallet address"
+      ],
+      "outputsRequired": [
+        "Transaction authorization status (APPROVED / REJECTED)",
+        "Fee breakdown and total amount charged",
+        "Cryptographic transaction hash or reference ID"
+      ],
+      "variablesNeeded": [
+        "double amount, fee, totalCharged",
+        "PaymentMethod activePaymentMethod (polymorphic interface reference)",
+        "String transactionId, status, timestamp"
+      ],
+      "conditionalLogic": [
+        "validateCredentials() checks: card length == 16, CVV length == 3, UPI contains '@', Crypto starts with '0x'",
+        "Gateway checkout check: if (!method.validateCredentials()) return TransactionResult.failed()"
+      ],
+      "loopStructures": [
+        "Iteration through an array or queue of checkout orders in Main"
+      ],
+      "recommendedMethods": [
+        "public interface PaymentMethod",
+        "public boolean validateCredentials()",
+        "public double calculateFee(double amount)",
+        "public boolean processPayment(double amount)",
+        "public TransactionReceipt processOrder(String orderId, double amount, PaymentMethod method)"
+      ]
+    },
+    "buildRoadmap": [
+      {
+        "milestoneNumber": 1,
+        "title": "Define PaymentMethod Interface Contract",
+        "objective": "Establish the interface defining required behaviors for all payment providers.",
+        "tasks": [
+          "Declare interface PaymentMethod.",
+          "Define boolean validateCredentials().",
+          "Define double calculateFee(double amount).",
+          "Define boolean processPayment(double amount).",
+          "Define String getPaymentType()."
+        ],
+        "acceptanceCriteria": [
+          "Interface compiles cleanly with standard contract method signatures."
+        ]
+      },
+      {
+        "milestoneNumber": 2,
+        "title": "Implement Concrete Payment Rails",
+        "objective": "Build CreditCardPayment, UpiPayment, and CryptoPayment classes implementing PaymentMethod.",
+        "tasks": [
+          "Implement CreditCardPayment with card number, CVV, expiry; 2.5% fee calculation.",
+          "Implement UpiPayment with VPA string validation; $0.50 flat fee calculation.",
+          "Implement CryptoPayment with 0x address validation and dynamic gas fee calculation.",
+          "Ensure all classes validate their respective credential formats."
+        ],
+        "acceptanceCriteria": [
+          "Each class fulfills the PaymentMethod contract with role-specific validation and fees."
+        ]
+      },
+      {
+        "milestoneNumber": 3,
+        "title": "Build Decoupled PaymentGateway",
+        "objective": "Implement PaymentGateway that processes orders polymorphically without knowing concrete types.",
+        "tasks": [
+          "Write processOrder(orderId, amount, PaymentMethod method).",
+          "Validate credentials via method.validateCredentials().",
+          "Compute fee = method.calculateFee(amount); total = amount + fee.",
+          "Execute method.processPayment(total) and format a TransactionReceipt."
+        ],
+        "acceptanceCriteria": [
+          "Gateway processes all 3 payment types with zero instanceof or type-casting checks."
+        ]
+      },
+      {
+        "milestoneNumber": 4,
+        "title": "Gateway Test Harness & CLI Simulation",
+        "objective": "Simulate e-commerce checkout scenarios in PaymentAppMain.",
+        "tasks": [
+          "Create orders with CreditCard, UPI, and Crypto payment instances.",
+          "Pass each into gateway.processOrder() and print receipts.",
+          "Test invalid credentials (e.g. invalid UPI format) and verify graceful failure."
+        ],
+        "acceptanceCriteria": [
+          "Driver runs all test transactions cleanly, verifying true runtime polymorphism."
+        ]
+      }
+    ],
+    "thinkBeforeYouCode": [
+      {
+        "question": "Why is avoiding 'instanceof' and switch statements so important in payment processors?",
+        "mentorInsight": "If your gateway uses switch(paymentType), every time your company adds a new payment method (like ApplePay), you must open and modify the core PaymentGateway code, violating the Open-Closed Principle and risking regressions in existing payment logic."
+      },
+      {
+        "question": "What happens under the hood during dynamic dispatch?",
+        "mentorInsight": "When gateway calls method.processPayment(amount), the JVM inspects the actual object on the Heap at runtime (e.g. CreditCardPayment vs CryptoPayment) and routes execution to that specific class's vtable implementation."
+      },
+      {
+        "question": "Why use an interface instead of an abstract class here?",
+        "mentorInsight": "An interface specifies a pure capability ('can process payments'). A class implementing PaymentMethod could also extend an AuditEntity or Serializable class. Interfaces allow flexible, multiple-inheritance-like contracts."
+      }
+    ],
+    "hintSystem": [
+      {
+        "topic": "Polymorphic Parameter Passing",
+        "level1Conceptual": "Accept the interface type as the parameter in the gateway method.",
+        "level2Implementation": "Method signature: public void processOrder(double amount, PaymentMethod method).",
+        "level3JavaSyntax": "public void processOrder(String orderId, double amount, PaymentMethod method) {\n    if (method.validateCredentials()) {\n        double fee = method.calculateFee(amount);\n        method.processPayment(amount + fee);\n    }\n}"
+      },
+      {
+        "topic": "Credential Validation Rules",
+        "level1Conceptual": "Check format rules before authorizing payment.",
+        "level2Implementation": "For UPI, ensure the string contains '@' and has text on both sides.",
+        "level3JavaSyntax": "public boolean validateCredentials() {\n    return upiId != null && upiId.contains(\"@\") && upiId.length() >= 5;\n}"
+      }
+    ],
+    "testYourProject": {
+      "normalCases": [
+        "Credit Card on $100 order -> Fee: $2.50 (2.5%), Total Charged: $102.50, Status: APPROVED",
+        "UPI on $40 order -> Fee: $0.50 (flat), Total Charged: $40.50, Status: APPROVED",
+        "Crypto on $500 order -> Fee: $5.00 (gas fee), Total Charged: $505.00, Status: APPROVED"
+      ],
+      "boundaryCases": [
+        "Processing payment of minimum allowable amount ($1.00) -> Fee correctly calculated",
+        "Crypto address exactly 42 characters starting with '0x' -> Validation passes"
+      ],
+      "invalidInputCases": [
+        "Credit Card with 12 digits instead of 16 -> validateCredentials() returns false; transaction REJECTED",
+        "UPI ID without '@' symbol (e.g. 'johnbank') -> validateCredentials() returns false; transaction REJECTED",
+        "Passing negative order amount (-$50) -> Rejected before processing"
+      ],
+      "edgeCases": [
+        "Adding a brand-new payment type (e.g. GiftCardPayment) without touching a single line of PaymentGateway code"
+      ]
+    },
+    "debuggingGuide": [
+      "Calling concrete methods not in the interface: When programming to an interface, you can only invoke methods declared on PaymentMethod.",
+      "NullPointerException on payment method: Always verify method != null at the start of processOrder.",
+      "Fee calculation returning 0: Ensure percentage calculations divide by 100.0 (double) rather than integer 100.",
+      "instanceof code smells: If you find yourself writing if (method instanceof CreditCardPayment), stop! Move that specialized logic inside the CreditCardPayment class itself."
+    ],
+    "projectPolish": [
+      "Mask sensitive card details in receipt output (e.g. '************4412').",
+      "Generate unique timestamped transaction reference codes for approved receipts.",
+      "Display an ASCII checkout receipt with clear subtotal, fee, and total lines."
+    ],
+    "gitHubReady": {
+      "repoName": "payment-processing-engine",
+      "commitMessages": [
+        "feat: define PaymentMethod polymorphic interface contract",
+        "feat: implement CreditCardPayment with fee calculations and card masking",
+        "feat: implement UpiPayment and CryptoPayment concrete payment rails",
+        "feat: create decoupled PaymentGateway processor with zero instanceof checks",
+        "test: add PaymentAppMain checkout driver testing valid and invalid payments",
+        "docs: add comprehensive README with sequence diagram and polymorphism overview"
+      ],
+      "readmeTemplate": "# Payment Processing Engine (Java OOP)\n\n## Overview\nA decoupled, enterprise-grade payment gateway built in Java demonstrating runtime polymorphism, interface-driven design, and the Open-Closed Principle (OCP).\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |       PaymentMethod             |\n                                +---------------------------------+\n                                | + validateCredentials(): boolean|\n                                | + calculateFee(amt: double): dbl|\n                                | + processPayment(amt: dbl): bool|\n                                | + getPaymentType(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|   CreditCardPayment   |              |      UpiPayment       |              |     CryptoPayment     |\n+-----------------------+              +-----------------------+              +-----------------------+\n| - cardNumber: String  |              | - upiId: String       |              | - walletAddress: String|\n| - cvv: String         |              +-----------------------+              | - network: String     |\n+-----------------------+              | + [implements methods]|              +-----------------------+\n| + [implements methods]|              +-----------------------+              | + [implements methods]|\n+-----------------------+                                                     +-----------------------+\n\n                                +---------------------------------+\n                                |         PaymentGateway          |\n                                +---------------------------------+\n                                | + processOrder(orderId: String, |\n                                |     amount: double,             |\n                                |     method: PaymentMethod)      |\n                                +---------------------------------+\n```\n\n## Why Polymorphism Matters Here\n`PaymentGateway` interacts exclusively with the `PaymentMethod` interface. It contains **zero** `instanceof` statements and **zero** `if-else` type switches. To introduce a new payment method (e.g. `ApplePayPayment`), developers write one new class without modifying existing gateway code.\n\n## How to Run\n```bash\njavac PaymentMethod.java CreditCardPayment.java UpiPayment.java CryptoPayment.java PaymentGateway.java PaymentApp.java\njava PaymentApp\n```\n\n## Sample Receipt Output\n```text\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nTransaction ID:   TXN-2026-99014\nOrder ID:         ORD-8402\nPayment Rail:     CREDIT_CARD (Ending in *4412)\nBase Amount:      $120.00\nProcessing Fee:   $3.00 (2.5%)\nTotal Charged:    $123.00\nStatus:           AUTHORIZED / PAID\n=======================================================\n```\n",
+      "gitCommands": [
+        {
+          "command": "git init",
+          "explanation": "Initializes Git version control for the payment engine."
+        },
+        {
+          "command": "git add *.java README.md",
+          "explanation": "Stages source files and documentation."
+        },
+        {
+          "command": "git commit -m \"feat: complete polymorphic payment engine with zero-instanceof gateway\"",
+          "explanation": "Creates milestone commit."
+        },
+        {
+          "command": "git branch -M main",
+          "explanation": "Sets branch to main."
+        },
+        {
+          "command": "git remote add origin https://github.com/YOUR_USERNAME/payment-processing-engine.git",
+          "explanation": "Connects to GitHub remote."
+        },
+        {
+          "command": "git push -u origin main",
+          "explanation": "Publishes to GitHub."
+        }
+      ],
+      "suggestedReadme": "# Payment Processing Engine (Java OOP)\n\n## Overview\nA decoupled, enterprise-grade payment gateway built in Java demonstrating runtime polymorphism, interface-driven design, and the Open-Closed Principle (OCP).\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |       PaymentMethod             |\n                                +---------------------------------+\n                                | + validateCredentials(): boolean|\n                                | + calculateFee(amt: double): dbl|\n                                | + processPayment(amt: dbl): bool|\n                                | + getPaymentType(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|   CreditCardPayment   |              |      UpiPayment       |              |     CryptoPayment     |\n+-----------------------+              +-----------------------+              +-----------------------+\n| - cardNumber: String  |              | - upiId: String       |              | - walletAddress: String|\n| - cvv: String         |              +-----------------------+              | - network: String     |\n+-----------------------+              | + [implements methods]|              +-----------------------+\n| + [implements methods]|              +-----------------------+              | + [implements methods]|\n+-----------------------+                                                     +-----------------------+\n\n                                +---------------------------------+\n                                |         PaymentGateway          |\n                                +---------------------------------+\n                                | + processOrder(orderId: String, |\n                                |     amount: double,             |\n                                |     method: PaymentMethod)      |\n                                +---------------------------------+\n```\n\n## Why Polymorphism Matters Here\n`PaymentGateway` interacts exclusively with the `PaymentMethod` interface. It contains **zero** `instanceof` statements and **zero** `if-else` type switches. To introduce a new payment method (e.g. `ApplePayPayment`), developers write one new class without modifying existing gateway code.\n\n## How to Run\n```bash\njavac PaymentMethod.java CreditCardPayment.java UpiPayment.java CryptoPayment.java PaymentGateway.java PaymentApp.java\njava PaymentApp\n```\n\n## Sample Receipt Output\n```text\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nTransaction ID:   TXN-2026-99014\nOrder ID:         ORD-8402\nPayment Rail:     CREDIT_CARD (Ending in *4412)\nBase Amount:      $120.00\nProcessing Fee:   $3.00 (2.5%)\nTotal Charged:    $123.00\nStatus:           AUTHORIZED / PAID\n=======================================================\n```\n"
+    },
+    "portfolioChecklist": [
+      "PaymentMethod is declared as a clean public interface",
+      "CreditCardPayment, UpiPayment, and CryptoPayment implement PaymentMethod",
+      "PaymentGateway contains no instanceof checks or type-based switch statements",
+      "CreditCardPayment masks card numbers (shows only last 4 digits)",
+      "UpiPayment validates the presence of '@' in the address",
+      "CryptoPayment validates '0x' hex wallet prefix",
+      "PaymentGateway safely rejects invalid credentials and negative amounts",
+      "README.md documents the Open-Closed Principle and interface architecture"
+    ],
+    "explainYourProject": [
+      "How does this project demonstrate runtime polymorphism?",
+      "What code smell does avoiding 'instanceof' prevent?",
+      "How would you add Apple Pay to this system without changing PaymentGateway?",
+      "What is dynamic dispatch and how does the JVM implement it?",
+      "Why is fee calculation delegated to each payment method rather than computed in the gateway?",
+      "How does credential masking in receipts protect user privacy?"
+    ],
+    "projectCompletion": {
+      "headline": "Payment Gateway Engine Complete!",
+      "congratulations": "You built a polymorphic, extensible payment gateway adhering to the Open-Closed Principle.",
+      "skillsDemonstrated": [
+        "Polymorphic Interface Design",
+        "Runtime Dynamic Method Dispatch",
+        "Decoupled Service Architecture",
+        "The Open-Closed Principle",
+        "Defensive Credential Validation",
+        "Production GitHub Documentation"
+      ],
+      "nextStepAction": "Commit and push your payment engine to GitHub!"
+    },
+    "scaffoldingCode": "public interface PaymentMethod {\n    // Contract methods for all payment rails\n    boolean validateCredentials();\n    double calculateFee(double amount);\n    boolean processPayment(double amount);\n    String getPaymentType();\n    String getMaskedIdentifier();\n}\n\n// 1. Credit Card Implementation\nclass CreditCardPayment implements PaymentMethod {\n    private String cardNumber;\n    private String cvv;\n    private String expiryDate;\n\n    public CreditCardPayment(String cardNumber, String cvv, String expiryDate) {\n        this.cardNumber = (cardNumber != null) ? cardNumber.replaceAll(\"\\\\s+\", \"\") : \"\";\n        this.cvv = cvv;\n        this.expiryDate = expiryDate;\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return cardNumber.length() == 16 && cvv != null && cvv.length() == 3;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return amount * 0.025; // 2.5% fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Routing $%.2f through Card Payment Network... Approved.%n\", amount);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"CREDIT_CARD\"; }\n\n    @Override\n    public String getMaskedIdentifier() {\n        if (cardNumber.length() >= 4) {\n            return \"************\" + cardNumber.substring(cardNumber.length() - 4);\n        }\n        return \"CARD-UNKNOWN\";\n    }\n}\n\n// 2. UPI Implementation\nclass UpiPayment implements PaymentMethod {\n    private String upiId;\n\n    public UpiPayment(String upiId) {\n        this.upiId = upiId;\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return upiId != null && upiId.contains(\"@\") && upiId.length() >= 5;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return 0.50; // $0.50 flat fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Routing $%.2f via UPI Instant Transfer (%s)... Approved.%n\", amount, upiId);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"UPI\"; }\n\n    @Override\n    public String getMaskedIdentifier() { return upiId; }\n}\n\n// 3. Crypto Implementation\nclass CryptoPayment implements PaymentMethod {\n    private String walletAddress;\n    private String network;\n\n    public CryptoPayment(String walletAddress, String network) {\n        this.walletAddress = walletAddress;\n        this.network = (network != null) ? network : \"Ethereum\";\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return walletAddress != null && walletAddress.startsWith(\"0x\") && walletAddress.length() >= 10;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return 4.50; // Network gas fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Broadcasting $%.2f transaction to %s blockchain... Confirmed.%n\", amount, network);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"CRYPTO_\" + network.toUpperCase(); }\n\n    @Override\n    public String getMaskedIdentifier() {\n        if (walletAddress.length() > 8) {\n            return walletAddress.substring(0, 6) + \"...\" + walletAddress.substring(walletAddress.length() - 4);\n        }\n        return walletAddress;\n    }\n}\n\n// 4. Decoupled Payment Gateway (Zero instanceof checks!)\nclass PaymentGateway {\n    public boolean processOrder(String orderId, double amount, PaymentMethod method) {\n        System.out.println(\"-------------------------------------------------------\");\n        System.out.printf(\"Processing Order %s | Amount: $%.2f%n\", orderId, amount);\n\n        if (method == null) {\n            System.err.println(\"Transaction Failed: No payment method selected.\");\n            return false;\n        }\n\n        if (!method.validateCredentials()) {\n            System.err.printf(\"Transaction Failed: Invalid credentials for %s.%n\", method.getPaymentType());\n            return false;\n        }\n\n        double fee = method.calculateFee(amount);\n        double total = amount + fee;\n\n        boolean success = method.processPayment(total);\n        if (success) {\n            printReceipt(orderId, method, amount, fee, total);\n            return true;\n        } else {\n            System.err.println(\"Transaction Failed: Payment network rejected charge.\");\n            return false;\n        }\n    }\n\n    private void printReceipt(String orderId, PaymentMethod method, double amt, double fee, double total) {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"                  PAYMENT RECEIPT                      \");\n        System.out.println(\"=======================================================\");\n        System.out.printf(\"Order ID:         %s%n\", orderId);\n        System.out.printf(\"Payment Method:   %s%n\", method.getPaymentType());\n        System.out.printf(\"Account Ref:      %s%n\", method.getMaskedIdentifier());\n        System.out.printf(\"Subtotal:         $%.2f%n\", amt);\n        System.out.printf(\"Processing Fee:   $%.2f%n\", fee);\n        System.out.printf(\"Total Charged:    $%.2f%n\", total);\n        System.out.println(\"Status:           AUTHORIZED / PAID\");\n        System.out.println(\"=======================================================\\n\");\n    }\n}",
+    "sampleConsoleRun": "=== PAYMENT PROCESSING GATEWAY SIMULATION ===\nInitializing PaymentGateway...\n\n[Test 1] Processing Credit Card Payment...\nRouting $102.50 through Card Payment Network... Approved.\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nOrder ID:         ORD-101\nPayment Method:   CREDIT_CARD\nAccount Ref:      ************4412\nSubtotal:         $100.00\nProcessing Fee:   $2.50\nTotal Charged:    $102.50\nStatus:           AUTHORIZED / PAID\n=======================================================\n\n[Test 2] Processing UPI Instant QR Payment...\nRouting $45.50 via UPI Instant Transfer (alex@okaxis)... Approved.\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nOrder ID:         ORD-102\nPayment Method:   UPI\nAccount Ref:      alex@okaxis\nSubtotal:         $45.00\nProcessing Fee:   $0.50\nTotal Charged:    $45.50\nStatus:           AUTHORIZED / PAID\n=======================================================\n\n[Test 3] Processing Invalid Credentials (Rejected)...\nTransaction Failed: Invalid credentials for CREDIT_CARD.\n\nStatus: All polymorphic transactions evaluated with zero instanceof checks."
+  },
+  "activities": [
+    {
+      "id": "act-payment-processing-engine",
+      "orderIndex": 1,
+      "type": "mini_project",
+      "title": "Payment Processing Engine (Level 2: Requirement Build)",
+      "project": {
+        "id": "les-oop-mini-6-payment-engine",
+        "slug": "payment-processing-engine",
+        "title": "Payment Processing Engine (Level 2: Requirement Build)",
+        "projectBrief": {
+          "whatAreWeBuilding": "An extensible, decoupled payment processing gateway where transactions execute polymorphically through a unified PaymentMethod interface or abstract base, allowing seamless addition of Credit Card, UPI, and Cryptocurrency payment channels without modifying the core checkout engine.",
+          "problemItSolves": "Naive code uses massive if-else or switch ladders inspecting payment type strings ('IF CARD DO THIS, ELSE IF UPI DO THAT'). Polymorphism allows the checkout processor to treat all payment types identically at compile time while executing specialized validation and fee logic at runtime.",
+          "finishedAppDescription": "A robust payment gateway application handling checkout carts. The gateway accepts any valid PaymentMethod implementation, validates payment credentials (card Luhn checksum, UPI virtual payment address, crypto wallet hash), computes method-specific convenience fees, and generates transaction receipts.",
+          "estimatedTime": "45–55 minutes",
+          "difficulty": "intermediate",
+          "javaFundamentals": [
+            "Polymorphism and runtime dynamic method dispatch",
+            "Interface definition and contract enforcement",
+            "Decoupling checkout logic from payment implementations (Open-Closed Principle in action)",
+            "Method overriding and subtype substitutability",
+            "Transaction status models and audit receipt generation"
+          ],
+          "motivatingQuote": "Polymorphism lets you write code that doesn't care about what type it's dealing with, as long as it honors the contract."
+        },
+        "realWorldScenario": {
+          "headline": "E-Commerce Multi-Gateway Checkout Engine",
+          "story": "A global online retailer processes millions of orders daily. Customers check out using Visa credit cards, instant UPI QR transfers, or Bitcoin/Ethereum crypto wallets. The CheckoutService must process the transaction seamlessly without knowing the low-level mechanics of each payment rail.",
+          "context": "Fintech architectures rely on polymorphic interfaces so that introducing a new payment rail (e.g. Apple Pay, PayPal) requires zero edits to existing checkout code."
+        },
+        "requirements": {
+          "functional": [
+            "Define a PaymentMethod interface with methods: boolean validateCredentials(), double calculateFee(double amount), and boolean processPayment(double amount).",
+            "Implement CreditCardPayment supporting 16-digit card number, CVV, expiry date, and charging a 2.5% convenience fee.",
+            "Implement UpiPayment supporting virtual payment address format ('user@bank') and charging a flat $0.50 processing fee.",
+            "Implement CryptoPayment supporting wallet address format (40+ hex characters) and charging network gas fees.",
+            "Implement PaymentGateway class with processOrder(String orderId, double amount, PaymentMethod method) that validates credentials, computes final charged amount, executes payment, and generates a formatted receipt.",
+            "Create a driver demonstrating processing various transactions through the same gateway instance without type casting."
+          ],
+          "technicalConstraints": [
+            "PaymentGateway must NOT contain if-else checks or instanceof checks for specific payment subclasses.",
+            "All method interactions in the gateway must strictly occur through the PaymentMethod interface reference.",
+            "calculateFee() must always return non-negative fees.",
+            "processPayment must return false and abort if validateCredentials() fails."
+          ],
+          "userDecisions": [
+            "Decide whether to add simulated network latency or random failure simulation.",
+            "Choose receipt formatting layout and transaction ID generation style.",
+            "Decide whether to support partial refund operations on PaymentMethod."
+          ]
+        },
+        "beforeYouCode": {
+          "inputsRequired": [
+            "Order identification (e.g. 'ORD-9821')",
+            "Order gross amount (double)",
+            "Payment details: card number/CVV, UPI VPA, or Crypto wallet address"
+          ],
+          "outputsRequired": [
+            "Transaction authorization status (APPROVED / REJECTED)",
+            "Fee breakdown and total amount charged",
+            "Cryptographic transaction hash or reference ID"
+          ],
+          "variablesNeeded": [
+            "double amount, fee, totalCharged",
+            "PaymentMethod activePaymentMethod (polymorphic interface reference)",
+            "String transactionId, status, timestamp"
+          ],
+          "conditionalLogic": [
+            "validateCredentials() checks: card length == 16, CVV length == 3, UPI contains '@', Crypto starts with '0x'",
+            "Gateway checkout check: if (!method.validateCredentials()) return TransactionResult.failed()"
+          ],
+          "loopStructures": [
+            "Iteration through an array or queue of checkout orders in Main"
+          ],
+          "recommendedMethods": [
+            "public interface PaymentMethod",
+            "public boolean validateCredentials()",
+            "public double calculateFee(double amount)",
+            "public boolean processPayment(double amount)",
+            "public TransactionReceipt processOrder(String orderId, double amount, PaymentMethod method)"
+          ]
+        },
+        "buildRoadmap": [
+          {
+            "milestoneNumber": 1,
+            "title": "Define PaymentMethod Interface Contract",
+            "objective": "Establish the interface defining required behaviors for all payment providers.",
+            "tasks": [
+              "Declare interface PaymentMethod.",
+              "Define boolean validateCredentials().",
+              "Define double calculateFee(double amount).",
+              "Define boolean processPayment(double amount).",
+              "Define String getPaymentType()."
+            ],
+            "acceptanceCriteria": [
+              "Interface compiles cleanly with standard contract method signatures."
+            ]
+          },
+          {
+            "milestoneNumber": 2,
+            "title": "Implement Concrete Payment Rails",
+            "objective": "Build CreditCardPayment, UpiPayment, and CryptoPayment classes implementing PaymentMethod.",
+            "tasks": [
+              "Implement CreditCardPayment with card number, CVV, expiry; 2.5% fee calculation.",
+              "Implement UpiPayment with VPA string validation; $0.50 flat fee calculation.",
+              "Implement CryptoPayment with 0x address validation and dynamic gas fee calculation.",
+              "Ensure all classes validate their respective credential formats."
+            ],
+            "acceptanceCriteria": [
+              "Each class fulfills the PaymentMethod contract with role-specific validation and fees."
+            ]
+          },
+          {
+            "milestoneNumber": 3,
+            "title": "Build Decoupled PaymentGateway",
+            "objective": "Implement PaymentGateway that processes orders polymorphically without knowing concrete types.",
+            "tasks": [
+              "Write processOrder(orderId, amount, PaymentMethod method).",
+              "Validate credentials via method.validateCredentials().",
+              "Compute fee = method.calculateFee(amount); total = amount + fee.",
+              "Execute method.processPayment(total) and format a TransactionReceipt."
+            ],
+            "acceptanceCriteria": [
+              "Gateway processes all 3 payment types with zero instanceof or type-casting checks."
+            ]
+          },
+          {
+            "milestoneNumber": 4,
+            "title": "Gateway Test Harness & CLI Simulation",
+            "objective": "Simulate e-commerce checkout scenarios in PaymentAppMain.",
+            "tasks": [
+              "Create orders with CreditCard, UPI, and Crypto payment instances.",
+              "Pass each into gateway.processOrder() and print receipts.",
+              "Test invalid credentials (e.g. invalid UPI format) and verify graceful failure."
+            ],
+            "acceptanceCriteria": [
+              "Driver runs all test transactions cleanly, verifying true runtime polymorphism."
+            ]
+          }
+        ],
+        "thinkBeforeYouCode": [
+          {
+            "question": "Why is avoiding 'instanceof' and switch statements so important in payment processors?",
+            "mentorInsight": "If your gateway uses switch(paymentType), every time your company adds a new payment method (like ApplePay), you must open and modify the core PaymentGateway code, violating the Open-Closed Principle and risking regressions in existing payment logic."
+          },
+          {
+            "question": "What happens under the hood during dynamic dispatch?",
+            "mentorInsight": "When gateway calls method.processPayment(amount), the JVM inspects the actual object on the Heap at runtime (e.g. CreditCardPayment vs CryptoPayment) and routes execution to that specific class's vtable implementation."
+          },
+          {
+            "question": "Why use an interface instead of an abstract class here?",
+            "mentorInsight": "An interface specifies a pure capability ('can process payments'). A class implementing PaymentMethod could also extend an AuditEntity or Serializable class. Interfaces allow flexible, multiple-inheritance-like contracts."
+          }
+        ],
+        "hintSystem": [
+          {
+            "topic": "Polymorphic Parameter Passing",
+            "level1Conceptual": "Accept the interface type as the parameter in the gateway method.",
+            "level2Implementation": "Method signature: public void processOrder(double amount, PaymentMethod method).",
+            "level3JavaSyntax": "public void processOrder(String orderId, double amount, PaymentMethod method) {\n    if (method.validateCredentials()) {\n        double fee = method.calculateFee(amount);\n        method.processPayment(amount + fee);\n    }\n}"
+          },
+          {
+            "topic": "Credential Validation Rules",
+            "level1Conceptual": "Check format rules before authorizing payment.",
+            "level2Implementation": "For UPI, ensure the string contains '@' and has text on both sides.",
+            "level3JavaSyntax": "public boolean validateCredentials() {\n    return upiId != null && upiId.contains(\"@\") && upiId.length() >= 5;\n}"
+          }
+        ],
+        "testYourProject": {
+          "normalCases": [
+            "Credit Card on $100 order -> Fee: $2.50 (2.5%), Total Charged: $102.50, Status: APPROVED",
+            "UPI on $40 order -> Fee: $0.50 (flat), Total Charged: $40.50, Status: APPROVED",
+            "Crypto on $500 order -> Fee: $5.00 (gas fee), Total Charged: $505.00, Status: APPROVED"
+          ],
+          "boundaryCases": [
+            "Processing payment of minimum allowable amount ($1.00) -> Fee correctly calculated",
+            "Crypto address exactly 42 characters starting with '0x' -> Validation passes"
+          ],
+          "invalidInputCases": [
+            "Credit Card with 12 digits instead of 16 -> validateCredentials() returns false; transaction REJECTED",
+            "UPI ID without '@' symbol (e.g. 'johnbank') -> validateCredentials() returns false; transaction REJECTED",
+            "Passing negative order amount (-$50) -> Rejected before processing"
+          ],
+          "edgeCases": [
+            "Adding a brand-new payment type (e.g. GiftCardPayment) without touching a single line of PaymentGateway code"
+          ]
+        },
+        "debuggingGuide": [
+          "Calling concrete methods not in the interface: When programming to an interface, you can only invoke methods declared on PaymentMethod.",
+          "NullPointerException on payment method: Always verify method != null at the start of processOrder.",
+          "Fee calculation returning 0: Ensure percentage calculations divide by 100.0 (double) rather than integer 100.",
+          "instanceof code smells: If you find yourself writing if (method instanceof CreditCardPayment), stop! Move that specialized logic inside the CreditCardPayment class itself."
+        ],
+        "projectPolish": [
+          "Mask sensitive card details in receipt output (e.g. '************4412').",
+          "Generate unique timestamped transaction reference codes for approved receipts.",
+          "Display an ASCII checkout receipt with clear subtotal, fee, and total lines."
+        ],
+        "gitHubReady": {
+          "repoName": "payment-processing-engine",
+          "commitMessages": [
+            "feat: define PaymentMethod polymorphic interface contract",
+            "feat: implement CreditCardPayment with fee calculations and card masking",
+            "feat: implement UpiPayment and CryptoPayment concrete payment rails",
+            "feat: create decoupled PaymentGateway processor with zero instanceof checks",
+            "test: add PaymentAppMain checkout driver testing valid and invalid payments",
+            "docs: add comprehensive README with sequence diagram and polymorphism overview"
+          ],
+          "readmeTemplate": "# Payment Processing Engine (Java OOP)\n\n## Overview\nA decoupled, enterprise-grade payment gateway built in Java demonstrating runtime polymorphism, interface-driven design, and the Open-Closed Principle (OCP).\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |       PaymentMethod             |\n                                +---------------------------------+\n                                | + validateCredentials(): boolean|\n                                | + calculateFee(amt: double): dbl|\n                                | + processPayment(amt: dbl): bool|\n                                | + getPaymentType(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|   CreditCardPayment   |              |      UpiPayment       |              |     CryptoPayment     |\n+-----------------------+              +-----------------------+              +-----------------------+\n| - cardNumber: String  |              | - upiId: String       |              | - walletAddress: String|\n| - cvv: String         |              +-----------------------+              | - network: String     |\n+-----------------------+              | + [implements methods]|              +-----------------------+\n| + [implements methods]|              +-----------------------+              | + [implements methods]|\n+-----------------------+                                                     +-----------------------+\n\n                                +---------------------------------+\n                                |         PaymentGateway          |\n                                +---------------------------------+\n                                | + processOrder(orderId: String, |\n                                |     amount: double,             |\n                                |     method: PaymentMethod)      |\n                                +---------------------------------+\n```\n\n## Why Polymorphism Matters Here\n`PaymentGateway` interacts exclusively with the `PaymentMethod` interface. It contains **zero** `instanceof` statements and **zero** `if-else` type switches. To introduce a new payment method (e.g. `ApplePayPayment`), developers write one new class without modifying existing gateway code.\n\n## How to Run\n```bash\njavac PaymentMethod.java CreditCardPayment.java UpiPayment.java CryptoPayment.java PaymentGateway.java PaymentApp.java\njava PaymentApp\n```\n\n## Sample Receipt Output\n```text\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nTransaction ID:   TXN-2026-99014\nOrder ID:         ORD-8402\nPayment Rail:     CREDIT_CARD (Ending in *4412)\nBase Amount:      $120.00\nProcessing Fee:   $3.00 (2.5%)\nTotal Charged:    $123.00\nStatus:           AUTHORIZED / PAID\n=======================================================\n```\n",
+          "gitCommands": [
+            {
+              "command": "git init",
+              "explanation": "Initializes Git version control for the payment engine."
+            },
+            {
+              "command": "git add *.java README.md",
+              "explanation": "Stages source files and documentation."
+            },
+            {
+              "command": "git commit -m \"feat: complete polymorphic payment engine with zero-instanceof gateway\"",
+              "explanation": "Creates milestone commit."
+            },
+            {
+              "command": "git branch -M main",
+              "explanation": "Sets branch to main."
+            },
+            {
+              "command": "git remote add origin https://github.com/YOUR_USERNAME/payment-processing-engine.git",
+              "explanation": "Connects to GitHub remote."
+            },
+            {
+              "command": "git push -u origin main",
+              "explanation": "Publishes to GitHub."
+            }
+          ],
+          "suggestedReadme": "# Payment Processing Engine (Java OOP)\n\n## Overview\nA decoupled, enterprise-grade payment gateway built in Java demonstrating runtime polymorphism, interface-driven design, and the Open-Closed Principle (OCP).\n\n## Architecture Blueprint\n```\n                                +---------------------------------+\n                                |       <<interface>>             |\n                                |       PaymentMethod             |\n                                +---------------------------------+\n                                | + validateCredentials(): boolean|\n                                | + calculateFee(amt: double): dbl|\n                                | + processPayment(amt: dbl): bool|\n                                | + getPaymentType(): String      |\n                                +---------------------------------+\n                                                 ^\n                                                 |\n          +--------------------------------------+--------------------------------------+\n          |                                      |                                      |\n+-----------------------+              +-----------------------+              +-----------------------+\n|   CreditCardPayment   |              |      UpiPayment       |              |     CryptoPayment     |\n+-----------------------+              +-----------------------+              +-----------------------+\n| - cardNumber: String  |              | - upiId: String       |              | - walletAddress: String|\n| - cvv: String         |              +-----------------------+              | - network: String     |\n+-----------------------+              | + [implements methods]|              +-----------------------+\n| + [implements methods]|              +-----------------------+              | + [implements methods]|\n+-----------------------+                                                     +-----------------------+\n\n                                +---------------------------------+\n                                |         PaymentGateway          |\n                                +---------------------------------+\n                                | + processOrder(orderId: String, |\n                                |     amount: double,             |\n                                |     method: PaymentMethod)      |\n                                +---------------------------------+\n```\n\n## Why Polymorphism Matters Here\n`PaymentGateway` interacts exclusively with the `PaymentMethod` interface. It contains **zero** `instanceof` statements and **zero** `if-else` type switches. To introduce a new payment method (e.g. `ApplePayPayment`), developers write one new class without modifying existing gateway code.\n\n## How to Run\n```bash\njavac PaymentMethod.java CreditCardPayment.java UpiPayment.java CryptoPayment.java PaymentGateway.java PaymentApp.java\njava PaymentApp\n```\n\n## Sample Receipt Output\n```text\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nTransaction ID:   TXN-2026-99014\nOrder ID:         ORD-8402\nPayment Rail:     CREDIT_CARD (Ending in *4412)\nBase Amount:      $120.00\nProcessing Fee:   $3.00 (2.5%)\nTotal Charged:    $123.00\nStatus:           AUTHORIZED / PAID\n=======================================================\n```\n"
+        },
+        "portfolioChecklist": [
+          "PaymentMethod is declared as a clean public interface",
+          "CreditCardPayment, UpiPayment, and CryptoPayment implement PaymentMethod",
+          "PaymentGateway contains no instanceof checks or type-based switch statements",
+          "CreditCardPayment masks card numbers (shows only last 4 digits)",
+          "UpiPayment validates the presence of '@' in the address",
+          "CryptoPayment validates '0x' hex wallet prefix",
+          "PaymentGateway safely rejects invalid credentials and negative amounts",
+          "README.md documents the Open-Closed Principle and interface architecture"
+        ],
+        "explainYourProject": [
+          "How does this project demonstrate runtime polymorphism?",
+          "What code smell does avoiding 'instanceof' prevent?",
+          "How would you add Apple Pay to this system without changing PaymentGateway?",
+          "What is dynamic dispatch and how does the JVM implement it?",
+          "Why is fee calculation delegated to each payment method rather than computed in the gateway?",
+          "How does credential masking in receipts protect user privacy?"
+        ],
+        "projectCompletion": {
+          "headline": "Payment Gateway Engine Complete!",
+          "congratulations": "You built a polymorphic, extensible payment gateway adhering to the Open-Closed Principle.",
+          "skillsDemonstrated": [
+            "Polymorphic Interface Design",
+            "Runtime Dynamic Method Dispatch",
+            "Decoupled Service Architecture",
+            "The Open-Closed Principle",
+            "Defensive Credential Validation",
+            "Production GitHub Documentation"
+          ],
+          "nextStepAction": "Commit and push your payment engine to GitHub!"
+        },
+        "scaffoldingCode": "public interface PaymentMethod {\n    // Contract methods for all payment rails\n    boolean validateCredentials();\n    double calculateFee(double amount);\n    boolean processPayment(double amount);\n    String getPaymentType();\n    String getMaskedIdentifier();\n}\n\n// 1. Credit Card Implementation\nclass CreditCardPayment implements PaymentMethod {\n    private String cardNumber;\n    private String cvv;\n    private String expiryDate;\n\n    public CreditCardPayment(String cardNumber, String cvv, String expiryDate) {\n        this.cardNumber = (cardNumber != null) ? cardNumber.replaceAll(\"\\\\s+\", \"\") : \"\";\n        this.cvv = cvv;\n        this.expiryDate = expiryDate;\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return cardNumber.length() == 16 && cvv != null && cvv.length() == 3;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return amount * 0.025; // 2.5% fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Routing $%.2f through Card Payment Network... Approved.%n\", amount);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"CREDIT_CARD\"; }\n\n    @Override\n    public String getMaskedIdentifier() {\n        if (cardNumber.length() >= 4) {\n            return \"************\" + cardNumber.substring(cardNumber.length() - 4);\n        }\n        return \"CARD-UNKNOWN\";\n    }\n}\n\n// 2. UPI Implementation\nclass UpiPayment implements PaymentMethod {\n    private String upiId;\n\n    public UpiPayment(String upiId) {\n        this.upiId = upiId;\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return upiId != null && upiId.contains(\"@\") && upiId.length() >= 5;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return 0.50; // $0.50 flat fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Routing $%.2f via UPI Instant Transfer (%s)... Approved.%n\", amount, upiId);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"UPI\"; }\n\n    @Override\n    public String getMaskedIdentifier() { return upiId; }\n}\n\n// 3. Crypto Implementation\nclass CryptoPayment implements PaymentMethod {\n    private String walletAddress;\n    private String network;\n\n    public CryptoPayment(String walletAddress, String network) {\n        this.walletAddress = walletAddress;\n        this.network = (network != null) ? network : \"Ethereum\";\n    }\n\n    @Override\n    public boolean validateCredentials() {\n        return walletAddress != null && walletAddress.startsWith(\"0x\") && walletAddress.length() >= 10;\n    }\n\n    @Override\n    public double calculateFee(double amount) {\n        return 4.50; // Network gas fee\n    }\n\n    @Override\n    public boolean processPayment(double amount) {\n        if (!validateCredentials()) return false;\n        System.out.printf(\"Broadcasting $%.2f transaction to %s blockchain... Confirmed.%n\", amount, network);\n        return true;\n    }\n\n    @Override\n    public String getPaymentType() { return \"CRYPTO_\" + network.toUpperCase(); }\n\n    @Override\n    public String getMaskedIdentifier() {\n        if (walletAddress.length() > 8) {\n            return walletAddress.substring(0, 6) + \"...\" + walletAddress.substring(walletAddress.length() - 4);\n        }\n        return walletAddress;\n    }\n}\n\n// 4. Decoupled Payment Gateway (Zero instanceof checks!)\nclass PaymentGateway {\n    public boolean processOrder(String orderId, double amount, PaymentMethod method) {\n        System.out.println(\"-------------------------------------------------------\");\n        System.out.printf(\"Processing Order %s | Amount: $%.2f%n\", orderId, amount);\n\n        if (method == null) {\n            System.err.println(\"Transaction Failed: No payment method selected.\");\n            return false;\n        }\n\n        if (!method.validateCredentials()) {\n            System.err.printf(\"Transaction Failed: Invalid credentials for %s.%n\", method.getPaymentType());\n            return false;\n        }\n\n        double fee = method.calculateFee(amount);\n        double total = amount + fee;\n\n        boolean success = method.processPayment(total);\n        if (success) {\n            printReceipt(orderId, method, amount, fee, total);\n            return true;\n        } else {\n            System.err.println(\"Transaction Failed: Payment network rejected charge.\");\n            return false;\n        }\n    }\n\n    private void printReceipt(String orderId, PaymentMethod method, double amt, double fee, double total) {\n        System.out.println(\"=======================================================\");\n        System.out.println(\"                  PAYMENT RECEIPT                      \");\n        System.out.println(\"=======================================================\");\n        System.out.printf(\"Order ID:         %s%n\", orderId);\n        System.out.printf(\"Payment Method:   %s%n\", method.getPaymentType());\n        System.out.printf(\"Account Ref:      %s%n\", method.getMaskedIdentifier());\n        System.out.printf(\"Subtotal:         $%.2f%n\", amt);\n        System.out.printf(\"Processing Fee:   $%.2f%n\", fee);\n        System.out.printf(\"Total Charged:    $%.2f%n\", total);\n        System.out.println(\"Status:           AUTHORIZED / PAID\");\n        System.out.println(\"=======================================================\\n\");\n    }\n}",
+        "sampleConsoleRun": "=== PAYMENT PROCESSING GATEWAY SIMULATION ===\nInitializing PaymentGateway...\n\n[Test 1] Processing Credit Card Payment...\nRouting $102.50 through Card Payment Network... Approved.\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nOrder ID:         ORD-101\nPayment Method:   CREDIT_CARD\nAccount Ref:      ************4412\nSubtotal:         $100.00\nProcessing Fee:   $2.50\nTotal Charged:    $102.50\nStatus:           AUTHORIZED / PAID\n=======================================================\n\n[Test 2] Processing UPI Instant QR Payment...\nRouting $45.50 via UPI Instant Transfer (alex@okaxis)... Approved.\n=======================================================\n                  PAYMENT RECEIPT                      \n=======================================================\nOrder ID:         ORD-102\nPayment Method:   UPI\nAccount Ref:      alex@okaxis\nSubtotal:         $45.00\nProcessing Fee:   $0.50\nTotal Charged:    $45.50\nStatus:           AUTHORIZED / PAID\n=======================================================\n\n[Test 3] Processing Invalid Credentials (Rejected)...\nTransaction Failed: Invalid credentials for CREDIT_CARD.\n\nStatus: All polymorphic transactions evaluated with zero instanceof checks."
+      }
+    }
+  ]
+}
