@@ -71,6 +71,405 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
       {/* TOPIC-SPECIFIC CHEAT SHEETS                           */}
       {/* ---------------------------------------------------- */}
 
+      {/* ==================================================== */}
+      {/* OOP MODULE 1 CHEAT SHEETS: CLASSES & OBJECTS        */}
+      {/* ==================================================== */}
+
+      {/* Lesson 1: Why Object-Oriented Programming? */}
+      {(slug === 'why-object-oriented-programming' || slug === 'why-oop') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Scattered Variables vs OOP Bundled Entity Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Loose Variables Approach</th>
+                  <th className="p-2.5">Object-Oriented Approach</th>
+                  <th className="p-2.5 rounded-r-lg">Engineering Advantage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Managing 100 Records</td>
+                  <td className="p-2.5 text-rose-700 font-mono text-[11px]">300-500 loose variables (name1, age1, etc.)</td>
+                  <td className="p-2.5 text-emerald-700 font-mono text-[11px]">100 Student objects</td>
+                  <td className="p-2.5 text-slate-600">Zero variable collision; data cannot accidentally mix up</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Passing to Methods</td>
+                  <td className="p-2.5 text-slate-600">Must pass 4-6 arguments into every function call</td>
+                  <td className="p-2.5 text-slate-600">Pass 1 student reference: <code className="text-brand-700">display(s)</code></td>
+                  <td className="p-2.5 text-slate-600">Clean, concise method signatures</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Adding a New Property</td>
+                  <td className="p-2.5 text-rose-700">Must manually create 100 new variables across your code</td>
+                  <td className="p-2.5 text-emerald-700">Add 1 field to the <code className="text-brand-700">Student</code> class</td>
+                  <td className="p-2.5 text-slate-600">Instant updates for every current and future student object</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Mental Model</td>
+                  <td className="p-2.5 text-slate-600">Disconnected data points in memory</td>
+                  <td className="p-2.5 text-slate-600">Unified entity reflecting real-world concepts</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Code mirrors reality naturally</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3.5 bg-brand-50/60 rounded-xl border border-brand-100 flex items-start space-x-2 text-xs text-brand-900">
+            <Lightbulb className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">Golden Principle: </span>
+              An <strong>entity</strong> is any real-world thing (like a Student, Order, or Product). In OOP, we bundle everything that entity knows (its data) and does (its actions) into one clean container.
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: Procedural Thinking vs Object-Oriented Thinking */}
+      {(slug === 'procedural-vs-object-oriented-thinking' || slug === 'procedural-vs-oop-thinking') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Procedural vs Object-Oriented Paradigm Master Table
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Procedural Thinking</th>
+                  <th className="p-2.5 rounded-r-lg">Object-Oriented Thinking</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Primary Focus</td>
+                  <td className="p-2.5 text-slate-600">Step-by-step algorithms &amp; procedures (verbs)</td>
+                  <td className="p-2.5 text-brand-700 font-semibold">Autonomous entities &amp; actors (nouns)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Data &amp; Function Relationship</td>
+                  <td className="p-2.5 text-rose-700">Separated: Data sits in variables; functions operate from outside</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Bundled: Objects own their own data and their own behaviors</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">How Methods Execute</td>
+                  <td className="p-2.5 font-mono text-[11px] text-slate-700">printStudent(name, age, course)</td>
+                  <td className="p-2.5 font-mono text-[11px] text-emerald-700 font-bold">student.printProfile()</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Best Suited For</td>
+                  <td className="p-2.5 text-slate-600">Mathematical computations, short scripts, pipeline tasks</td>
+                  <td className="p-2.5 text-slate-600">Business systems, multi-actor apps, interactive domains</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs space-y-1">
+              <span className="font-bold text-slate-900 block">🛍️ Real-World Objects (Things)</span>
+              <p className="text-slate-600">User, Restaurant, FoodItem, DeliveryDriver, BankAccount, Book</p>
+            </div>
+            <div className="p-3 bg-brand-50/60 rounded-xl border border-brand-100 text-xs space-y-1">
+              <span className="font-bold text-brand-900 block">⚡ Real-World Behaviors (Actions)</span>
+              <p className="text-brand-800">calculateTotal(), placeOrder(), depositMoney(), displayCard()</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: Classes as Blueprints */}
+      {(slug === 'classes-as-blueprints') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Class Blueprint Architecture &amp; Anatomy
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse font-sans">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Class Element</th>
+                  <th className="p-2.5">Java Syntax Pattern</th>
+                  <th className="p-2.5">What It Represents</th>
+                  <th className="p-2.5 rounded-r-lg">Crucial Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-sans">Class Header</td>
+                  <td className="p-2.5 text-brand-700 font-bold">class Student &#123; ... &#125;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Defines the reusable blueprint</td>
+                  <td className="p-2.5 font-sans text-slate-700">Use PascalCase for class names</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-sans">Properties (Fields)</td>
+                  <td className="p-2.5 text-indigo-700">String name; int age;</td>
+                  <td className="p-2.5 font-sans text-slate-600">The state/data each object will hold</td>
+                  <td className="p-2.5 font-sans text-slate-700">Declared directly inside class curly braces</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900 font-sans">Behaviors (Methods)</td>
+                  <td className="p-2.5 text-emerald-700">void display() &#123; ... &#125;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Actions the object can perform</td>
+                  <td className="p-2.5 font-sans text-slate-700">Can directly access fields without parameters</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200/80 text-xs text-amber-950 flex items-start space-x-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">Golden Blueprint Rule: </span>
+              Declaring a class allocates <strong>ZERO object memory</strong>. A class is just a design document on paper. No actual student exists until you say <code className="font-mono bg-amber-100/80 px-1 py-0.5 rounded">new Student()</code>!
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: Objects and Instances */}
+      {(slug === 'objects-and-instances') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 'new' Keyword &amp; Dot Operator Quick Reference
+            </h4>
+          </div>
+
+          <div className="bg-slate-950 p-4 rounded-xl text-slate-100 font-mono text-xs overflow-x-auto space-y-2">
+            <div className="text-slate-400">// Anatomy of Object Creation:</div>
+            <div>
+              <span className="text-purple-400 font-bold">Student</span>{' '}
+              <span className="text-amber-300">s1</span> ={' '}
+              <span className="text-rose-400 font-bold">new</span>{' '}
+              <span className="text-purple-400 font-bold">Student</span>();
+            </div>
+            <div className="text-[11px] text-slate-400 pt-2 border-t border-slate-800 space-y-1">
+              <div>• <span className="text-purple-300 font-bold">Student</span>: The Class / Type (which blueprint to use)</div>
+              <div>• <span className="text-amber-300 font-bold">s1</span>: Reference variable name (how we talk to this object)</div>
+              <div>• <span className="text-rose-400 font-bold">new</span>: Memory allocator (creates the actual object)</div>
+              <div>• <span className="text-purple-300 font-bold">Student()</span>: Prepares the fresh object</div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dot Operator Action</th>
+                  <th className="p-2.5">Java Syntax</th>
+                  <th className="p-2.5 rounded-r-lg">What Happens</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-900">Setting a Field</td>
+                  <td className="p-2.5 text-brand-700">s1.name = "Rahul";</td>
+                  <td className="p-2.5 font-sans text-slate-600">Assigns "Rahul" into s1's private copy of name</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-900">Reading a Field</td>
+                  <td className="p-2.5 text-brand-700">System.out.println(s1.name);</td>
+                  <td className="p-2.5 font-sans text-slate-600">Retrieves the current value stored in s1.name</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-sans font-bold text-slate-900">Invoking a Method</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">s1.displayProfile();</td>
+                  <td className="p-2.5 font-sans text-slate-600">Executes the method using s1's internal state</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: Object State and Behavior */}
+      {(slug === 'object-state-and-behavior') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              State vs Behavior &amp; Dynamic Mutation Tracing
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+              <span className="text-xs font-bold text-blue-900 uppercase tracking-wider block">
+                📦 STATE (What It Knows)
+              </span>
+              <p className="text-xs text-blue-950 leading-relaxed">
+                Stored in <strong>instance variables (fields)</strong>. Describes the object's current condition at any point in time.
+              </p>
+              <div className="p-2.5 bg-white rounded-lg font-mono text-[11px] text-blue-900 border border-blue-100">
+                name = "Rahul";<br />
+                age = 20;<br />
+                marks = 85.5;
+              </div>
+            </div>
+
+            <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200/80 space-y-2">
+              <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider block">
+                ⚡ BEHAVIOR (What It Does)
+              </span>
+              <p className="text-xs text-emerald-950 leading-relaxed">
+                Defined in <strong>instance methods</strong>. Actions the object executes, often reading or changing its own state!
+              </p>
+              <div className="p-2.5 bg-white rounded-lg font-mono text-[11px] text-emerald-900 border border-emerald-100">
+                haveBirthday() &#123; age++; &#125;<br />
+                updateMarks(90.0);<br />
+                displayProfile();
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
+            <span className="font-bold text-slate-900 block">🔄 State Mutation Lifecycle Example:</span>
+            <div className="font-mono text-[11px] text-slate-700 space-y-1">
+              <div>1. <span className="text-brand-700">Student s = new Student(); s.age = 20;</span> → State is 20</div>
+              <div>2. <span className="text-emerald-700">s.haveBirthday();</span> → Behavior runs and updates age to 21</div>
+              <div>3. <span className="text-slate-900">System.out.println(s.age);</span> → Output is 21 (Identity preserved, state updated!)</div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: Creating and Using Multiple Objects */}
+      {(slug === 'creating-and-using-multiple-objects' || slug === 'creating-multiple-objects') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Multiple Objects Memory Isolation Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Execution Statement</th>
+                  <th className="p-2.5">s1 Object State</th>
+                  <th className="p-2.5">s2 Object State</th>
+                  <th className="p-2.5 rounded-r-lg">Isolation Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-purple-700 font-bold">Student s1 = new Student();</td>
+                  <td className="p-2.5 text-emerald-700">Created (name: null)</td>
+                  <td className="p-2.5 text-slate-400">Not created yet</td>
+                  <td className="p-2.5 font-sans text-slate-600">s1 gets its own memory</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-purple-700 font-bold">Student s2 = new Student();</td>
+                  <td className="p-2.5 text-slate-600">name: null</td>
+                  <td className="p-2.5 text-emerald-700">Created (name: null)</td>
+                  <td className="p-2.5 font-sans text-slate-600">Two completely separate objects exist</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-brand-700">s1.name = "Rahul";</td>
+                  <td className="p-2.5 text-brand-700 font-bold">name = "Rahul"</td>
+                  <td className="p-2.5 text-slate-400">name = null</td>
+                  <td className="p-2.5 font-sans text-slate-600">Setting s1 has zero effect on s2</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 text-brand-700">s2.name = "Priya";</td>
+                  <td className="p-2.5 text-brand-700 font-bold">name = "Rahul"</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">name = "Priya"</td>
+                  <td className="p-2.5 font-sans text-slate-600">Both hold their own distinct values</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-brand-50/30">
+                  <td className="p-2.5 text-rose-700 font-bold">s1.name = "Vikram";</td>
+                  <td className="p-2.5 text-rose-700 font-bold">name = "Vikram"</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">name = "Priya"</td>
+                  <td className="p-2.5 font-sans text-slate-900 font-semibold">s2.name STILL equals "Priya"!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-950">
+            <strong>Key Rule: </strong> Every object created with <code className="font-mono bg-white px-1 py-0.5 rounded border border-emerald-200">new</code> gets its own private, isolated set of instance variables. Modifying one object will never accidentally modify another.
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: Practice Project: Student Profile */}
+      {(slug === 'student-profile-practice') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Student Profile Project Architecture &amp; 10-Point Mastery Checklist
+            </h4>
+          </div>
+
+          <div className="p-4 bg-slate-950 rounded-xl text-slate-100 font-mono text-xs space-y-3">
+            <div className="text-amber-400 font-bold">// Canonical Student Profile Project Architecture:</div>
+            <pre className="text-slate-300 text-[11px] leading-relaxed">
+{`class Student {
+    String name;
+    int age;
+    String course;
+    double marks;
+
+    void displayProfile() {
+        System.out.println("--- Student Profile ---");
+        System.out.println("Name: " + name);
+        System.out.println("Age: " + age);
+        System.out.println("Course: " + course);
+        System.out.println("Marks: " + marks);
+        System.out.println();
+    }
+}`}
+            </pre>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Module 1 Mastery Milestone</th>
+                  <th className="p-2.5 rounded-r-lg">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">Explain what a class is without jargon (Blueprint/Template)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Explain what an object is (Real instance created from blueprint)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Differentiate class vs object using real-world analogies</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">Define object state (The data/fields it currently holds)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">Define object behavior (The actions/methods it can perform)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">Understand that 1 class can create infinite independent objects</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">Understand that modifying s1 never alters s2</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">Identify entities from real-world requirements (User, Order)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Predict the output of multi-object programs accurately</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Write a class and create objects completely from scratch</td><td className="p-2.5 text-emerald-600 font-bold">✓ Mastered</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       {/* Lesson: java-and-jvm */}
       {(slug === 'java-and-jvm' || slug === 'what-is-java-and-the-jvm') && (
         <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
