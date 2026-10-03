@@ -101,8 +101,9 @@ export const EditorialArticle: React.FC<EditorialArticleProps> = ({ title, conte
   }
 
   // If first section has no title and a title prop was provided, use it
-  if (sections.length > 0 && !sections[0].title && title) {
-    sections[0].title = title;
+  const firstSection = sections[0];
+  if (firstSection && !firstSection.title && title) {
+    firstSection.title = title;
   }
 
   return (

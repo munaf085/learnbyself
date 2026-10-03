@@ -174,7 +174,7 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ questions, categoryTitle
                 )}
                 {currentHintLevel < q.hints.length && (
                   <button
-                    onClick={() => handleShowHint(q.id, q.hints.length)}
+                    onClick={() => handleShowHint(q.id, q.hints?.length || 0)}
                     className="text-xs text-brand-600 hover:text-brand-800 font-medium py-1 min-h-[32px] flex items-center space-x-1 cursor-pointer"
                   >
                     <span>💡 Need a gentle hint?</span>
