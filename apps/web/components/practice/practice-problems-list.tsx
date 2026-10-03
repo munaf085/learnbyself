@@ -12,8 +12,7 @@ import {
   EyeOff,
   Lightbulb,
   CheckCircle2,
-  Sparkles,
-  ListChecks
+  Sparkles
 } from 'lucide-react';
 
 interface PracticeProblemsListProps {
@@ -62,6 +61,7 @@ const formatInlineText = (text: string): React.ReactNode[] => {
 // Render problem description with support for code blocks and paragraphs
 const renderProblemDescription = (text: string) => {
   if (!text) return null;
+  const cleanText = text.replace(/â€¢/g, '•');
 
   // Split by fenced code blocks ``` ... ```
   const codeBlockRegex = /```(?:java)?\n([\s\S]*?)```/g;
@@ -69,9 +69,9 @@ const renderProblemDescription = (text: string) => {
   let lastIdx = 0;
   let blockMatch: RegExpExecArray | null;
 
-  while ((blockMatch = codeBlockRegex.exec(text)) !== null) {
+  while ((blockMatch = codeBlockRegex.exec(cleanText)) !== null) {
     if (blockMatch.index > lastIdx) {
-      const textChunk = text.substring(lastIdx, blockMatch.index);
+      const textChunk = cleanText.substring(lastIdx, blockMatch.index);
       segments.push(
         <p key={lastIdx} className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
           {formatInlineText(textChunk)}
@@ -87,10 +87,10 @@ const renderProblemDescription = (text: string) => {
     lastIdx = codeBlockRegex.lastIndex;
   }
 
-  if (lastIdx < text.length) {
+  if (lastIdx < cleanText.length) {
     segments.push(
       <p key={lastIdx} className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
-        {formatInlineText(text.substring(lastIdx))}
+        {formatInlineText(cleanText.substring(lastIdx))}
       </p>
     );
   }
@@ -152,7 +152,6 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
           const isSolutionOpen = !!revealedSolutions[prob.id];
           const isHintOpen = !!revealedHints[prob.id];
           const isCopiedSolution = copiedProblemId === `sol-${prob.id}`;
-          const isCopiedStarter = copiedProblemId === `start-${prob.id}`;
 
           const diffVariant: 'blue' | 'green' | 'amber' =
             prob.difficulty === 'medium'
@@ -181,56 +180,10 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
                 </Badge>
               </div>
 
-              {/* Formatted Problem Description / Scenario */}
-              {prob.description && (
-                <div className="text-xs sm:text-sm text-slate-800 leading-relaxed font-normal">
-                  {renderProblemDescription(prob.description)}
-                </div>
-              )}
-
-              {/* Detailed Problem Specifications & Requirements */}
-              {prob.problemStatement && prob.problemStatement.trim() !== (prob.description || '').trim() && (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <ListChecks className="w-3.5 h-3.5 text-brand-600" />
-                    Problem Specifications &amp; Requirements
-                  </span>
-                  <div className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
-                    {renderProblemDescription(prob.problemStatement)}
-                  </div>
-                </div>
-              )}
-
-              {/* Starter Code / Code to Inspect & Fix */}
-              {prob.initialCode && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <Code2 className="w-3.5 h-3.5 text-amber-500" />
-                      Starter Code / Code to Inspect &amp; Fix
-                    </span>
-                    <button
-                      onClick={() => handleCopyCode(`start-${prob.id}`, prob.initialCode!)}
-                      className="text-xs text-slate-500 hover:text-slate-800 flex items-center space-x-1 cursor-pointer transition-colors"
-                    >
-                      {isCopiedStarter ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="text-emerald-600">Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Copy Starter Code</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <div className="p-3.5 rounded-xl bg-slate-950 font-mono text-xs text-amber-200 overflow-x-auto shadow-inner border border-slate-800/80 leading-relaxed">
-                    <pre>{prob.initialCode}</pre>
-                  </div>
-                </div>
-              )}
+              {/* Clean, Minimal Problem Description & Requirements */}
+              <div className="text-xs sm:text-sm text-slate-800 leading-relaxed font-normal">
+                {renderProblemDescription(prob.problemStatement || prob.description || '')}
+              </div>
 
               {/* Expected Output Preview */}
               {prob.expectedOutput && (
