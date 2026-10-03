@@ -1,0 +1,361 @@
+{
+  "id": "java-oop-mod7-les3",
+  "slug": "abstract-methods",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Abstract Methods",
+  "summary": "Master method declarations without bodies: the contract syntax, access modifier rules, and the strict requirement for concrete subclasses to override them.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "abstract-classes",
+    "method-overriding"
+  ],
+  "learningObjectives": [
+    "Write syntactically correct abstract method declarations ending with a semicolon",
+    "Identify forbidden modifier combinations (private abstract, static abstract, final abstract)",
+    "Explain how the compiler enforces overriding in the first concrete subclass down the hierarchy",
+    "Design extensible method contracts with precise return types and parameter lists"
+  ],
+  "expectedOutcomes": [
+    "You can define abstract method signatures with appropriate access modifiers",
+    "You can implement and override abstract methods in child classes using @Override"
+  ],
+  "activities": [
+    {
+      "id": "act-les3-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Blank Legal Contract Clause",
+      "concept": "Abstract Methods",
+      "realWorldMetaphor": {
+        "scenario": "When signing a standard commercial real estate lease, the master agreement contains a clause: 'Section 4: Tenant agrees to pay monthly rent of $________ by the 1st of each calendar month.' The master template does not specify an amount because every unit has a different square footage. But every individual tenant must fill in their specific rental amount before signing.",
+        "mapping": "The blank clause is the `abstract method` declaration (`public abstract double getMonthlyRent();`). The master lease is the `abstract class`. The individual signed lease with an exact dollar amount is the concrete subclass providing the method body.",
+        "takeaway": "An abstract method declares that a capability must exist, but leaves the exact definition to each specialized subclass."
+      }
+    },
+    {
+      "id": "act-les3-concept",
+      "type": "concept",
+      "title": "Syntax & Semantics of Abstract Methods",
+      "content": "### What is an Abstract Method?\n\nAn **abstract method** is a method declared with the `abstract` keyword that has **no implementation body**. Instead of curly braces `{ ... }`, it terminates with a semicolon `;`:\n\n```java\npublic abstract double calculateTax(double grossIncome);\n```\n\n### The 4 Mandatory Rules of Abstract Methods\n\n1. **Must Reside in an Abstract Class or Interface**:\n   If a regular class contains even one abstract method, the compiler immediately produces an error unless the class itself is marked `abstract`.\n2. **No Method Body**:\n   Writing curly braces `{}`\u2014even an empty body\u2014causes a compiler error: `'abstract methods cannot have a body'`.\n3. **Forbidden Modifiers**:\n   - `private abstract`: Illegal! Private methods cannot be inherited or overridden.\n   - `static abstract`: Illegal! Static methods belong to the class and cannot be dynamically dispatched.\n   - `final abstract`: Illegal! Final prevents overriding, which defeats the entire purpose of abstract.\n   - `synchronized abstract`: Illegal at declaration (child can synchronize its implementation).\n4. **Overriding Mandate**:\n   The first concrete class extending the abstract class MUST implement every abstract method with an identical signature (or covariant return type) and equal or broader visibility."
+    },
+    {
+      "id": "act-les3-cw1",
+      "type": "code_walkthrough",
+      "title": "Syntax & Modifiers in Action",
+      "codeSnippet": "abstract class PaymentProcessor {\n    protected String merchantId;\n\n    public PaymentProcessor(String merchantId) {\n        this.merchantId = merchantId;\n    }\n\n    // LEGAL: protected abstract method with parameters and return type\n    protected abstract boolean authorize(String account, double amount);\n\n    // LEGAL: public abstract method\n    public abstract String getProviderName();\n\n    // Concrete method utilizing the abstract methods!\n    public void process(String account, double amount) {\n        System.out.println(\"Attempting settlement via \" + getProviderName());\n        boolean success = authorize(account, amount);\n        System.out.println(\"Result: \" + (success ? \"APPROVED\" : \"DECLINED\"));\n    }\n}\n\nclass SquareProcessor extends PaymentProcessor {\n    public SquareProcessor(String merchantId) {\n        super(merchantId);\n    }\n\n    @Override\n    public String getProviderName() { return \"SQUARE_GATEWAY\"; }\n\n    @Override\n    protected boolean authorize(String account, double amount) {\n        // Concrete child provides implementation\n        return amount > 0 && amount <= 5000.0;\n    }\n}\n\npublic class ProcessorApp {\n    public static void main(String[] args) {\n        PaymentProcessor proc = new SquareProcessor(\"SQ-9912\");\n        proc.process(\"ACC-441\", 120.0);\n    }\n}",
+      "code": "abstract class PaymentProcessor {\n    protected String merchantId;\n\n    public PaymentProcessor(String merchantId) {\n        this.merchantId = merchantId;\n    }\n\n    // LEGAL: protected abstract method with parameters and return type\n    protected abstract boolean authorize(String account, double amount);\n\n    // LEGAL: public abstract method\n    public abstract String getProviderName();\n\n    // Concrete method utilizing the abstract methods!\n    public void process(String account, double amount) {\n        System.out.println(\"Attempting settlement via \" + getProviderName());\n        boolean success = authorize(account, amount);\n        System.out.println(\"Result: \" + (success ? \"APPROVED\" : \"DECLINED\"));\n    }\n}\n\nclass SquareProcessor extends PaymentProcessor {\n    public SquareProcessor(String merchantId) {\n        super(merchantId);\n    }\n\n    @Override\n    public String getProviderName() { return \"SQUARE_GATEWAY\"; }\n\n    @Override\n    protected boolean authorize(String account, double amount) {\n        // Concrete child provides implementation\n        return amount > 0 && amount <= 5000.0;\n    }\n}\n\npublic class ProcessorApp {\n    public static void main(String[] args) {\n        PaymentProcessor proc = new SquareProcessor(\"SQ-9912\");\n        proc.process(\"ACC-441\", 120.0);\n    }\n}",
+      "language": "java",
+      "explanation": "PaymentProcessor declares abstract methods authorize() and getProviderName(). Notice how the concrete method process() calls these abstract methods directly.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`authorize` is declared `protected abstract` terminating in a semicolon."
+        },
+        {
+          "step": 2,
+          "description": "`process` in the parent coordinates the transaction flow, invoking `authorize()` and `getProviderName()` via dynamic dispatch."
+        },
+        {
+          "step": 3,
+          "description": "`SquareProcessor` overrides both abstract methods with concrete implementations."
+        },
+        {
+          "step": 4,
+          "description": "When `proc.process(...)` executes, dynamic dispatch resolves the abstract calls to SquareProcessor's logic."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-cw2",
+      "type": "code_walkthrough",
+      "title": "Covariant Return Types with Abstract Methods",
+      "codeSnippet": "class ResponsePayload {\n    public String format() { return \"Generic payload\"; }\n}\n\nclass JsonPayload extends ResponsePayload {\n    @Override\n    public String format() { return \"{\\\"status\\\": \\\"OK\\\"}\"; }\n}\n\nabstract class ApiEndpoint {\n    // Abstract method returning base type\n    public abstract ResponsePayload handleRequest();\n}\n\nclass StatusEndpoint extends ApiEndpoint {\n    // Legal Covariant Return Type: JsonPayload is a subtype of ResponsePayload\n    @Override\n    public JsonPayload handleRequest() {\n        return new JsonPayload();\n    }\n}\n\npublic class ApiDemo {\n    public static void main(String[] args) {\n        ApiEndpoint endpoint = new StatusEndpoint();\n        System.out.println(endpoint.handleRequest().format());\n    }\n}",
+      "code": "class ResponsePayload {\n    public String format() { return \"Generic payload\"; }\n}\n\nclass JsonPayload extends ResponsePayload {\n    @Override\n    public String format() { return \"{\\\"status\\\": \\\"OK\\\"}\"; }\n}\n\nabstract class ApiEndpoint {\n    // Abstract method returning base type\n    public abstract ResponsePayload handleRequest();\n}\n\nclass StatusEndpoint extends ApiEndpoint {\n    // Legal Covariant Return Type: JsonPayload is a subtype of ResponsePayload\n    @Override\n    public JsonPayload handleRequest() {\n        return new JsonPayload();\n    }\n}\n\npublic class ApiDemo {\n    public static void main(String[] args) {\n        ApiEndpoint endpoint = new StatusEndpoint();\n        System.out.println(endpoint.handleRequest().format());\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates covariant return types when overriding abstract methods. StatusEndpoint can narrow the return type from ResponsePayload to JsonPayload.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`ApiEndpoint` declares abstract method `handleRequest()` returning `ResponsePayload`."
+        },
+        {
+          "step": 2,
+          "description": "`StatusEndpoint` overrides `handleRequest()` returning more specific `JsonPayload`."
+        },
+        {
+          "step": 3,
+          "description": "Covariant return types are 100% legal in Java method overriding."
+        },
+        {
+          "step": 4,
+          "description": "Calling `endpoint.handleRequest().format()` outputs `{\"status\": \"OK\"}`."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-mcq",
+      "type": "mcq",
+      "title": "Abstract Methods Quiz",
+      "questions": [
+        {
+          "id": "q3-1",
+          "question": "Which of the following is a syntactically valid abstract method declaration in Java?",
+          "options": [
+            "public abstract void calculate() {}",
+            "public abstract void calculate();",
+            "public void abstract calculate();",
+            "abstract public void calculate() { return; }"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract methods must use the `abstract` modifier before the return type and terminate with a semicolon `;` instead of a block `{}`."
+        },
+        {
+          "id": "q3-2",
+          "question": "What happens if you define an abstract method inside a class that is NOT declared abstract?",
+          "options": [
+            "The compiler automatically marks the class abstract without warning",
+            "Compile error: class must be declared abstract if it contains abstract methods",
+            "The method is ignored by the compiler",
+            "Runtime InstantiationError"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "If a class contains even a single abstract method, the class itself MUST be declared `abstract`; otherwise, javac fails compilation."
+        },
+        {
+          "id": "q3-3",
+          "question": "Which modifier combination causes a compilation error on a method?",
+          "options": [
+            "protected abstract",
+            "public abstract",
+            "private abstract",
+            "abstract"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "`private` methods are not inherited and cannot be overridden by child classes, making `private abstract` an illegal contradiction."
+        },
+        {
+          "id": "q3-4",
+          "question": "Why is `static abstract` forbidden in Java?",
+          "options": [
+            "Static methods use too much memory on the heap",
+            "Static methods are resolved at compile time based on class references, whereas abstract methods require dynamic runtime dispatch via an object vtable",
+            "Java 8 removed the static keyword",
+            "Static methods cannot accept parameters"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract methods exist to be overridden polymorphically at runtime on object instances. Static methods belong to the class and cannot be overridden."
+        },
+        {
+          "id": "q3-5",
+          "question": "Can an abstract method specify a `throws` clause for checked exceptions?",
+          "options": [
+            "No, abstract methods cannot declare exceptions",
+            "Yes, abstract methods can declare any checked or unchecked exceptions in their signature",
+            "Only for RuntimeException",
+            "Only if the method returns void"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract methods can declare `throws Exception`, and overriding subclass methods can declare the same exceptions, narrower subtypes, or no exceptions at all."
+        },
+        {
+          "id": "q3-6",
+          "question": "If an abstract method is declared `protected abstract void run();`, what access modifier can the concrete subclass use?",
+          "options": [
+            "private or package-private",
+            "protected or public",
+            "Only protected; exact match required",
+            "Only package-private"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Subclass overrides cannot reduce visibility (cannot narrow). They can maintain the same visibility (`protected`) or widen it (`public`)."
+        },
+        {
+          "id": "q3-7",
+          "question": "What is the return type rule when overriding an abstract method in Java?",
+          "options": [
+            "Return type must be void in all abstract methods",
+            "Return type must match exactly or be a covariant subtype",
+            "Any primitive can be converted to any object automatically",
+            "Return type can be changed to Object regardless of parent return type"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Since Java 5, overriding methods can declare a covariant return type\u2014a subtype of the return type declared in the parent method."
+        },
+        {
+          "id": "q3-8",
+          "question": "Can an abstract method have parameters?",
+          "options": [
+            "No, abstract methods cannot take arguments",
+            "Yes, abstract methods can accept any number and type of parameters",
+            "Only primitive parameters are allowed",
+            "Maximum 2 parameters are permitted"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract methods define standard parameter lists which concrete subclasses must match exactly in their overriding method signature."
+        },
+        {
+          "id": "q3-9",
+          "question": "What happens if a concrete subclass changes the parameter types when attempting to override an abstract method?",
+          "options": [
+            "The compiler treats it as method overloading, leaving the abstract method unimplemented and failing compilation",
+            "The method parameters are dynamically cast at runtime",
+            "A ClassCastException is thrown upon class loading",
+            "The parent abstract method is deleted from the bytecode"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Altering parameter types constitutes method overloading, not overriding. Because the abstract method remains unimplemented, compilation fails."
+        },
+        {
+          "id": "q3-10",
+          "question": "Can an abstract class have both abstract methods and concrete methods?",
+          "options": [
+            "No, all methods in an abstract class must be abstract",
+            "Yes, abstract classes can freely mix abstract and concrete methods (partial abstraction)",
+            "Only if declared in an interface",
+            "Only if marked with @Partial"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract classes provide partial abstraction, combining abstract method contracts with concrete reusable methods."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Abstract Methods",
+      "interviewQA": [
+        {
+          "id": "i3-1",
+          "companyTag": "Amazon",
+          "question": "Why does Java forbid declaring an abstract method as `private` or `final`?",
+          "answer": "An abstract method defines a contract that subclasses are obligated to implement via method overriding. A `private` method is not inherited and cannot be seen or overridden by any child class. A `final` method explicitly forbids overriding. Combining `abstract` with either `private` or `final` creates an impossible contradiction, which the compiler rejects."
+        },
+        {
+          "id": "i3-2",
+          "companyTag": "Google",
+          "question": "Can a concrete method in an abstract class call an abstract method defined in the same class? How does the JVM resolve this at runtime?",
+          "answer": "Yes, this is the foundation of the Template Method design pattern. At runtime, the caller executes the method on an instance of a concrete subclass. The implicit receiver `this` points to the subclass object. When the JVM encounters the abstract method call, dynamic method dispatch (`invokevirtual`) resolves the method to the concrete child's overridden implementation via its vtable."
+        },
+        {
+          "id": "i3-3",
+          "companyTag": "Microsoft",
+          "question": "What are covariant return types, and how do they apply to abstract methods?",
+          "answer": "A covariant return type allows an overriding method in a subclass to return a more specific subtype of the return type declared in the superclass method. For instance, if an abstract method declares `public abstract Vehicle create();`, a subclass can legally override it with `public Car create();` because `Car` is a subtype of `Vehicle`."
+        },
+        {
+          "id": "i3-4",
+          "companyTag": "Apple",
+          "question": "Can an abstract method declare checked exceptions that the overriding subclass method chooses not to throw?",
+          "answer": "Yes. An overriding method can declare fewer or no checked exceptions, or subclasses of the declared exceptions, but it cannot declare new or broader checked exceptions that were not declared by the superclass method."
+        },
+        {
+          "id": "i3-5",
+          "companyTag": "Uber",
+          "question": "What happens if two abstract methods in an abstract class have the same name but different parameters?",
+          "answer": "This is completely valid method overloading. Both abstract methods define separate contracts, and concrete subclasses must implement both overloaded variations."
+        },
+        {
+          "id": "i3-6",
+          "companyTag": "Stripe",
+          "question": "Why can't an abstract method be marked `native`?",
+          "answer": "`native` methods have an implementation provided in another language (like C or C++) via JNI, whereas `abstract` methods explicitly specify that there is NO implementation at all. A method cannot simultaneously have a native implementation and no implementation."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the exact syntax for declaring an abstract method ending in a semicolon.",
+        "I understand that any class containing an abstract method must be declared abstract.",
+        "I know why `private abstract`, `static abstract`, and `final abstract` are compiler errors.",
+        "I understand how concrete methods in an abstract class can invoke abstract methods (Template Method pattern).",
+        "I know that concrete subclasses must implement all abstract methods with matching signatures.",
+        "I can explain covariant return types in abstract method overriding.",
+        "I understand visibility rules when overriding (cannot narrow access modifiers).",
+        "I know exception rules when overriding abstract methods.",
+        "I understand how the JVM resolves abstract method calls via vtable dynamic dispatch.",
+        "I can design a polymorphic processing pipeline using abstract method contracts."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les3-p1",
+      "lessonId": "java-oop-mod7-les3",
+      "orderIndex": 1,
+      "title": "Warmup: Abstract Area Calculation",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `AbstractShape` hierarchy:\n1. Abstract class `AbstractShape`: has `protected String color`. Constructor initializes `color`.\n   Declare `public abstract double getArea();`.\n   Concrete method `public void printInfo()`: prints `color + ' shape area: ' + String.format(\"%.2f\", getArea())`.\n2. Concrete class `Square`: has `private double side`. Overrides `getArea()` returning `side * side`.\nIn `main`, create a `Square(\"Blue\", 4.0)` referenced as `AbstractShape`, and call `printInfo()`.",
+      "starterCode": "abstract class AbstractShape {\n    protected String color;\n    public AbstractShape(String color) { this.color = color; }\n    // TODO: Declare public abstract double getArea();\n    public void printInfo() {\n        System.out.println(color + \" shape area: \" + String.format(\"%.2f\", getArea()));\n    }\n}\n\nclass Square extends AbstractShape {\n    private double side;\n    public Square(String color, double side) {\n        super(color);\n        this.side = side;\n    }\n    // TODO: Implement getArea()\n}\n\npublic class ShapeApp {\n    public static void main(String[] args) {\n        // TODO: Create Square and call printInfo()\n    }\n}",
+      "initialCode": "abstract class AbstractShape {\n    protected String color;\n    public AbstractShape(String color) { this.color = color; }\n    // TODO: Declare public abstract double getArea();\n    public void printInfo() {\n        System.out.println(color + \" shape area: \" + String.format(\"%.2f\", getArea()));\n    }\n}\n\nclass Square extends AbstractShape {\n    private double side;\n    public Square(String color, double side) {\n        super(color);\n        this.side = side;\n    }\n    // TODO: Implement getArea()\n}\n\npublic class ShapeApp {\n    public static void main(String[] args) {\n        // TODO: Create Square and call printInfo()\n    }\n}",
+      "solutionCode": "abstract class AbstractShape {\n    protected String color;\n    public AbstractShape(String color) { this.color = color; }\n    public abstract double getArea();\n    public void printInfo() {\n        System.out.println(color + \" shape area: \" + String.format(\"%.2f\", getArea()));\n    }\n}\n\nclass Square extends AbstractShape {\n    private double side;\n    public Square(String color, double side) {\n        super(color);\n        this.side = side;\n    }\n    @Override\n    public double getArea() {\n        return side * side;\n    }\n}\n\npublic class ShapeApp {\n    public static void main(String[] args) {\n        AbstractShape shape = new Square(\"Blue\", 4.0);\n        shape.printInfo();\n    }\n}",
+      "expectedOutput": "Blue shape area: 16.00",
+      "hints": [
+        "In AbstractShape, declare: public abstract double getArea();",
+        "In Square, implement getArea() returning side * side;"
+      ]
+    },
+    {
+      "id": "prob-les3-p2",
+      "lessonId": "java-oop-mod7-les3",
+      "orderIndex": 2,
+      "title": "Abstract Text Transformer Engine",
+      "difficulty": "medium",
+      "problemStatement": "Build a text transformation engine from scratch:\n1. Abstract class `TextTransformer`: has `public abstract String transform(String text);`.\n   Concrete method `public void processAndPrint(String input)`: prints `'Transformed: ' + transform(input)`.\n2. Concrete class `UpperCaseTransformer` extending `TextTransformer`: overrides `transform` returning `text.toUpperCase()`.\n3. Concrete class `SlugTransformer` extending `TextTransformer`: overrides `transform` returning `text.toLowerCase().replace(' ', '-')`.\n4. In `Main`, create an array `TextTransformer[] transformers` holding an `UpperCaseTransformer` and a `SlugTransformer`.\n5. Iterate with input `'Hello World Java'` and call `processAndPrint(input)` on each.",
+      "solutionCode": "abstract class TextTransformer {\n    public abstract String transform(String text);\n    public void processAndPrint(String input) {\n        System.out.println(\"Transformed: \" + transform(input));\n    }\n}\n\nclass UpperCaseTransformer extends TextTransformer {\n    @Override\n    public String transform(String text) {\n        return text.toUpperCase();\n    }\n}\n\nclass SlugTransformer extends TextTransformer {\n    @Override\n    public String transform(String text) {\n        return text.toLowerCase().replace(' ', '-');\n    }\n}\n\npublic class TransformerApp {\n    public static void main(String[] args) {\n        TextTransformer[] transformers = new TextTransformer[] {\n            new UpperCaseTransformer(),\n            new SlugTransformer()\n        };\n        String sample = \"Hello World Java\";\n        for (TextTransformer t : transformers) {\n            t.processAndPrint(sample);\n        }\n    }\n}",
+      "expectedOutput": "Transformed: HELLO WORLD JAVA\nTransformed: hello-world-java",
+      "hints": [
+        "Declare public abstract String transform(String text); in TextTransformer.",
+        "Implement transform in UpperCaseTransformer and SlugTransformer."
+      ]
+    },
+    {
+      "id": "prob-les3-p3",
+      "lessonId": "java-oop-mod7-les3",
+      "orderIndex": 3,
+      "title": "Abstract Validation Rule Chain",
+      "difficulty": "medium",
+      "problemStatement": "Design a form input validation rule engine from scratch:\n1. Abstract class `ValidationRule`: has `protected String fieldName`. Constructor accepts `String fieldName`.\n   Abstract method `public abstract boolean isValid(String value)`.\n   Abstract method `public abstract String getErrorMessage()`.\n   Concrete method `public void validate(String value)`: if `!isValid(value)`, prints `fieldName + ': ' + getErrorMessage()`; else prints `fieldName + ': VALID'`.\n2. Concrete class `MinLengthRule` extending `ValidationRule`: adds `private int minLen`. Overrides `isValid` checking if `value != null && value.length() >= minLen`. Overrides `getErrorMessage` returning `'Minimum length ' + minLen + ' required'`.\n3. Concrete class `NumericRule` extending `ValidationRule`: overrides `isValid` returning true if value contains only digits (`value.matches(\"\\\\d+\")`). Overrides `getErrorMessage` returning `'Must contain digits only'`.\n4. In `Main`, test `new MinLengthRule(\"Username\", 5)` with `'abc'` and `new NumericRule(\"ZipCode\")` with `'90210'` by calling `validate()`.",
+      "solutionCode": "abstract class ValidationRule {\n    protected String fieldName;\n    public ValidationRule(String fieldName) {\n        this.fieldName = fieldName;\n    }\n    public abstract boolean isValid(String value);\n    public abstract String getErrorMessage();\n    public void validate(String value) {\n        if (!isValid(value)) {\n            System.out.println(fieldName + \": \" + getErrorMessage());\n        } else {\n            System.out.println(fieldName + \": VALID\");\n        }\n    }\n}\n\nclass MinLengthRule extends ValidationRule {\n    private int minLen;\n    public MinLengthRule(String fieldName, int minLen) {\n        super(fieldName);\n        this.minLen = minLen;\n    }\n    @Override\n    public boolean isValid(String value) {\n        return value != null && value.length() >= minLen;\n    }\n    @Override\n    public String getErrorMessage() {\n        return \"Minimum length \" + minLen + \" required\";\n    }\n}\n\nclass NumericRule extends ValidationRule {\n    public NumericRule(String fieldName) {\n        super(fieldName);\n    }\n    @Override\n    public boolean isValid(String value) {\n        return value != null && value.matches(\"\\\\d+\");\n    }\n    @Override\n    public String getErrorMessage() {\n        return \"Must contain digits only\";\n    }\n}\n\npublic class ValidationApp {\n    public static void main(String[] args) {\n        ValidationRule r1 = new MinLengthRule(\"Username\", 5);\n        ValidationRule r2 = new NumericRule(\"ZipCode\");\n        r1.validate(\"abc\");\n        r2.validate(\"90210\");\n    }\n}",
+      "expectedOutput": "Username: Minimum length 5 required\nZipCode: VALID",
+      "hints": [
+        "In MinLengthRule, check if value.length() >= minLen.",
+        "In NumericRule, use value.matches(\"\\\\d+\")."
+      ]
+    },
+    {
+      "id": "prob-les3-p4",
+      "lessonId": "java-oop-mod7-les3",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Illegal private and static on Abstract Method",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to write an abstract discount calculator, but marked an abstract method private and another static, causing compile errors. Fix the code so it properly compiles and computes discounts.",
+      "starterCode": "abstract class DiscountStrategy {\n    protected String name;\n    public DiscountStrategy(String name) { this.name = name; }\n    \n    // BUG 1: Cannot be private!\n    private abstract double calculateDiscount(double price);\n    \n    // BUG 2: Cannot be static!\n    public static abstract String getStrategyName();\n    \n    public void printDiscount(double price) {\n        System.out.println(getStrategyName() + \": $\" + calculateDiscount(price));\n    }\n}\n\nclass FlatDiscount extends DiscountStrategy {\n    public FlatDiscount() { super(\"Flat 10\"); }\n    @Override\n    protected double calculateDiscount(double price) {\n        return 10.0;\n    }\n    @Override\n    public String getStrategyName() {\n        return \"FLAT_DISCOUNT\";\n    }\n}\n\npublic class StrategyBugApp {\n    public static void main(String[] args) {\n        DiscountStrategy strat = new FlatDiscount();\n        strat.printDiscount(100.0);\n    }\n}",
+      "initialCode": "abstract class DiscountStrategy {\n    protected String name;\n    public DiscountStrategy(String name) { this.name = name; }\n    \n    // BUG 1: Cannot be private!\n    private abstract double calculateDiscount(double price);\n    \n    // BUG 2: Cannot be static!\n    public static abstract String getStrategyName();\n    \n    public void printDiscount(double price) {\n        System.out.println(getStrategyName() + \": $\" + calculateDiscount(price));\n    }\n}\n\nclass FlatDiscount extends DiscountStrategy {\n    public FlatDiscount() { super(\"Flat 10\"); }\n    @Override\n    protected double calculateDiscount(double price) {\n        return 10.0;\n    }\n    @Override\n    public String getStrategyName() {\n        return \"FLAT_DISCOUNT\";\n    }\n}\n\npublic class StrategyBugApp {\n    public static void main(String[] args) {\n        DiscountStrategy strat = new FlatDiscount();\n        strat.printDiscount(100.0);\n    }\n}",
+      "solutionCode": "abstract class DiscountStrategy {\n    protected String name;\n    public DiscountStrategy(String name) { this.name = name; }\n    protected abstract double calculateDiscount(double price);\n    public abstract String getStrategyName();\n    public void printDiscount(double price) {\n        System.out.println(getStrategyName() + \": $\" + calculateDiscount(price));\n    }\n}\n\nclass FlatDiscount extends DiscountStrategy {\n    public FlatDiscount() { super(\"Flat 10\"); }\n    @Override\n    protected double calculateDiscount(double price) {\n        return 10.0;\n    }\n    @Override\n    public String getStrategyName() {\n        return \"FLAT_DISCOUNT\";\n    }\n}\n\npublic class StrategyBugApp {\n    public static void main(String[] args) {\n        DiscountStrategy strat = new FlatDiscount();\n        strat.printDiscount(100.0);\n    }\n}",
+      "expectedOutput": "FLAT_DISCOUNT: $10.0",
+      "hints": [
+        "Change private abstract to protected abstract.",
+        "Remove static from public static abstract String getStrategyName();"
+      ]
+    },
+    {
+      "id": "prob-les3-p5",
+      "lessonId": "java-oop-mod7-les3",
+      "orderIndex": 5,
+      "title": "Abstract Serialization Formatter Pipeline",
+      "difficulty": "hard",
+      "problemStatement": "Build an abstract serialization engine with covariant returns from scratch:\n1. Base payload class `SerializedData`: has `public String payload;` and constructor. Method `public String getPayload() { return payload; }`.\n2. Subclass `JsonData` extending `SerializedData`: overrides `getPayload()` returning `'[JSON] ' + payload`.\n3. Subclass `XmlData` extending `SerializedData`: overrides `getPayload()` returning `'[XML] ' + payload`.\n4. Abstract class `DataSerializer`: has abstract method `public abstract SerializedData serialize(String key, String value);`.\n5. Concrete class `JsonSerializer` extending `DataSerializer`: overrides `serialize` with covariant return type `public JsonData serialize(String key, String value)` returning `new JsonData(\"{\\\"\" + key + \"\\\": \\\"\" + value + \"\\\"}\")`.\n6. Concrete class `XmlSerializer` extending `DataSerializer`: overrides `serialize` with covariant return type `public XmlData serialize(String key, String value)` returning `new XmlData(\"<\" + key + \">\" + value + \"</\" + key + \">\")`.\n7. In `Main`, create an array `DataSerializer[] serializers` holding both serializers, serialize key `'user'` value `'alice'`, and print the resulting `.getPayload()` of each.",
+      "solutionCode": "class SerializedData {\n    public String payload;\n    public SerializedData(String payload) { this.payload = payload; }\n    public String getPayload() { return payload; }\n}\n\nclass JsonData extends SerializedData {\n    public JsonData(String payload) { super(payload); }\n    @Override\n    public String getPayload() { return \"[JSON] \" + payload; }\n}\n\nclass XmlData extends SerializedData {\n    public XmlData(String payload) { super(payload); }\n    @Override\n    public String getPayload() { return \"[XML] \" + payload; }\n}\n\nabstract class DataSerializer {\n    public abstract SerializedData serialize(String key, String value);\n}\n\nclass JsonSerializer extends DataSerializer {\n    @Override\n    public JsonData serialize(String key, String value) {\n        return new JsonData(\"{\\\"\" + key + \"\\\": \\\"\" + value + \"\\\"}\");\n    }\n}\n\nclass XmlSerializer extends DataSerializer {\n    @Override\n    public XmlData serialize(String key, String value) {\n        return new XmlData(\"<\" + key + \">\" + value + \"</\" + key + \">\");\n    }\n}\n\npublic class SerializerApp {\n    public static void main(String[] args) {\n        DataSerializer[] serializers = new DataSerializer[] {\n            new JsonSerializer(),\n            new XmlSerializer()\n        };\n        for (DataSerializer s : serializers) {\n            System.out.println(s.serialize(\"user\", \"alice\").getPayload());\n        }\n    }\n}",
+      "expectedOutput": "[JSON] {\"user\": \"alice\"}\n[XML] <user>alice</user>",
+      "hints": [
+        "In JsonSerializer, return type JsonData is a covariant subtype of SerializedData.",
+        "In XmlSerializer, return type XmlData is a covariant subtype of SerializedData."
+      ]
+    }
+  ]
+}

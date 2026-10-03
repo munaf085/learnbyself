@@ -1,0 +1,361 @@
+{
+  "id": "java-oop-mod7-les6",
+  "slug": "interfaces",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Interfaces",
+  "summary": "Master pure specification contracts in Java: the interface keyword, implicit public abstract methods, public static final constants, and 100% abstraction.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "why-abstraction",
+    "abstract-methods"
+  ],
+  "learningObjectives": [
+    "Define Java interfaces as pure behavioral contracts specifying what methods a class must support",
+    "Identify compiler implicits: all interface methods are implicitly public abstract (prior to Java 8)",
+    "Explain constant rules: all interface variables are implicitly public static final",
+    "Compare interface design (CAN-DO capabilities) with class inheritance (IS-A identity)"
+  ],
+  "expectedOutcomes": [
+    "You can declare clean interfaces with method specifications and constants",
+    "You understand why interfaces represent 100% pure contracts without instance state"
+  ],
+  "activities": [
+    {
+      "id": "act-les6-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Universal USB-C Port",
+      "concept": "The Interface as a Universal Socket",
+      "realWorldMetaphor": {
+        "scenario": "A USB-C port is a standardized specification: it defines exact pin dimensions, voltage profiles (5V, 9V, 20V), and protocol handshakes. An iPhone, a high-end laptop, an external SSD, a drone battery charger, and a desk fan all have USB-C ports. A laptop and a desk fan share almost zero DNA (they are not in the same class hierarchy), yet both plug into the same charger.",
+        "mapping": "The USB-C specification is the `interface` (`Chargeable`). The phone, SSD, and desk fan are completely unrelated classes that implement the same interface (`implements Chargeable`). The charger interacts strictly with the `Chargeable` contract.",
+        "takeaway": "Interfaces enable polymorphic interaction across completely unrelated classes based on shared capabilities, not shared ancestry."
+      }
+    },
+    {
+      "id": "act-les6-concept",
+      "type": "concept",
+      "title": "The Interface Contract & Compiler Implicits",
+      "content": "### What is an Interface?\n\nAn **interface** in Java is a reference type, similar to a class, that can contain only constants, method signatures, default methods, static methods, and nested types. It represents a pure contract: **a promise of behavior**.\n\n```java\npublic interface Drivable {\n    // Compiler automatically adds: public static final\n    int MAX_SPEED = 120;\n\n    // Compiler automatically adds: public abstract\n    void drive();\n    void stop();\n}\n```\n\n### The Golden Implicits of Traditional Interfaces\n\n1. **Methods**:\n   Every non-default, non-static method declared in an interface is **implicitly `public` and `abstract`**.\n   - Writing `void drive();` is byte-for-byte identical to `public abstract void drive();`.\n   - You cannot declare an interface method `protected`, `private` (prior to Java 9 private helpers), or `final`.\n2. **Variables (Fields)**:\n   Every field declared in an interface is **implicitly `public`, `static`, and `final`** (a compile-time constant).\n   - Writing `int TIMEOUT = 5000;` is identical to `public static final int TIMEOUT = 5000;`.\n   - You cannot declare instance variables (non-static state) in an interface.\n3. **No Constructors**:\n   An interface has NO state and CANNOT have constructors. You can never write `new Drivable()`."
+    },
+    {
+      "id": "act-les6-cw1",
+      "type": "code_walkthrough",
+      "title": "Declaring Interfaces with Compiler Implicits",
+      "codeSnippet": "interface Printable {\n    // Compiler implicitly adds: public static final\n    int DEFAULT_DPI = 300;\n    String WATERMARK = \"CONFIDENTIAL\";\n\n    // Compiler implicitly adds: public abstract\n    void print();\n    void setPaperSize(String size);\n}\n\nclass Invoice implements Printable {\n    private String invoiceNumber;\n    private String paper = \"A4\";\n\n    public Invoice(String invoiceNumber) {\n        this.invoiceNumber = invoiceNumber;\n    }\n\n    // MUST be public! Cannot reduce visibility from interface's implicit public\n    @Override\n    public void print() {\n        System.out.println(\"Printing Invoice #\" + invoiceNumber + \" at \" + DEFAULT_DPI + \" DPI [\" + WATERMARK + \"] on \" + paper);\n    }\n\n    @Override\n    public void setPaperSize(String size) {\n        this.paper = size;\n    }\n}\n\npublic class InterfaceDemo {\n    public static void main(String[] args) {\n        // Interface reference pointing to concrete implementing object\n        Printable doc = new Invoice(\"INV-2026-001\");\n        doc.setPaperSize(\"Letter\");\n        doc.print();\n        \n        // Accessing interface constants directly via interface name\n        System.out.println(\"Standard DPI: \" + Printable.DEFAULT_DPI);\n    }\n}",
+      "code": "interface Printable {\n    // Compiler implicitly adds: public static final\n    int DEFAULT_DPI = 300;\n    String WATERMARK = \"CONFIDENTIAL\";\n\n    // Compiler implicitly adds: public abstract\n    void print();\n    void setPaperSize(String size);\n}\n\nclass Invoice implements Printable {\n    private String invoiceNumber;\n    private String paper = \"A4\";\n\n    public Invoice(String invoiceNumber) {\n        this.invoiceNumber = invoiceNumber;\n    }\n\n    // MUST be public! Cannot reduce visibility from interface's implicit public\n    @Override\n    public void print() {\n        System.out.println(\"Printing Invoice #\" + invoiceNumber + \" at \" + DEFAULT_DPI + \" DPI [\" + WATERMARK + \"] on \" + paper);\n    }\n\n    @Override\n    public void setPaperSize(String size) {\n        this.paper = size;\n    }\n}\n\npublic class InterfaceDemo {\n    public static void main(String[] args) {\n        // Interface reference pointing to concrete implementing object\n        Printable doc = new Invoice(\"INV-2026-001\");\n        doc.setPaperSize(\"Letter\");\n        doc.print();\n        \n        // Accessing interface constants directly via interface name\n        System.out.println(\"Standard DPI: \" + Printable.DEFAULT_DPI);\n    }\n}",
+      "language": "java",
+      "explanation": "Invoice must declare its overriding methods as public. In Printable, DEFAULT_DPI is automatically public static final, and print() is automatically public abstract.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Printable` declares `DEFAULT_DPI` (implicitly `public static final`) and `print()` (implicitly `public abstract`)."
+        },
+        {
+          "step": 2,
+          "description": "`Invoice` uses `implements Printable` and implements all methods as `public`."
+        },
+        {
+          "step": 3,
+          "description": "Polymorphic reference `Printable doc = new Invoice(...)` enables abstraction."
+        },
+        {
+          "step": 4,
+          "description": "`Printable.DEFAULT_DPI` can be accessed statically anywhere."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-cw2",
+      "type": "code_walkthrough",
+      "title": "Unrelated Classes Uniting Under a Common Interface",
+      "codeSnippet": "interface Trackable {\n    void pingLocation();\n}\n\n// Hierarchy 1: Logistics Shipping\nclass CargoContainer implements Trackable {\n    private String containerCode;\n    public CargoContainer(String code) { this.containerCode = code; }\n    @Override\n    public void pingLocation() {\n        System.out.println(\"Container [\" + containerCode + \"] GPS coordinates: 37.7749 N, 122.4194 W\");\n    }\n}\n\n// Hierarchy 2: Endangered Wildlife Management\nclass WildWolf implements Trackable {\n    private int wolfTagId;\n    public WildWolf(int tagId) { this.wolfTagId = tagId; }\n    @Override\n    public void pingLocation() {\n        System.out.println(\"Radio Collar #\" + wolfTagId + \" telemetry beacon pinging from Yellowstone Sector 4\");\n    }\n}\n\npublic class TrackingFleetApp {\n    public static void main(String[] args) {\n        // Heterogeneous collection of completely unrelated objects sharing an interface!\n        Trackable[] fleet = new Trackable[] {\n            new CargoContainer(\"MSCU-908122\"),\n            new WildWolf(402)\n        };\n        \n        for (Trackable item : fleet) {\n            item.pingLocation();\n        }\n    }\n}",
+      "code": "interface Trackable {\n    void pingLocation();\n}\n\n// Hierarchy 1: Logistics Shipping\nclass CargoContainer implements Trackable {\n    private String containerCode;\n    public CargoContainer(String code) { this.containerCode = code; }\n    @Override\n    public void pingLocation() {\n        System.out.println(\"Container [\" + containerCode + \"] GPS coordinates: 37.7749 N, 122.4194 W\");\n    }\n}\n\n// Hierarchy 2: Endangered Wildlife Management\nclass WildWolf implements Trackable {\n    private int wolfTagId;\n    public WildWolf(int tagId) { this.wolfTagId = tagId; }\n    @Override\n    public void pingLocation() {\n        System.out.println(\"Radio Collar #\" + wolfTagId + \" telemetry beacon pinging from Yellowstone Sector 4\");\n    }\n}\n\npublic class TrackingFleetApp {\n    public static void main(String[] args) {\n        // Heterogeneous collection of completely unrelated objects sharing an interface!\n        Trackable[] fleet = new Trackable[] {\n            new CargoContainer(\"MSCU-908122\"),\n            new WildWolf(402)\n        };\n        \n        for (Trackable item : fleet) {\n            item.pingLocation();\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "CargoContainer and WildWolf have completely different ancestry, but both implement Trackable. An array Trackable[] processes both polymorphically.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Trackable` defines a common capability `pingLocation()`."
+        },
+        {
+          "step": 2,
+          "description": "`CargoContainer` (industrial shipping) and `WildWolf` (biology) implement `Trackable` independently."
+        },
+        {
+          "step": 3,
+          "description": "A unified `Trackable[]` collection holds both instances safely."
+        },
+        {
+          "step": 4,
+          "description": "The for-each loop dispatches `pingLocation()` to the respective concrete implementations."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-mcq",
+      "type": "mcq",
+      "title": "Interfaces Fundamentals Quiz",
+      "questions": [
+        {
+          "id": "q6-1",
+          "question": "What modifiers are automatically added by the Java compiler to every variable declared in an interface?",
+          "options": [
+            "private static final",
+            "public static final",
+            "protected final",
+            "transient volatile"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "All interface variables are implicitly `public`, `static`, and `final`. They are compile-time constants."
+        },
+        {
+          "id": "q6-2",
+          "question": "What modifiers are automatically added by the compiler to a standard method header `void run();` declared in an interface?",
+          "options": [
+            "public final",
+            "public abstract",
+            "protected abstract",
+            "private static"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "All non-default, non-static interface methods are implicitly `public` and `abstract`."
+        },
+        {
+          "id": "q6-3",
+          "question": "Can an interface have a constructor in Java?",
+          "options": [
+            "Yes, a default no-arg constructor only",
+            "No, interfaces cannot have constructors because they cannot hold instance state and cannot be directly instantiated",
+            "Only if marked private",
+            "Yes, since Java 8"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Interfaces have no instance fields and cannot be instantiated, so constructors are completely disallowed."
+        },
+        {
+          "id": "q6-4",
+          "question": "Can you declare a method in an interface with `protected` access?",
+          "options": [
+            "Yes, protected is the default access modifier in interfaces",
+            "No, interface methods cannot be protected; they are strictly public (or private helper methods in Java 9+)",
+            "Only if the interface is in the java.util package",
+            "Yes, if the interface is package-private"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Interface methods represent public contracts. `protected` interface methods cause a compile-time error: 'modifier protected not allowed here'."
+        },
+        {
+          "id": "q6-5",
+          "question": "What happens if you attempt `interface A { int count; }` without initializing `count`?",
+          "options": [
+            "count defaults to 0",
+            "Compile error: variable count might not have been initialized (interface fields are final)",
+            "count becomes null",
+            "Runtime NullPointerException"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Because interface fields are implicitly `final`, they MUST be assigned an explicit initial value at declaration time."
+        },
+        {
+          "id": "q6-6",
+          "question": "What keyword is used by a class to adopt an interface?",
+          "options": [
+            "extends",
+            "implements",
+            "inherits",
+            "includes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Classes use the `implements` keyword to establish a contract with one or more interfaces."
+        },
+        {
+          "id": "q6-7",
+          "question": "Can an interface extend another interface in Java?",
+          "options": [
+            "No, interfaces can only be implemented by classes",
+            "Yes, an interface can extend one or more other interfaces using the extends keyword",
+            "Only using the implements keyword",
+            "Only if both interfaces are empty"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "An interface can extend other interfaces using `extends` (e.g. `interface B extends A`), inheriting all methods and constants."
+        },
+        {
+          "id": "q6-8",
+          "question": "Can you instantiate an interface directly: `Runnable r = new Runnable();`?",
+          "options": [
+            "Yes, if Runnable is imported",
+            "No, compile error: Runnable is abstract; cannot be instantiated",
+            "Yes, by allocating default memory",
+            "Only using the super keyword"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Interfaces cannot be instantiated directly with `new Interface()`. An implementing class or anonymous class must provide the bodies."
+        },
+        {
+          "id": "q6-9",
+          "question": "Why are interfaces said to model 'CAN-DO' relationships rather than 'IS-A' relationships?",
+          "options": [
+            "Because CAN-DO is faster at runtime",
+            "Because an interface specifies a capability (e.g., Serializable, Comparable, Printable) that completely unrelated classes can acquire",
+            "Because classes cannot use interfaces",
+            "Because abstract classes are obsolete"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Class inheritance models identity ('Sparrow IS-A Bird'). Interfaces model cross-cutting capabilities ('Airplane CAN-DO Fly', 'Sparrow CAN-DO Fly')."
+        },
+        {
+          "id": "q6-10",
+          "question": "What is a marker (tagging) interface in Java?",
+          "options": [
+            "An interface with 10 or more methods",
+            "An interface with zero fields and zero methods, used to mark a class as possessing a certain property (e.g., Serializable, Cloneable)",
+            "An interface that can only be used by the JVM internally",
+            "An interface marked with @Marker"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "A marker interface has no methods or fields (e.g. `java.io.Serializable`); it tags a class for metadata checks via `instanceof`."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Java Interfaces",
+      "interviewQA": [
+        {
+          "id": "i6-1",
+          "companyTag": "Google",
+          "question": "Why are all fields in a Java interface automatically `public static final`?",
+          "answer": "An interface is a pure behavioral specification, not an implementation of state. Allowing non-static instance fields would introduce object state into interfaces, creating multiple inheritance of state with all its associated memory ambiguity and diamond problem collisions. Making all fields `public static final` ensures they are strictly immutable compile-time constants."
+        },
+        {
+          "id": "i6-2",
+          "companyTag": "Amazon",
+          "question": "Can an interface extend multiple interfaces simultaneously? Why does Java permit this while forbidding multiple class inheritance?",
+          "answer": "Yes, an interface can extend multiple interfaces: `interface C extends A, B`. Java permits this because interfaces inherit only method specifications (or signatures), not instance state or method bodies (traditionally). There is no ambiguity regarding state layout in heap memory, so multiple interface inheritance does not suffer from the classic Diamond Problem of multiple class inheritance."
+        },
+        {
+          "id": "i6-3",
+          "companyTag": "Microsoft",
+          "question": "What is a Marker Interface, and why have modern Java architectures largely replaced them with Annotations?",
+          "answer": "A Marker Interface (e.g. `Serializable`, `Cloneable`, `Remote`) contains zero methods and zero constants, serving solely as a type tag checked via `instanceof`. Modern Java prefers Annotations (e.g. `@Entity`, `@Test`) because annotations can carry parameterized metadata, can target fields/methods/classes, and avoid polluting the type hierarchy."
+        },
+        {
+          "id": "i6-4",
+          "companyTag": "Netflix",
+          "question": "Why does a class implementing an interface have to declare its overriding methods as `public`?",
+          "answer": "Methods in an interface are implicitly `public`. In Java, an overriding method in a subclass cannot reduce the visibility of the method it overrides. Therefore, any class implementing an interface method must explicitly declare the method as `public`; omitting `public` causes a compiler error: 'cannot reduce the visibility of the inherited method from Interface'."
+        },
+        {
+          "id": "i6-5",
+          "companyTag": "Uber",
+          "question": "How do interfaces enable Dependency Injection (DI) and Unit Testing?",
+          "answer": "When a business service depends on an interface (e.g., `PaymentGateway`) rather than a concrete class (`StripeGateway`), developers can inject mock implementations (`MockPaymentGateway`) during unit tests. This isolates the service under test from real external network I/O, speeding up tests and making them 100% deterministic."
+        },
+        {
+          "id": "i6-6",
+          "companyTag": "Apple",
+          "question": "What bytecode instruction is generated when calling a method on an interface reference?",
+          "answer": "The JVM generates the `invokeinterface` instruction. At runtime, the JVM looks up the interface table (itable) associated with the actual runtime class to find the target method offset, which has slightly different lookup semantics than `invokevirtual`."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the exact syntax for declaring an interface using the interface keyword.",
+        "I understand that all interface variables are implicitly public static final.",
+        "I understand that all standard interface methods are implicitly public abstract.",
+        "I know why interfaces cannot have constructors.",
+        "I understand that an interface can extend multiple other interfaces using extends.",
+        "I know why implementing classes must declare overridden methods as public.",
+        "I can explain the difference between CAN-DO (interfaces) and IS-A (classes).",
+        "I understand what marker interfaces are (e.g. Serializable).",
+        "I know how interfaces enable dependency injection and mock testing.",
+        "I can process heterogeneous objects through a shared interface reference."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les6-p1",
+      "lessonId": "java-oop-mod7-les6",
+      "orderIndex": 1,
+      "title": "Warmup: Remote Control Interface",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `RemoteControl` interface and `Television` class:\n1. Interface `RemoteControl`: declares `int MAX_VOLUME = 100;` and methods `void powerOn();` and `void setVolume(int level);`.\n2. Class `Television` implementing `RemoteControl`: has `private int volume = 20;`.\n   - `powerOn()` prints `'TV powered on'`.\n   - `setVolume(int level)`: if `level <= MAX_VOLUME`, sets `volume = level` and prints `'Volume set to ' + volume`.\nIn `main`, create a `Television` via a `RemoteControl` reference, call `powerOn()`, and call `setVolume(45)`.",
+      "starterCode": "interface RemoteControl {\n    int MAX_VOLUME = 100;\n    // TODO: Declare void powerOn();\n    // TODO: Declare void setVolume(int level);\n}\n\nclass Television implements RemoteControl {\n    private int volume = 20;\n    // TODO: Implement powerOn() and setVolume(int level)\n}\n\npublic class RemoteApp {\n    public static void main(String[] args) {\n        // TODO: Instantiate Television as RemoteControl and test methods\n    }\n}",
+      "initialCode": "interface RemoteControl {\n    int MAX_VOLUME = 100;\n    // TODO: Declare void powerOn();\n    // TODO: Declare void setVolume(int level);\n}\n\nclass Television implements RemoteControl {\n    private int volume = 20;\n    // TODO: Implement powerOn() and setVolume(int level)\n}\n\npublic class RemoteApp {\n    public static void main(String[] args) {\n        // TODO: Instantiate Television as RemoteControl and test methods\n    }\n}",
+      "solutionCode": "interface RemoteControl {\n    int MAX_VOLUME = 100;\n    void powerOn();\n    void setVolume(int level);\n}\n\nclass Television implements RemoteControl {\n    private int volume = 20;\n    @Override\n    public void powerOn() {\n        System.out.println(\"TV powered on\");\n    }\n    @Override\n    public void setVolume(int level) {\n        if (level <= MAX_VOLUME) {\n            this.volume = level;\n            System.out.println(\"Volume set to \" + volume);\n        }\n    }\n}\n\npublic class RemoteApp {\n    public static void main(String[] args) {\n        RemoteControl remote = new Television();\n        remote.powerOn();\n        remote.setVolume(45);\n    }\n}",
+      "expectedOutput": "TV powered on\nVolume set to 45",
+      "hints": [
+        "In Television, methods must be declared public: public void powerOn()",
+        "setVolume checks if (level <= MAX_VOLUME)."
+      ]
+    },
+    {
+      "id": "prob-les6-p2",
+      "lessonId": "java-oop-mod7-les6",
+      "orderIndex": 2,
+      "title": "Encryptor Capability Interface",
+      "difficulty": "medium",
+      "problemStatement": "Build an encryption interface system from scratch:\n1. Interface `Encryptor`: declares method `String encrypt(String plainText);`.\n2. Class `Rot13Encryptor` implementing `Encryptor`: overrides `encrypt` by shifting each alphabetic letter by 13 positions (or simple mock: returns `'[ROT13] ' + plainText`).\n3. Class `Base64MockEncryptor` implementing `Encryptor`: overrides `encrypt` returning `'[B64] ' + plainText`.\n4. In `Main`, create an array `Encryptor[] suite` containing both encryptors.\n5. Iterate over the suite and print the encrypted output for text `'HelloWorld'`.",
+      "solutionCode": "interface Encryptor {\n    String encrypt(String plainText);\n}\n\nclass Rot13Encryptor implements Encryptor {\n    @Override\n    public String encrypt(String plainText) {\n        return \"[ROT13] \" + plainText;\n    }\n}\n\nclass Base64MockEncryptor implements Encryptor {\n    @Override\n    public String encrypt(String plainText) {\n        return \"[B64] \" + plainText;\n    }\n}\n\npublic class CryptoSuiteApp {\n    public static void main(String[] args) {\n        Encryptor[] suite = new Encryptor[] {\n            new Rot13Encryptor(),\n            new Base64MockEncryptor()\n        };\n        String sample = \"HelloWorld\";\n        for (Encryptor e : suite) {\n            System.out.println(e.encrypt(sample));\n        }\n    }\n}",
+      "expectedOutput": "[ROT13] HelloWorld\n[B64] HelloWorld",
+      "hints": [
+        "Implement encrypt(String plainText) as public in both classes.",
+        "Loop over Encryptor[] suite and print e.encrypt(sample)."
+      ]
+    },
+    {
+      "id": "prob-les6-p3",
+      "lessonId": "java-oop-mod7-les6",
+      "orderIndex": 3,
+      "title": "Cross-Cutting Playable Audio/Video Interface",
+      "difficulty": "medium",
+      "problemStatement": "Design a media playback contract from scratch:\n1. Interface `Playable`: declares `void play();` and `void pause();`.\n2. Class `PodcastEpisode` implementing `Playable`: has `private String title`. Implements `play()` printing `'Playing podcast episode: ' + title` and `pause()` printing `'Paused podcast: ' + title`.\n3. Class `MovieStream` implementing `Playable`: has `private String title`. Implements `play()` printing `'Buffering 4K stream for: ' + title` and `pause()` printing `'Paused movie: ' + title`.\n4. In `Main`, create a `Playable p1 = new PodcastEpisode(\"Tech Talk #42\")` and `Playable p2 = new MovieStream(\"Interstellar\")`.\n5. Call `play()` then `pause()` on both.",
+      "solutionCode": "interface Playable {\n    void play();\n    void pause();\n}\n\nclass PodcastEpisode implements Playable {\n    private String title;\n    public PodcastEpisode(String title) { this.title = title; }\n    @Override\n    public void play() {\n        System.out.println(\"Playing podcast episode: \" + title);\n    }\n    @Override\n    public void pause() {\n        System.out.println(\"Paused podcast: \" + title);\n    }\n}\n\nclass MovieStream implements Playable {\n    private String title;\n    public MovieStream(String title) { this.title = title; }\n    @Override\n    public void play() {\n        System.out.println(\"Buffering 4K stream for: \" + title);\n    }\n    @Override\n    public void pause() {\n        System.out.println(\"Paused movie: \" + title);\n    }\n}\n\npublic class MediaApp {\n    public static void main(String[] args) {\n        Playable p1 = new PodcastEpisode(\"Tech Talk #42\");\n        Playable p2 = new MovieStream(\"Interstellar\");\n        p1.play();\n        p1.pause();\n        p2.play();\n        p2.pause();\n    }\n}",
+      "expectedOutput": "Playing podcast episode: Tech Talk #42\nPaused podcast: Tech Talk #42\nBuffering 4K stream for: Interstellar\nPaused movie: Interstellar",
+      "hints": [
+        "Playable specifies void play(); and void pause();",
+        "Remember all methods in implementing classes must be public."
+      ]
+    },
+    {
+      "id": "prob-les6-p4",
+      "lessonId": "java-oop-mod7-les6",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Package-Private Visibility Reduction",
+      "difficulty": "medium",
+      "problemStatement": "A developer defined an interface `Cache`, but forgot to mark the implementing method as `public` in `MemoryCache`, resulting in a compilation error: 'cannot reduce the visibility of the inherited method'. Fix the code.",
+      "starterCode": "interface Cache {\n    void put(String key, String value);\n    String get(String key);\n}\n\nclass MemoryCache implements Cache {\n    private java.util.Map<String, String> map = new java.util.HashMap<>();\n    \n    // BUG: Missing public! Package-private narrows implicit public from interface\n    void put(String key, String value) {\n        map.put(key, value);\n    }\n    \n    // BUG: Missing public!\n    String get(String key) {\n        return map.get(key);\n    }\n}\n\npublic class CacheBugApp {\n    public static void main(String[] args) {\n        Cache cache = new MemoryCache();\n        cache.put(\"token\", \"xyz123\");\n        System.out.println(\"Cached: \" + cache.get(\"token\"));\n    }\n}",
+      "initialCode": "interface Cache {\n    void put(String key, String value);\n    String get(String key);\n}\n\nclass MemoryCache implements Cache {\n    private java.util.Map<String, String> map = new java.util.HashMap<>();\n    \n    // BUG: Missing public! Package-private narrows implicit public from interface\n    void put(String key, String value) {\n        map.put(key, value);\n    }\n    \n    // BUG: Missing public!\n    String get(String key) {\n        return map.get(key);\n    }\n}\n\npublic class CacheBugApp {\n    public static void main(String[] args) {\n        Cache cache = new MemoryCache();\n        cache.put(\"token\", \"xyz123\");\n        System.out.println(\"Cached: \" + cache.get(\"token\"));\n    }\n}",
+      "solutionCode": "interface Cache {\n    void put(String key, String value);\n    String get(String key);\n}\n\nclass MemoryCache implements Cache {\n    private java.util.Map<String, String> map = new java.util.HashMap<>();\n    \n    @Override\n    public void put(String key, String value) {\n        map.put(key, value);\n    }\n    \n    @Override\n    public String get(String key) {\n        return map.get(key);\n    }\n}\n\npublic class CacheBugApp {\n    public static void main(String[] args) {\n        Cache cache = new MemoryCache();\n        cache.put(\"token\", \"xyz123\");\n        System.out.println(\"Cached: \" + cache.get(\"token\"));\n    }\n}",
+      "expectedOutput": "Cached: xyz123",
+      "hints": [
+        "Add public to both put and get in MemoryCache.",
+        "Add @Override annotations for clarity."
+      ]
+    },
+    {
+      "id": "prob-les6-p5",
+      "lessonId": "java-oop-mod7-les6",
+      "orderIndex": 5,
+      "title": "Hierarchical Interface Extension",
+      "difficulty": "hard",
+      "problemStatement": "Build an interface inheritance hierarchy from scratch:\n1. Base interface `Readable`: declares `String read();`.\n2. Sub-interface `Writable` extending `Readable`: declares `void write(String data);`.\n3. Class `MemoryStorage` implementing `Writable`:\n   - Has `private String storage = \"\";`.\n   - Overrides `write(String data)`: sets `this.storage = data` and prints `'Written: ' + data`.\n   - Overrides `read()`: returns `storage`.\n4. In `Main`, instantiate a `MemoryStorage` as a `Writable` reference.\n5. Call `write(\"System Config Payload\")` then print `'Read back: ' + storage.read()`.",
+      "solutionCode": "interface Readable {\n    String read();\n}\n\ninterface Writable extends Readable {\n    void write(String data);\n}\n\nclass MemoryStorage implements Writable {\n    private String storage = \"\";\n    @Override\n    public void write(String data) {\n        this.storage = data;\n        System.out.println(\"Written: \" + data);\n    }\n    @Override\n    public String read() {\n        return storage;\n    }\n}\n\npublic class StorageApp {\n    public static void main(String[] args) {\n        Writable storage = new MemoryStorage();\n        storage.write(\"System Config Payload\");\n        System.out.println(\"Read back: \" + storage.read());\n    }\n}",
+      "expectedOutput": "Written: System Config Payload\nRead back: System Config Payload",
+      "hints": [
+        "Use interface Writable extends Readable.",
+        "MemoryStorage must implement both write(String) and read()."
+      ]
+    }
+  ]
+}

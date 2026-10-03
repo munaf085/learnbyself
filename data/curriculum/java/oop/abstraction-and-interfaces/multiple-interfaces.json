@@ -1,0 +1,356 @@
+{
+  "id": "java-oop-mod7-les8",
+  "slug": "multiple-interfaces",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Multiple Interfaces",
+  "summary": "Achieve multiple inheritance of type in Java by implementing multiple interfaces, eliminating the diamond problem while creating multi-capability classes.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "implementing-interfaces",
+    "why-no-multiple-class-inheritance"
+  ],
+  "learningObjectives": [
+    "Implement multiple interfaces in a single class using comma-separated syntax",
+    "Explain how pure contracts avoid the diamond problem of multiple class inheritance",
+    "Cast a multi-interface object between different interface reference types",
+    "Handle method signature collisions when two interfaces declare identical methods"
+  ],
+  "expectedOutcomes": [
+    "You can build flexible, composable classes implementing multiple interfaces",
+    "You understand how reference casting reveals different functional lenses on the same heap object"
+  ],
+  "activities": [
+    {
+      "id": "act-les8-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Modern Smartphone",
+      "concept": "Multiple Capabilities via Interfaces",
+      "realWorldMetaphor": {
+        "scenario": "A modern smartphone is not just a telephone. It is a High-Definition Camera, a GPS Satellite Navigator, an MP3 Music Player, and an NFC Payment Device. Each of these capabilities has an industry standard contract. You can hand your phone to a photographer who uses it strictly as a Camera. You can clip it onto your car dashboard where navigation software uses it strictly as a GPS Navigator.",
+        "mapping": "The smartphone is a single concrete class (`SmartPhone`). `Camera`, `GpsReceiver`, `AudioPlayer`, and `NfcPayer` are separate interfaces. Depending on which reference lens you view the phone through (`Camera c = phone;`), you access only that interface's specific operations.",
+        "takeaway": "Multiple interfaces allow a single object to fulfill multiple diverse roles across different parts of a system without inheriting conflicting state."
+      }
+    },
+    {
+      "id": "act-les8-concept",
+      "type": "concept",
+      "title": "Multiple Inheritance of Type & Signature Collisions",
+      "content": "### Why Multiple Interfaces Are Safe\n\nRecall why Java forbids multiple class inheritance (`class C extends A, B`): **The Diamond Problem**. If both `A` and `B` have a field `int x` and a method `foo()`, `C` inherits ambiguous duplicate state and conflicting bodies.\n\nWith interfaces, **there is NO instance state**:\n```java\ninterface Printable { void display(); }\ninterface Showable { void display(); }\n\nclass Document implements Printable, Showable {\n    // A single implementation satisfies BOTH interface contracts simultaneously!\n    @Override\n    public void display() {\n        System.out.println(\"Displaying document\");\n    }\n}\n```\nBecause `Printable` and `Showable` provide only abstract contracts with no method bodies, there is zero ambiguity! A single method implementation fulfills both contracts.\n\n### The Impossible Collision: Differing Return Types\nThe only time two interfaces collide catastrophically is when they declare methods with the **exact same name and parameter list, but incompatible return types**:\n```java\ninterface ReaderA { int read(); }\ninterface ReaderB { String read(); }\n\n// COMPILATION ERROR! Impossible to implement both!\nclass FileSystem implements ReaderA, ReaderB {\n    // Cannot write a method that returns both int and String!\n}\n```\nIn practice, this is rare and represents poor interface design.\n\n### The Lens Effect: Viewing the Same Object Differently\nWhen a class implements multiple interfaces, you can cast the same object reference to any of its interfaces to restrict visibility to that specific capability lens:\n```java\nSmartPhone phone = new SmartPhone();\nCamera cam = phone;        // Lens 1: Can only call takePhoto()\nNavigator nav = phone;     // Lens 2: Can only call getCoordinates()\n```"
+    },
+    {
+      "id": "act-les8-cw1",
+      "type": "code_walkthrough",
+      "title": "Multi-Capability Smart Device",
+      "codeSnippet": "interface PhoneDevice {\n    void makeCall(String number);\n}\n\ninterface CameraDevice {\n    void capturePhoto();\n}\n\ninterface GpsDevice {\n    String getCoordinates();\n}\n\nclass SmartPhone implements PhoneDevice, CameraDevice, GpsDevice {\n    private String model;\n    public SmartPhone(String model) { this.model = model; }\n\n    @Override\n    public void makeCall(String number) {\n        System.out.println(\"[\" + model + \"] Dialing \" + number);\n    }\n\n    @Override\n    public void capturePhoto() {\n        System.out.println(\"[\" + model + \"] Click! 48MP photo captured.\");\n    }\n\n    @Override\n    public String getCoordinates() {\n        return \"37.7749\u00b0 N, 122.4194\u00b0 W\";\n    }\n}\n\npublic class SmartDemo {\n    public static void main(String[] args) {\n        SmartPhone pixel = new SmartPhone(\"Pixel 9\");\n        \n        // Viewing through Phone lens\n        PhoneDevice phone = pixel;\n        phone.makeCall(\"555-0199\");\n        \n        // Viewing through Camera lens\n        CameraDevice cam = pixel;\n        cam.capturePhoto();\n        \n        // Viewing through GPS lens\n        GpsDevice gps = pixel;\n        System.out.println(\"Location: \" + gps.getCoordinates());\n    }\n}",
+      "code": "interface PhoneDevice {\n    void makeCall(String number);\n}\n\ninterface CameraDevice {\n    void capturePhoto();\n}\n\ninterface GpsDevice {\n    String getCoordinates();\n}\n\nclass SmartPhone implements PhoneDevice, CameraDevice, GpsDevice {\n    private String model;\n    public SmartPhone(String model) { this.model = model; }\n\n    @Override\n    public void makeCall(String number) {\n        System.out.println(\"[\" + model + \"] Dialing \" + number);\n    }\n\n    @Override\n    public void capturePhoto() {\n        System.out.println(\"[\" + model + \"] Click! 48MP photo captured.\");\n    }\n\n    @Override\n    public String getCoordinates() {\n        return \"37.7749\u00b0 N, 122.4194\u00b0 W\";\n    }\n}\n\npublic class SmartDemo {\n    public static void main(String[] args) {\n        SmartPhone pixel = new SmartPhone(\"Pixel 9\");\n        \n        // Viewing through Phone lens\n        PhoneDevice phone = pixel;\n        phone.makeCall(\"555-0199\");\n        \n        // Viewing through Camera lens\n        CameraDevice cam = pixel;\n        cam.capturePhoto();\n        \n        // Viewing through GPS lens\n        GpsDevice gps = pixel;\n        System.out.println(\"Location: \" + gps.getCoordinates());\n    }\n}",
+      "language": "java",
+      "explanation": "SmartPhone implements 3 interfaces. In main, upcasting pixel to PhoneDevice, CameraDevice, and GpsDevice exposes only the methods of that respective interface.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SmartPhone implements PhoneDevice, CameraDevice, GpsDevice`."
+        },
+        {
+          "step": 2,
+          "description": "Each interface specifies a single capability."
+        },
+        {
+          "step": 3,
+          "description": "The heap contains a single `SmartPhone` object."
+        },
+        {
+          "step": 4,
+          "description": "Casting to `PhoneDevice` restricts access to `makeCall()`, isolating callers from camera and GPS APIs."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-cw2",
+      "type": "code_walkthrough",
+      "title": "Shared Method Signature Across Interfaces",
+      "codeSnippet": "interface Printable {\n    void render();\n}\n\ninterface ScreenDisplayable {\n    void render();\n}\n\nclass CanvasDocument implements Printable, ScreenDisplayable {\n    private String title;\n    public CanvasDocument(String title) { this.title = title; }\n\n    // Single implementation satisfies BOTH Printable and ScreenDisplayable!\n    @Override\n    public void render() {\n        System.out.println(\"Rendering canvas document: '\" + title + \"' to target surface.\");\n    }\n}\n\npublic class RenderDemo {\n    public static void main(String[] args) {\n        CanvasDocument doc = new CanvasDocument(\"Architecture Diagram\");\n        \n        Printable p = doc;\n        p.render();\n        \n        ScreenDisplayable s = doc;\n        s.render();\n    }\n}",
+      "code": "interface Printable {\n    void render();\n}\n\ninterface ScreenDisplayable {\n    void render();\n}\n\nclass CanvasDocument implements Printable, ScreenDisplayable {\n    private String title;\n    public CanvasDocument(String title) { this.title = title; }\n\n    // Single implementation satisfies BOTH Printable and ScreenDisplayable!\n    @Override\n    public void render() {\n        System.out.println(\"Rendering canvas document: '\" + title + \"' to target surface.\");\n    }\n}\n\npublic class RenderDemo {\n    public static void main(String[] args) {\n        CanvasDocument doc = new CanvasDocument(\"Architecture Diagram\");\n        \n        Printable p = doc;\n        p.render();\n        \n        ScreenDisplayable s = doc;\n        s.render();\n    }\n}",
+      "language": "java",
+      "explanation": "Printable and ScreenDisplayable both declare void render(). A single implementation in CanvasDocument satisfies both interfaces without collision.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Both interfaces declare `void render()` with identical signatures and return types."
+        },
+        {
+          "step": 2,
+          "description": "`CanvasDocument` implements `render()` once."
+        },
+        {
+          "step": 3,
+          "description": "Both `p.render()` and `s.render()` dynamically execute that single implementation."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-mcq",
+      "type": "mcq",
+      "title": "Multiple Interfaces Quiz",
+      "questions": [
+        {
+          "id": "q8-1",
+          "question": "How does Java support multiple inheritance?",
+          "options": [
+            "Through multiple class inheritance: class A extends B, C",
+            "Through multiple interface implementation: class A implements B, C",
+            "Through global variables",
+            "Through pointer arithmetic"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java strictly forbids multiple class inheritance, but fully supports multiple inheritance of type through interfaces."
+        },
+        {
+          "id": "q8-2",
+          "question": "Why does implementing multiple interfaces avoid the Diamond Problem of multiple class inheritance?",
+          "options": [
+            "Because interfaces are compiled into C++",
+            "Because traditional interfaces contain only method specifications (no instance fields or state), so there is no ambiguity regarding memory layout",
+            "Because interfaces can only have private methods",
+            "Because the JVM chooses one interface randomly"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The Diamond Problem in classes arises from duplicate instance state and conflicting constructor chains. Pure interfaces carry no state, eliminating collision ambiguity."
+        },
+        {
+          "id": "q8-3",
+          "question": "What happens if two interfaces declare `void print()` with identical signatures, and a class implements both?",
+          "options": [
+            "Compile error: duplicate method signature in interfaces",
+            "The class provides a single `public void print()` method that satisfies both interface contracts simultaneously",
+            "The compiler forces the class to rename one of the methods",
+            "A runtime collision exception occurs"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "If two interfaces declare identical method signatures, writing one implementation satisfies both contracts cleanly."
+        },
+        {
+          "id": "q8-4",
+          "question": "When does implementing two interfaces cause an unresolvable compiler error?",
+          "options": [
+            "When both interfaces have more than 5 methods",
+            "When both interfaces declare a method with the same name and parameter types, but incompatible return types (e.g. int vs String)",
+            "When both interfaces have constants",
+            "When one interface is public and the other is package-private"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "In Java, a class cannot have two methods with the same parameter list differing only by primitive or incompatible return types. Such a collision cannot be resolved."
+        },
+        {
+          "id": "q8-5",
+          "question": "Given `class Car implements Drivable, Insurable`: What is the result of `Insurable ins = new Car(); ins.drive();`?",
+          "options": [
+            "It drives the car smoothly",
+            "Compilation error: drive() is not declared in the Insurable interface",
+            "Throws ClassCastException at runtime",
+            "drive() runs in the background"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The compiler checks member availability against the reference type (`Insurable`). Because `drive()` belongs to `Drivable`, `ins.drive()` fails compilation."
+        },
+        {
+          "id": "q8-6",
+          "question": "How can you access `drive()` from `Insurable ins` in the previous question?",
+          "options": [
+            "ins.super.drive()",
+            "By casting the reference: `((Drivable) ins).drive();`",
+            "ins.toString()",
+            "It is impossible"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Because the underlying object on the heap is a `Car` (which implements both interfaces), downcasting or side-casting to `(Drivable) ins` succeeds."
+        },
+        {
+          "id": "q8-7",
+          "question": "What happens if two interfaces declare constants with the same name (e.g. `int TIMEOUT = 10;` and `int TIMEOUT = 20;`), and a class implements both?",
+          "options": [
+            "Compile error at class declaration",
+            "The class compiles; referencing `TIMEOUT` unqualified is ambiguous, but accessing `InterfaceA.TIMEOUT` or `InterfaceB.TIMEOUT` resolves it cleanly",
+            "The second constant overwrites the first",
+            "Both constants become 0"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The class compiles without issue. Referencing `TIMEOUT` inside the class is ambiguous, but qualifying with the interface name disambiguates it."
+        },
+        {
+          "id": "q8-8",
+          "question": "How many interfaces can a single Java class implement?",
+          "options": [
+            "Only 1",
+            "Up to 255",
+            "No theoretical limit (as many as memory and specification constraints permit)",
+            "Maximum 8"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Java imposes no language limit on the number of interfaces a class can implement: `implements I1, I2, I3, ...`."
+        },
+        {
+          "id": "q8-9",
+          "question": "Which core Java class famously implements multiple interfaces including `Serializable`, `Comparable<String>`, and `CharSequence`?",
+          "options": [
+            "java.lang.Object",
+            "java.lang.String",
+            "java.lang.Math",
+            "java.lang.System"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`java.lang.String` implements `Serializable`, `Comparable<String>`, `CharSequence`, `Constable`, and `ConstantDesc`."
+        },
+        {
+          "id": "q8-10",
+          "question": "What is 'side-casting' in Java with multiple interfaces?",
+          "options": [
+            "Casting an integer to a float",
+            "Casting an object from one interface reference type to another interface reference type implemented by the same underlying object",
+            "Casting a class to its superclass",
+            "Casting a null reference"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Side-casting (e.g., `(Camera) phoneReference`) converts between unrelated interface types implemented by the same underlying object."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Multiple Interfaces",
+      "interviewQA": [
+        {
+          "id": "i8-1",
+          "companyTag": "Google",
+          "question": "Why did the designers of Java allow multiple inheritance of interfaces but forbid multiple inheritance of classes?",
+          "answer": "Multiple class inheritance leads to the Diamond Problem: if class D extends classes B and C, which both extend class A, class D inherits duplicate copies of class A's fields, causing memory layout ambiguity and constructor collision. Interfaces (traditionally) contain only method specifications and no instance fields. Inheriting multiple specifications creates no state ambiguity, so Java permits multiple interface inheritance safely."
+        },
+        {
+          "id": "i8-2",
+          "companyTag": "Amazon",
+          "question": "What is 'side-casting' in Java, and when can it throw a `ClassCastException`?",
+          "answer": "Side-casting occurs when an object referenced by one interface type is cast to a completely unrelated interface type (e.g. `interface A` to `interface B`). The compiler permits this because the underlying concrete object *might* implement both interfaces. At runtime, the JVM checks the object's class metadata. If the object implements interface B, the cast succeeds; if not, it throws `ClassCastException`."
+        },
+        {
+          "id": "i8-3",
+          "companyTag": "Microsoft",
+          "question": "How do you resolve a collision where two implemented interfaces define identical constant names?",
+          "answer": "You resolve it by explicitly qualifying the constant with the desired interface name (e.g. `InterfaceA.MAX_LIMIT` or `InterfaceB.MAX_LIMIT`). Referencing `MAX_LIMIT` unqualified inside the implementing class causes a compile-time ambiguity error."
+        },
+        {
+          "id": "i8-4",
+          "companyTag": "Uber",
+          "question": "What is the Interface Segregation Principle (ISP) from SOLID, and how does multiple interface adoption enable it?",
+          "answer": "ISP states that 'clients should not be forced to depend upon interfaces that they do not use.' Instead of one massive 'fat' interface (`Machine` with print, scan, fax, staple), architects break it down into cohesive, focused interfaces (`Printer`, `Scanner`, `Fax`). A class like `MultiFunctionPrinter` can implement all three, while a simple `LaserPrinter` implements only `Printer`, keeping clients decoupled from unused methods."
+        },
+        {
+          "id": "i8-5",
+          "companyTag": "Meta",
+          "question": "What happens if a class implements two interfaces that both declare `default` methods with identical signatures?",
+          "answer": "This creates a default method conflict. The compiler refuses to compile the class and forces the developer to override the method explicitly in the implementing class, resolving the ambiguity (either with new logic or by delegating via `InterfaceA.super.method()`)."
+        },
+        {
+          "id": "i8-6",
+          "companyTag": "Apple",
+          "question": "Can an interface extend multiple interfaces? Provide an example from the Java Standard Library.",
+          "answer": "Yes. An interface can extend multiple interfaces using commas: `public interface SubInterface extends Super1, Super2`. A prominent JDK example is `java.util.concurrent.BlockingDeque<E>`, which extends both `java.util.concurrent.BlockingQueue<E>` and `java.util.Deque<E>`."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know the syntax for implementing multiple interfaces separated by commas.",
+        "I understand why interfaces avoid the Diamond Problem of multiple class inheritance.",
+        "I know that a single method implementation satisfies multiple interfaces with identical signatures.",
+        "I understand the collision error when two interfaces have identical signatures but different return types.",
+        "I know how to resolve constant name collisions using explicit interface qualification.",
+        "I can perform side-casting between interface references implemented by the same object.",
+        "I understand how multiple interfaces support the Interface Segregation Principle (ISP).",
+        "I know that an interface can extend multiple other interfaces using extends.",
+        "I understand how the 'lens effect' restricts callable methods based on the reference type.",
+        "I can build a composable multi-capability class fulfilling multiple business contracts."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les8-p1",
+      "lessonId": "java-oop-mod7-les8",
+      "orderIndex": 1,
+      "title": "Warmup: Multi-Role Person Implementation",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `TeachingAssistant` class implementing multiple interfaces:\n1. Interface `Student`: declares `void study();`.\n2. Interface `Teacher`: declares `void teach();`.\n3. Class `TeachingAssistant` implementing `Student, Teacher`:\n   - Has `private String name`.\n   - Constructor sets `name`.\n   - `study()` prints `name + ' is studying for midterm exams'`.\n   - `teach()` prints `name + ' is grading lab assignments'`.\nIn `main`, instantiate a `TeachingAssistant(\"Alex\")`, and call both `study()` and `teach()`.",
+      "starterCode": "interface Student {\n    void study();\n}\n\ninterface Teacher {\n    void teach();\n}\n\n// TODO: Implement both Student and Teacher\nclass TeachingAssistant {\n    private String name;\n    public TeachingAssistant(String name) { this.name = name; }\n    // TODO: Implement study() and teach()\n}\n\npublic class RoleApp {\n    public static void main(String[] args) {\n        TeachingAssistant ta = new TeachingAssistant(\"Alex\");\n        ta.study();\n        ta.teach();\n    }\n}",
+      "initialCode": "interface Student {\n    void study();\n}\n\ninterface Teacher {\n    void teach();\n}\n\n// TODO: Implement both Student and Teacher\nclass TeachingAssistant {\n    private String name;\n    public TeachingAssistant(String name) { this.name = name; }\n    // TODO: Implement study() and teach()\n}\n\npublic class RoleApp {\n    public static void main(String[] args) {\n        TeachingAssistant ta = new TeachingAssistant(\"Alex\");\n        ta.study();\n        ta.teach();\n    }\n}",
+      "solutionCode": "interface Student {\n    void study();\n}\n\ninterface Teacher {\n    void teach();\n}\n\nclass TeachingAssistant implements Student, Teacher {\n    private String name;\n    public TeachingAssistant(String name) {\n        this.name = name;\n    }\n    @Override\n    public void study() {\n        System.out.println(name + \" is studying for midterm exams\");\n    }\n    @Override\n    public void teach() {\n        System.out.println(name + \" is grading lab assignments\");\n    }\n}\n\npublic class RoleApp {\n    public static void main(String[] args) {\n        TeachingAssistant ta = new TeachingAssistant(\"Alex\");\n        ta.study();\n        ta.teach();\n    }\n}",
+      "expectedOutput": "Alex is studying for midterm exams\nAlex is grading lab assignments",
+      "hints": [
+        "Use class TeachingAssistant implements Student, Teacher",
+        "Both study() and teach() must be public."
+      ]
+    },
+    {
+      "id": "prob-les8-p2",
+      "lessonId": "java-oop-mod7-les8",
+      "orderIndex": 2,
+      "title": "Universal Cloud Resource (Lifecycle & Metrics)",
+      "difficulty": "medium",
+      "problemStatement": "Build a multi-capability cloud resource from scratch:\n1. Interface `Lifecycle`: declares `void start();` and `void stop();`.\n2. Interface `Metrizable`: declares `int getCpuUsage();`.\n3. Class `ComputeInstance` implementing `Lifecycle, Metrizable`:\n   - Has `private String instanceId;` and `private int cpuPercent;`.\n   - Constructor initializes both.\n   - `start()` prints `'Instance ' + instanceId + ' STARTED'`.\n   - `stop()` prints `'Instance ' + instanceId + ' STOPPED'`.\n   - `getCpuUsage()` returns `cpuPercent`.\n4. In `Main`, create a `ComputeInstance(\"i-0994bf\", 42)`. Call `start()`, print `'CPU: ' + instance.getCpuUsage() + '%'`, and call `stop()`.",
+      "solutionCode": "interface Lifecycle {\n    void start();\n    void stop();\n}\n\ninterface Metrizable {\n    int getCpuUsage();\n}\n\nclass ComputeInstance implements Lifecycle, Metrizable {\n    private String instanceId;\n    private int cpuPercent;\n    public ComputeInstance(String instanceId, int cpuPercent) {\n        this.instanceId = instanceId;\n        this.cpuPercent = cpuPercent;\n    }\n    @Override\n    public void start() {\n        System.out.println(\"Instance \" + instanceId + \" STARTED\");\n    }\n    @Override\n    public void stop() {\n        System.out.println(\"Instance \" + instanceId + \" STOPPED\");\n    }\n    @Override\n    public int getCpuUsage() {\n        return cpuPercent;\n    }\n}\n\npublic class CloudApp {\n    public static void main(String[] args) {\n        ComputeInstance instance = new ComputeInstance(\"i-0994bf\", 42);\n        instance.start();\n        System.out.println(\"CPU: \" + instance.getCpuUsage() + \"%\");\n        instance.stop();\n    }\n}",
+      "expectedOutput": "Instance i-0994bf STARTED\nCPU: 42%\nInstance i-0994bf STOPPED",
+      "hints": [
+        "Class header: class ComputeInstance implements Lifecycle, Metrizable",
+        "Implement start(), stop(), and getCpuUsage()."
+      ]
+    },
+    {
+      "id": "prob-les8-p3",
+      "lessonId": "java-oop-mod7-les8",
+      "orderIndex": 3,
+      "title": "Side-Casting Across Interface References",
+      "difficulty": "medium",
+      "problemStatement": "Demonstrate interface side-casting from scratch:\n1. Interface `Printer`: declares `void printPage();`.\n2. Interface `Scanner`: declares `void scanDocument();`.\n3. Class `AllInOneCopier` implementing `Printer, Scanner`:\n   - `printPage()` prints `'Printing test page'`.\n   - `scanDocument()` prints `'Scanning optical glass at 600 DPI'`.\n4. In `Main`:\n   - Instantiate `Printer p = new AllInOneCopier();`.\n   - Call `p.printPage()`.\n   - Side-cast `p` to `Scanner s = (Scanner) p;`.\n   - Call `s.scanDocument()`.",
+      "solutionCode": "interface Printer {\n    void printPage();\n}\n\ninterface Scanner {\n    void scanDocument();\n}\n\nclass AllInOneCopier implements Printer, Scanner {\n    @Override\n    public void printPage() {\n        System.out.println(\"Printing test page\");\n    }\n    @Override\n    public void scanDocument() {\n        System.out.println(\"Scanning optical glass at 600 DPI\");\n    }\n}\n\npublic class CopierApp {\n    public static void main(String[] args) {\n        Printer p = new AllInOneCopier();\n        p.printPage();\n        Scanner s = (Scanner) p;\n        s.scanDocument();\n    }\n}",
+      "expectedOutput": "Printing test page\nScanning optical glass at 600 DPI",
+      "hints": [
+        "In main, Scanner s = (Scanner) p; side-casts from Printer reference to Scanner reference.",
+        "Because the heap object is an AllInOneCopier, the cast succeeds."
+      ]
+    },
+    {
+      "id": "prob-les8-p4",
+      "lessonId": "java-oop-mod7-les8",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Ambiguous Constant Reference",
+      "difficulty": "medium",
+      "problemStatement": "A developer implemented two interfaces that define a constant with the same name `MAX_CAPACITY`. When accessing `MAX_CAPACITY` inside the class, the compiler produces an ambiguity error. Fix the code by qualifying the constant reference.",
+      "starterCode": "interface WeightBearing {\n    int MAX_CAPACITY = 500; // in kg\n}\n\ninterface PassengerCarrier {\n    int MAX_CAPACITY = 8; // in passengers\n}\n\nclass Elevator implements WeightBearing, PassengerCarrier {\n    public void printSpecs() {\n        // BUG: Reference to MAX_CAPACITY is ambiguous!\n        System.out.println(\"Specs: Weight limit = \" + MAX_CAPACITY + \"kg, People limit = \" + MAX_CAPACITY);\n    }\n}\n\npublic class ElevatorBugApp {\n    public static void main(String[] args) {\n        new Elevator().printSpecs();\n    }\n}",
+      "initialCode": "interface WeightBearing {\n    int MAX_CAPACITY = 500; // in kg\n}\n\ninterface PassengerCarrier {\n    int MAX_CAPACITY = 8; // in passengers\n}\n\nclass Elevator implements WeightBearing, PassengerCarrier {\n    public void printSpecs() {\n        // BUG: Reference to MAX_CAPACITY is ambiguous!\n        System.out.println(\"Specs: Weight limit = \" + MAX_CAPACITY + \"kg, People limit = \" + MAX_CAPACITY);\n    }\n}\n\npublic class ElevatorBugApp {\n    public static void main(String[] args) {\n        new Elevator().printSpecs();\n    }\n}",
+      "solutionCode": "interface WeightBearing {\n    int MAX_CAPACITY = 500;\n}\n\ninterface PassengerCarrier {\n    int MAX_CAPACITY = 8;\n}\n\nclass Elevator implements WeightBearing, PassengerCarrier {\n    public void printSpecs() {\n        System.out.println(\"Specs: Weight limit = \" + WeightBearing.MAX_CAPACITY + \"kg, People limit = \" + PassengerCarrier.MAX_CAPACITY);\n    }\n}\n\npublic class ElevatorBugApp {\n    public static void main(String[] args) {\n        new Elevator().printSpecs();\n    }\n}",
+      "expectedOutput": "Specs: Weight limit = 500kg, People limit = 8",
+      "hints": [
+        "Qualify the constants: WeightBearing.MAX_CAPACITY and PassengerCarrier.MAX_CAPACITY."
+      ]
+    },
+    {
+      "id": "prob-les8-p5",
+      "lessonId": "java-oop-mod7-les8",
+      "orderIndex": 5,
+      "title": "Three-Interface Resilient Network Node",
+      "difficulty": "hard",
+      "problemStatement": "Build an enterprise network node implementing three interfaces from scratch:\n1. Interface `Identifiable`: declares `String getId();`.\n2. Interface `Connectable`: declares `boolean connect(String peerIp);`.\n3. Interface `Securable`: declares `void encryptPayload(String key);`.\n4. Class `ClusterNode` implementing `Identifiable, Connectable, Securable`:\n   - Has `private String nodeId;`.\n   - Constructor sets `nodeId`.\n   - `getId()` returns `nodeId`.\n   - `connect(String peerIp)` prints `'Node ' + nodeId + ' established link to ' + peerIp` and returns true.\n   - `encryptPayload(String key)` prints `'Node ' + nodeId + ' payload secured with key ' + key`.\n5. In `Main`, instantiate a `ClusterNode(\"NODE-TX-1\")` and exercise all three capabilities: print id, connect to `'10.0.0.1'`, and encrypt with key `'AES_KEY_88'`.",
+      "solutionCode": "interface Identifiable {\n    String getId();\n}\n\ninterface Connectable {\n    boolean connect(String peerIp);\n}\n\ninterface Securable {\n    void encryptPayload(String key);\n}\n\nclass ClusterNode implements Identifiable, Connectable, Securable {\n    private String nodeId;\n    public ClusterNode(String nodeId) {\n        this.nodeId = nodeId;\n    }\n    @Override\n    public String getId() {\n        return nodeId;\n    }\n    @Override\n    public boolean connect(String peerIp) {\n        System.out.println(\"Node \" + nodeId + \" established link to \" + peerIp);\n        return true;\n    }\n    @Override\n    public void encryptPayload(String key) {\n        System.out.println(\"Node \" + nodeId + \" payload secured with key \" + key);\n    }\n}\n\npublic class ClusterApp {\n    public static void main(String[] args) {\n        ClusterNode node = new ClusterNode(\"NODE-TX-1\");\n        System.out.println(\"Node ID: \" + node.getId());\n        node.connect(\"10.0.0.1\");\n        node.encryptPayload(\"AES_KEY_88\");\n    }\n}",
+      "expectedOutput": "Node ID: NODE-TX-1\nNode NODE-TX-1 established link to 10.0.0.1\nNode NODE-TX-1 payload secured with key AES_KEY_88",
+      "hints": [
+        "Class ClusterNode implements Identifiable, Connectable, Securable",
+        "Implement all methods as public."
+      ]
+    }
+  ]
+}

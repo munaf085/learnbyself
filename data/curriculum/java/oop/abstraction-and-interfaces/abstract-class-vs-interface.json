@@ -1,0 +1,366 @@
+{
+  "id": "java-oop-mod7-les10",
+  "slug": "abstract-class-vs-interface",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Abstract Class vs Interface",
+  "summary": "The definitive architectural comparison: instance state vs pure contracts, single vs multiple inheritance, and choosing between IS-A identity and CAN-DO capability.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "abstract-classes",
+    "interfaces",
+    "default-and-static-interface-methods"
+  ],
+  "learningObjectives": [
+    "Compare abstract classes and interfaces across state, constructors, inheritance, and access modifiers",
+    "Apply the IS-A test vs the CAN-DO test to select the correct abstraction mechanism",
+    "Identify when to combine both using the Skeletal Implementation (Abstract Interface Adapter) pattern",
+    "Evaluate trade-offs regarding API evolution, binary compatibility, and multiple inheritance"
+  ],
+  "expectedOutcomes": [
+    "You can confidently defend design choices between abstract classes and interfaces in technical reviews",
+    "You understand how modern Java architectures blend both constructs synergistically"
+  ],
+  "activities": [
+    {
+      "id": "act-les10-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: Biological Species vs. Certifications",
+      "concept": "Identity (Abstract Class) vs Capability (Interface)",
+      "realWorldMetaphor": {
+        "scenario": "A Golden Retriever is biologically an animal, a mammal, and a canine (`extends Canine`). It inherits biological state: fur color, skeletal frame, cardiovascular organs. It can only have ONE biological lineage. However, that same dog can earn an FAA Service Animal Certification (`implements ServiceAnimal`), an AKC Agility Certification (`implements AgilityCertified`), and a Search-and-Rescue Badge (`implements SearchAndRescue`).",
+        "mapping": "`Canine` is an `abstract class` (identity, foundational state, single inheritance). The certifications are `interfaces` (capabilities, zero physical state, multiple inheritance).",
+        "takeaway": "Use abstract classes for core identity and state ('what it IS'); use interfaces for peripheral capabilities and contracts ('what it CAN DO')."
+      }
+    },
+    {
+      "id": "act-les10-concept",
+      "type": "concept",
+      "title": "The Master Architectural Comparison Matrix",
+      "content": "### Direct Dimension-by-Dimension Comparison\n\n| Dimension | Abstract Class | Interface (Java 8+) |\n|---|---|---|\n| **Inheritance Model** | Single inheritance (`extends SuperClass`) | Multiple inheritance (`implements I1, I2, I3`) |\n| **Instance Fields (State)** | Full instance fields (`private`, `protected`, etc.) | NO instance state (only `public static final` constants) |\n| **Constructors** | Yes (called via `super()` constructor chaining) | NO constructors allowed |\n| **Access Modifiers** | `public`, `protected`, package-private, `private` | Methods are strictly `public` (or `private` in Java 9+) |\n| **Design Purpose** | Code reuse, common state, base identity (IS-A) | Behavioral contract, cross-cutting capability (CAN-DO) |\n| **Speed / Bytecode** | `invokevirtual` via direct vtable offset | `invokeinterface` via itable lookup (JIT devirtualized) |\n\n### The Skeletal Implementation Pattern (Joshua Bloch)\nIn high-quality libraries like the JDK (`AbstractList`, `AbstractSet`), architects combine **BOTH**:\n1. Define a clean public **Interface** (`List`) for clients to program against.\n2. Provide an **Abstract Class** (`AbstractList`) implementing the interface with boilerplate utility code.\n3. Concrete classes (`ArrayList`) extend the abstract class to get free code reuse, while remaining free to implement the interface directly if extending another class."
+    },
+    {
+      "id": "act-les10-cw1",
+      "type": "code_walkthrough",
+      "title": "Identity (Abstract Class) vs. Capability (Interface)",
+      "codeSnippet": "// CAPABILITY INTERFACE: Can be adopted by completely unrelated classes\ninterface Flyable {\n    void fly(double altitude);\n}\n\n// BASE IDENTITY ABSTRACT CLASS: Holds biological state and enforces single inheritance\nabstract class Bird {\n    protected String species;\n    protected double wingSpan;\n\n    public Bird(String species, double wingSpan) {\n        this.species = species;\n        this.wingSpan = wingSpan;\n    }\n    public void layEgg() {\n        System.out.println(species + \" laid an egg.\");\n    }\n}\n\n// Eagle IS-A Bird and CAN-DO Fly\nclass Eagle extends Bird implements Flyable {\n    public Eagle() { super(\"Bald Eagle\", 2.1); }\n    @Override\n    public void fly(double altitude) {\n        System.out.println(species + \" soaring at \" + altitude + \"m with wingspan \" + wingSpan + \"m\");\n    }\n}\n\n// Drone is NOT a Bird, but CAN-DO Fly!\nclass Drone implements Flyable {\n    @Override\n    public void fly(double altitude) {\n        System.out.println(\"Quadcopter rotors spinning to hold altitude: \" + altitude + \"m\");\n    }\n}\n\npublic class ComparisonDemo {\n    public static void main(String[] args) {\n        Flyable[] airborne = new Flyable[] { new Eagle(), new Drone() };\n        for (Flyable f : airborne) {\n            f.fly(500.0);\n        }\n    }\n}",
+      "code": "// CAPABILITY INTERFACE: Can be adopted by completely unrelated classes\ninterface Flyable {\n    void fly(double altitude);\n}\n\n// BASE IDENTITY ABSTRACT CLASS: Holds biological state and enforces single inheritance\nabstract class Bird {\n    protected String species;\n    protected double wingSpan;\n\n    public Bird(String species, double wingSpan) {\n        this.species = species;\n        this.wingSpan = wingSpan;\n    }\n    public void layEgg() {\n        System.out.println(species + \" laid an egg.\");\n    }\n}\n\n// Eagle IS-A Bird and CAN-DO Fly\nclass Eagle extends Bird implements Flyable {\n    public Eagle() { super(\"Bald Eagle\", 2.1); }\n    @Override\n    public void fly(double altitude) {\n        System.out.println(species + \" soaring at \" + altitude + \"m with wingspan \" + wingSpan + \"m\");\n    }\n}\n\n// Drone is NOT a Bird, but CAN-DO Fly!\nclass Drone implements Flyable {\n    @Override\n    public void fly(double altitude) {\n        System.out.println(\"Quadcopter rotors spinning to hold altitude: \" + altitude + \"m\");\n    }\n}\n\npublic class ComparisonDemo {\n    public static void main(String[] args) {\n        Flyable[] airborne = new Flyable[] { new Eagle(), new Drone() };\n        for (Flyable f : airborne) {\n            f.fly(500.0);\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "Eagle is an instance of Bird (inheriting species and wingSpan). Drone is completely unrelated to Bird, but both implement Flyable, allowing unified polymorphic processing.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Bird` is an abstract class holding state (`species`, `wingSpan`) and constructor."
+        },
+        {
+          "step": 2,
+          "description": "`Flyable` is an interface with zero state, defining capability `fly(double)`."
+        },
+        {
+          "step": 3,
+          "description": "`Eagle extends Bird implements Flyable`."
+        },
+        {
+          "step": 4,
+          "description": "`Drone implements Flyable` without any relation to `Bird`."
+        },
+        {
+          "step": 5,
+          "description": "`Flyable[]` processes both polymorphically."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-cw2",
+      "type": "code_walkthrough",
+      "title": "Skeletal Implementation Pattern in Action",
+      "codeSnippet": "interface Stack {\n    void push(int val);\n    int pop();\n    int peek();\n    boolean isEmpty();\n}\n\n// Skeletal implementation providing common logic\nabstract class AbstractStack implements Stack {\n    @Override\n    public boolean isEmpty() {\n        return size() == 0; // Default implementation using size()\n    }\n    public abstract int size();\n}\n\n// Concrete stack implementing remaining methods\nclass ArrayStack extends AbstractStack {\n    private int[] data = new int[10];\n    private int top = 0;\n\n    @Override public void push(int val) { data[top++] = val; }\n    @Override public int pop() { return data[--top]; }\n    @Override public int peek() { return data[top - 1]; }\n    @Override public int size() { return top; }\n}\n\npublic class StackDemo {\n    public static void main(String[] args) {\n        Stack s = new ArrayStack();\n        s.push(100);\n        s.push(200);\n        System.out.println(\"Peek: \" + s.peek() + \" | IsEmpty: \" + s.isEmpty());\n    }\n}",
+      "code": "interface Stack {\n    void push(int val);\n    int pop();\n    int peek();\n    boolean isEmpty();\n}\n\n// Skeletal implementation providing common logic\nabstract class AbstractStack implements Stack {\n    @Override\n    public boolean isEmpty() {\n        return size() == 0; // Default implementation using size()\n    }\n    public abstract int size();\n}\n\n// Concrete stack implementing remaining methods\nclass ArrayStack extends AbstractStack {\n    private int[] data = new int[10];\n    private int top = 0;\n\n    @Override public void push(int val) { data[top++] = val; }\n    @Override public int pop() { return data[--top]; }\n    @Override public int peek() { return data[top - 1]; }\n    @Override public int size() { return top; }\n}\n\npublic class StackDemo {\n    public static void main(String[] args) {\n        Stack s = new ArrayStack();\n        s.push(100);\n        s.push(200);\n        System.out.println(\"Peek: \" + s.peek() + \" | IsEmpty: \" + s.isEmpty());\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates the Skeletal Implementation pattern: Stack defines the interface, AbstractStack provides default utility code, and ArrayStack completes the concrete implementation.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Stack` interface defines the external contract."
+        },
+        {
+          "step": 2,
+          "description": "`AbstractStack` implements `Stack`, supplying concrete `isEmpty()` using abstract `size()`."
+        },
+        {
+          "step": 3,
+          "description": "`ArrayStack` extends `AbstractStack` and provides array storage."
+        },
+        {
+          "step": 4,
+          "description": "Clients program to `Stack`, getting the best of both interfaces and abstract classes."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-mcq",
+      "type": "mcq",
+      "title": "Abstract Class vs Interface Quiz",
+      "questions": [
+        {
+          "id": "q10-1",
+          "question": "What is the single most critical technical difference between an abstract class and an interface?",
+          "options": [
+            "Abstract classes can have instance variables (non-static state) and constructors; interfaces cannot have instance variables or constructors",
+            "Interfaces are compiled to .class files while abstract classes are not",
+            "Abstract classes can only have 1 method",
+            "Interfaces cannot be public"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Abstract classes support full instance state (`private double balance;`) and constructors. Interfaces cannot hold instance state or declare constructors."
+        },
+        {
+          "id": "q10-2",
+          "question": "When should you choose an abstract class over an interface?",
+          "options": [
+            "When you want to allow multiple inheritance",
+            "When you need to share non-static instance fields, enforce state initialization via constructors, or restrict access with protected methods",
+            "When designing a functional interface for lambdas",
+            "Whenever you write Java 8+"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Choose an abstract class when you need shared instance state, constructors, or non-public methods (`protected`)."
+        },
+        {
+          "id": "q10-3",
+          "question": "When should you choose an interface over an abstract class?",
+          "options": [
+            "When defining cross-cutting capabilities (CAN-DO) across completely unrelated class hierarchies, and when multiple inheritance of type is needed",
+            "When you have private fields to hide",
+            "When you need a constructor with parameters",
+            "Only when building Android applications"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Interfaces are best for defining capabilities (`Comparable`, `AutoCloseable`) that can be adopted by any class regardless of its position in the class hierarchy."
+        },
+        {
+          "id": "q10-4",
+          "question": "What is the 'Skeletal Implementation' pattern made famous by Effective Java?",
+          "options": [
+            "Removing all methods from a class",
+            "Defining an interface for the type contract and pairing it with an abstract class that implements common reusable boilerplate",
+            "Using only static methods",
+            "Avoiding all constructors"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The Skeletal Implementation pattern pairs an interface (`List`) with an abstract base class (`AbstractList`), combining interface flexibility with abstract class code reuse."
+        },
+        {
+          "id": "q10-5",
+          "question": "Can a class extend more than one abstract class in Java?",
+          "options": [
+            "Yes, if all methods are abstract",
+            "No, Java strictly enforces single class inheritance (`extends SuperClass`)",
+            "Yes, separated by commas",
+            "Only in package java.lang"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java strictly enforces single class inheritance: a class can extend at most one class, whether abstract or concrete."
+        },
+        {
+          "id": "q10-6",
+          "question": "Can an abstract class define protected abstract methods? Can an interface do the same?",
+          "options": [
+            "Both can define protected abstract methods",
+            "Abstract classes CAN declare protected abstract methods; interfaces CANNOT (interface methods are strictly public)",
+            "Neither can declare protected methods",
+            "Interfaces can, but abstract classes cannot"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract classes support `protected` abstract methods for subclass-only visibility. Interface methods are public contracts."
+        },
+        {
+          "id": "q10-7",
+          "question": "What happens if you need to add a new method to an interface without default methods in a public library?",
+          "options": [
+            "Nothing, it compiles cleanly",
+            "It breaks every existing class implementing that interface (compilation failure)",
+            "The JVM generates an empty body automatically",
+            "The new method is made private"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Adding an abstract method to an existing interface breaks binary and source compatibility for all external implementers."
+        },
+        {
+          "id": "q10-8",
+          "question": "Which design principle is illustrated by `class Airplane extends Vehicle implements Flyable` and `class Mosquito extends Insect implements Flyable`?",
+          "options": [
+            "Abstract classes model identity ('IS-A'); interfaces model capability ('CAN-DO')",
+            "Multiple class inheritance",
+            "Package-private encapsulation",
+            "Static polymorphism"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Airplane IS-A Vehicle, Mosquito IS-A Insect (identity). Both CAN-DO Flyable (capability)."
+        },
+        {
+          "id": "q10-9",
+          "question": "Can an interface be extended by an abstract class?",
+          "options": [
+            "No, classes can only implement interfaces",
+            "Yes, using the implements keyword: `abstract class A implements I`",
+            "Only if the interface has no methods",
+            "Only using the extends keyword"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "An abstract class implements an interface using `abstract class A implements I`. (An interface extends another interface using `extends`)."
+        },
+        {
+          "id": "q10-10",
+          "question": "What is the recommended rule of thumb when designing an enterprise API from scratch?",
+          "options": [
+            "Always use abstract classes exclusively",
+            "Expose the public contract as an interface, and optionally provide an abstract class for developer convenience",
+            "Never use interfaces",
+            "Make all classes final"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Exposing interfaces as the primary public contract provides maximum flexibility to clients, while providing an abstract skeletal class saves implementation time."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Abstract Class vs Interface",
+      "interviewQA": [
+        {
+          "id": "i10-1",
+          "companyTag": "Google",
+          "question": "In Java 8 and beyond, interfaces have default and static methods. Why haven't abstract classes become obsolete?",
+          "answer": "Abstract classes remain indispensable because: 1. **State**: Abstract classes can declare instance variables (`private int count`), whereas interfaces cannot hold instance state (only constants). 2. **Constructors**: Abstract classes have constructors to enforce invariants upon creation. 3. **Access Modifiers**: Abstract classes can declare `protected` and package-private members, whereas interface members are public. 4. **Identity**: Abstract classes represent core 'IS-A' identity, preserving single-inheritance domain hierarchies."
+        },
+        {
+          "id": "i10-2",
+          "companyTag": "Amazon",
+          "question": "Explain the 'Skeletal Implementation' (Abstract Interface) pattern. Why is it used in java.util.AbstractList?",
+          "answer": "The pattern pairs an interface (e.g. `List`) with an abstract base class (`AbstractList`). The interface defines the full client-facing contract and allows multiple inheritance. The abstract class implements common boilerplate (e.g. `isEmpty()`, iterator traversal, `equals()`). Developers can extend `AbstractList` to write a full list in a few lines, while developers whose classes already extend another class can still implement `List` directly."
+        },
+        {
+          "id": "i10-3",
+          "companyTag": "Microsoft",
+          "question": "How do you decide whether a new concept should be an abstract class or an interface?",
+          "answer": "Ask two questions: 1. *Is this concept an identity ('IS-A') or a capability ('CAN-DO')?* If identity, use a class. If capability across disparate types, use an interface. 2. *Do sibling implementations need to share non-static instance state and constructor validation?* If yes, you must use an abstract class. If purely defining a behavioral specification, use an interface."
+        },
+        {
+          "id": "i10-4",
+          "companyTag": "Netflix",
+          "question": "What is the impact on binary compatibility when adding a method to an interface vs an abstract class?",
+          "answer": "Adding a non-default method to an interface breaks all implementing classes at compile time. In an abstract class, adding a concrete method does not break existing subclasses at compile or runtime. With Java 8 default methods, interfaces can also add methods safely without breaking binary compatibility."
+        },
+        {
+          "id": "i10-5",
+          "companyTag": "Uber",
+          "question": "Why can an abstract class have protected methods, but an interface cannot?",
+          "answer": "An interface is a public contract designed for communication between disparate components across boundaries; hiding methods with `protected` contradicts the concept of an open interface contract. An abstract class represents an internal family blueprint where parent classes frequently provide internal utility methods intended solely for child subclasses."
+        },
+        {
+          "id": "i10-6",
+          "companyTag": "Apple",
+          "question": "Can an interface implement another interface?",
+          "answer": "No. An interface can EXTEND another interface (`interface B extends A`), but it cannot IMPLEMENT another interface (`interface B implements A` is a syntax error). 'Implements' implies providing an implementation, whereas interfaces inherit specifications via 'extends'."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can articulate the exact differences between abstract classes and interfaces in a technical interview.",
+        "I understand the IS-A (abstract class) vs CAN-DO (interface) distinction.",
+        "I know why interfaces cannot hold non-static instance fields or constructors.",
+        "I can implement the Skeletal Implementation pattern.",
+        "I understand how the 'Class Wins' rule resolves conflicts between class and interface methods.",
+        "I know why abstract classes support protected access while interfaces are public.",
+        "I know why default methods did not make abstract classes obsolete.",
+        "I understand single vs multiple inheritance constraints in Java.",
+        "I can design a hybrid architecture using interfaces for contracts and abstract classes for boilerplate reuse.",
+        "I know how to evaluate API evolution trade-offs between abstract classes and interfaces."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les10-p1",
+      "lessonId": "java-oop-mod7-les10",
+      "orderIndex": 1,
+      "title": "Warmup: Identity vs Capability Hierarchy",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `Animal` abstract class and `Swimmable` interface:\n1. Abstract class `Animal`: has `protected String name`. Constructor sets `name`. Declares `public abstract void makeSound();`.\n2. Interface `Swimmable`: declares `void swim();`.\n3. Concrete class `Duck` extending `Animal` and implementing `Swimmable`:\n   - Constructor accepts `String name` and calls `super(name)`.\n   - `makeSound()` prints `name + ' says Quack!'`.\n   - `swim()` prints `name + ' is paddling on the pond'`.\nIn `main`, create a `Duck(\"Donald\")`, call `makeSound()`, and call `swim()`.",
+      "starterCode": "abstract class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n    public abstract void makeSound();\n}\n\ninterface Swimmable {\n    void swim();\n}\n\n// TODO: Implement Duck extending Animal and implementing Swimmable\nclass Duck {\n}\n\npublic class DuckApp {\n    public static void main(String[] args) {\n        // TODO: Test Duck\n    }\n}",
+      "initialCode": "abstract class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n    public abstract void makeSound();\n}\n\ninterface Swimmable {\n    void swim();\n}\n\n// TODO: Implement Duck extending Animal and implementing Swimmable\nclass Duck {\n}\n\npublic class DuckApp {\n    public static void main(String[] args) {\n        // TODO: Test Duck\n    }\n}",
+      "solutionCode": "abstract class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n    public abstract void makeSound();\n}\n\ninterface Swimmable {\n    void swim();\n}\n\nclass Duck extends Animal implements Swimmable {\n    public Duck(String name) {\n        super(name);\n    }\n    @Override\n    public void makeSound() {\n        System.out.println(name + \" says Quack!\");\n    }\n    @Override\n    public void swim() {\n        System.out.println(name + \" is paddling on the pond\");\n    }\n}\n\npublic class DuckApp {\n    public static void main(String[] args) {\n        Duck duck = new Duck(\"Donald\");\n        duck.makeSound();\n        duck.swim();\n    }\n}",
+      "expectedOutput": "Donald says Quack!\nDonald is paddling on the pond",
+      "hints": [
+        "class Duck extends Animal implements Swimmable",
+        "Implement makeSound() and swim() with public access."
+      ]
+    },
+    {
+      "id": "prob-les10-p2",
+      "lessonId": "java-oop-mod7-les10",
+      "orderIndex": 2,
+      "title": "Skeletal Implementation of a Key-Value Cache",
+      "difficulty": "medium",
+      "problemStatement": "Build a skeletal cache architecture from scratch:\n1. Interface `CacheStore`: declares `void put(String k, String v);`, `String get(String k);`, `boolean contains(String k);`.\n2. Abstract class `AbstractCacheStore` implementing `CacheStore`:\n   - Implements `contains(String k)`: returns `get(k) != null;`.\n   - Leaves `put` and `get` abstract.\n3. Concrete class `InMemoryCache` extending `AbstractCacheStore`:\n   - Has `private java.util.Map<String, String> map = new java.util.HashMap<>();`.\n   - Implements `put(String k, String v)`: `map.put(k, v);`.\n   - Implements `get(String k)`: returns `map.get(k);`.\n4. In `Main`, instantiate `CacheStore cache = new InMemoryCache()`. Put `'session'` -> `'active'`. Print `cache.get(\"session\")` and `cache.contains(\"session\")`.",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\ninterface CacheStore {\n    void put(String k, String v);\n    String get(String k);\n    boolean contains(String k);\n}\n\nabstract class AbstractCacheStore implements CacheStore {\n    @Override\n    public boolean contains(String k) {\n        return get(k) != null;\n    }\n}\n\nclass InMemoryCache extends AbstractCacheStore {\n    private Map<String, String> map = new HashMap<>();\n    @Override\n    public void put(String k, String v) {\n        map.put(k, v);\n    }\n    @Override\n    public String get(String k) {\n        return map.get(k);\n    }\n}\n\npublic class CacheApp {\n    public static void main(String[] args) {\n        CacheStore cache = new InMemoryCache();\n        cache.put(\"session\", \"active\");\n        System.out.println(\"Session: \" + cache.get(\"session\"));\n        System.out.println(\"Contains: \" + cache.contains(\"session\"));\n    }\n}",
+      "expectedOutput": "Session: active\nContains: true",
+      "hints": [
+        "AbstractCacheStore implements contains(k) using get(k) != null.",
+        "InMemoryCache supplies put and get."
+      ]
+    },
+    {
+      "id": "prob-les10-p3",
+      "lessonId": "java-oop-mod7-les10",
+      "orderIndex": 3,
+      "title": "Cross-Cutting Security Filter Architecture",
+      "difficulty": "medium",
+      "problemStatement": "Build a security filtering pipeline from scratch:\n1. Interface `Filterable`: declares `boolean shouldProcess(String req);`.\n2. Abstract class `BaseFilter` implementing `Filterable`:\n   - Has `protected String filterName;`.\n   - Constructor sets `filterName`.\n   - Concrete method `public void logCheck(String req)`: prints `'[' + filterName + '] Inspecting: ' + req`.\n3. Concrete class `AuthTokenFilter` extending `BaseFilter`:\n   - Constructor accepts `String name` and calls `super(name)`.\n   - Overrides `shouldProcess(String req)`: calls `logCheck(req)`, returns `req.contains(\"Bearer \")`.\n4. In `Main`, create an `AuthTokenFilter(\"JWT-Auth\")`. Test with `'GET /api/data Bearer xyz'` and print result `'Allowed: ' + filter.shouldProcess(...)`.",
+      "solutionCode": "interface Filterable {\n    boolean shouldProcess(String req);\n}\n\nabstract class BaseFilter implements Filterable {\n    protected String filterName;\n    public BaseFilter(String filterName) {\n        this.filterName = filterName;\n    }\n    public void logCheck(String req) {\n        System.out.println(\"[\" + filterName + \"] Inspecting: \" + req);\n    }\n}\n\nclass AuthTokenFilter extends BaseFilter {\n    public AuthTokenFilter(String name) {\n        super(name);\n    }\n    @Override\n    public boolean shouldProcess(String req) {\n        logCheck(req);\n        return req.contains(\"Bearer \");\n    }\n}\n\npublic class FilterApp {\n    public static void main(String[] args) {\n        Filterable filter = new AuthTokenFilter(\"JWT-Auth\");\n        boolean allowed = filter.shouldProcess(\"GET /api/data Bearer xyz\");\n        System.out.println(\"Allowed: \" + allowed);\n    }\n}",
+      "expectedOutput": "[JWT-Auth] Inspecting: GET /api/data Bearer xyz\nAllowed: true",
+      "hints": [
+        "BaseFilter has state filterName and concrete logCheck(req).",
+        "AuthTokenFilter overrides shouldProcess(req)."
+      ]
+    },
+    {
+      "id": "prob-les10-p4",
+      "lessonId": "java-oop-mod7-les10",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Attempting Non-Static Fields in Interface",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to store a non-final counter in an interface, but encountered compilation errors because interface fields are implicitly public static final. Refactor the architecture so the counter state is moved to an abstract class.",
+      "starterCode": "// BUG: Interface cannot hold instance state (counters)!\ninterface TransactionCounter {\n    // Compiler error: interface fields are static final and must be initialized!\n    int txCount;\n    void increment();\n}\n\nclass PaymentGateway implements TransactionCounter {\n    @Override\n    public void increment() {\n        // BUG: Cannot assign a value to final variable txCount!\n        txCount++;\n    }\n}\n\npublic class CounterBugApp {\n    public static void main(String[] args) {\n        PaymentGateway gw = new PaymentGateway();\n        gw.increment();\n    }\n}",
+      "initialCode": "// BUG: Interface cannot hold instance state (counters)!\ninterface TransactionCounter {\n    // Compiler error: interface fields are static final and must be initialized!\n    int txCount;\n    void increment();\n}\n\nclass PaymentGateway implements TransactionCounter {\n    @Override\n    public void increment() {\n        // BUG: Cannot assign a value to final variable txCount!\n        txCount++;\n    }\n}\n\npublic class CounterBugApp {\n    public static void main(String[] args) {\n        PaymentGateway gw = new PaymentGateway();\n        gw.increment();\n    }\n}",
+      "solutionCode": "abstract class TransactionCounter {\n    protected int txCount = 0;\n    public abstract void increment();\n    public int getCount() { return txCount; }\n}\n\nclass PaymentGateway extends TransactionCounter {\n    @Override\n    public void increment() {\n        txCount++;\n        System.out.println(\"Transaction count: \" + txCount);\n    }\n}\n\npublic class CounterBugApp {\n    public static void main(String[] args) {\n        PaymentGateway gw = new PaymentGateway();\n        gw.increment();\n    }\n}",
+      "expectedOutput": "Transaction count: 1",
+      "hints": [
+        "Change TransactionCounter from an interface to an abstract class.",
+        "Change implements TransactionCounter to extends TransactionCounter in PaymentGateway."
+      ]
+    },
+    {
+      "id": "prob-les10-p5",
+      "lessonId": "java-oop-mod7-les10",
+      "orderIndex": 5,
+      "title": "Full-Featured Enterprise Storage Provider",
+      "difficulty": "hard",
+      "problemStatement": "Build a hybrid storage system combining interfaces and abstract classes from scratch:\n1. Interface `BlobStorage`: declares `void upload(String path, String data);` and `String download(String path);`.\n2. Interface `Encryptable`: declares `String encrypt(String raw);` and `String decrypt(String cipher);`.\n3. Abstract class `AbstractStorageProvider` implements `BlobStorage`, `Encryptable`:\n   - Has `protected String providerName`.\n   - Constructor sets `providerName`.\n   - Concrete method `public void audit(String action, String path)`: prints `'[' + providerName + '] ' + action + ' on: ' + path`.\n4. Concrete class `SecureCloudStore` extending `AbstractStorageProvider`:\n   - Has internal `java.util.Map<String, String> disk = new java.util.HashMap<>();`.\n   - Constructor sets `providerName` to `'AWS-KMS-S3'`.\n   - `encrypt(raw)` returns `'[ENC:' + raw + ']'`.\n   - `decrypt(cipher)` returns `cipher.replace(\"[ENC:\", \"\").replace(\"]\", \"\")`.\n   - `upload(path, data)`: calls `audit(\"UPLOAD\", path)`, encrypts data, stores in disk.\n   - `download(path)`: calls `audit(\"DOWNLOAD\", path)`, retrieves from disk, decrypts and returns.\n5. In `Main`, test uploading `'config.json'` with `'secret_token_99'`, then download and print `'Retrieved: ' + payload`.",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\ninterface BlobStorage {\n    void upload(String path, String data);\n    String download(String path);\n}\n\ninterface Encryptable {\n    String encrypt(String raw);\n    String decrypt(String cipher);\n}\n\nabstract class AbstractStorageProvider implements BlobStorage, Encryptable {\n    protected String providerName;\n    public AbstractStorageProvider(String providerName) {\n        this.providerName = providerName;\n    }\n    public void audit(String action, String path) {\n        System.out.println(\"[\" + providerName + \"] \" + action + \" on: \" + path);\n    }\n}\n\nclass SecureCloudStore extends AbstractStorageProvider {\n    private Map<String, String> disk = new HashMap<>();\n    public SecureCloudStore() {\n        super(\"AWS-KMS-S3\");\n    }\n    @Override\n    public String encrypt(String raw) {\n        return \"[ENC:\" + raw + \"]\";\n    }\n    @Override\n    public String decrypt(String cipher) {\n        return cipher.replace(\"[ENC:\", \"\").replace(\"]\", \"\");\n    }\n    @Override\n    public void upload(String path, String data) {\n        audit(\"UPLOAD\", path);\n        disk.put(path, encrypt(data));\n    }\n    @Override\n    public String download(String path) {\n        audit(\"DOWNLOAD\", path);\n        String cipher = disk.get(path);\n        return decrypt(cipher);\n    }\n}\n\npublic class StorageEnterpriseApp {\n    public static void main(String[] args) {\n        BlobStorage storage = new SecureCloudStore();\n        storage.upload(\"config.json\", \"secret_token_99\");\n        String result = storage.download(\"config.json\");\n        System.out.println(\"Retrieved: \" + result);\n    }\n}",
+      "expectedOutput": "[AWS-KMS-S3] UPLOAD on: config.json\n[AWS-KMS-S3] DOWNLOAD on: config.json\nRetrieved: secret_token_99",
+      "hints": [
+        "SecureCloudStore extends AbstractStorageProvider which implements both BlobStorage and Encryptable.",
+        "upload encrypts and download decrypts."
+      ]
+    }
+  ]
+}

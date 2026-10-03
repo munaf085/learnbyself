@@ -2217,6 +2217,553 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
       )}
 
 
+      
+      {/* ============================================================ */}
+      {/* MODULE 7: ABSTRACTION & INTERFACES CHEAT SHEETS              */}
+      {/* ============================================================ */}
+
+      {/* Lesson 1: why-abstraction */}
+      {(slug === 'why-abstraction') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Abstraction vs. Encapsulation Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Abstraction (Design Level)</th>
+                  <th className="p-2.5 rounded-r-lg">Encapsulation (Implementation Level)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Core Focus</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">WHAT an object does (contract specification)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">HOW data is stored and protected (data bundling)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Hiding Mechanism</td>
+                  <td className="p-2.5 text-slate-600">Hides implementation complexity and vendor drivers</td>
+                  <td className="p-2.5 text-slate-600">Hides internal state via private fields and accessors</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Java Language Tools</td>
+                  <td className="p-2.5 text-slate-600">abstract classes, interfaces</td>
+                  <td className="p-2.5 text-slate-600">private, protected, getters, setters</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Key Benefit</td>
+                  <td className="p-2.5 text-slate-600">Loose coupling; clients program to high-level contracts</td>
+                  <td className="p-2.5 text-slate-600">Data integrity; prevents external unauthorized mutation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: abstract-classes */}
+      {(slug === 'abstract-classes') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Abstract Class Language Rules &amp; Characteristics
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Language Rule</th>
+                  <th className="p-2.5">Compiler Behavior</th>
+                  <th className="p-2.5 rounded-r-lg">Architectural Rationale</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Direct Instantiation</td>
+                  <td className="p-2.5 text-rose-700 font-medium">new AbstractClass() is compile error</td>
+                  <td className="p-2.5 text-slate-600">Prevents calling incomplete or unimplemented methods</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Reference Type</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">AbstractClass ref = new ConcreteSubClass() is legal</td>
+                  <td className="p-2.5 text-slate-600">Enables runtime polymorphism via the abstract type</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">abstract final</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Illegal modifier combination</td>
+                  <td className="p-2.5 text-slate-600">Direct contradiction: abstract requires subclassing, final forbids it</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Zero Abstract Methods</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">100% legal to declare class abstract without abstract methods</td>
+                  <td className="p-2.5 text-slate-600">Used by architects to block direct instantiation of base utility classes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: abstract-methods */}
+      {(slug === 'abstract-methods') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Abstract Method Syntax &amp; Modifier Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Modifier / Aspect</th>
+                  <th className="p-2.5">Legal / Illegal?</th>
+                  <th className="p-2.5 rounded-r-lg">Explanation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Semicolon Syntax</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">LEGAL: abstract void f();</td>
+                  <td className="p-2.5 text-slate-600">Must end with semicolon; curly braces &#123;&#125; are forbidden</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">private abstract</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">ILLEGAL (Compile Error)</td>
+                  <td className="p-2.5 text-slate-600">Private methods are not inherited and cannot be overridden</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">static abstract</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">ILLEGAL (Compile Error)</td>
+                  <td className="p-2.5 text-slate-600">Static methods are resolved at compile time; abstract requires dynamic vtable dispatch</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">final abstract</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">ILLEGAL (Compile Error)</td>
+                  <td className="p-2.5 text-slate-600">Final forbids overriding, which is the sole reason for abstract</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">protected abstract</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">LEGAL</td>
+                  <td className="p-2.5 text-slate-600">Allows restricting implementation and access to package or subclasses</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: abstract-class-constructors */}
+      {(slug === 'abstract-class-constructors') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Abstract Class Constructors &amp; Chaining Execution
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Concept</th>
+                  <th className="p-2.5">Mechanics</th>
+                  <th className="p-2.5 rounded-r-lg">Crucial Best Practice</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Why Constructors Exist</td>
+                  <td className="p-2.5 text-slate-600">Called by child constructors via super(...) to initialize base fields</td>
+                  <td className="p-2.5 text-slate-700">Centralize state validation in abstract constructors</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Execution Order</td>
+                  <td className="p-2.5 text-slate-600">Propagates to Object, then runs downwards: Object → AbstractClass → ConcreteClass</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Parent fields are initialized before child constructor body runs</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Constructor Access</td>
+                  <td className="p-2.5 text-slate-600">protected constructor is recommended practice</td>
+                  <td className="p-2.5 text-slate-700">Communicates that only extending subclasses should chain into it</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Calling Overridable Methods</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">CRITICAL DANGER: Antipattern</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Child field initializers have not run yet; leads to NullPointerExceptions!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: concrete-methods-in-abstract-classes */}
+      {(slug === 'concrete-methods-in-abstract-classes') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Template Method Pattern &amp; Partial Abstraction
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Method Type</th>
+                  <th className="p-2.5">Modifier in Base Class</th>
+                  <th className="p-2.5 rounded-r-lg">Subclass Obligation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Template Orchestration Method</td>
+                  <td className="p-2.5 font-mono text-purple-700">public final void execute()</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Cannot be overridden! Subclasses cannot alter algorithm workflow</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Mandatory Custom Step</td>
+                  <td className="p-2.5 font-mono text-indigo-700">protected abstract void step()</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Must be implemented by concrete subclass</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Optional Hook Method</td>
+                  <td className="p-2.5 font-mono text-slate-700">protected boolean hook() &#123; return false; &#125;</td>
+                  <td className="p-2.5 text-slate-600">Optionally overridden by subclass to activate conditional branches</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Shared Utility Step</td>
+                  <td className="p-2.5 font-mono text-slate-700">private void commonHelper()</td>
+                  <td className="p-2.5 text-slate-600">Fully internal to base class; invisible to subclasses</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: interfaces */}
+      {(slug === 'interfaces') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Interface Implicit Modifiers &amp; Contract Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Member Type</th>
+                  <th className="p-2.5">What You Write</th>
+                  <th className="p-2.5 rounded-r-lg">What the Compiler Automatically Generates</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Method Declaration</td>
+                  <td className="p-2.5 font-mono text-indigo-700">void execute();</td>
+                  <td className="p-2.5 font-mono text-emerald-700 font-semibold">public abstract void execute();</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Constant / Field</td>
+                  <td className="p-2.5 font-mono text-indigo-700">int TIMEOUT = 5000;</td>
+                  <td className="p-2.5 font-mono text-emerald-700 font-semibold">public static final int TIMEOUT = 5000;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Constructors</td>
+                  <td className="p-2.5 text-slate-600">Disallowed completely</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Interfaces have zero instance state; no constructor exists</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Direct Instantiation</td>
+                  <td className="p-2.5 font-mono text-slate-600">new Interface()</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Compile-time error (must use implementing class or lambda)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: implementing-interfaces */}
+      {(slug === 'implementing-interfaces') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Implementing Interfaces: Syntax &amp; Visibility Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Syntax Scenario</th>
+                  <th className="p-2.5">Correct Code</th>
+                  <th className="p-2.5 rounded-r-lg">Common Compilation Trap</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">extends + implements</td>
+                  <td className="p-2.5 font-mono text-emerald-700">class A extends B implements I</td>
+                  <td className="p-2.5 text-rose-700 font-medium">class A implements I extends B (Syntax error: extends must come first!)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Method Visibility</td>
+                  <td className="p-2.5 font-mono text-emerald-700">@Override public void run()</td>
+                  <td className="p-2.5 text-rose-700 font-medium">void run() (Compile error: Cannot reduce visibility from public)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Abstract Implementer</td>
+                  <td className="p-2.5 font-mono text-slate-700">abstract class A implements I</td>
+                  <td className="p-2.5 text-slate-600">Legal: Abstract classes can implement 0, some, or all interface methods</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Superclass Contract Match</td>
+                  <td className="p-2.5 text-slate-600">Inherited public method satisfies contract</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">If SuperClass already has public void run(), Child automatically satisfies I!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: multiple-interfaces */}
+      {(slug === 'multiple-interfaces') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Multiple Interfaces &amp; Collision Resolution Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Collision Type</th>
+                  <th className="p-2.5">Example Scenario</th>
+                  <th className="p-2.5 rounded-r-lg">Resolution Mechanism</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Identical Method Signature</td>
+                  <td className="p-2.5 font-mono text-slate-700">void render(); in both A and B</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Single implementation in class satisfies BOTH interfaces simultaneously</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Conflicting Return Types</td>
+                  <td className="p-2.5 font-mono text-slate-700">int f(); in A and String f(); in B</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Unresolvable compile-time error! Class cannot implement both</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Constant Name Collision</td>
+                  <td className="p-2.5 font-mono text-slate-700">int MAX = 10; in A and MAX = 20; in B</td>
+                  <td className="p-2.5 text-slate-600">Disambiguate with explicit qualification: A.MAX or B.MAX</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Side-Casting</td>
+                  <td className="p-2.5 font-mono text-indigo-700">I2 ref2 = (I2) ref1;</td>
+                  <td className="p-2.5 text-slate-600">Valid at compile time; runtime verifies object implements I2</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: default-and-static-interface-methods */}
+      {(slug === 'default-and-static-interface-methods') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Terminal className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Default &amp; Static Interface Methods Conflict Resolution Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Resolution Rule</th>
+                  <th className="p-2.5">Principle</th>
+                  <th className="p-2.5 rounded-r-lg">Syntax / Action Required</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">1. Classes Win</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Superclass concrete method always beats interface default</td>
+                  <td className="p-2.5 text-slate-600">Zero action needed; superclass implementation executes automatically</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">2. Sub-interfaces Win</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Most specific interface default takes precedence</td>
+                  <td className="p-2.5 text-slate-600">If B extends A, B's default overrides A's default</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">3. Explicit Disambiguation</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Conflicting unrelated defaults force explicit class override</td>
+                  <td className="p-2.5 font-mono text-indigo-700">InterfaceA.super.methodName(); inside override</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Static Interface Methods</td>
+                  <td className="p-2.5 text-slate-600">NOT inherited by implementing classes</td>
+                  <td className="p-2.5 font-mono text-slate-800">Must call via InterfaceName.staticMethod()</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 10: abstract-class-vs-interface */}
+      {(slug === 'abstract-class-vs-interface') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Abstract Class vs. Interface Master Comparison
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Abstract Class</th>
+                  <th className="p-2.5 rounded-r-lg">Interface (Java 8+)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Instance Variables (State)</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Yes (private, protected, public non-static state)</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">NO instance state (only public static final constants)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Constructors</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">Yes (invoked via super() constructor chaining)</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">NO constructors allowed</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Inheritance Model</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Single class inheritance (extends OneClass)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Multiple inheritance (implements I1, I2, I3)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Access Modifiers</td>
+                  <td className="p-2.5 text-slate-600">public, protected, package-private, private</td>
+                  <td className="p-2.5 text-slate-600">Methods public (or private helper in Java 9+)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Design Relationship</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">IS-A (Core Identity &amp; Shared State)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">CAN-DO (Peripheral Capabilities &amp; Contracts)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 11: functional-interface-introduction */}
+      {(slug === 'functional-interface-introduction') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Functional Interface (SAM) Counting Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Method Type in Interface</th>
+                  <th className="p-2.5">Counts Against SAM Rule?</th>
+                  <th className="p-2.5 rounded-r-lg">Allowed Quantity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Abstract Methods</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">YES (Counts)</td>
+                  <td className="p-2.5 text-emerald-700 font-semibold">EXACTLY ONE (1) mandatory</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Default Methods</td>
+                  <td className="p-2.5 text-slate-500 font-medium">NO (Ignored)</td>
+                  <td className="p-2.5 text-slate-600">Unlimited default methods</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Static Methods</td>
+                  <td className="p-2.5 text-slate-500 font-medium">NO (Ignored)</td>
+                  <td className="p-2.5 text-slate-600">Unlimited static methods</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">java.lang.Object Methods (equals, etc.)</td>
+                  <td className="p-2.5 text-slate-500 font-medium">NO (Ignored)</td>
+                  <td className="p-2.5 text-slate-600">Re-declaring Object public methods does not count</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 12: notification-system-project */}
+      {(slug === 'notification-system-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Notification System — 10-Point Architectural Checklist
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Architecture Requirement</th>
+                  <th className="p-2.5 rounded-r-lg">Implementation Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">Base AbstractNotificationChannel encapsulates channelId, destination, and state</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Base constructor validates parameters and initializes invariant timestamps</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Template method deliver() is final to protect mandatory audit logging lifecycle</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">Abstract sendPayload() delegates transport protocol to concrete subclasses</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">Auditable interface standardizes logAudit(event, status) contract</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">Retryable interface provides default retryOperation() loop with backoff</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">EmailChannel, SmsChannel, and SlackChannel satisfy all abstract and interface contracts</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">Batch broadcast engine processes heterogeneous AbstractNotificationChannel[] polymorphically</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Zero fragile type switching (instanceof) in broadcast dispatch loop</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Clean architectural boundaries: abstract classes for state, interfaces for capabilities</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+
       {/* Lesson: java-and-jvm */}
       {(slug === 'java-and-jvm' || slug === 'what-is-java-and-the-jvm') && (
         <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">

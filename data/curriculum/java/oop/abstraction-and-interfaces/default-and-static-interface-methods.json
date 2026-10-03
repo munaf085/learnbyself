@@ -1,0 +1,359 @@
+{
+  "id": "java-oop-mod7-les9",
+  "slug": "default-and-static-interface-methods",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Default & Static Interface Methods",
+  "summary": "Master the modern evolution of Java interfaces (Java 8+): adding default methods for backward compatibility, resolving diamond conflicts, and utilizing static interface utilities.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "interfaces",
+    "multiple-interfaces"
+  ],
+  "learningObjectives": [
+    "Explain why default methods were introduced in Java 8 (backward compatibility for collections & lambdas)",
+    "Implement default methods in interfaces to provide optional method bodies for implementers",
+    "Resolve default method conflicts when implementing multiple interfaces using InterfaceName.super.method()",
+    "Declare and invoke static utility methods directly on interfaces"
+  ],
+  "expectedOutcomes": [
+    "You can evolve existing interfaces without breaking legacy implementing classes",
+    "You can resolve multi-interface default method collisions confidently"
+  ],
+  "activities": [
+    {
+      "id": "act-les9-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The HDMI Standard Upgrade",
+      "concept": "Default Methods for Backward Compatibility",
+      "realWorldMetaphor": {
+        "scenario": "When the HDMI consortium introduced HDMI 2.1 with 8K resolution and eARC audio, they did not invalidate every existing television and gaming console in the world. Instead, the new specification included fallback default signaling: if a connected TV only supports older HDMI 2.0, the connection gracefully operates at standard 4K 60Hz defaults without requiring new hardware.",
+        "mapping": "The HDMI specification is the `interface`. Adding eARC without breaking old TVs is adding a `default method`. Existing classes inherit the fallback default without failing compilation, while modern hardware overrides the default to unlock advanced features.",
+        "takeaway": "Default methods allow interface authors to introduce new capabilities to existing APIs without breaking millions of legacy classes."
+      }
+    },
+    {
+      "id": "act-les9-concept",
+      "type": "concept",
+      "title": "Java 8+ Interface Evolution: default and static",
+      "content": "### Why Java 8 Changed the Interface Rules\n\nPrior to Java 8, interfaces could **only** declare abstract methods. If Java architects wanted to add a new method like `stream()` or `forEach()` to `java.util.Collection`, every single class in the world implementing `Collection` (thousands of enterprise libraries) would fail compilation!\n\nTo solve this, Java 8 introduced **default methods**:\n```java\npublic interface Collection<E> {\n    // Added in Java 8 with a default body! Zero broken legacy classes!\n    default void forEach(Consumer<? super E> action) {\n        for (E e : this) action.accept(e);\n    }\n}\n```\n\n### 1. Default Method Rules\n- Declared using the `default` keyword inside an interface.\n- Must provide an implementation body `{ ... }`.\n- Implementing classes inherit the default body automatically, but can **optionally override** it.\n- Default methods can access other abstract or default methods declared in the interface.\n\n### 2. Resolving the Multiple Inheritance Conflict\nIf a class implements two interfaces that declare the **exact same default method signature**, the compiler refuses to guess which one to use. The class MUST override the method and choose:\n```java\ninterface A { default void log() { System.out.println(\"A\"); } }\ninterface B { default void log() { System.out.println(\"B\"); } }\n\nclass App implements A, B {\n    @Override\n    public void log() {\n        // Disambiguate using: InterfaceName.super.methodName()\n        A.super.log(); // Delegates to A's default\n    }\n}\n```\n\n### 3. Static Methods in Interfaces\nJava 8 also allowed `static` methods in interfaces. They serve as utility or factory helpers bound to the interface namespace (`InterfaceName.utilityMethod()`), and are **NOT inherited** by implementing classes."
+    },
+    {
+      "id": "act-les9-cw1",
+      "type": "code_walkthrough",
+      "title": "Default Methods & Optional Overrides",
+      "codeSnippet": "interface Logger {\n    void log(String message); // Abstract: Mandatory\n\n    // Default method: Optional for implementing classes to override\n    default void logWithTimestamp(String message) {\n        long now = System.currentTimeMillis();\n        log(\"[\" + now + \"] \" + message);\n    }\n}\n\n// Class 1: Uses the default implementation\nclass ConsoleLogger implements Logger {\n    @Override\n    public void log(String message) {\n        System.out.println(\"[CONSOLE] \" + message);\n    }\n}\n\n// Class 2: Customizes and overrides the default implementation\nclass FormattedLogger implements Logger {\n    @Override\n    public void log(String message) {\n        System.out.println(message);\n    }\n\n    @Override\n    public void logWithTimestamp(String message) {\n        System.out.println(\"[CUSTOM-TS 2026-10-03] >>> \" + message);\n    }\n}\n\npublic class DefaultDemo {\n    public static void main(String[] args) {\n        Logger c = new ConsoleLogger();\n        c.logWithTimestamp(\"Server booted\");\n\n        Logger f = new FormattedLogger();\n        f.logWithTimestamp(\"Cache initialized\");\n    }\n}",
+      "code": "interface Logger {\n    void log(String message); // Abstract: Mandatory\n\n    // Default method: Optional for implementing classes to override\n    default void logWithTimestamp(String message) {\n        long now = System.currentTimeMillis();\n        log(\"[\" + now + \"] \" + message);\n    }\n}\n\n// Class 1: Uses the default implementation\nclass ConsoleLogger implements Logger {\n    @Override\n    public void log(String message) {\n        System.out.println(\"[CONSOLE] \" + message);\n    }\n}\n\n// Class 2: Customizes and overrides the default implementation\nclass FormattedLogger implements Logger {\n    @Override\n    public void log(String message) {\n        System.out.println(message);\n    }\n\n    @Override\n    public void logWithTimestamp(String message) {\n        System.out.println(\"[CUSTOM-TS 2026-10-03] >>> \" + message);\n    }\n}\n\npublic class DefaultDemo {\n    public static void main(String[] args) {\n        Logger c = new ConsoleLogger();\n        c.logWithTimestamp(\"Server booted\");\n\n        Logger f = new FormattedLogger();\n        f.logWithTimestamp(\"Cache initialized\");\n    }\n}",
+      "language": "java",
+      "explanation": "ConsoleLogger only implements the abstract log() method and inherits logWithTimestamp(). FormattedLogger overrides both.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Logger` declares `log(String)` as abstract and `logWithTimestamp(String)` as default."
+        },
+        {
+          "step": 2,
+          "description": "`ConsoleLogger` does not override `logWithTimestamp()`; calling it executes the default interface body, which in turn calls `this.log(...)`."
+        },
+        {
+          "step": 3,
+          "description": "`FormattedLogger` explicitly overrides `logWithTimestamp()`, replacing the default logic."
+        },
+        {
+          "step": 4,
+          "description": "Dynamic dispatch ensures the correct version executes for each instance."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-cw2",
+      "type": "code_walkthrough",
+      "title": "Resolving Diamond Default Method Collisions",
+      "codeSnippet": "interface AlarmAlert {\n    default void sound() {\n        System.out.println(\"BEEP! BEEP! BEEP!\");\n    }\n}\n\ninterface SirenAlert {\n    default void sound() {\n        System.out.println(\"WEE-WOO-WEE-WOO!\");\n    }\n}\n\n// Class implements both: Conflict must be resolved explicitly!\nclass EmergencySystem implements AlarmAlert, SirenAlert {\n    @Override\n    public void sound() {\n        System.out.println(\"=== Emergency Activated ===\");\n        // Disambiguate using InterfaceName.super.method()\n        AlarmAlert.super.sound();\n        SirenAlert.super.sound();\n    }\n}\n\npublic class ConflictDemo {\n    public static void main(String[] args) {\n        EmergencySystem sys = new EmergencySystem();\n        sys.sound();\n    }\n}",
+      "code": "interface AlarmAlert {\n    default void sound() {\n        System.out.println(\"BEEP! BEEP! BEEP!\");\n    }\n}\n\ninterface SirenAlert {\n    default void sound() {\n        System.out.println(\"WEE-WOO-WEE-WOO!\");\n    }\n}\n\n// Class implements both: Conflict must be resolved explicitly!\nclass EmergencySystem implements AlarmAlert, SirenAlert {\n    @Override\n    public void sound() {\n        System.out.println(\"=== Emergency Activated ===\");\n        // Disambiguate using InterfaceName.super.method()\n        AlarmAlert.super.sound();\n        SirenAlert.super.sound();\n    }\n}\n\npublic class ConflictDemo {\n    public static void main(String[] args) {\n        EmergencySystem sys = new EmergencySystem();\n        sys.sound();\n    }\n}",
+      "language": "java",
+      "explanation": "When two interfaces have conflicting default methods, EmergencySystem resolves it using AlarmAlert.super.sound() and SirenAlert.super.sound().",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Both `AlarmAlert` and `SirenAlert` define `default void sound()`."
+        },
+        {
+          "step": 2,
+          "description": "`EmergencySystem` implements both. Without an override, javac errors: 'inherits unrelated defaults for sound()'."
+        },
+        {
+          "step": 3,
+          "description": "`EmergencySystem` overrides `sound()` and delegates explicitly using `AlarmAlert.super.sound()` and `SirenAlert.super.sound()`."
+        },
+        {
+          "step": 4,
+          "description": "Both alert sounds execute in designated sequence."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-mcq",
+      "type": "mcq",
+      "title": "Default & Static Methods Quiz",
+      "questions": [
+        {
+          "id": "q9-1",
+          "question": "What primary engineering problem did default methods solve in Java 8?",
+          "options": [
+            "Making Java code execute faster on multi-core processors",
+            "Enabling API authors to add new methods to existing interfaces without breaking backward compatibility for all existing implementing classes",
+            "Allowing classes to have multiple constructors",
+            "Replacing garbage collection with manual memory management"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Default methods allowed the JDK team to add lambda-enabled methods like `forEach()` and `stream()` to core interfaces like `Collection` without breaking millions of legacy implementations."
+        },
+        {
+          "id": "q9-2",
+          "question": "How does a class resolve a conflict when implementing two interfaces that provide identical default method signatures?",
+          "options": [
+            "The compiler chooses the first interface listed in the implements clause",
+            "The class MUST override the conflicting method; it can optionally delegate using `InterfaceName.super.method()`",
+            "A runtime ClassCastException is thrown upon class loading",
+            "The class automatically deletes the method"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The Java compiler demands that the implementing class explicitly override the conflicting method. The class can invoke a specific parent default using `InterfaceName.super.method()`."
+        },
+        {
+          "id": "q9-3",
+          "question": "Are static methods in an interface inherited by implementing classes?",
+          "options": [
+            "Yes, they are inherited just like static methods in classes",
+            "No, static interface methods are NOT inherited; they can only be invoked directly using `InterfaceName.methodName()`",
+            "Only if marked protected",
+            "Only if the implementing class is abstract"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Static methods in interfaces do NOT participate in inheritance. Calling `MyImplementingClass.interfaceStaticMethod()` fails compilation."
+        },
+        {
+          "id": "q9-4",
+          "question": "What is the 'Class Wins' rule in Java 8 default method resolution?",
+          "options": [
+            "Interfaces always override classes",
+            "If a superclass provides a concrete method with the same signature as an interface default method, the superclass method ALWAYS takes precedence and wins",
+            "The JVM throws an error if a class and an interface share a method",
+            "Classes can only inherit from interfaces"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The 'Class Wins' rule states: a method declaration in a superclass or super-superclass always takes precedence over any default method from an interface."
+        },
+        {
+          "id": "q9-5",
+          "question": "Can a default method in an interface override a method from `java.lang.Object` (such as `equals`, `hashCode`, or `toString`)?",
+          "options": [
+            "Yes, default methods can override any method",
+            "No, an interface cannot provide default implementations for Object methods (compile-time error)",
+            "Only toString() can be overridden",
+            "Only in Java 17+"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java strictly prohibits default methods from overriding `equals`, `hashCode`, or `toString` because the 'Class Wins' rule would make such defaults meaningless."
+        },
+        {
+          "id": "q9-6",
+          "question": "Can a default method access instance variables of the implementing class directly?",
+          "options": [
+            "Yes, via this.fieldName",
+            "No, interfaces have no instance state and do not know what fields implementing classes might possess",
+            "Only if the fields are protected",
+            "Only through reflection"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Interfaces cannot declare instance variables, so default methods cannot access subclass fields directly (only via abstract getter methods defined in the interface)."
+        },
+        {
+          "id": "q9-7",
+          "question": "What feature did Java 9 introduce to help share code between multiple default methods in the same interface?",
+          "options": [
+            "Constructors in interfaces",
+            "Private interface methods (including private static methods)",
+            "Protected fields",
+            "Final default methods"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java 9 introduced `private` and `private static` methods in interfaces to encapsulate shared helper code between default and static methods."
+        },
+        {
+          "id": "q9-8",
+          "question": "If interface `SubInterface` extends `SuperInterface`, can `SubInterface` re-declare an inherited default method as `abstract`?",
+          "options": [
+            "No, once a method is default it cannot become abstract",
+            "Yes, this is called 're-abstracting' a method, forcing concrete implementers of SubInterface to provide a body",
+            "Only if the method has no parameters",
+            "Only using the abstract default keywords together"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "A sub-interface can re-abstract an inherited default method by declaring it as `abstract void method();`, stripping the default implementation."
+        },
+        {
+          "id": "q9-9",
+          "question": "Can a default method be declared `final` in an interface?",
+          "options": [
+            "Yes, to prevent implementing classes from overriding it",
+            "No, the final modifier is illegal on default interface methods",
+            "Only in private interfaces",
+            "Only if the interface is marked final"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Default methods cannot be declared `final` in an interface. Implementing classes always retain the option to override them."
+        },
+        {
+          "id": "q9-10",
+          "question": "Can a default method in an interface call an abstract method declared in the same interface?",
+          "options": [
+            "No, default methods can only call static methods",
+            "Yes, this allows default methods to orchestrate template workflows resolved at runtime via the implementing class",
+            "Only if wrapped in a try-catch block",
+            "Only if the abstract method returns boolean"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Default methods can call abstract methods declared in the interface. Dynamic dispatch ensures the implementing object's version is executed."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Default & Static Interface Methods",
+      "interviewQA": [
+        {
+          "id": "i9-1",
+          "companyTag": "Amazon",
+          "question": "Explain the 3 rules of conflict resolution when multiple default methods and class methods collide in Java 8.",
+          "answer": "1. **Classes Win**: A method declaration from a superclass always takes precedence over any interface default method. 2. **Sub-interfaces Win**: If interface B extends interface A and both declare a default method, B's more specific default wins. 3. **Explicit Disambiguation**: If two unrelated interfaces provide conflicting defaults, the compiler requires the implementing class to override the method and resolve the conflict explicitly (e.g. using `InterfaceA.super.method()`)."
+        },
+        {
+          "id": "i9-2",
+          "companyTag": "Google",
+          "question": "Why did Java 8 prohibit default methods from overriding methods from `java.lang.Object` (e.g., `toString`, `equals`)?",
+          "answer": "Every Java object inherits implementations of `equals()`, `hashCode()`, and `toString()` from `java.lang.Object`. Because of the 'Class Wins' rule, a class implementation (which includes `Object`) would always override an interface default method. Therefore, an interface default implementation of `toString()` would be unreachable dead code in every class, so the compiler forbids it outright."
+        },
+        {
+          "id": "i9-3",
+          "companyTag": "Microsoft",
+          "question": "How do static methods in interfaces differ from static methods in classes?",
+          "answer": "Static methods in classes are inherited by subclasses (you can call `SubClass.staticMethod()`). In contrast, static methods in interfaces are NOT inherited by implementing classes or sub-interfaces. They can ONLY be invoked through the direct interface name: `InterfaceName.staticMethod()`. This prevents namespace pollution and ambiguity."
+        },
+        {
+          "id": "i9-4",
+          "companyTag": "Netflix",
+          "question": "How did default methods make the Java Stream API and Functional Programming possible in legacy codebases?",
+          "answer": "Without default methods, adding `default Stream<E> stream()` to `java.util.Collection` would have broken every third-party collection library in existence (such as Guava, Hibernate, Apache Commons). Default methods allowed the JDK to evolve existing core interfaces gracefully with zero recompilation or breaking changes for existing client code."
+        },
+        {
+          "id": "i9-5",
+          "companyTag": "Apple",
+          "question": "What is the difference between an abstract class with concrete methods and an interface with default methods in Java 8+?",
+          "answer": "An abstract class can maintain state through instance fields (`private int count;`), has constructors for state initialization, and supports `protected` or package-private visibility. An interface has NO instance fields (only `public static final` constants), has NO constructors, and cannot hold state. Abstract classes model identity ('IS-A'); interfaces model capabilities ('CAN-DO')."
+        },
+        {
+          "id": "i9-6",
+          "companyTag": "Meta",
+          "question": "What was the motivation behind private interface methods in Java 9?",
+          "answer": "As default methods became more complex, developers frequently needed helper methods to avoid duplicating code across multiple default methods in the same interface. Before Java 9, any helper method in an interface had to be `public default`, leaking internal helper logic into the public API. Java 9 introduced `private` and `private static` interface methods to encapsulate helper logic safely."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand why default methods were added in Java 8 (backward compatibility).",
+        "I know the syntax for declaring default methods with bodies in interfaces.",
+        "I understand the 'Class Wins' rule for method conflict resolution.",
+        "I can resolve default method diamond conflicts using `InterfaceName.super.method()`.",
+        "I know that static interface methods are NOT inherited by implementing classes.",
+        "I know why interfaces cannot provide default implementations for Object methods (`toString`, `equals`).",
+        "I understand that default methods can call abstract methods declared in the interface.",
+        "I know that Java 9 introduced private interface helper methods.",
+        "I understand how sub-interfaces can override or re-abstract default methods.",
+        "I can explain why abstract classes are still necessary despite default interface methods."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les9-p1",
+      "lessonId": "java-oop-mod7-les9",
+      "orderIndex": 1,
+      "title": "Warmup: Default Auditing Interface",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `AuditableService` interface with a default method:\n1. Interface `AuditableService`: declares `String getServiceName();`.\n   Add default method `default void logAccess(String user)`: prints `'[AUDIT] User ' + user + ' accessed ' + getServiceName()`.\n2. Class `BillingService` implementing `AuditableService`:\n   - Overrides `getServiceName()` returning `'BillingAPI'`.\nIn `main`, instantiate a `BillingService` and call `logAccess(\"admin\")`.",
+      "starterCode": "interface AuditableService {\n    String getServiceName();\n    // TODO: Add default void logAccess(String user)\n}\n\nclass BillingService implements AuditableService {\n    @Override\n    public String getServiceName() {\n        return \"BillingAPI\";\n    }\n}\n\npublic class AuditApp {\n    public static void main(String[] args) {\n        AuditableService svc = new BillingService();\n        // TODO: Call logAccess(\"admin\")\n    }\n}",
+      "initialCode": "interface AuditableService {\n    String getServiceName();\n    // TODO: Add default void logAccess(String user)\n}\n\nclass BillingService implements AuditableService {\n    @Override\n    public String getServiceName() {\n        return \"BillingAPI\";\n    }\n}\n\npublic class AuditApp {\n    public static void main(String[] args) {\n        AuditableService svc = new BillingService();\n        // TODO: Call logAccess(\"admin\")\n    }\n}",
+      "solutionCode": "interface AuditableService {\n    String getServiceName();\n    default void logAccess(String user) {\n        System.out.println(\"[AUDIT] User \" + user + \" accessed \" + getServiceName());\n    }\n}\n\nclass BillingService implements AuditableService {\n    @Override\n    public String getServiceName() {\n        return \"BillingAPI\";\n    }\n}\n\npublic class AuditApp {\n    public static void main(String[] args) {\n        AuditableService svc = new BillingService();\n        svc.logAccess(\"admin\");\n    }\n}",
+      "expectedOutput": "[AUDIT] User admin accessed BillingAPI",
+      "hints": [
+        "In AuditableService, write: default void logAccess(String user) { ... }",
+        "It calls getServiceName() dynamically."
+      ]
+    },
+    {
+      "id": "prob-les9-p2",
+      "lessonId": "java-oop-mod7-les9",
+      "orderIndex": 2,
+      "title": "Resolving Dual-Default Method Ambiguity",
+      "difficulty": "medium",
+      "problemStatement": "Build a conflict resolution system from scratch:\n1. Interface `AlphaGreeting`: has default method `default void greet()` printing `'Alpha: Greetings!'`.\n2. Interface `BetaGreeting`: has default method `default void greet()` printing `'Beta: Welcome!'`.\n3. Class `CustomGreeter` implementing `AlphaGreeting, BetaGreeting`:\n   - Overrides `greet()`: prints `'=== Custom Greeting ==='`, then calls `AlphaGreeting.super.greet()`, then calls `BetaGreeting.super.greet()`.\n4. In `Main`, instantiate a `CustomGreeter` and call `greet()`.",
+      "solutionCode": "interface AlphaGreeting {\n    default void greet() {\n        System.out.println(\"Alpha: Greetings!\");\n    }\n}\n\ninterface BetaGreeting {\n    default void greet() {\n        System.out.println(\"Beta: Welcome!\");\n    }\n}\n\nclass CustomGreeter implements AlphaGreeting, BetaGreeting {\n    @Override\n    public void greet() {\n        System.out.println(\"=== Custom Greeting ===\");\n        AlphaGreeting.super.greet();\n        BetaGreeting.super.greet();\n    }\n}\n\npublic class GreetingApp {\n    public static void main(String[] args) {\n        CustomGreeter greeter = new CustomGreeter();\n        greeter.greet();\n    }\n}",
+      "expectedOutput": "=== Custom Greeting ===\nAlpha: Greetings!\nBeta: Welcome!",
+      "hints": [
+        "Use AlphaGreeting.super.greet(); and BetaGreeting.super.greet(); to delegate to both interface defaults."
+      ]
+    },
+    {
+      "id": "prob-les9-p3",
+      "lessonId": "java-oop-mod7-les9",
+      "orderIndex": 3,
+      "title": "Static Interface Factory & Utility Helpers",
+      "difficulty": "medium",
+      "problemStatement": "Build a static interface factory utility system from scratch:\n1. Interface `Validator`: declares `boolean validate(String input);`.\n   - Static utility method `static boolean isNullOrEmpty(String str)`: returns `str == null || str.trim().isEmpty()`.\n2. Class `EmailValidator` implementing `Validator`:\n   - Overrides `validate(String input)`: if `Validator.isNullOrEmpty(input)` returns false, else returns `input.contains(\"@\")`.\n3. In `Main`, test `Validator.isNullOrEmpty(\"   \")` (print result: `'Is empty: ' + result`), and test `new EmailValidator().validate(\"user@domain.com\")` (print result: `'Email valid: ' + result`).",
+      "solutionCode": "interface Validator {\n    boolean validate(String input);\n    static boolean isNullOrEmpty(String str) {\n        return str == null || str.trim().isEmpty();\n    }\n}\n\nclass EmailValidator implements Validator {\n    @Override\n    public boolean validate(String input) {\n        if (Validator.isNullOrEmpty(input)) {\n            return false;\n        }\n        return input.contains(\"@\");\n    }\n}\n\npublic class ValidatorApp {\n    public static void main(String[] args) {\n        boolean empty = Validator.isNullOrEmpty(\"   \");\n        System.out.println(\"Is empty: \" + empty);\n        Validator v = new EmailValidator();\n        System.out.println(\"Email valid: \" + v.validate(\"user@domain.com\"));\n    }\n}",
+      "expectedOutput": "Is empty: true\nEmail valid: true",
+      "hints": [
+        "In Validator, declare static boolean isNullOrEmpty(String str).",
+        "Invoke it statically using Validator.isNullOrEmpty(str)."
+      ]
+    },
+    {
+      "id": "prob-les9-p4",
+      "lessonId": "java-oop-mod7-les9",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Invoking Static Interface Method on Implementing Class",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to call a static interface method using the implementing class name, causing a compilation error. Fix the call site to properly invoke the static interface method directly on the declaring interface.",
+      "starterCode": "interface MathOperations {\n    static int square(int n) {\n        return n * n;\n    }\n}\n\nclass Calculator implements MathOperations {\n    public void displayResult(int val) {\n        // BUG: Static interface methods are NOT inherited by implementing classes!\n        int sq = Calculator.square(val);\n        System.out.println(\"Square of \" + val + \" is \" + sq);\n    }\n}\n\npublic class MathBugApp {\n    public static void main(String[] args) {\n        new Calculator().displayResult(6);\n    }\n}",
+      "initialCode": "interface MathOperations {\n    static int square(int n) {\n        return n * n;\n    }\n}\n\nclass Calculator implements MathOperations {\n    public void displayResult(int val) {\n        // BUG: Static interface methods are NOT inherited by implementing classes!\n        int sq = Calculator.square(val);\n        System.out.println(\"Square of \" + val + \" is \" + sq);\n    }\n}\n\npublic class MathBugApp {\n    public static void main(String[] args) {\n        new Calculator().displayResult(6);\n    }\n}",
+      "solutionCode": "interface MathOperations {\n    static int square(int n) {\n        return n * n;\n    }\n}\n\nclass Calculator implements MathOperations {\n    public void displayResult(int val) {\n        int sq = MathOperations.square(val);\n        System.out.println(\"Square of \" + val + \" is \" + sq);\n    }\n}\n\npublic class MathBugApp {\n    public static void main(String[] args) {\n        new Calculator().displayResult(6);\n    }\n}",
+      "expectedOutput": "Square of 6 is 36",
+      "hints": [
+        "Change Calculator.square(val) to MathOperations.square(val)."
+      ]
+    },
+    {
+      "id": "prob-les9-p5",
+      "lessonId": "java-oop-mod7-les9",
+      "orderIndex": 5,
+      "title": "Evolving an API with Default Methods & Fallbacks",
+      "difficulty": "hard",
+      "problemStatement": "Build an evolved caching interface with backwards compatibility from scratch:\n1. Interface `KeyValStore`: has original abstract methods `void put(String k, String v);` and `String get(String k);`.\n   - Evolved Java 8 default method `default String getOrDefault(String k, String defaultVal)`: calls `get(k)`; if result is null, returns `defaultVal`; else returns result.\n   - Evolved Java 8 default method `default boolean containsKey(String k)`: returns `get(k) != null`.\n2. Concrete class `SimpleMapStore` implementing `KeyValStore`:\n   - Has internal `java.util.Map<String, String> map = new java.util.HashMap<>();`.\n   - Only implements the two original methods: `put` and `get`.\n   - Does NOT override `getOrDefault` or `containsKey` (uses defaults!).\n3. In `Main`, create a `SimpleMapStore`, put `\"env\"` -> `\"production\"`. Test:\n   - `store.getOrDefault(\"env\", \"dev\")` -> prints `'Env: ' + result`\n   - `store.getOrDefault(\"timeout\", \"30s\")` -> prints `'Timeout: ' + result`\n   - `store.containsKey(\"env\")` -> prints `'Contains env: ' + result`",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\ninterface KeyValStore {\n    void put(String k, String v);\n    String get(String k);\n    default String getOrDefault(String k, String defaultVal) {\n        String val = get(k);\n        return (val != null) ? val : defaultVal;\n    }\n    default boolean containsKey(String k) {\n        return get(k) != null;\n    }\n}\n\nclass SimpleMapStore implements KeyValStore {\n    private Map<String, String> map = new HashMap<>();\n    @Override\n    public void put(String k, String v) {\n        map.put(k, v);\n    }\n    @Override\n    public String get(String k) {\n        return map.get(k);\n    }\n}\n\npublic class StoreApp {\n    public static void main(String[] args) {\n        KeyValStore store = new SimpleMapStore();\n        store.put(\"env\", \"production\");\n        System.out.println(\"Env: \" + store.getOrDefault(\"env\", \"dev\"));\n        System.out.println(\"Timeout: \" + store.getOrDefault(\"timeout\", \"30s\"));\n        System.out.println(\"Contains env: \" + store.containsKey(\"env\"));\n    }\n}",
+      "expectedOutput": "Env: production\nTimeout: 30s\nContains env: true",
+      "hints": [
+        "KeyValStore default methods delegate to get(k).",
+        "SimpleMapStore only overrides put and get."
+      ]
+    }
+  ]
+}

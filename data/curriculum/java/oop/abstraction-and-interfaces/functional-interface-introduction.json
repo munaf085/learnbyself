@@ -1,0 +1,355 @@
+{
+  "id": "java-oop-mod7-les11",
+  "slug": "functional-interface-introduction",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Functional Interface \u2014 Introduction",
+  "summary": "Discover Single Abstract Method (SAM) contracts, the @FunctionalInterface annotation, and the architectural bridge connecting OOP interfaces to lambda expressions.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "interfaces",
+    "default-and-static-interface-methods"
+  ],
+  "learningObjectives": [
+    "Define a Functional Interface as an interface specifying exactly ONE abstract method (SAM)",
+    "Use the @FunctionalInterface annotation to trigger compile-time validation",
+    "Explain why default, static, and Object-inherited methods do not count against the single abstract method rule",
+    "Implement functional interfaces using standard anonymous classes and preview lambda syntax"
+  ],
+  "expectedOutcomes": [
+    "You can define valid functional interfaces complying with SAM rules",
+    "You understand why functional interfaces serve as the target types for modern Java lambda expressions"
+  ],
+  "activities": [
+    {
+      "id": "act-les11-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Single-Action Emergency Stop Button",
+      "concept": "Single Abstract Method (SAM)",
+      "realWorldMetaphor": {
+        "scenario": "In a manufacturing plant or subway station, there is a giant red physical button labeled 'EMERGENCY STOP'. It does not have a menu, a dial, or a multi-option keypad. It does exactly ONE thing: halt machinery immediately when pressed. Anyone can wire this button to a conveyor belt, a nuclear turbine, or an elevator.",
+        "mapping": "The Emergency Stop button is a `Functional Interface` (a contract with exactly ONE action: `void execute()`). Because it does only one thing, the consumer doesn't need to specify *which* action to invoke\u2014there is only one possible behavior.",
+        "takeaway": "A functional interface has a single responsibility: defining one abstract operation, making it the perfect target for concise behaviors."
+      }
+    },
+    {
+      "id": "act-les11-concept",
+      "type": "concept",
+      "title": "The SAM Rule & The @FunctionalInterface Annotation",
+      "content": "### What is a Functional Interface?\n\nA **Functional Interface** (also known as a **Single Abstract Method** or **SAM** interface) is an interface that contains **exactly one abstract method**.\n\n```java\n@FunctionalInterface\npublic interface StringTransformer {\n    String transform(String input); // The ONE abstract method!\n}\n```\n\n### The Rules of the SAM Count\nDoes an interface with 5 methods qualify as a functional interface? **YES**, as long as only ONE of those methods is abstract!\n1. **Abstract Methods**: Must be **exactly 1**.\n2. **Default Methods**: Can have **unlimited** default methods (they have bodies, so they do not count).\n3. **Static Methods**: Can have **unlimited** static methods.\n4. **`java.lang.Object` Methods**: Re-declaring `equals`, `hashCode`, or `toString` does NOT count against the single abstract method total, because all classes implement them anyway!\n\n```java\n@FunctionalInterface\npublic interface CustomPredicate<T> {\n    boolean test(T t); // The 1 abstract method\n    \n    default CustomPredicate<T> and(CustomPredicate<T> other) { ... } // Ignored in SAM count!\n    static void logInfo() { ... }                                    // Ignored in SAM count!\n    boolean equals(Object obj);                                      // Ignored in SAM count!\n}\n```\n\n### The Role of `@FunctionalInterface`\n`@FunctionalInterface` is an informative annotation. Just like `@Override`, it is not strictly required for an interface to be functional, but using it instructs the compiler to generate an error if someone accidentally adds a second abstract method."
+    },
+    {
+      "id": "act-les11-cw1",
+      "type": "code_walkthrough",
+      "title": "Defining & Implementing a SAM Interface",
+      "codeSnippet": "@FunctionalInterface\ninterface PriceModifier {\n    // The single abstract method\n    double apply(double basePrice);\n\n    // Default helper method (does NOT violate SAM count!)\n    default void printDiscounted(double price) {\n        System.out.println(\"Original: $\" + price + \" | Final: $\" + String.format(\"%.2f\", apply(price)));\n    }\n}\n\n// Traditional OOP implementation via concrete class\nclass StudentDiscount implements PriceModifier {\n    @Override\n    public double apply(double basePrice) {\n        return basePrice * 0.85; // 15% off\n    }\n}\n\npublic class FunctionalDemo {\n    public static void main(String[] args) {\n        PriceModifier student = new StudentDiscount();\n        student.printDiscounted(100.0);\n\n        // Preview: Can also be passed as a lambda expression!\n        PriceModifier vip = (price) -> price * 0.70; // 30% off\n        vip.printDiscounted(100.0);\n    }\n}",
+      "code": "@FunctionalInterface\ninterface PriceModifier {\n    // The single abstract method\n    double apply(double basePrice);\n\n    // Default helper method (does NOT violate SAM count!)\n    default void printDiscounted(double price) {\n        System.out.println(\"Original: $\" + price + \" | Final: $\" + String.format(\"%.2f\", apply(price)));\n    }\n}\n\n// Traditional OOP implementation via concrete class\nclass StudentDiscount implements PriceModifier {\n    @Override\n    public double apply(double basePrice) {\n        return basePrice * 0.85; // 15% off\n    }\n}\n\npublic class FunctionalDemo {\n    public static void main(String[] args) {\n        PriceModifier student = new StudentDiscount();\n        student.printDiscounted(100.0);\n\n        // Preview: Can also be passed as a lambda expression!\n        PriceModifier vip = (price) -> price * 0.70; // 30% off\n        vip.printDiscounted(100.0);\n    }\n}",
+      "language": "java",
+      "explanation": "PriceModifier has exactly 1 abstract method apply(). printDiscounted() is default, so @FunctionalInterface compiles cleanly. It can be implemented with a class or lambda.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`@FunctionalInterface` annotates `PriceModifier`."
+        },
+        {
+          "step": 2,
+          "description": "`apply(double)` is the solitary abstract method."
+        },
+        {
+          "step": 3,
+          "description": "`printDiscounted(double)` is a default method and does not count toward the SAM rule."
+        },
+        {
+          "step": 4,
+          "description": "Both a traditional class (`StudentDiscount`) and a modern lambda expression can be assigned to `PriceModifier`."
+        }
+      ]
+    },
+    {
+      "id": "act-les11-cw2",
+      "type": "code_walkthrough",
+      "title": "Standard JDK Functional Interfaces Preview",
+      "codeSnippet": "@FunctionalInterface\ninterface TextFilter {\n    boolean accept(String text);\n}\n\nclass FilterProcessor {\n    public static void filterAndPrint(String[] list, TextFilter filter) {\n        for (String item : list) {\n            if (filter.accept(item)) {\n                System.out.println(\"MATCH: \" + item);\n            }\n        }\n    }\n}\n\npublic class FilterApp {\n    public static void main(String[] args) {\n        String[] files = { \"doc.txt\", \"pic.jpg\", \"data.csv\", \"notes.txt\" };\n        \n        // Filter for text files using a lambda!\n        FilterProcessor.filterAndPrint(files, (f) -> f.endsWith(\".txt\"));\n    }\n}",
+      "code": "@FunctionalInterface\ninterface TextFilter {\n    boolean accept(String text);\n}\n\nclass FilterProcessor {\n    public static void filterAndPrint(String[] list, TextFilter filter) {\n        for (String item : list) {\n            if (filter.accept(item)) {\n                System.out.println(\"MATCH: \" + item);\n            }\n        }\n    }\n}\n\npublic class FilterApp {\n    public static void main(String[] args) {\n        String[] files = { \"doc.txt\", \"pic.jpg\", \"data.csv\", \"notes.txt\" };\n        \n        // Filter for text files using a lambda!\n        FilterProcessor.filterAndPrint(files, (f) -> f.endsWith(\".txt\"));\n    }\n}",
+      "language": "java",
+      "explanation": "filterAndPrint accepts the TextFilter functional interface. This allows passing custom filter logic inline as a lambda expression.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`TextFilter` defines a predicate contract `boolean accept(String)`."
+        },
+        {
+          "step": 2,
+          "description": "`FilterProcessor` accepts the interface parameter."
+        },
+        {
+          "step": 3,
+          "description": "`f.endsWith(\".txt\")` is passed inline as a lambda, satisfying the single abstract method cleanly."
+        }
+      ]
+    },
+    {
+      "id": "act-les11-mcq",
+      "type": "mcq",
+      "title": "Functional Interface Quiz",
+      "questions": [
+        {
+          "id": "q11-1",
+          "question": "What is the requirement for an interface to be considered a Functional Interface?",
+          "options": [
+            "It must contain exactly one abstract method",
+            "It must have zero methods",
+            "It must have only static methods",
+            "It must implement java.io.Serializable"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "A functional interface must contain exactly ONE abstract method (Single Abstract Method / SAM rule)."
+        },
+        {
+          "id": "q11-2",
+          "question": "What happens if you annotate an interface with `@FunctionalInterface` and declare two abstract methods inside it?",
+          "options": [
+            "The compiler chooses the first method as the functional method",
+            "Compilation error: Unexpected @FunctionalInterface annotation; interface is not a functional interface",
+            "A runtime warning is logged",
+            "The interface is converted to an abstract class"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The `@FunctionalInterface` annotation instructs javac to verify the SAM contract. Having 2 abstract methods triggers a compile-time error."
+        },
+        {
+          "id": "q11-3",
+          "question": "Can a functional interface contain default methods?",
+          "options": [
+            "No, only abstract methods are allowed",
+            "Yes, a functional interface can have an unlimited number of default and static methods",
+            "Only one default method is allowed",
+            "Only if marked synchronized"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Default and static methods have implementations, so they do NOT count toward the Single Abstract Method count."
+        },
+        {
+          "id": "q11-4",
+          "question": "Which famous interface from `java.lang` is a classic functional interface containing `void run();`?",
+          "options": [
+            "java.lang.Cloneable",
+            "java.lang.Runnable",
+            "java.lang.Comparable",
+            "java.lang.Iterable"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`java.lang.Runnable` defines a single abstract method `public abstract void run();` and is a classic functional interface."
+        },
+        {
+          "id": "q11-5",
+          "question": "Does re-declaring `boolean equals(Object obj)` inside an interface count against the SAM rule?",
+          "options": [
+            "Yes, making it impossible to add any other abstract method",
+            "No, public methods declared in java.lang.Object do not count toward the SAM total",
+            "Only if equals is marked default",
+            "Only in Java 11+"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Public methods from `java.lang.Object` (such as `equals`, `hashCode`, `toString`) are already implemented by all objects and do not count toward the abstract method limit."
+        },
+        {
+          "id": "q11-6",
+          "question": "Is the `@FunctionalInterface` annotation strictly mandatory to create a functional interface?",
+          "options": [
+            "Yes, without it the interface cannot be used with lambdas",
+            "No, any interface with exactly one abstract method is automatically functional; the annotation provides compile-time safety checks",
+            "Only in package java.util.function",
+            "Only if the interface is public"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Just like `@Override`, `@FunctionalInterface` is optional. Any interface with exactly 1 abstract method is structurally a functional interface."
+        },
+        {
+          "id": "q11-7",
+          "question": "Which of the following interfaces is NOT a valid functional interface?",
+          "options": [
+            "interface A { void exec(); }",
+            "interface B { void exec(); default void aux() {} }",
+            "interface C { void f1(); void f2(); }",
+            "interface D { void exec(); static void helper() {} }"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Interface C has 2 abstract methods (`f1()` and `f2()`), which violates the Single Abstract Method (SAM) requirement."
+        },
+        {
+          "id": "q11-8",
+          "question": "What is the primary relationship between functional interfaces and lambda expressions in Java?",
+          "options": [
+            "Lambdas can only return primitive integers",
+            "Functional interfaces provide the target type for lambda expressions and method references",
+            "Lambdas cannot be assigned to interfaces",
+            "Functional interfaces convert lambdas to static methods"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "In Java, a lambda expression is an inline implementation of a functional interface; the functional interface determines its target type."
+        },
+        {
+          "id": "q11-9",
+          "question": "Can a functional interface extend another interface?",
+          "options": [
+            "No, functional interfaces cannot participate in inheritance",
+            "Yes, as long as the resulting combined interface still has exactly ONE abstract method",
+            "Only if the parent interface is empty",
+            "Only in Java 17"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "A functional interface can extend another interface, provided the total number of abstract methods remains exactly one."
+        },
+        {
+          "id": "q11-10",
+          "question": "What is a major advantage of passing functional interfaces as method arguments?",
+          "options": [
+            "It turns Java into an interpreted language",
+            "It enables passing behaviors (functions) as data into methods, decoupling business workflows from custom logic",
+            "It bypasses garbage collection",
+            "It forces all methods to be static"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Functional interfaces enable higher-order functions: passing dynamic behaviors as arguments to generic algorithms (like filtering, mapping, sorting)."
+        }
+      ]
+    },
+    {
+      "id": "act-les11-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Functional Interfaces",
+      "interviewQA": [
+        {
+          "id": "i11-1",
+          "companyTag": "Google",
+          "question": "What is a SAM interface, and why was the concept formalized in Java 8?",
+          "answer": "A SAM (Single Abstract Method) interface is an interface that declares exactly one abstract method. Java 8 formalized this concept as 'Functional Interfaces' to serve as the target types for lambda expressions and method references, allowing developers to write expressive functional-style code while maintaining 100% backward compatibility with Java's existing type system."
+        },
+        {
+          "id": "i11-2",
+          "companyTag": "Amazon",
+          "question": "Why don't public methods from `java.lang.Object` count toward the SAM limit in a functional interface?",
+          "answer": "Any concrete class implementing an interface will implicitly inherit implementations of `equals()`, `hashCode()`, and `toString()` from `java.lang.Object`. Therefore, an abstract method in an interface matching an `Object` signature is already guaranteed to be implemented by every class in Java, so it doesn't represent an unimplemented contract requirement."
+        },
+        {
+          "id": "i11-3",
+          "companyTag": "Microsoft",
+          "question": "What are the 4 core built-in functional interfaces in `java.util.function`?",
+          "answer": "1. `Predicate<T>`: `boolean test(T t)` \u2014 takes an argument, returns boolean. 2. `Function<T, R>`: `R apply(T t)` \u2014 takes an argument, transforms and returns a result. 3. `Consumer<T>`: `void accept(T t)` \u2014 takes an argument, performs a side-effect, returns void. 4. `Supplier<T>`: `T get()` \u2014 takes no arguments, returns a value."
+        },
+        {
+          "id": "i11-4",
+          "companyTag": "Netflix",
+          "question": "What happens if someone deletes the `@FunctionalInterface` annotation from an interface that has 1 abstract method?",
+          "answer": "Nothing breaks immediately. The interface remains a functional interface based on structural semantics (it still has 1 abstract method) and can still be used with lambda expressions. However, removing the annotation removes compile-time protection, so a future developer could add a second abstract method without realizing they are breaking existing lambda call sites."
+        },
+        {
+          "id": "i11-5",
+          "companyTag": "Apple",
+          "question": "Can an abstract class with a single abstract method be used as the target type for a lambda expression?",
+          "answer": "No. In Java, lambda expressions can ONLY target functional interfaces, never abstract classes, even if the abstract class has only one abstract method. This deliberate language decision preserves clean distinction between interfaces and class hierarchies."
+        },
+        {
+          "id": "i11-6",
+          "companyTag": "Meta",
+          "question": "How are lambdas compiled under the hood in Java bytecode compared to anonymous inner classes?",
+          "answer": "Anonymous inner classes generate a separate `.class` file on disk (e.g. `Main$1.class`) and allocate a new object on every invocation. Lambdas use the `invokedynamic` (indy) bytecode instruction, using `LambdaMetafactory` to generate and link an optimized call site at runtime, minimizing classloader overhead and memory footprint."
+        }
+      ]
+    },
+    {
+      "id": "act-les11-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand the Single Abstract Method (SAM) rule for functional interfaces.",
+        "I know how to use the @FunctionalInterface annotation to enforce compile-time checks.",
+        "I understand why default and static methods do not count toward the SAM rule.",
+        "I know why java.lang.Object methods do not count against the SAM limit.",
+        "I understand how functional interfaces serve as the target types for lambdas.",
+        "I can identify classic functional interfaces like Runnable and Comparable.",
+        "I know that abstract classes cannot be functional interfaces, regardless of method count.",
+        "I understand how functional interfaces enable passing behaviors as method parameters.",
+        "I can write a custom functional interface and implement it with a class or lambda.",
+        "I understand the difference in bytecode between anonymous inner classes and invokedynamic."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les11-p1",
+      "lessonId": "java-oop-mod7-les11",
+      "orderIndex": 1,
+      "title": "Warmup: Custom Math Operation SAM",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `@FunctionalInterface` `BinaryMathOp` and use it:\n1. Interface `BinaryMathOp`: annotated with `@FunctionalInterface`, declares `int calculate(int a, int b);`.\n2. Class `AdditionOp` implementing `BinaryMathOp`: overrides `calculate(a, b)` returning `a + b`.\nIn `main`, create an `AdditionOp` referenced as `BinaryMathOp`, call `calculate(15, 25)`, and print `'Sum: ' + result`.",
+      "starterCode": "@FunctionalInterface\ninterface BinaryMathOp {\n    // TODO: Declare int calculate(int a, int b);\n}\n\nclass AdditionOp implements BinaryMathOp {\n    // TODO: Implement calculate(int a, int b)\n}\n\npublic class MathApp {\n    public static void main(String[] args) {\n        BinaryMathOp op = new AdditionOp();\n        // TODO: Print result\n    }\n}",
+      "initialCode": "@FunctionalInterface\ninterface BinaryMathOp {\n    // TODO: Declare int calculate(int a, int b);\n}\n\nclass AdditionOp implements BinaryMathOp {\n    // TODO: Implement calculate(int a, int b)\n}\n\npublic class MathApp {\n    public static void main(String[] args) {\n        BinaryMathOp op = new AdditionOp();\n        // TODO: Print result\n    }\n}",
+      "solutionCode": "@FunctionalInterface\ninterface BinaryMathOp {\n    int calculate(int a, int b);\n}\n\nclass AdditionOp implements BinaryMathOp {\n    @Override\n    public int calculate(int a, int b) {\n        return a + b;\n    }\n}\n\npublic class MathApp {\n    public static void main(String[] args) {\n        BinaryMathOp op = new AdditionOp();\n        int sum = op.calculate(15, 25);\n        System.out.println(\"Sum: \" + sum);\n    }\n}",
+      "expectedOutput": "Sum: 40",
+      "hints": [
+        "In BinaryMathOp, declare: int calculate(int a, int b);",
+        "AdditionOp returns a + b."
+      ]
+    },
+    {
+      "id": "prob-les11-p2",
+      "lessonId": "java-oop-mod7-les11",
+      "orderIndex": 2,
+      "title": "String Formatter Functional Pipeline",
+      "difficulty": "medium",
+      "problemStatement": "Build a string transformation pipeline using a functional interface from scratch:\n1. Functional interface `StringModifier`: annotated with `@FunctionalInterface`. Declares `String modify(String s);`.\n   Includes default method `default void printModified(String s)`: prints `'Result: ' + modify(s)`.\n2. Class `BracketModifier` implementing `StringModifier`: overrides `modify(s)` returning `'[' + s + ']'`.\n3. In `Main`, create an instance of `BracketModifier`. Test with `'JAVA-OOP'` by calling `printModified(\"JAVA-OOP\")`.\n4. Also create a lambda instance `StringModifier shouting = (s) -> s.toUpperCase() + \"!!!\";` and call `shouting.printModified(\"hello\")`.",
+      "solutionCode": "@FunctionalInterface\ninterface StringModifier {\n    String modify(String s);\n    default void printModified(String s) {\n        System.out.println(\"Result: \" + modify(s));\n    }\n}\n\nclass BracketModifier implements StringModifier {\n    @Override\n    public String modify(String s) {\n        return \"[\" + s + \"]\";\n    }\n}\n\npublic class ModifierApp {\n    public static void main(String[] args) {\n        StringModifier m1 = new BracketModifier();\n        m1.printModified(\"JAVA-OOP\");\n\n        StringModifier shouting = (s) -> s.toUpperCase() + \"!!!\";\n        shouting.printModified(\"hello\");\n    }\n}",
+      "expectedOutput": "Result: [JAVA-OOP]\nResult: HELLO!!!",
+      "hints": [
+        "StringModifier has 1 abstract method modify(s) and 1 default method printModified(s).",
+        "Test both the class implementation and the lambda implementation."
+      ]
+    },
+    {
+      "id": "prob-les11-p3",
+      "lessonId": "java-oop-mod7-les11",
+      "orderIndex": 3,
+      "title": "Custom Data Predicate Filter",
+      "difficulty": "medium",
+      "problemStatement": "Design a reusable collection filter using a functional interface from scratch:\n1. Functional interface `NumberCondition`: annotated with `@FunctionalInterface`. Declares `boolean check(int n);`.\n2. Class `NumberFilter`: has static method `public static void filterAndPrint(int[] nums, NumberCondition condition)`:\n   - Loops through nums; if `condition.check(n)` is true, prints n on a new line.\n3. In `Main`, create an array `int[] numbers = { 3, 10, 15, 22, 35, 40 };`.\n4. Call `NumberFilter.filterAndPrint` with a condition that checks if number is even (`n % 2 == 0`).",
+      "solutionCode": "@FunctionalInterface\ninterface NumberCondition {\n    boolean check(int n);\n}\n\nclass NumberFilter {\n    public static void filterAndPrint(int[] nums, NumberCondition condition) {\n        for (int n : nums) {\n            if (condition.check(n)) {\n                System.out.println(n);\n            }\n        }\n    }\n}\n\npublic class FilterApp {\n    public static void main(String[] args) {\n        int[] numbers = new int[] { 3, 10, 15, 22, 35, 40 };\n        NumberFilter.filterAndPrint(numbers, (n) -> n % 2 == 0);\n    }\n}",
+      "expectedOutput": "10\n22\n40",
+      "hints": [
+        "Pass a lambda (n) -> n % 2 == 0 as the NumberCondition parameter to filterAndPrint."
+      ]
+    },
+    {
+      "id": "prob-les11-p4",
+      "lessonId": "java-oop-mod7-les11",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Violating SAM Rule with Two Abstract Methods",
+      "difficulty": "medium",
+      "problemStatement": "A developer annotated an interface with `@FunctionalInterface`, but defined two abstract methods, triggering a compilation failure. Fix the interface by converting the second method into a `default` method that delegates to the first.",
+      "starterCode": "@FunctionalInterface\ninterface Formatter {\n    String format(String val);\n    \n    // BUG: Second abstract method violates @FunctionalInterface!\n    String formatWithPrefix(String prefix, String val);\n}\n\nclass SimpleFormatter implements Formatter {\n    @Override\n    public String format(String val) {\n        return val.trim();\n    }\n    @Override\n    public String formatWithPrefix(String prefix, String val) {\n        return prefix + \": \" + format(val);\n    }\n}\n\npublic class FormatBugApp {\n    public static void main(String[] args) {\n        Formatter f = new SimpleFormatter();\n        System.out.println(f.formatWithPrefix(\"INFO\", \"  payload  \"));\n    }\n}",
+      "initialCode": "@FunctionalInterface\ninterface Formatter {\n    String format(String val);\n    \n    // BUG: Second abstract method violates @FunctionalInterface!\n    String formatWithPrefix(String prefix, String val);\n}\n\nclass SimpleFormatter implements Formatter {\n    @Override\n    public String format(String val) {\n        return val.trim();\n    }\n    @Override\n    public String formatWithPrefix(String prefix, String val) {\n        return prefix + \": \" + format(val);\n    }\n}\n\npublic class FormatBugApp {\n    public static void main(String[] args) {\n        Formatter f = new SimpleFormatter();\n        System.out.println(f.formatWithPrefix(\"INFO\", \"  payload  \"));\n    }\n}",
+      "solutionCode": "@FunctionalInterface\ninterface Formatter {\n    String format(String val);\n    default String formatWithPrefix(String prefix, String val) {\n        return prefix + \": \" + format(val);\n    }\n}\n\nclass SimpleFormatter implements Formatter {\n    @Override\n    public String format(String val) {\n        return val.trim();\n    }\n}\n\npublic class FormatBugApp {\n    public static void main(String[] args) {\n        Formatter f = new SimpleFormatter();\n        System.out.println(f.formatWithPrefix(\"INFO\", \"  payload  \"));\n    }\n}",
+      "expectedOutput": "INFO: payload",
+      "hints": [
+        "In Formatter, make formatWithPrefix default String formatWithPrefix(String prefix, String val) { return prefix + \": \" + format(val); }",
+        "SimpleFormatter only needs to override format(String val)."
+      ]
+    },
+    {
+      "id": "prob-les11-p5",
+      "lessonId": "java-oop-mod7-les11",
+      "orderIndex": 5,
+      "title": "Chained Transformer Pipeline (Functional Composition)",
+      "difficulty": "hard",
+      "problemStatement": "Build a composable functional transformer from scratch:\n1. Functional interface `Transformer`: annotated with `@FunctionalInterface`. Declares `String transform(String s);`.\n   - Default method `default Transformer andThen(Transformer next)`:\n     Returns a new `Transformer` that first transforms `s` with `this.transform(s)` and then calls `next.transform(...)` on that result.\n2. In `Main`:\n   - Create `Transformer trim = (s) -> s.trim();`.\n   - Create `Transformer upper = (s) -> s.toUpperCase();`.\n   - Create `Transformer wrap = (s) -> \"<\" + s + \">\";`.\n   - Chain them together: `Transformer pipeline = trim.andThen(upper).andThen(wrap);`.\n   - Call `pipeline.transform(\"   learn java oop   \")` and print the output.",
+      "solutionCode": "@FunctionalInterface\ninterface Transformer {\n    String transform(String s);\n    default Transformer andThen(Transformer next) {\n        return (s) -> next.transform(this.transform(s));\n    }\n}\n\npublic class TransformerPipelineApp {\n    public static void main(String[] args) {\n        Transformer trim = (s) -> s.trim();\n        Transformer upper = (s) -> s.toUpperCase();\n        Transformer wrap = (s) -> \"<\" + s + \">\";\n\n        Transformer pipeline = trim.andThen(upper).andThen(wrap);\n        System.out.println(pipeline.transform(\"   learn java oop   \"));\n    }\n}",
+      "expectedOutput": "<LEARN JAVA OOP>",
+      "hints": [
+        "In Transformer.andThen, return a lambda (s) -> next.transform(this.transform(s));"
+      ]
+    }
+  ]
+}

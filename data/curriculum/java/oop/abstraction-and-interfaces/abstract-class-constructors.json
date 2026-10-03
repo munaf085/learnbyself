@@ -1,0 +1,360 @@
+{
+  "id": "java-oop-mod7-les4",
+  "slug": "abstract-class-constructors",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Abstract Class Constructors",
+  "summary": "Understand why abstract classes have constructors when they cannot be directly instantiated, how super() constructor chaining operates, and best practices for base state initialization.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "abstract-classes",
+    "constructor-execution-in-inheritance"
+  ],
+  "learningObjectives": [
+    "Explain the technical rationale for constructors in abstract classes (base state initialization)",
+    "Trace constructor execution flow from concrete child up to Object and back down",
+    "Identify compilation errors when abstract base classes lack no-arg constructors and child constructors omit super(...)",
+    "Avoid the dangerous antipattern of calling overridable methods inside abstract class constructors"
+  ],
+  "expectedOutcomes": [
+    "You can design robust abstract class constructors that validate and initialize base class invariants",
+    "You understand why calling overridden methods inside an abstract constructor leads to null-state bugs"
+  ],
+  "activities": [
+    {
+      "id": "act-les4-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Vehicle Chassis Factory",
+      "concept": "Abstract Class Constructors",
+      "realWorldMetaphor": {
+        "scenario": "An automotive conglomerate produces a universal truck chassis with steel rails, brake lines, and an axle. You cannot buy just the chassis and drive it on public roads\u2014it has no cabin, steering wheel, or headlights. It is abstract. However, every pickup truck, delivery van, and ambulance built on this platform passes through the chassis assembly station first, stamping a serial number and torquing the axle bolts.",
+        "mapping": "The chassis assembly step is the `abstract class constructor`. Even though a bare chassis is never sold to consumers, the constructor must execute first so the subsequent cabin and interior constructors have a solid foundation to build upon.",
+        "takeaway": "Abstract constructors exist to prepare and validate foundational state before concrete child constructors add their specialized features."
+      }
+    },
+    {
+      "id": "act-les4-concept",
+      "type": "concept",
+      "title": "Constructor Execution in Abstract Classes",
+      "content": "### The Paradox: Why Constructors for Non-Instantiable Classes?\n\nBeginners often ask:\n> *\"If I can never write `new AbstractClass()`, why does Java allow or even require constructors in an abstract class?\"*\n\nThe answer lies in **encapsulation of state**. An abstract class can have instance fields (`private String id`, `protected double balance`). These fields must be initialized when a subclass object is instantiated.\n\n```java\nabstract class Entity {\n    private final String id;\n    public Entity(String id) {\n        if (id == null || id.isEmpty()) throw new IllegalArgumentException(\"Invalid id\");\n        this.id = id; // Encapsulated base state initialization!\n    }\n    public String getId() { return id; }\n}\n```\n\n### The Constructor Execution Chain\nWhen you execute `new ConcreteChild(\"USR-1\")`:\n1. `ConcreteChild` constructor is invoked.\n2. Line 1 calls `super(\"USR-1\")` explicitly (or implicit `super()` if no-arg exists).\n3. `AbstractParent` constructor runs, validating and assigning `id`.\n4. Control returns to `ConcreteChild` to initialize child fields.\n\n### CRITICAL DANGER: Invoking Overridden Methods in Constructors!\nNever invoke an overridable method inside a constructor:\n```java\nabstract class BadBase {\n    public BadBase() {\n        init(); // DANGER! Calls child's overridden init() BEFORE child fields are initialized!\n    }\n    public abstract void init();\n}\n\nclass Child extends BadBase {\n    private String config = \"PRODUCTION\";\n    @Override\n    public void init() {\n        System.out.println(config.toLowerCase()); // NullPointerException! config is null right now!\n    }\n}\n```\nWhen `BadBase` runs its constructor, `Child.config` has not yet been initialized (it is still `null`), resulting in a crash!"
+    },
+    {
+      "id": "act-les4-cw1",
+      "type": "code_walkthrough",
+      "title": "Constructor Chaining with State Validation",
+      "codeSnippet": "abstract class DatabaseRecord {\n    protected final String recordId;\n    protected final long createdAt;\n\n    // Abstract class constructor enforcing invariants\n    public DatabaseRecord(String recordId) {\n        if (recordId == null || recordId.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"recordId cannot be null or blank\");\n        }\n        this.recordId = recordId;\n        this.createdAt = System.currentTimeMillis();\n        System.out.println(\"[DatabaseRecord Constructor] Initialized base id: \" + recordId);\n    }\n\n    public abstract void validate();\n}\n\nclass UserRecord extends DatabaseRecord {\n    private String email;\n\n    public UserRecord(String recordId, String email) {\n        super(recordId); // Mandatory chaining to parent constructor\n        this.email = email;\n        System.out.println(\"[UserRecord Constructor] Initialized user email: \" + email);\n    }\n\n    @Override\n    public void validate() {\n        System.out.println(\"Validating user record \" + recordId + \" with email \" + email);\n    }\n}\n\npublic class RecordApp {\n    public static void main(String[] args) {\n        DatabaseRecord record = new UserRecord(\"REC-8801\", \"user@domain.com\");\n        record.validate();\n    }\n}",
+      "code": "abstract class DatabaseRecord {\n    protected final String recordId;\n    protected final long createdAt;\n\n    // Abstract class constructor enforcing invariants\n    public DatabaseRecord(String recordId) {\n        if (recordId == null || recordId.trim().isEmpty()) {\n            throw new IllegalArgumentException(\"recordId cannot be null or blank\");\n        }\n        this.recordId = recordId;\n        this.createdAt = System.currentTimeMillis();\n        System.out.println(\"[DatabaseRecord Constructor] Initialized base id: \" + recordId);\n    }\n\n    public abstract void validate();\n}\n\nclass UserRecord extends DatabaseRecord {\n    private String email;\n\n    public UserRecord(String recordId, String email) {\n        super(recordId); // Mandatory chaining to parent constructor\n        this.email = email;\n        System.out.println(\"[UserRecord Constructor] Initialized user email: \" + email);\n    }\n\n    @Override\n    public void validate() {\n        System.out.println(\"Validating user record \" + recordId + \" with email \" + email);\n    }\n}\n\npublic class RecordApp {\n    public static void main(String[] args) {\n        DatabaseRecord record = new UserRecord(\"REC-8801\", \"user@domain.com\");\n        record.validate();\n    }\n}",
+      "language": "java",
+      "explanation": "DatabaseRecord has no default constructor. UserRecord must explicitly call super(recordId). The base constructor executes first to validate and record creation timestamp.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Calling `new UserRecord(...)` invokes `super(recordId)` on line 1."
+        },
+        {
+          "step": 2,
+          "description": "`DatabaseRecord` constructor runs, verifying `recordId` is not null or blank and stamping `createdAt`."
+        },
+        {
+          "step": 3,
+          "description": "Control returns to `UserRecord` constructor to assign `this.email`."
+        },
+        {
+          "step": 4,
+          "description": "Both parent and child states are guaranteed to be fully initialized."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-cw2",
+      "type": "code_walkthrough",
+      "title": "The Leaking 'this' in Constructors Antipattern",
+      "codeSnippet": "abstract class BaseWidget {\n    public BaseWidget() {\n        System.out.println(\"1. BaseWidget constructor running\");\n        // DANGEROUS: Invoking overridden method inside constructor!\n        render();\n    }\n    public abstract void render();\n}\n\nclass ButtonWidget extends BaseWidget {\n    // Field initialized with explicit value\n    private String label = \"CLICK_ME\";\n\n    public ButtonWidget() {\n        super(); // Runs BaseWidget constructor first!\n        System.out.println(\"3. ButtonWidget constructor running. label = \" + label);\n    }\n\n    @Override\n    public void render() {\n        System.out.println(\"2. render() called! label is: \" + label);\n    }\n}\n\npublic class WidgetDemo {\n    public static void main(String[] args) {\n        new ButtonWidget();\n    }\n}",
+      "code": "abstract class BaseWidget {\n    public BaseWidget() {\n        System.out.println(\"1. BaseWidget constructor running\");\n        // DANGEROUS: Invoking overridden method inside constructor!\n        render();\n    }\n    public abstract void render();\n}\n\nclass ButtonWidget extends BaseWidget {\n    // Field initialized with explicit value\n    private String label = \"CLICK_ME\";\n\n    public ButtonWidget() {\n        super(); // Runs BaseWidget constructor first!\n        System.out.println(\"3. ButtonWidget constructor running. label = \" + label);\n    }\n\n    @Override\n    public void render() {\n        System.out.println(\"2. render() called! label is: \" + label);\n    }\n}\n\npublic class WidgetDemo {\n    public static void main(String[] args) {\n        new ButtonWidget();\n    }\n}",
+      "language": "java",
+      "explanation": "Look closely at the output: when BaseWidget constructor calls render(), label is still NULL! The field initializer label = 'CLICK_ME' has not run yet because parent constructor runs first!",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`new ButtonWidget()` calls `super()` to execute `BaseWidget` constructor."
+        },
+        {
+          "step": 2,
+          "description": "`BaseWidget` constructor calls `render()`. Dynamic dispatch routes to `ButtonWidget.render()`."
+        },
+        {
+          "step": 3,
+          "description": "At this moment, `ButtonWidget` constructor has NOT executed, and field initializers have not run. `label` is default `null`!"
+        },
+        {
+          "step": 4,
+          "description": "`label is: null` is printed, illustrating why overridable method calls in constructors are dangerous."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-mcq",
+      "type": "mcq",
+      "title": "Abstract Class Constructors Quiz",
+      "questions": [
+        {
+          "id": "q4-1",
+          "question": "Why does Java permit constructors in abstract classes when abstract classes cannot be directly instantiated?",
+          "options": [
+            "To allow reflection to instantiate them directly",
+            "To initialize state and enforce invariants defined in the abstract superclass when concrete subclasses are created",
+            "It is an accidental syntax carry-over from C++ with no purpose",
+            "Only to define static variables"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors in abstract classes are required to initialize base class state and invariants during subclass constructor chaining (`super()`)."
+        },
+        {
+          "id": "q4-2",
+          "question": "What happens if an abstract class declares only a parameterized constructor `public Base(int id) {}` and the child constructor omits `super(...)`?",
+          "options": [
+            "The compiler automatically supplies id = 0",
+            "Compilation error: constructor Base in class Base cannot be applied to given types; no default constructor found",
+            "The program compiles with a warning and throws NullPointerException at runtime",
+            "id is assigned null"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "When no no-arg constructor exists in the superclass, the compiler requires child constructors to explicitly invoke `super(...)` on line 1."
+        },
+        {
+          "id": "q4-3",
+          "question": "Can an abstract class constructor be marked `abstract` (e.g. `public abstract MyClass();`)?",
+          "options": [
+            "Yes, if all methods in the class are abstract",
+            "No, constructors cannot be abstract in Java",
+            "Only in interface constructors",
+            "Yes, if marked protected"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors cannot be abstract, static, final, or native in Java. A constructor must have an implementation to initialize state."
+        },
+        {
+          "id": "q4-4",
+          "question": "Why is calling an overridable method inside an abstract class constructor considered a dangerous anti-pattern?",
+          "options": [
+            "It is rejected by the compiler with a syntax error",
+            "The subclass constructor and field initializers have not run yet, so the overridden method runs against uninitialized (null/zero) subclass state",
+            "It forces the child method to become private",
+            "It causes garbage collection to hang"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Parent constructors run before child constructors and field initializers. Invoking an overridden method inside a parent constructor exposes half-initialized child state."
+        },
+        {
+          "id": "q4-5",
+          "question": "If an abstract class has no constructors explicitly written, what does the compiler do?",
+          "options": [
+            "It generates a public default no-arg constructor that calls super() to Object",
+            "It forbids subclasses from being created",
+            "It makes all fields static",
+            "It throws a ClassFormatError"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Just like concrete classes, if no constructor is written, the compiler automatically inserts an implicit default no-arg constructor calling `super()`."
+        },
+        {
+          "id": "q4-6",
+          "question": "Can an abstract class constructor have `protected` access?",
+          "options": [
+            "No, constructors must always be public",
+            "Yes, protected is a recommended best practice for abstract class constructors because they are only intended to be called by subclasses",
+            "Only in package java.lang",
+            "Only if declared final"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "`protected` is ideal for abstract class constructors since external classes cannot instantiate them anyway; only extending subclasses need access."
+        },
+        {
+          "id": "q4-7",
+          "question": "Consider:\n```java\nabstract class A { A() { System.out.print(\"A\"); } }\nclass B extends A { B() { System.out.print(\"B\"); } }\n```\nWhat is output by `new B();`?",
+          "options": [
+            "B",
+            "BA",
+            "AB",
+            "Compilation error"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "`B`'s constructor implicitly calls `super()`. The superclass constructor `A()` executes first ('A'), then `B()` completes ('B'), printing 'AB'."
+        },
+        {
+          "id": "q4-8",
+          "question": "Can an abstract class declare multiple overloaded constructors?",
+          "options": [
+            "No, only one constructor is allowed in abstract classes",
+            "Yes, abstract classes can provide multiple overloaded constructors for flexible subclass initialization",
+            "Only if all are private",
+            "Only if all parameters are Strings"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract classes support full constructor overloading, allowing subclasses to invoke different `super(...)` signatures as needed."
+        },
+        {
+          "id": "q4-9",
+          "question": "Can a subclass constructor call `this(...)` to delegate to another constructor before calling `super(...)`?",
+          "options": [
+            "No, super() must be on line 1 of every constructor",
+            "Yes, a constructor can call this(...) on line 1, as long as the chain eventually ends in a constructor that calls super(...)",
+            "Only in interface implementations",
+            "Only if the superclass is concrete"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructor chaining via `this(...)` is legal on line 1. The target constructor in the chain will ultimately call `super(...)` to initialize the abstract parent."
+        },
+        {
+          "id": "q4-10",
+          "question": "What is the primary role of constructor validation (e.g. checking `if (arg == null)`) in an abstract class?",
+          "options": [
+            "To prevent the JVM from allocating memory",
+            "To enforce foundational domain invariants once in the superclass so subclasses cannot be created with corrupted base state",
+            "To convert checked exceptions to unchecked exceptions",
+            "To automatically format strings"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Centralizing validation in the abstract constructor guarantees that all subclasses inherit clean, validated base state without duplicating validation code."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Abstract Class Constructors",
+      "interviewQA": [
+        {
+          "id": "i4-1",
+          "companyTag": "Google",
+          "question": "Explain the exact execution order when instantiating a subclass of an abstract class in Java.",
+          "answer": "When `new SubClass()` is called, memory for the unified heap object is allocated and defaulted (zeros/nulls). The subclass constructor is invoked and immediately branches to `super(...)`. This propagates up to `java.lang.Object`. The constructors then execute downwards: `Object()` initializes first, followed by `AbstractSuperClass()` executing its field initializers and constructor body, followed finally by `SubClass()` executing its field initializers and constructor body."
+        },
+        {
+          "id": "i4-2",
+          "companyTag": "Amazon",
+          "question": "Why is it considered dangerous to call an abstract or overridden method from inside an abstract class constructor?",
+          "answer": "In Java, parent constructors run before child constructors. If an abstract class constructor calls an overridden method, the JVM dispatches the call to the child's implementation before the child's constructor or field initializers have executed. If the child's method accesses any of its own instance variables, it will observe uninitialized default values (null, 0, false), frequently resulting in `NullPointerException` or corrupted state."
+        },
+        {
+          "id": "i4-3",
+          "companyTag": "Microsoft",
+          "question": "Why should abstract class constructors typically have `protected` access rather than `public`?",
+          "answer": "Declaring an abstract class constructor `protected` accurately communicates design intent: the class cannot be directly instantiated from outside the package, and the constructor exists strictly for subclasses to chain into via `super()`. While `public` works because the compiler blocks `new AbstractClass()` anyway, `protected` enforces cleaner API encapsulation."
+        },
+        {
+          "id": "i4-4",
+          "companyTag": "Netflix",
+          "question": "How do you enforce immutability of base fields in an abstract class hierarchy?",
+          "answer": "You declare the base fields `private final` in the abstract class and require them as parameters in the abstract class constructor. Because they are `final`, they must be assigned during constructor execution and cannot be modified thereafter. Subclasses access them via `public` or `protected` getters, preventing any child from altering the base invariants."
+        },
+        {
+          "id": "i4-5",
+          "companyTag": "Apple",
+          "question": "Can an abstract class constructor throw checked exceptions? What impact does that have on subclasses?",
+          "answer": "Yes. If an abstract class constructor declares a checked exception (e.g., `throws IOException`), every subclass constructor that calls `super(...)` MUST also declare that checked exception (or a broader supertype) in its `throws` clause, because constructor calls cannot be caught in a `try-catch` block before `super()` executes."
+        },
+        {
+          "id": "i4-6",
+          "companyTag": "Meta",
+          "question": "Can an abstract class have a `private` constructor? If so, how can it be subclassed?",
+          "answer": "Yes. An abstract class can have a `private` constructor. However, external classes cannot extend it because their constructors cannot access `super()`. It can ONLY be subclassed by nested (inner or static nested) classes defined within the same outer class, a pattern often used to build controlled algebraic data types or singleton hierarchies."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand why abstract classes have constructors despite being non-instantiable.",
+        "I can trace constructor chaining from subclass up through abstract superclass to Object.",
+        "I know why overridable methods must NEVER be called inside an abstract constructor.",
+        "I understand how uninitialized child fields cause NullPointerExceptions if called from parent constructors.",
+        "I know how to declare `protected` constructors in abstract classes.",
+        "I understand compiler errors when a parent lacks a default constructor and `super(...)` is omitted.",
+        "I can use `final` fields in an abstract class to enforce immutable base state.",
+        "I understand how checked exceptions on abstract constructors impact subclass constructor declarations.",
+        "I know how to overload constructors in abstract classes.",
+        "I can use constructor parameter validation in abstract classes to protect domain invariants."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les4-p1",
+      "lessonId": "java-oop-mod7-les4",
+      "orderIndex": 1,
+      "title": "Warmup: Mandatory Base Constructor Chaining",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `AbstractProduct` hierarchy:\n1. Abstract class `AbstractProduct`: has `protected final String sku` and `protected double price`.\n   Constructor `public AbstractProduct(String sku, double price)` validates that `price >= 0` (if not, set price to 0.0), and assigns fields.\n   Concrete method `public void display()` prints `'SKU: ' + sku + ' | Price: $' + String.format(\"%.2f\", price)`.\n2. Concrete class `BookProduct`: has `private String author`. Constructor accepts `String sku, double price, String author` and calls `super(sku, price)`.\nIn `main`, create a `BookProduct(\"BK-1001\", 19.99, \"J.K. Rowling\")` and call `display()`.",
+      "starterCode": "abstract class AbstractProduct {\n    protected final String sku;\n    protected double price;\n    public AbstractProduct(String sku, double price) {\n        this.sku = sku;\n        this.price = (price >= 0) ? price : 0.0;\n    }\n    public void display() {\n        System.out.println(\"SKU: \" + sku + \" | Price: $\" + String.format(\"%.2f\", price));\n    }\n}\n\nclass BookProduct extends AbstractProduct {\n    private String author;\n    public BookProduct(String sku, double price, String author) {\n        // TODO: Call super constructor and initialize author\n    }\n}\n\npublic class ProductApp {\n    public static void main(String[] args) {\n        // TODO: Instantiate BookProduct and call display()\n    }\n}",
+      "initialCode": "abstract class AbstractProduct {\n    protected final String sku;\n    protected double price;\n    public AbstractProduct(String sku, double price) {\n        this.sku = sku;\n        this.price = (price >= 0) ? price : 0.0;\n    }\n    public void display() {\n        System.out.println(\"SKU: \" + sku + \" | Price: $\" + String.format(\"%.2f\", price));\n    }\n}\n\nclass BookProduct extends AbstractProduct {\n    private String author;\n    public BookProduct(String sku, double price, String author) {\n        // TODO: Call super constructor and initialize author\n    }\n}\n\npublic class ProductApp {\n    public static void main(String[] args) {\n        // TODO: Instantiate BookProduct and call display()\n    }\n}",
+      "solutionCode": "abstract class AbstractProduct {\n    protected final String sku;\n    protected double price;\n    public AbstractProduct(String sku, double price) {\n        this.sku = sku;\n        this.price = (price >= 0) ? price : 0.0;\n    }\n    public void display() {\n        System.out.println(\"SKU: \" + sku + \" | Price: $\" + String.format(\"%.2f\", price));\n    }\n}\n\nclass BookProduct extends AbstractProduct {\n    private String author;\n    public BookProduct(String sku, double price, String author) {\n        super(sku, price);\n        this.author = author;\n    }\n}\n\npublic class ProductApp {\n    public static void main(String[] args) {\n        AbstractProduct product = new BookProduct(\"BK-1001\", 19.99, \"J.K. Rowling\");\n        product.display();\n    }\n}",
+      "expectedOutput": "SKU: BK-1001 | Price: $19.99",
+      "hints": [
+        "In BookProduct constructor, line 1 must be: super(sku, price);",
+        "Assign this.author = author; on line 2."
+      ]
+    },
+    {
+      "id": "prob-les4-p2",
+      "lessonId": "java-oop-mod7-les4",
+      "orderIndex": 2,
+      "title": "Abstract Audit Log with Timestamp Tracking",
+      "difficulty": "medium",
+      "problemStatement": "Build an audit log event hierarchy from scratch:\n1. Abstract class `AuditEvent`: has `protected final String eventId` and `protected final long timestamp`. Include constructor `public AuditEvent(String eventId, long timestamp)` that validates that `eventId != null` and assigns fields.\n   Declares abstract method `public abstract String getDetails()`.\n   Concrete method `public void log()` prints `'[Timestamp: ' + timestamp + '] (' + eventId + ') ' + getDetails()`.\n2. Concrete class `UserLoginEvent` extending `AuditEvent`: has `private String username` and `private String ipAddress`. Constructor accepts `(String eventId, long timestamp, String username, String ipAddress)` and calls `super(eventId, timestamp)`.\n   Overrides `getDetails()` returning `'User ' + username + ' logged in from ' + ipAddress`.\n3. In `Main`, create a `UserLoginEvent(\"EVT-501\", 1700000000L, \"sarah\", \"192.168.1.1\")` referenced as `AuditEvent`, and call `log()`.",
+      "solutionCode": "abstract class AuditEvent {\n    protected final String eventId;\n    protected final long timestamp;\n    public AuditEvent(String eventId, long timestamp) {\n        if (eventId == null) throw new IllegalArgumentException(\"eventId required\");\n        this.eventId = eventId;\n        this.timestamp = timestamp;\n    }\n    public abstract String getDetails();\n    public void log() {\n        System.out.println(\"[Timestamp: \" + timestamp + \"] (\" + eventId + \") \" + getDetails());\n    }\n}\n\nclass UserLoginEvent extends AuditEvent {\n    private String username;\n    private String ipAddress;\n    public UserLoginEvent(String eventId, long timestamp, String username, String ipAddress) {\n        super(eventId, timestamp);\n        this.username = username;\n        this.ipAddress = ipAddress;\n    }\n    @Override\n    public String getDetails() {\n        return \"User \" + username + \" logged in from \" + ipAddress;\n    }\n}\n\npublic class AuditApp {\n    public static void main(String[] args) {\n        AuditEvent event = new UserLoginEvent(\"EVT-501\", 1700000000L, \"sarah\", \"192.168.1.1\");\n        event.log();\n    }\n}",
+      "expectedOutput": "[Timestamp: 1700000000] (EVT-501) User sarah logged in from 192.168.1.1",
+      "hints": [
+        "In UserLoginEvent, call super(eventId, timestamp) on the first line.",
+        "Implement getDetails() in UserLoginEvent returning formatted user and ip details."
+      ]
+    },
+    {
+      "id": "prob-les4-p3",
+      "lessonId": "java-oop-mod7-les4",
+      "orderIndex": 3,
+      "title": "Immutable Bank Vault Configuration",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable vault security config hierarchy from scratch:\n1. Abstract class `VaultConfig`: has `protected final String vaultId` and `protected final int securityLevel`. Constructor `public VaultConfig(String vaultId, int securityLevel)`: if `securityLevel < 1 || securityLevel > 5`, throw `new IllegalArgumentException(\"Invalid level\")`; else set fields.\n   Concrete method `public void inspect()` prints `'Vault: ' + vaultId + ' | Security Tier: ' + securityLevel`.\n   Abstract method `public abstract boolean requiresBiometrics()`.\n2. Concrete class `HighSecurityVault` extending `VaultConfig`: constructor accepts `(String vaultId)` and calls `super(vaultId, 5)`.\n   Overrides `requiresBiometrics()` returning `true`.\n3. In `Main`, create a `HighSecurityVault(\"VAULT-ALPHA\")` referenced as `VaultConfig`.\n4. Call `inspect()` and print `'Biometrics required: ' + vault.requiresBiometrics()`.",
+      "solutionCode": "abstract class VaultConfig {\n    protected final String vaultId;\n    protected final int securityLevel;\n    public VaultConfig(String vaultId, int securityLevel) {\n        if (securityLevel < 1 || securityLevel > 5) {\n            throw new IllegalArgumentException(\"Invalid level\");\n        }\n        this.vaultId = vaultId;\n        this.securityLevel = securityLevel;\n    }\n    public void inspect() {\n        System.out.println(\"Vault: \" + vaultId + \" | Security Tier: \" + securityLevel);\n    }\n    public abstract boolean requiresBiometrics();\n}\n\nclass HighSecurityVault extends VaultConfig {\n    public HighSecurityVault(String vaultId) {\n        super(vaultId, 5);\n    }\n    @Override\n    public boolean requiresBiometrics() {\n        return true;\n    }\n}\n\npublic class VaultApp {\n    public static void main(String[] args) {\n        VaultConfig vault = new HighSecurityVault(\"VAULT-ALPHA\");\n        vault.inspect();\n        System.out.println(\"Biometrics required: \" + vault.requiresBiometrics());\n    }\n}",
+      "expectedOutput": "Vault: VAULT-ALPHA | Security Tier: 5\nBiometrics required: true",
+      "hints": [
+        "HighSecurityVault constructor passes 5 as the default security level to super(vaultId, 5).",
+        "requiresBiometrics() returns true."
+      ]
+    },
+    {
+      "id": "prob-les4-p4",
+      "lessonId": "java-oop-mod7-les4",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Missing super() in Subclass Constructor",
+      "difficulty": "medium",
+      "problemStatement": "A developer created an abstract `MessageService` with a parameterized constructor, but the subclass constructor omitted `super(...)`, leading to a compile error. Fix the code so it properly initializes the parent class.",
+      "starterCode": "abstract class MessageService {\n    protected String provider;\n    public MessageService(String provider) {\n        this.provider = provider;\n    }\n    public abstract void send(String msg);\n}\n\nclass EmailService extends MessageService {\n    private String host;\n    // BUG: Missing super(provider) call! Compiler looks for non-existent MessageService()\n    public EmailService(String provider, String host) {\n        this.host = host;\n    }\n    @Override\n    public void send(String msg) {\n        System.out.println(\"[\" + provider + \" @ \" + host + \"] \" + msg);\n    }\n}\n\npublic class ServiceBugApp {\n    public static void main(String[] args) {\n        MessageService svc = new EmailService(\"SendGrid\", \"smtp.sendgrid.net\");\n        svc.send(\"Verification code 4492\");\n    }\n}",
+      "initialCode": "abstract class MessageService {\n    protected String provider;\n    public MessageService(String provider) {\n        this.provider = provider;\n    }\n    public abstract void send(String msg);\n}\n\nclass EmailService extends MessageService {\n    private String host;\n    // BUG: Missing super(provider) call! Compiler looks for non-existent MessageService()\n    public EmailService(String provider, String host) {\n        this.host = host;\n    }\n    @Override\n    public void send(String msg) {\n        System.out.println(\"[\" + provider + \" @ \" + host + \"] \" + msg);\n    }\n}\n\npublic class ServiceBugApp {\n    public static void main(String[] args) {\n        MessageService svc = new EmailService(\"SendGrid\", \"smtp.sendgrid.net\");\n        svc.send(\"Verification code 4492\");\n    }\n}",
+      "solutionCode": "abstract class MessageService {\n    protected String provider;\n    public MessageService(String provider) {\n        this.provider = provider;\n    }\n    public abstract void send(String msg);\n}\n\nclass EmailService extends MessageService {\n    private String host;\n    public EmailService(String provider, String host) {\n        super(provider);\n        this.host = host;\n    }\n    @Override\n    public void send(String msg) {\n        System.out.println(\"[\" + provider + \" @ \" + host + \"] \" + msg);\n    }\n}\n\npublic class ServiceBugApp {\n    public static void main(String[] args) {\n        MessageService svc = new EmailService(\"SendGrid\", \"smtp.sendgrid.net\");\n        svc.send(\"Verification code 4492\");\n    }\n}",
+      "expectedOutput": "[SendGrid @ smtp.sendgrid.net] Verification code 4492",
+      "hints": [
+        "In EmailService constructor, add super(provider); on the very first line."
+      ]
+    },
+    {
+      "id": "prob-les4-p5",
+      "lessonId": "java-oop-mod7-les4",
+      "orderIndex": 5,
+      "title": "Multilevel Constructor Chaining with Safe Initialization",
+      "difficulty": "hard",
+      "problemStatement": "Build a 3-tier abstract device lifecycle from scratch without calling overridable methods in constructors:\n1. Top-level abstract class `HardwareDevice`: has `protected String serialNo`. Constructor `HardwareDevice(String serialNo)`: prints `'[1] Hardware initialized: ' + serialNo` and assigns field.\n2. Intermediate abstract class `NetworkDevice` extending `HardwareDevice`: has `protected String macAddress`. Constructor `NetworkDevice(String serialNo, String macAddress)`: calls `super(serialNo)`, prints `'[2] Network NIC bound: ' + macAddress` and assigns field.\n3. Concrete class `SmartRouter` extending `NetworkDevice`: has `private int antennaCount`. Constructor `SmartRouter(String serialNo, String macAddress, int antennaCount)`: calls `super(serialNo, macAddress)`, prints `'[3] Router configured with ' + antennaCount + ' antennas'` and assigns field.\n   Concrete method `public void boot()` prints `'Router ' + serialNo + ' (' + macAddress + ') ONLINE'`.\n4. In `Main`, instantiate `new SmartRouter(\"RT-909\", \"00:1B:44:11:3A:B7\", 4)` and call `boot()`.",
+      "solutionCode": "abstract class HardwareDevice {\n    protected String serialNo;\n    public HardwareDevice(String serialNo) {\n        this.serialNo = serialNo;\n        System.out.println(\"[1] Hardware initialized: \" + serialNo);\n    }\n}\n\nabstract class NetworkDevice extends HardwareDevice {\n    protected String macAddress;\n    public NetworkDevice(String serialNo, String macAddress) {\n        super(serialNo);\n        this.macAddress = macAddress;\n        System.out.println(\"[2] Network NIC bound: \" + macAddress);\n    }\n}\n\nclass SmartRouter extends NetworkDevice {\n    private int antennaCount;\n    public SmartRouter(String serialNo, String macAddress, int antennaCount) {\n        super(serialNo, macAddress);\n        this.antennaCount = antennaCount;\n        System.out.println(\"[3] Router configured with \" + antennaCount + \" antennas\");\n    }\n    public void boot() {\n        System.out.println(\"Router \" + serialNo + \" (\" + macAddress + \") ONLINE\");\n    }\n}\n\npublic class RouterApp {\n    public static void main(String[] args) {\n        SmartRouter router = new SmartRouter(\"RT-909\", \"00:1B:44:11:3A:B7\", 4);\n        router.boot();\n    }\n}",
+      "expectedOutput": "[1] Hardware initialized: RT-909\n[2] Network NIC bound: 00:1B:44:11:3A:B7\n[3] Router configured with 4 antennas\nRouter RT-909 (00:1B:44:11:3A:B7) ONLINE",
+      "hints": [
+        "In NetworkDevice constructor, call super(serialNo) first.",
+        "In SmartRouter constructor, call super(serialNo, macAddress) first."
+      ]
+    }
+  ]
+}

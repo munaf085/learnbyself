@@ -1,0 +1,357 @@
+{
+  "id": "java-oop-mod7-les1",
+  "slug": "why-abstraction",
+  "sectionSlug": "oop",
+  "moduleSlug": "abstraction-and-interfaces",
+  "languageSlug": "java",
+  "title": "Why Abstraction?",
+  "summary": "Understand the foundational pillar of abstraction in OOP: managing system complexity by separating 'what an object does' from 'how it does it'.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 25,
+  "prerequisites": [
+    "what-is-polymorphism",
+    "method-overriding"
+  ],
+  "learningObjectives": [
+    "Define abstraction as selective ignorance of internal mechanics to focus on public contracts",
+    "Distinguish between encapsulation (information hiding) and abstraction (implementation hiding)",
+    "Explain how abstraction reduces mental load and decouples clients from implementation flux",
+    "Identify real-world and software abstractions that power large-scale architectures"
+  ],
+  "expectedOutcomes": [
+    "You can clearly articulate why abstraction is indispensable for building large software systems",
+    "You can separate contract specifications from underlying concrete logic"
+  ],
+  "activities": [
+    {
+      "id": "act-les1-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Automotive Dashboard & Pedals",
+      "concept": "Abstraction",
+      "realWorldMetaphor": {
+        "scenario": "When you step into a car, you interact with an accelerator pedal, brake pedal, and steering wheel. You do not need to know whether the engine has 4 cylinders, twin turbochargers, or an electric dual-motor stator with lithium-ion batteries. You press the pedal, and the car accelerates. The pedal is the abstraction.",
+        "mapping": "The accelerator pedal represents the abstract contract (`accelerate()`). The internal engine mechanics (combustion, spark plugs, variable valve timing, battery inverters) represent the hidden concrete implementation. You drive using the contract, completely insulated from mechanical changes under the hood.",
+        "takeaway": "Abstraction lets users control complex systems through clean, simple interfaces while isolating them from volatile underlying machinery."
+      }
+    },
+    {
+      "id": "act-les1-concept",
+      "type": "concept",
+      "title": "Separating Contract from Implementation",
+      "content": "### What is Abstraction?\n\n**Abstraction** is the process of exposing only the essential features of an entity while hiding unnecessary implementation complexity. It answers **WHAT** an object does, rather than **HOW** it achieves it.\n\n```\n+-------------------------------------------------------------+\n|                      THE USER / CLIENT                      |\n+-------------------------------------------------------------+\n                              |\n                              | Interacts strictly via contract\n                              v\n+-------------------------------------------------------------+\n|                     ABSTRACTION CONTRACT                    |\n|               void send(String recipient, String msg)       |\n+-------------------------------------------------------------+\n          |                                       |\n          v (Implementation A)                    v (Implementation B)\n+-------------------------------+       +-----------------------------+\n|     SmtpEmailSender           |       |      TwilioSmsSender        |  <-- Concrete details\n| - SSL handshake               |       | - REST API tokens           |      hidden from caller\n| - MIME encoding               |       | - Telco packet routing      |\n+-------------------------------+       +-----------------------------+\n```\n\n### Abstraction vs. Encapsulation\nStudents frequently confuse these two OOP pillars:\n- **Encapsulation**: *Data Protection & Bundling*. Bundles fields and methods into a single class and protects fields using `private` access modifiers and getters/setters. It focuses on internal integrity.\n- **Abstraction**: *Design & Contract*. Hides implementation complexity and provides a high-level view via abstract classes and interfaces. It focuses on external usability and architectural decoupling.\n\n### The Cost of Missing Abstraction\nWithout abstraction, client code directly invokes concrete driver methods. If you switch from AWS S3 to Google Cloud Storage or PostgreSQL to MongoDB, every line of client code calling specific driver methods breaks. With an abstract `StorageService` contract, clients call `storage.save(file)`, and the backend can be swapped with zero client refactoring."
+    },
+    {
+      "id": "act-les1-cw1",
+      "type": "code_walkthrough",
+      "title": "Comparing Concrete Coupling vs. Abstract Contracts",
+      "codeSnippet": "// TIGHTLY COUPLED (No Abstraction)\nclass DirectAwsS3Client {\n    public void connectToBucketRegionEast(String credentials) {\n        System.out.println(\"Establishing AWS TLS session: \" + credentials);\n    }\n    public void putRawS3BinaryObject(String bucket, byte[] data) {\n        System.out.println(\"Uploaded \" + data.length + \" bytes to AWS bucket \" + bucket);\n    }\n}\n\n// CLEAN ABSTRACTION (Separating What from How)\nabstract class CloudStorage {\n    // Contract: WHAT must be done\n    public abstract void upload(String path, byte[] data);\n}\n\nclass S3Storage extends CloudStorage {\n    @Override\n    public void upload(String path, byte[] data) {\n        // HOW AWS handles it\n        System.out.println(\"[AWS S3] Streaming payload to /\" + path);\n    }\n}\n\nclass GoogleCloudStorage extends CloudStorage {\n    @Override\n    public void upload(String path, byte[] data) {\n        // HOW GCP handles it\n        System.out.println(\"[GCP Cloud Storage] Writing chunk to bucket /\" + path);\n    }\n}\n\npublic class CloudApp {\n    public static void main(String[] args) {\n        // Client works exclusively with the high-level CloudStorage contract\n        CloudStorage storage = new S3Storage();\n        storage.upload(\"reports/2026.pdf\", new byte[1024]);\n    }\n}",
+      "code": "// TIGHTLY COUPLED (No Abstraction)\nclass DirectAwsS3Client {\n    public void connectToBucketRegionEast(String credentials) {\n        System.out.println(\"Establishing AWS TLS session: \" + credentials);\n    }\n    public void putRawS3BinaryObject(String bucket, byte[] data) {\n        System.out.println(\"Uploaded \" + data.length + \" bytes to AWS bucket \" + bucket);\n    }\n}\n\n// CLEAN ABSTRACTION (Separating What from How)\nabstract class CloudStorage {\n    // Contract: WHAT must be done\n    public abstract void upload(String path, byte[] data);\n}\n\nclass S3Storage extends CloudStorage {\n    @Override\n    public void upload(String path, byte[] data) {\n        // HOW AWS handles it\n        System.out.println(\"[AWS S3] Streaming payload to /\" + path);\n    }\n}\n\nclass GoogleCloudStorage extends CloudStorage {\n    @Override\n    public void upload(String path, byte[] data) {\n        // HOW GCP handles it\n        System.out.println(\"[GCP Cloud Storage] Writing chunk to bucket /\" + path);\n    }\n}\n\npublic class CloudApp {\n    public static void main(String[] args) {\n        // Client works exclusively with the high-level CloudStorage contract\n        CloudStorage storage = new S3Storage();\n        storage.upload(\"reports/2026.pdf\", new byte[1024]);\n    }\n}",
+      "language": "java",
+      "explanation": "Notice how CloudStorage declares upload() without a body. The caller CloudApp only cares that upload() exists, not how AWS or GCP handles packets.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`DirectAwsS3Client` leaks AWS-specific credentials and bucket topology directly to the caller."
+        },
+        {
+          "step": 2,
+          "description": "`CloudStorage` defines an abstract contract with `public abstract void upload(...)`."
+        },
+        {
+          "step": 3,
+          "description": "`S3Storage` and `GoogleCloudStorage` implement concrete network handshakes under their respective overrides."
+        },
+        {
+          "step": 4,
+          "description": "`CloudApp` binds to the `CloudStorage` reference, ensuring client code remains 100% agnostic to cloud vendor swaps."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-cw2",
+      "type": "code_walkthrough",
+      "title": "Decoupling User Notification Workflows",
+      "codeSnippet": "abstract class AlertChannel {\n    protected String channelName;\n    public AlertChannel(String channelName) {\n        this.channelName = channelName;\n    }\n    // WHAT: Base specification\n    public abstract void dispatch(String message);\n}\n\nclass EmailAlert extends AlertChannel {\n    public EmailAlert() { super(\"EMAIL\"); }\n    @Override\n    public void dispatch(String message) {\n        System.out.println(\"[\" + channelName + \"] Formatting HTML body -> Sending SMTP packet: \" + message);\n    }\n}\n\nclass PagerDutyAlert extends AlertChannel {\n    public PagerDutyAlert() { super(\"PAGERDUTY\"); }\n    @Override\n    public void dispatch(String message) {\n        System.out.println(\"[\" + channelName + \"] Triggering incident severity P1: \" + message);\n    }\n}\n\npublic class AlertService {\n    // Caller depends ONLY on the abstraction\n    public static void triggerEmergency(AlertChannel channel, String issue) {\n        System.out.println(\"Initiating protocol...\");\n        channel.dispatch(issue);\n    }\n\n    public static void main(String[] args) {\n        AlertChannel alert = new PagerDutyAlert();\n        triggerEmergency(alert, \"Primary Database Connection Pool Depleted\");\n    }\n}",
+      "code": "abstract class AlertChannel {\n    protected String channelName;\n    public AlertChannel(String channelName) {\n        this.channelName = channelName;\n    }\n    // WHAT: Base specification\n    public abstract void dispatch(String message);\n}\n\nclass EmailAlert extends AlertChannel {\n    public EmailAlert() { super(\"EMAIL\"); }\n    @Override\n    public void dispatch(String message) {\n        System.out.println(\"[\" + channelName + \"] Formatting HTML body -> Sending SMTP packet: \" + message);\n    }\n}\n\nclass PagerDutyAlert extends AlertChannel {\n    public PagerDutyAlert() { super(\"PAGERDUTY\"); }\n    @Override\n    public void dispatch(String message) {\n        System.out.println(\"[\" + channelName + \"] Triggering incident severity P1: \" + message);\n    }\n}\n\npublic class AlertService {\n    // Caller depends ONLY on the abstraction\n    public static void triggerEmergency(AlertChannel channel, String issue) {\n        System.out.println(\"Initiating protocol...\");\n        channel.dispatch(issue);\n    }\n\n    public static void main(String[] args) {\n        AlertChannel alert = new PagerDutyAlert();\n        triggerEmergency(alert, \"Primary Database Connection Pool Depleted\");\n    }\n}",
+      "language": "java",
+      "explanation": "The triggerEmergency() method has no awareness of PagerDuty or Email protocols. It operates purely against AlertChannel's dispatch() specification.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`AlertChannel` abstracts the communication pipe into a single method `dispatch(String)`."
+        },
+        {
+          "step": 2,
+          "description": "Subclasses implement specific transport logic (SMTP vs PagerDuty API)."
+        },
+        {
+          "step": 3,
+          "description": "`triggerEmergency` accepts `AlertChannel`, enabling unlimited new communication adapters without modifying emergency handling."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-mcq",
+      "type": "mcq",
+      "title": "Why Abstraction? Core Concept Quiz",
+      "questions": [
+        {
+          "id": "q1-1",
+          "question": "What is the primary definition of abstraction in object-oriented programming?",
+          "options": [
+            "Hiding data members inside private variables with getters and setters",
+            "Hiding internal implementation details and displaying only essential functionalities to the user",
+            "Writing multiple methods with the exact same name and different parameters",
+            "Allowing a class to inherit from multiple parent classes simultaneously"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstraction is about exposing 'what' an entity does while hiding 'how' it accomplishes that task, reducing cognitive load on callers."
+        },
+        {
+          "id": "q1-2",
+          "question": "How does abstraction fundamentally differ from encapsulation?",
+          "options": [
+            "Encapsulation is achieved with interfaces, while abstraction is achieved with packages",
+            "Abstraction focuses on implementation hiding (WHAT vs HOW), whereas encapsulation focuses on data protection (bundling state and restricting direct field access)",
+            "Abstraction is only supported in Java 8+, whereas encapsulation has been around since Java 1.0",
+            "There is no difference; they are synonymous terms in OOP"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstraction hides implementation complexity at the design/contract level. Encapsulation hides and protects internal state via access modifiers (private fields)."
+        },
+        {
+          "id": "q1-3",
+          "question": "Which of the following Java constructs are used to achieve abstraction?",
+          "options": [
+            "final variables and static blocks",
+            "Abstract classes and interfaces",
+            "Constructors and destructors",
+            "Arrays and ArrayLists"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "In Java, abstraction is implemented through abstract classes (partial abstraction, 0\u2013100%) and interfaces (full abstraction contract)."
+        },
+        {
+          "id": "q1-4",
+          "question": "What happens if a software system has zero abstraction and relies entirely on concrete class bindings?",
+          "options": [
+            "The code compiles 10x faster and uses zero memory",
+            "The system becomes rigid and tightly coupled; swapping an underlying service requires modifying all consumer call sites",
+            "The JVM throws an AbstractMethodError at startup",
+            "Encapsulation is automatically broken for all classes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Without abstraction, callers depend on concrete implementation details. Any change or vendor replacement forces ripple-effect modifications across the entire application."
+        },
+        {
+          "id": "q1-5",
+          "question": "Why is an automotive steering wheel considered a real-world abstraction?",
+          "options": [
+            "Because it is made of plastic and leather",
+            "Because the driver can steer whether the steering mechanism uses hydraulic rack-and-pinion, electronic steer-by-wire, or pneumatic assist",
+            "Because steering wheels are optional in modern vehicles",
+            "Because the car cannot start without a key"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The steering wheel presents a uniform contract (turn clockwise to steer right). The mechanical implementation underneath can change entirely without altering how the driver interacts with it."
+        },
+        {
+          "id": "q1-6",
+          "question": "Can you instantiate an abstract class directly using the `new` operator in Java?",
+          "options": [
+            "Yes, if the class has a default constructor",
+            "No, the compiler forbids instantiating an abstract class directly",
+            "Yes, but only if all methods are concrete",
+            "Yes, using reflection only"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Abstract classes represent incomplete conceptual blueprints and cannot be directly instantiated with `new AbstractClass()`. Doing so triggers a compile-time error."
+        },
+        {
+          "id": "q1-7",
+          "question": "What is the architectural benefit of writing `List<String> items = new ArrayList<>();` instead of `ArrayList<String> items = new ArrayList<>();`?",
+          "options": [
+            "It allocates half the memory on the heap",
+            "It programs to the interface (abstraction) `List`, making it trivial to switch to `LinkedList` without breaking code that consumes `items`",
+            "It runs the loop on multiple CPU cores automatically",
+            "It prevents adding null elements to the list"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Programming to the abstraction (`List`) decouples code from the specific implementation (`ArrayList`), allowing seamless future migration to other list implementations."
+        },
+        {
+          "id": "q1-8",
+          "question": "Does an abstract class in Java have to contain at least one abstract method?",
+          "options": [
+            "Yes, a class cannot be declared abstract without at least one abstract method",
+            "No, a class can be declared abstract even if it contains zero abstract methods (e.g. to prevent instantiation)",
+            "Only if it has a constructor",
+            "Only if it extends another abstract class"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "In Java, a class can be declared `abstract` even if it has no abstract methods at all, commonly used to prevent developers from directly instantiating a base class."
+        },
+        {
+          "id": "q1-9",
+          "question": "What happens if a concrete subclass fails to override an abstract method inherited from its parent?",
+          "options": [
+            "The JVM provides a default empty implementation at runtime",
+            "The program compiles with a warning and throws UnsupportedOperationException when called",
+            "The concrete subclass fails to compile unless it is also declared abstract",
+            "The method automatically becomes private"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "A concrete subclass MUST provide implementations for all inherited abstract methods; otherwise, the compiler enforces that the subclass itself must be declared `abstract`."
+        },
+        {
+          "id": "q1-10",
+          "question": "How does abstraction support modularity in team development?",
+          "options": [
+            "Developers can agree on abstract interface contracts first, allowing frontend and backend or client and provider teams to code in parallel",
+            "It eliminates the need for unit testing",
+            "It merges all Git branches automatically without conflicts",
+            "It forces all classes into a single file"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "By defining clear abstract contracts up front, teams can work concurrently against mocks or agreed-upon interfaces without waiting for concrete backends to be finished."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-interview",
+      "type": "interview_qa",
+      "title": "Interview Questions: Why Abstraction?",
+      "interviewQA": [
+        {
+          "id": "i1-1",
+          "companyTag": "Google",
+          "question": "How do you explain the difference between Abstraction and Encapsulation to a junior engineer?",
+          "answer": "Encapsulation is about containment and data protection: bundling related fields and methods together, marking fields private, and regulating access through controlled methods to maintain internal invariants. Abstraction is about hiding implementation complexity and exposing a high-level conceptual model: defining what operations are possible (e.g., via an interface or abstract class) without disclosing how those operations are executed internally."
+        },
+        {
+          "id": "i1-2",
+          "companyTag": "Amazon",
+          "question": "What does the principle 'Program to an interface, not an implementation' mean in practical enterprise software?",
+          "answer": "It means declaring variables, method return types, and method arguments using abstract supertypes (interfaces or abstract classes) rather than concrete classes (e.g., declaring `PaymentService service` rather than `StripePaymentService service`). This decouples client business logic from third-party vendor dependencies, allowing implementations to be swapped, mocked for testing, or dynamically configured at runtime with zero client changes."
+        },
+        {
+          "id": "i1-3",
+          "companyTag": "Microsoft",
+          "question": "Can an abstract class have zero abstract methods? If so, why would a software architect design one?",
+          "answer": "Yes, Java permits declaring a class abstract even if all of its methods are fully concrete. Architects do this primarily to prevent direct instantiation of a base class that should only ever exist as part of a specialized subclass (e.g., a base `HttpHandler` that provides complete utility methods but is conceptually meaningless to instantiate on its own)."
+        },
+        {
+          "id": "i1-4",
+          "companyTag": "Netflix",
+          "question": "How does abstraction enable high-scale resilience patterns like Circuit Breakers and Fallbacks?",
+          "answer": "When clients interact with a remote microservice via an abstract contract (`VideoCatalogClient`), a resilience wrapper (such as a Circuit Breaker) can implement the exact same contract. If the primary service times out, the wrapper catches the failure and transparently returns fallback cached data without the caller ever knowing that an underlying network failure occurred."
+        },
+        {
+          "id": "i1-5",
+          "companyTag": "Meta",
+          "question": "What is the penalty or overhead of using abstraction in Java?",
+          "answer": "From a software design standpoint, unnecessary abstraction introduces indirection and cognitive overhead if overused for trivial components. From a runtime standpoint, invoking methods through abstractions (dynamic dispatch via `invokevirtual` or `invokeinterface`) involves a virtual method table (vtable) lookup, though modern HotSpot JIT devirtualization and inlining virtually eliminate this penalty for monomorphic call sites."
+        },
+        {
+          "id": "i1-6",
+          "companyTag": "Apple",
+          "question": "Can an abstract method be declared `private` or `final`? Explain why.",
+          "answer": "No. An abstract method's fundamental purpose is to force child classes to provide an implementation via method overriding. A `private` method is not inherited and cannot be overridden, and a `final` method explicitly prohibits overriding. Marking an abstract method `private` or `final` results in a compile-time error: 'illegal combination of modifiers'."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-eval",
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I can define abstraction in my own words without confusing it with encapsulation.",
+        "I understand why abstract contracts decouple consumers from third-party or volatile implementations.",
+        "I know that abstract classes cannot be directly instantiated with the new keyword.",
+        "I understand the motto 'Program to an interface, not an implementation'.",
+        "I know that an abstract class can contain concrete methods, fields, and constructors.",
+        "I know that an abstract class does NOT require any abstract methods to be valid.",
+        "I understand why abstract methods cannot be marked private, static, or final.",
+        "I can trace how client code calls an abstract method and dynamic dispatch routes to the concrete child.",
+        "I recognize tight coupling anti-patterns caused by omitting abstraction layers.",
+        "I understand how abstraction enables concurrent team development via interface agreements."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les1-p1",
+      "lessonId": "java-oop-mod7-les1",
+      "orderIndex": 1,
+      "title": "Warmup: Abstract Appliance Contract",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `Appliance` hierarchy:\n1. Base abstract class `Appliance`: has `protected String brand`. Declares `public abstract void turnOn()`.\n2. Concrete class `Toaster` extending `Appliance`: overrides `turnOn()` printing `brand + ' heating coils glowing red'`.\n3. Concrete class `Blender` extending `Appliance`: overrides `turnOn()` printing `brand + ' blades spinning at high speed'`.\nIn `main`, create an `Appliance` array containing a `Toaster(\"Breville\")` and a `Blender(\"Ninja\")`. Iterate and invoke `turnOn()` on each.",
+      "starterCode": "abstract class Appliance {\n    protected String brand;\n    public Appliance(String brand) { this.brand = brand; }\n    // TODO: Declare public abstract void turnOn();\n}\n\nclass Toaster extends Appliance {\n    public Toaster(String brand) { super(brand); }\n    // TODO: Implement turnOn()\n}\n\nclass Blender extends Appliance {\n    public Blender(String brand) { super(brand); }\n    // TODO: Implement turnOn()\n}\n\npublic class ApplianceApp {\n    public static void main(String[] args) {\n        // TODO: Create Appliance[] array and invoke turnOn() on each\n    }\n}",
+      "initialCode": "abstract class Appliance {\n    protected String brand;\n    public Appliance(String brand) { this.brand = brand; }\n    // TODO: Declare public abstract void turnOn();\n}\n\nclass Toaster extends Appliance {\n    public Toaster(String brand) { super(brand); }\n    // TODO: Implement turnOn()\n}\n\nclass Blender extends Appliance {\n    public Blender(String brand) { super(brand); }\n    // TODO: Implement turnOn()\n}\n\npublic class ApplianceApp {\n    public static void main(String[] args) {\n        // TODO: Create Appliance[] array and invoke turnOn() on each\n    }\n}",
+      "solutionCode": "abstract class Appliance {\n    protected String brand;\n    public Appliance(String brand) { this.brand = brand; }\n    public abstract void turnOn();\n}\n\nclass Toaster extends Appliance {\n    public Toaster(String brand) { super(brand); }\n    @Override\n    public void turnOn() {\n        System.out.println(brand + \" heating coils glowing red\");\n    }\n}\n\nclass Blender extends Appliance {\n    public Blender(String brand) { super(brand); }\n    @Override\n    public void turnOn() {\n        System.out.println(brand + \" blades spinning at high speed\");\n    }\n}\n\npublic class ApplianceApp {\n    public static void main(String[] args) {\n        Appliance[] kitchen = new Appliance[] {\n            new Toaster(\"Breville\"),\n            new Blender(\"Ninja\")\n        };\n        for (Appliance a : kitchen) {\n            a.turnOn();\n        }\n    }\n}",
+      "expectedOutput": "Breville heating coils glowing red\nNinja blades spinning at high speed",
+      "hints": [
+        "In Appliance, write: public abstract void turnOn(); with no curly braces.",
+        "In Toaster and Blender, implement turnOn() with @Override."
+      ]
+    },
+    {
+      "id": "prob-les1-p2",
+      "lessonId": "java-oop-mod7-les1",
+      "orderIndex": 2,
+      "title": "Abstract Document Exporter",
+      "difficulty": "medium",
+      "problemStatement": "Build an extensible document export system from scratch without starter code:\n1. Create abstract class `DocumentExporter` with `protected String title`. Include constructor `DocumentExporter(String title)`.\n   Declare abstract method `public abstract String export(String content)`.\n2. Create concrete class `HtmlExporter` extending `DocumentExporter`:\n   Overrides `export(String content)` returning `'<h1>' + title + '</h1><p>' + content + '</p>'`.\n3. Create concrete class `MarkdownExporter` extending `DocumentExporter`:\n   Overrides `export(String content)` returning `'# ' + title + '\\n' + content`.\n4. In `Main`, create an array `DocumentExporter[] exporters` holding an `HtmlExporter(\"Report\")` and a `MarkdownExporter(\"Summary\")`.\n5. Iterate over the array with content `'System status OK'` and print the exported result of each.",
+      "solutionCode": "abstract class DocumentExporter {\n    protected String title;\n    public DocumentExporter(String title) {\n        this.title = title;\n    }\n    public abstract String export(String content);\n}\n\nclass HtmlExporter extends DocumentExporter {\n    public HtmlExporter(String title) {\n        super(title);\n    }\n    @Override\n    public String export(String content) {\n        return \"<h1>\" + title + \"</h1><p>\" + content + \"</p>\";\n    }\n}\n\nclass MarkdownExporter extends DocumentExporter {\n    public MarkdownExporter(String title) {\n        super(title);\n    }\n    @Override\n    public String export(String content) {\n        return \"# \" + title + \"\\n\" + content;\n    }\n}\n\npublic class ExporterApp {\n    public static void main(String[] args) {\n        DocumentExporter[] exporters = new DocumentExporter[] {\n            new HtmlExporter(\"Report\"),\n            new MarkdownExporter(\"Summary\")\n        };\n        String content = \"System status OK\";\n        for (DocumentExporter exporter : exporters) {\n            System.out.println(exporter.export(content));\n        }\n    }\n}",
+      "expectedOutput": "<h1>Report</h1><p>System status OK</p>\n# Summary\nSystem status OK",
+      "hints": [
+        "In DocumentExporter, declare export(String content) as public abstract.",
+        "Loop over DocumentExporter[] and invoke exporter.export(content)."
+      ]
+    },
+    {
+      "id": "prob-les1-p3",
+      "lessonId": "java-oop-mod7-les1",
+      "orderIndex": 3,
+      "title": "Abstract Sensor Telemetry Monitor",
+      "difficulty": "medium",
+      "problemStatement": "Design a telemetry monitor from scratch:\n1. Abstract class `TelemetrySensor`: has `protected String sensorId`. Constructor accepts `String sensorId`.\n   Declares `public abstract double readMetric()`.\n   Implements concrete method `public void report()` that prints `sensorId + ' reading: ' + String.format(\"%.1f\", readMetric())`.\n2. Subclass `TemperatureSensor` extending `TelemetrySensor`: has `private double tempCelsius`. Overrides `readMetric()` returning `tempCelsius`.\n3. Subclass `PressureSensor` extending `TelemetrySensor`: has `private double psi`. Overrides `readMetric()` returning `psi`.\n4. In `Main`, create an array `TelemetrySensor[] sensors` containing `TemperatureSensor(\"TEMP-01\", 24.5)` and `PressureSensor(\"PRESS-09\", 101.3)`.\n5. Iterate and call `report()` on each sensor.",
+      "solutionCode": "abstract class TelemetrySensor {\n    protected String sensorId;\n    public TelemetrySensor(String sensorId) {\n        this.sensorId = sensorId;\n    }\n    public abstract double readMetric();\n    public void report() {\n        System.out.println(sensorId + \" reading: \" + String.format(\"%.1f\", readMetric()));\n    }\n}\n\nclass TemperatureSensor extends TelemetrySensor {\n    private double tempCelsius;\n    public TemperatureSensor(String sensorId, double tempCelsius) {\n        super(sensorId);\n        this.tempCelsius = tempCelsius;\n    }\n    @Override\n    public double readMetric() {\n        return tempCelsius;\n    }\n}\n\nclass PressureSensor extends TelemetrySensor {\n    private double psi;\n    public PressureSensor(String sensorId, double psi) {\n        super(sensorId);\n        this.psi = psi;\n    }\n    @Override\n    public double readMetric() {\n        return psi;\n    }\n}\n\npublic class TelemetryApp {\n    public static void main(String[] args) {\n        TelemetrySensor[] sensors = new TelemetrySensor[] {\n            new TemperatureSensor(\"TEMP-01\", 24.5),\n            new PressureSensor(\"PRESS-09\", 101.3)\n        };\n        for (TelemetrySensor s : sensors) {\n            s.report();\n        }\n    }\n}",
+      "expectedOutput": "TEMP-01 reading: 24.5\nPRESS-09 reading: 101.3",
+      "hints": [
+        "In TelemetrySensor, report() calls readMetric() dynamically.",
+        "Each subclass overrides readMetric() to return its specific measurement."
+      ]
+    },
+    {
+      "id": "prob-les1-p4",
+      "lessonId": "java-oop-mod7-les1",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Illegal Direct Instantiation & Body on Abstract Method",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to write an abstract game entity system, but committed two compilation errors: defining a body on an abstract method, and trying to instantiate the abstract class with `new`. Fix both issues so the program compiles and runs.",
+      "starterCode": "abstract class GameEntity {\n    protected String name;\n    public GameEntity(String name) { this.name = name; }\n    \n    // BUG 1: Abstract methods cannot have a body!\n    public abstract void update() {\n        System.out.println(\"Default entity update\");\n    }\n}\n\nclass Player extends GameEntity {\n    public Player(String name) { super(name); }\n    @Override\n    public void update() {\n        System.out.println(name + \" moves to target coordinates\");\n    }\n}\n\npublic class GameBugApp {\n    public static void main(String[] args) {\n        // BUG 2: Cannot instantiate abstract class directly!\n        GameEntity generic = new GameEntity(\"Unknown\");\n        GameEntity player = new Player(\"Hero\");\n        \n        generic.update();\n        player.update();\n    }\n}",
+      "initialCode": "abstract class GameEntity {\n    protected String name;\n    public GameEntity(String name) { this.name = name; }\n    \n    // BUG 1: Abstract methods cannot have a body!\n    public abstract void update() {\n        System.out.println(\"Default entity update\");\n    }\n}\n\nclass Player extends GameEntity {\n    public Player(String name) { super(name); }\n    @Override\n    public void update() {\n        System.out.println(name + \" moves to target coordinates\");\n    }\n}\n\npublic class GameBugApp {\n    public static void main(String[] args) {\n        // BUG 2: Cannot instantiate abstract class directly!\n        GameEntity generic = new GameEntity(\"Unknown\");\n        GameEntity player = new Player(\"Hero\");\n        \n        generic.update();\n        player.update();\n    }\n}",
+      "solutionCode": "abstract class GameEntity {\n    protected String name;\n    public GameEntity(String name) { this.name = name; }\n    public abstract void update();\n}\n\nclass Player extends GameEntity {\n    public Player(String name) { super(name); }\n    @Override\n    public void update() {\n        System.out.println(name + \" moves to target coordinates\");\n    }\n}\n\nclass Npc extends GameEntity {\n    public Npc(String name) { super(name); }\n    @Override\n    public void update() {\n        System.out.println(name + \" patrols perimeter path\");\n    }\n}\n\npublic class GameBugApp {\n    public static void main(String[] args) {\n        GameEntity npc = new Npc(\"Guard\");\n        GameEntity player = new Player(\"Hero\");\n        \n        npc.update();\n        player.update();\n    }\n}",
+      "expectedOutput": "Guard patrols perimeter path\nHero moves to target coordinates",
+      "hints": [
+        "Replace the body of public abstract void update() { ... } with a semicolon: public abstract void update();",
+        "Replace new GameEntity(\"Unknown\") with a concrete subclass like Npc."
+      ]
+    },
+    {
+      "id": "prob-les1-p5",
+      "lessonId": "java-oop-mod7-les1",
+      "orderIndex": 5,
+      "title": "Abstract Cryptographic Hasher Pipeline",
+      "difficulty": "hard",
+      "problemStatement": "Build an abstract cryptographic hashing pipeline from scratch:\n1. Abstract class `MessageDigestEngine`: has `protected String algorithmName`. Constructor sets this field.\n   Declares `public abstract String hash(String input)`.\n   Declares concrete method `public void audit(String data)` which prints `'[' + algorithmName + '] Digest for \"' + data + '\": ' + hash(data)`.\n2. Concrete class `Sha256Engine` extending `MessageDigestEngine`: sets algorithmName `'SHA-256'`. Overrides `hash(String input)` returning `'sha256_mock_digest_' + input.length()`.\n3. Concrete class `Md5Engine` extending `MessageDigestEngine`: sets algorithmName `'MD5'`. Overrides `hash(String input)` returning `'md5_mock_digest_' + input.hashCode()`.\n4. In `Main`, create an array `MessageDigestEngine[] engines` holding both `Sha256Engine` and `Md5Engine`.\n5. Call `audit(\"secret_payload\")` on each engine.",
+      "solutionCode": "abstract class MessageDigestEngine {\n    protected String algorithmName;\n    public MessageDigestEngine(String algorithmName) {\n        this.algorithmName = algorithmName;\n    }\n    public abstract String hash(String input);\n    public void audit(String data) {\n        System.out.println(\"[\" + algorithmName + \"] Digest for \\\"\" + data + \"\\\": \" + hash(data));\n    }\n}\n\nclass Sha256Engine extends MessageDigestEngine {\n    public Sha256Engine() {\n        super(\"SHA-256\");\n    }\n    @Override\n    public String hash(String input) {\n        return \"sha256_mock_digest_\" + input.length();\n    }\n}\n\nclass Md5Engine extends MessageDigestEngine {\n    public Md5Engine() {\n        super(\"MD5\");\n    }\n    @Override\n    public String hash(String input) {\n        return \"md5_mock_digest_\" + input.hashCode();\n    }\n}\n\npublic class CryptoApp {\n    public static void main(String[] args) {\n        MessageDigestEngine[] engines = new MessageDigestEngine[] {\n            new Sha256Engine(),\n            new Md5Engine()\n        };\n        String secret = \"secret_payload\";\n        for (MessageDigestEngine engine : engines) {\n            engine.audit(secret);\n        }\n    }\n}",
+      "expectedOutput": "[SHA-256] Digest for \"secret_payload\": sha256_mock_digest_14\n[MD5] Digest for \"secret_payload\": md5_mock_digest_1615674384",
+      "hints": [
+        "In MessageDigestEngine, audit(String data) calls the abstract hash(data) dynamically.",
+        "In Md5Engine, use input.hashCode() to generate the mock digest suffix."
+      ]
+    }
+  ]
+}
