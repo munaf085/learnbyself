@@ -339,6 +339,37 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
         ...parsed,
         slug: targetSlug
       };
+
+      if (lesson.activities && Array.isArray(lesson.activities)) {
+        lesson.activities = lesson.activities.map((act: any) => {
+          const normalizeQ = (q: any) => {
+            const cIdx =
+              q.correctOptionIndex !== undefined
+                ? q.correctOptionIndex
+                : q.correctAnswer !== undefined
+                ? q.correctAnswer
+                : q.correctOption !== undefined
+                ? q.correctOption
+                : q.correctAnswerIndex !== undefined
+                ? q.correctAnswerIndex
+                : q.correctIndex;
+            return {
+              ...q,
+              prompt: q.prompt || q.question || '',
+              correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : cIdx,
+              correctOptionIndex: q.correctOptionIndex !== undefined ? q.correctOptionIndex : (typeof cIdx === 'number' ? cIdx : undefined)
+            };
+          };
+
+          if (act.questions && Array.isArray(act.questions)) {
+            act.questions = act.questions.map(normalizeQ);
+          }
+          if (act.mcq?.questions && Array.isArray(act.mcq.questions)) {
+            act.mcq.questions = act.mcq.questions.map(normalizeQ);
+          }
+          return act;
+        });
+      }
     } else {
       const course = await this.getCourse(languageSlug);
       const section = course?.sections.find(s => s.slug === sectionSlug);

@@ -110,15 +110,20 @@ export interface QuestionHint {
 
 export interface Question {
   id: string;
-  type: 'mcq' | 'output_prediction' | 'debugging' | 'fill_in_code' | 'reorder_code';
-  prompt: string;
+  type?: 'mcq' | 'output_prediction' | 'debugging' | 'fill_in_code' | 'reorder_code';
+  prompt?: string;
+  question?: string;
   codeSnippet?: string;
   options?: string[];
-  correctAnswer: string | number | string[];
+  correctAnswer?: string | number | string[];
+  correctOptionIndex?: number;
+  correctOption?: number;
+  correctAnswerIndex?: number;
+  correctIndex?: number;
   explanation: string;
-  hints: QuestionHint[];
-  difficulty: 'easy' | 'medium' | 'hard';
-  estimatedSeconds: number;
+  hints?: QuestionHint[];
+  difficulty?: 'easy' | 'medium' | 'hard';
+  estimatedSeconds?: number;
 }
 
 export interface InterviewQA {

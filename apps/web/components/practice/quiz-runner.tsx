@@ -5,6 +5,37 @@ import type { Question } from '@learnbyself/types';
 import { Button, Card, Badge, Alert } from '@learnbyself/ui';
 import { CheckCircle2, RotateCcw, Sparkles, HelpCircle } from 'lucide-react';
 
+export function getQuestionCorrectAnswerIndex(q: Question | any): number {
+  if (!q) return -1;
+  const raw =
+    q.correctOptionIndex !== undefined
+      ? q.correctOptionIndex
+      : q.correctAnswer !== undefined
+      ? q.correctAnswer
+      : q.correctOption !== undefined
+      ? q.correctOption
+      : q.correctAnswerIndex !== undefined
+      ? q.correctAnswerIndex
+      : q.correctIndex;
+
+  if (raw !== undefined && raw !== null) {
+    const parsed = Number(raw);
+    if (!Number.isNaN(parsed)) {
+      return parsed;
+    }
+    if (typeof raw === 'string' && Array.isArray(q.options)) {
+      const idx = q.options.indexOf(raw);
+      if (idx !== -1) return idx;
+      const charCode = raw.trim().toUpperCase().charCodeAt(0);
+      if (raw.trim().length === 1 && charCode >= 65 && charCode <= 90) {
+        const charIdx = charCode - 65;
+        if (charIdx < q.options.length) return charIdx;
+      }
+    }
+  }
+  return -1;
+}
+
 interface QuizRunnerProps {
   questions: Question[];
   categoryTitle?: string;
@@ -50,15 +81,16 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ questions, categoryTitle
 
   // Count correct answers
   const correctCount = questions.filter(
-    q => submittedAnswers[q.id] && selectedAnswers[q.id] === Number(q.correctAnswer)
+    q => submittedAnswers[q.id] && selectedAnswers[q.id] === getQuestionCorrectAnswerIndex(q)
   ).length;
 
   return (
     <div className="space-y-6">
       {questions.map((q, qIndex) => {
+        const correctIndex = getQuestionCorrectAnswerIndex(q);
         const selected = selectedAnswers[q.id];
         const isSubmitted = submittedAnswers[q.id];
-        const isCorrect = isSubmitted && selected === Number(q.correctAnswer);
+        const isCorrect = isSubmitted && selected === correctIndex;
         const currentHintLevel = hintSteps[q.id] || 0;
 
         return (
@@ -92,8 +124,8 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ questions, categoryTitle
                 let optionStyle = 'bg-white border-slate-200 hover:border-brand-300 text-slate-800';
 
                 if (isSubmitted) {
-                  if (optIdx === Number(q.correctAnswer)) {
-                    optionStyle = 'bg-emerald-50 border-emerald-400 text-emerald-950 font-semibold shadow-xs';
+                  if (optIdx === correctIndex) {
+                    optionStyle = 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-400 text-emerald-950 font-semibold shadow-xs';
                   } else if (isThisSelected) {
                     optionStyle = 'bg-rose-50 border-rose-300 text-rose-950';
                   } else {
@@ -116,8 +148,8 @@ export const QuizRunner: React.FC<QuizRunnerProps> = ({ questions, categoryTitle
                       {String.fromCharCode(65 + optIdx)}.
                     </span>
                     <span className="flex-1">{opt}</span>
-                    {isSubmitted && optIdx === Number(q.correctAnswer) && (
-                      <span className="text-emerald-600 font-bold">✓</span>
+                    {isSubmitted && optIdx === correctIndex && (
+                      <span className="text-emerald-600 font-bold ml-2">✓</span>
                     )}
                   </button>
                 );

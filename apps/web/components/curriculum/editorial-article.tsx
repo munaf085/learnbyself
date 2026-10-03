@@ -100,20 +100,15 @@ export const EditorialArticle: React.FC<EditorialArticleProps> = ({ title, conte
     sections.push(currentSection);
   }
 
+  // If first section has no title and a title prop was provided, use it
+  if (sections.length > 0 && !sections[0].title && title) {
+    sections[0].title = title;
+  }
+
   return (
     <div className="space-y-5 animate-fadeIn">
-      {/* Article Header Card */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-subtle space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0" />
-            <h3 className="font-bold text-base sm:text-lg text-slate-900">
-              {title}
-            </h3>
-          </div>
-          <Badge variant="blue" size="sm">Core Guide</Badge>
-        </div>
-
+      {/* Article Content Card */}
+      <div className="p-5 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-subtle space-y-6">
         {/* Render Formatted Sections */}
         <div className="space-y-6">
           {sections.map((sec, secIdx) => {
@@ -224,11 +219,11 @@ export const EditorialArticle: React.FC<EditorialArticleProps> = ({ title, conte
               <div key={secIdx} className="space-y-3 pt-2 first:pt-0">
                 {/* Section Header */}
                 {sec.title && (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2.5 pb-1">
                     <span className="w-1.5 h-4 rounded-full bg-brand-500" />
-                    <h4 className="font-bold text-sm sm:text-base text-slate-900">
+                    <h3 className="font-bold text-base sm:text-lg text-slate-900">
                       {sec.title}
-                    </h4>
+                    </h3>
                   </div>
                 )}
 
