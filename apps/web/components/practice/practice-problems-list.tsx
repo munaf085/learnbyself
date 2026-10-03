@@ -20,6 +20,83 @@ interface PracticeProblemsListProps {
   problems: PracticeProblem[];
 }
 
+// Helper to format inline code and bold text inside problem descriptions
+const formatInlineText = (text: string): React.ReactNode[] => {
+  const parts: React.ReactNode[] = [];
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith('`') && token.endsWith('`')) {
+      parts.push(
+        <code
+          key={match.index}
+          className="font-mono text-xs font-semibold bg-slate-100 text-brand-700 px-1.5 py-0.5 rounded border border-slate-200/80 mx-0.5"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith('**') && token.endsWith('**')) {
+      parts.push(
+        <strong key={match.index} className="font-bold text-slate-900">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts;
+};
+
+// Render problem description with support for code blocks and paragraphs
+const renderProblemDescription = (text: string) => {
+  if (!text) return null;
+
+  // Split by fenced code blocks ``` ... ```
+  const codeBlockRegex = /```(?:java)?\n([\s\S]*?)```/g;
+  const segments: React.ReactNode[] = [];
+  let lastIdx = 0;
+  let blockMatch: RegExpExecArray | null;
+
+  while ((blockMatch = codeBlockRegex.exec(text)) !== null) {
+    if (blockMatch.index > lastIdx) {
+      const textChunk = text.substring(lastIdx, blockMatch.index);
+      segments.push(
+        <p key={lastIdx} className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
+          {formatInlineText(textChunk)}
+        </p>
+      );
+    }
+    const codeContent = blockMatch[1];
+    segments.push(
+      <div key={blockMatch.index} className="my-2.5 p-3.5 rounded-xl bg-slate-950 font-mono text-xs text-amber-300 overflow-x-auto shadow-inner border border-slate-800/80 leading-relaxed">
+        <pre>{codeContent}</pre>
+      </div>
+    );
+    lastIdx = codeBlockRegex.lastIndex;
+  }
+
+  if (lastIdx < text.length) {
+    segments.push(
+      <p key={lastIdx} className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
+        {formatInlineText(text.substring(lastIdx))}
+      </p>
+    );
+  }
+
+  return <div className="space-y-2">{segments}</div>;
+};
+
 export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
   lessonTitle,
   problems
@@ -73,7 +150,8 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
         {problems.map((prob, idx) => {
           const isSolutionOpen = !!revealedSolutions[prob.id];
           const isHintOpen = !!revealedHints[prob.id];
-          const isCopied = copiedProblemId === prob.id;
+          const isCopiedSolution = copiedProblemId === `sol-${prob.id}`;
+          const isCopiedStarter = copiedProblemId === `start-${prob.id}`;
 
           const diffVariant: 'blue' | 'green' | 'amber' =
             prob.difficulty === 'medium'
@@ -102,11 +180,40 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
                 </Badge>
               </div>
 
-              {/* Problem Description */}
+              {/* Formatted Problem Description */}
               {(prob.description || prob.problemStatement) && (
-                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal whitespace-pre-line">
-                  {prob.description || prob.problemStatement}
-                </p>
+                renderProblemDescription(prob.description || prob.problemStatement || '')
+              )}
+
+              {/* Starter Code / Code to Inspect & Fix */}
+              {prob.initialCode && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Code2 className="w-3.5 h-3.5 text-amber-500" />
+                      Starter Code / Code to Inspect &amp; Fix
+                    </span>
+                    <button
+                      onClick={() => handleCopyCode(`start-${prob.id}`, prob.initialCode!)}
+                      className="text-xs text-slate-500 hover:text-slate-800 flex items-center space-x-1 cursor-pointer transition-colors"
+                    >
+                      {isCopiedStarter ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-emerald-600">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Starter Code</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-950 font-mono text-xs text-amber-200 overflow-x-auto shadow-inner border border-slate-800/80 leading-relaxed">
+                    <pre>{prob.initialCode}</pre>
+                  </div>
+                </div>
               )}
 
               {/* Expected Output Preview */}
@@ -164,10 +271,19 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
                     {isSolutionOpen && (
                       <button
                         onClick={() => handleCopyCode(prob.id, prob.solutionCode!)}
-                        className="text-xs text-slate-500 hover:text-slate-800 flex items-center space-x-1 cursor-pointer"
+                        className="text-xs text-slate-500 hover:text-slate-800 flex items-center space-x-1 cursor-pointer transition-colors"
                       >
-                        {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{isCopied ? 'Copied' : 'Copy Solution'}</span>
+                        {copiedProblemId === prob.id ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-emerald-600">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Copy Solution</span>
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
