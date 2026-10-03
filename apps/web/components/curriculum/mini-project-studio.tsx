@@ -107,26 +107,106 @@ export const MiniProjectStudio: React.FC<MiniProjectStudioProps> = ({ lesson }) 
   }
 
   const {
-    projectBrief,
-    realWorldScenario,
-    requirements,
-    beforeYouCode,
-    buildRoadmap,
-    thinkBeforeYouCode,
-    hintSystem,
-    testYourProject,
-    debuggingGuide,
-    projectPolish,
-    gitHubReady,
-    portfolioChecklist,
-    explainYourProject,
-    projectCompletion,
-    scaffoldingCode,
-    sampleConsoleRun
-  } = project;
+    projectBrief: rawBrief,
+    realWorldScenario: rawScenario,
+    requirements: rawReqs,
+    beforeYouCode: rawBefore,
+    buildRoadmap: rawRoadmap,
+    thinkBeforeYouCode: rawThink,
+    hintSystem: rawHints,
+    testYourProject: rawTests,
+    debuggingGuide: rawDebug,
+    projectPolish: rawPolish,
+    gitHubReady: rawGithub,
+    portfolioChecklist: rawPortCheck,
+    explainYourProject: rawExplain,
+    projectCompletion: rawCompletion,
+    scaffoldingCode = '',
+    sampleConsoleRun = ''
+  } = (project || {}) as any;
+
+  const projectBrief = {
+    problemItSolves: rawBrief?.problemItSolves || '',
+    estimatedTime: rawBrief?.estimatedTime || '45–60 mins',
+    difficulty: rawBrief?.difficulty || 'intermediate',
+    whatAreWeBuilding: rawBrief?.whatAreWeBuilding || rawBrief?.problemItSolves || '',
+    finishedAppDescription: rawBrief?.finishedAppDescription || '',
+    javaFundamentals: Array.isArray(rawBrief?.javaFundamentals) ? rawBrief.javaFundamentals : []
+  };
+
+  const realWorldScenario = {
+    headline: rawScenario?.headline || project.title || 'Project Scenario',
+    story: rawScenario?.story || '',
+    context: rawScenario?.context || 'Core Software Engineering'
+  };
+
+  const requirements = {
+    functional: Array.isArray(rawReqs?.functional) ? rawReqs.functional : [],
+    technicalConstraints: Array.isArray(rawReqs?.technicalConstraints)
+      ? rawReqs.technicalConstraints
+      : (Array.isArray(rawReqs?.technical) ? rawReqs.technical : []),
+    userDecisions: Array.isArray(rawReqs?.userDecisions) ? rawReqs.userDecisions : []
+  };
+
+  const beforeYouCode = {
+    inputsRequired: Array.isArray(rawBefore?.inputsRequired) ? rawBefore.inputsRequired : [],
+    outputsRequired: Array.isArray(rawBefore?.outputsRequired) ? rawBefore.outputsRequired : [],
+    variablesNeeded: Array.isArray(rawBefore?.variablesNeeded) ? rawBefore.variablesNeeded : [],
+    arrayUsage: rawBefore?.arrayUsage || '',
+    recommendedMethods: Array.isArray(rawBefore?.recommendedMethods) ? rawBefore.recommendedMethods : []
+  };
+
+  const thinkBeforeYouCode = Array.isArray(rawThink) ? rawThink : [];
+  const buildRoadmap = (Array.isArray(rawRoadmap) ? rawRoadmap : []).map((m: any, idx: number) => ({
+    milestoneNumber: m?.milestoneNumber ?? (m?.stepNumber ?? idx + 1),
+    title: m?.title || `Milestone ${idx + 1}`,
+    objective: m?.objective || '',
+    tasks: Array.isArray(m?.tasks) ? m.tasks : [],
+    acceptanceCriteria: Array.isArray(m?.acceptanceCriteria) ? m.acceptanceCriteria : []
+  }));
+
+  const hintSystem = (Array.isArray(rawHints) ? rawHints : []).map((h: any, idx: number) => ({
+    topic: h?.topic || `Hint ${h?.step ?? idx + 1}`,
+    level1Conceptual: h?.level1Conceptual || h?.hint || '',
+    level2Implementation: h?.level2Implementation || '',
+    level3JavaSyntax: h?.level3JavaSyntax || ''
+  }));
+
+  const testYourProject = {
+    normalCases: Array.isArray(rawTests?.normalCases) ? rawTests.normalCases : [],
+    boundaryCases: Array.isArray(rawTests?.boundaryCases) ? rawTests.boundaryCases : [],
+    invalidInputCases: Array.isArray(rawTests?.invalidInputCases) ? rawTests.invalidInputCases : [],
+    edgeCases: Array.isArray(rawTests?.edgeCases) ? rawTests.edgeCases : []
+  };
+
+  const debuggingGuide = Array.isArray(rawDebug) ? rawDebug : [];
+  const projectPolish = Array.isArray(rawPolish) ? rawPolish : [];
+
+  const gitHubReady = {
+    readmeTemplate: rawGithub?.readmeTemplate || rawGithub?.suggestedReadme || '',
+    gitCommands: Array.isArray(rawGithub?.gitCommands)
+      ? rawGithub.gitCommands
+      : [
+          { command: 'git init', explanation: 'Initializes Git tracking in your project directory.' },
+          { command: 'git add .', explanation: 'Stages all project source files.' },
+          { command: `git commit -m "feat: complete ${project.title}"`, explanation: 'Creates milestone commit.' }
+        ]
+  };
+
+  const portfolioChecklist = Array.isArray(rawPortCheck) ? rawPortCheck : [];
+  const explainYourProject = Array.isArray(rawExplain) ? rawExplain : [];
+
+  const projectCompletion = {
+    headline: rawCompletion?.headline || '🎉 Outstanding Work!',
+    congratulations: rawCompletion?.congratulations || rawCompletion?.celebrationMessage || 'You have successfully completed this project and demonstrated professional engineering standards.',
+    skillsDemonstrated: Array.isArray(rawCompletion?.skillsDemonstrated)
+      ? rawCompletion.skillsDemonstrated
+      : (Array.isArray(rawCompletion?.resumeBullets) ? rawCompletion.resumeBullets : ['Java Architecture', 'Defensive Programming', 'Testing & Verification']),
+    nextStepAction: rawCompletion?.nextStepAction || 'Commit your work, add it to GitHub, and proceed to the next module.'
+  };
 
   // Calculate stats
-  const totalTasks = buildRoadmap.reduce((acc, m) => acc + m.tasks.length, 0);
+  const totalTasks = buildRoadmap.reduce((acc: number, m: any) => acc + (m.tasks?.length || 0), 0);
   const doneTasks = Object.values(completedTasks).filter(Boolean).length;
   const totalTests =
     testYourProject.normalCases.length +

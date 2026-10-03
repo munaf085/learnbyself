@@ -363,9 +363,14 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
           title: summary.title,
           projectBrief: {
             problemItSolves: summary.summary,
+            whatAreWeBuilding: summary.summary,
+            finishedAppDescription: `A production-ready implementation of ${summary.title} with solid architecture and edge-case handling.`,
             realWorldUse: `Applied in real-world Java engineering systems modeling domain logic with high reliability.`,
-            estimatedTime: `${summary.estimatedMinutes || 35} mins`,
+            estimatedTime: `${summary.estimatedMinutes || 45} mins`,
             difficulty: summary.difficulty || 'intermediate',
+            javaFundamentals: summary.subtopics && summary.subtopics.length > 0
+              ? summary.subtopics
+              : ['Core Java Architecture', 'Data Structures & OOP', 'Defensive Input Validation', 'Unit & System Testing'],
             motivatingQuote: `Building real projects is where syntax transforms into engineering confidence.`
           },
           realWorldScenario: {
@@ -379,6 +384,15 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
               `Ensure all methods validate input arguments before mutating state`,
               `Provide clean console logging to verify program execution`
             ],
+            technicalConstraints: [
+              `Compile without warnings using OpenJDK 21 LTS`,
+              `Organize classes cleanly with appropriate access modifiers and encapsulation`,
+              `Implement defensive state checks to prevent invalid object states`
+            ],
+            userDecisions: [
+              `Design class relationships and clean separation of concerns`,
+              `Select optimal collection and data structure types for performance`
+            ],
             technical: [
               `Compile without warnings using OpenJDK 21 LTS`,
               `Organize classes cleanly with appropriate access modifiers`,
@@ -391,6 +405,23 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
             ]
           },
           beforeYouCode: {
+            inputsRequired: [
+              `User commands or simulated transaction inputs`,
+              `Configuration parameters and boundary values`
+            ],
+            outputsRequired: [
+              `Formatted status logs and operation confirmation`,
+              `Clean exception messages for invalid arguments`
+            ],
+            variablesNeeded: [
+              `Core state management references`,
+              `Counters, flags, and tracking collections`
+            ],
+            recommendedMethods: [
+              `public void execute()`,
+              `public boolean validate()`,
+              `public void printReport()`
+            ],
             mentalModel: `Sketch the class diagram on paper first: identify fields, access modifiers, constructors, and methods before opening your IDE.`,
             commonPitfalls: [
               `Directly exposing mutable fields with public access`,
@@ -404,55 +435,84 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
           },
           buildRoadmap: [
             {
+              milestoneNumber: 1,
               stepNumber: 1,
               title: "Scaffold Domain Classes",
+              objective: "Define domain structures and initial state encapsulation",
               tasks: [
                 "Define instance variables with private access",
                 "Create parameterized constructors with validation",
                 "Implement getter and business behavior methods"
+              ],
+              acceptanceCriteria: [
+                "Classes compile cleanly and instantiate with valid defaults."
               ]
             },
             {
+              milestoneNumber: 2,
               stepNumber: 2,
               title: "Implement Validation & Invariants",
+              objective: "Add defensive guards for null or invalid inputs and state rules",
               tasks: [
                 "Add defensive guards for null or invalid inputs",
                 "Return safe copies of mutable state if applicable",
                 "Ensure clean error reporting upon violation"
+              ],
+              acceptanceCriteria: [
+                "All business methods pass validation and behave predictably."
               ]
             },
             {
+              milestoneNumber: 3,
               stepNumber: 3,
               title: "Build Driver & Test Suite",
+              objective: "Execute comprehensive test driver verifying all operations",
               tasks: [
                 "Instantiate multiple test instances in Main.java",
                 "Simulate happy-path business workflows",
                 "Execute negative test cases to confirm guard behavior"
+              ],
+              acceptanceCriteria: [
+                "All test scenarios execute cleanly and print informative reports."
               ]
             }
           ],
           thinkBeforeYouCode: [
             {
               question: "What real-world entity does each class represent?",
-              hint: "Classes are nouns representing blueprints; methods are verbs representing behaviors."
+              hint: "Classes are nouns representing blueprints; methods are verbs representing behaviors.",
+              mentorInsight: "Classes are nouns representing blueprints; methods are verbs representing behaviors."
             },
             {
               question: "How should invalid state transitions be prevented?",
-              hint: "Validate inside constructors and mutator methods before modifying instance fields."
+              hint: "Validate inside constructors and mutator methods before modifying instance fields.",
+              mentorInsight: "Validate inside constructors and mutator methods before modifying instance fields."
             }
           ],
           hintSystem: [
             {
+              topic: "Architectural Layout",
               step: 1,
-              hint: "Start with a clean Main.java file and write your class declarations sequentially or in separate files."
+              hint: "Start with a clean Main.java file and write your class declarations sequentially or in separate files.",
+              level1Conceptual: "Break the problem down into state (variables) and behavior (methods).",
+              level2Implementation: "Create the domain class first, test it in main(), then add complex features.",
+              level3JavaSyntax: `public class Main {\n    public static void main(String[] args) {\n        // Start here\n    }\n}`
             },
             {
+              topic: "Data Encapsulation",
               step: 2,
-              hint: "Keep fields private and use getters to inspect state from outside the class."
+              hint: "Keep fields private and use getters to inspect state from outside the class.",
+              level1Conceptual: "Prevent external code from mutating fields directly.",
+              level2Implementation: "Declare fields private and validate parameters inside public methods.",
+              level3JavaSyntax: `private String id;\npublic String getId() {\n    return id;\n}`
             },
             {
+              topic: "Verification & Output",
               step: 3,
-              hint: "Use System.out.println() with descriptive prefixes to trace each operation in the console."
+              hint: "Use System.out.println() with descriptive prefixes to trace each operation in the console.",
+              level1Conceptual: "Provide clear console logs for each milestone test.",
+              level2Implementation: "Format outputs with status indicators.",
+              level3JavaSyntax: `System.out.println("✓ Status: OK");`
             }
           ],
           testYourProject: {
@@ -484,13 +544,28 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
           ],
           gitHubReady: {
             repoName: summary.slug,
+            readmeTemplate: `# ${summary.title}\n\nA clean, robust Java application modeling ${summary.title} with solid object-oriented design principles.\n\n## Features\n- Encapsulated domain entities\n- Defensive input validation\n- Comprehensive console test driver\n\n## How to Run\n\`\`\`bash\njavac Main.java\njava Main\n\`\`\`\n`,
+            suggestedReadme: `# ${summary.title}\n\nA clean, robust Java application modeling ${summary.title} with solid object-oriented design principles.\n\n## Features\n- Encapsulated domain entities\n- Defensive input validation\n- Comprehensive console test driver\n\n## How to Run\n\`\`\`bash\njavac Main.java\njava Main\n\`\`\`\n`,
+            gitCommands: [
+              {
+                command: "git init",
+                explanation: "Initializes Git tracking in your project directory."
+              },
+              {
+                command: "git add .",
+                explanation: "Stages all project source files."
+              },
+              {
+                command: `git commit -m "feat: complete ${summary.title}"`,
+                explanation: "Creates milestone commit."
+              }
+            ],
             commitMessages: [
               "feat: initialize domain entities and constructors",
               "feat: implement business methods and validation guards",
               "test: add comprehensive console test cases",
               "docs: add professional README with architecture overview"
-            ],
-            suggestedReadme: `# ${summary.title}\n\nA clean, robust Java application modeling ${summary.title} with solid object-oriented design principles.\n\n## Features\n- Encapsulated domain entities\n- Defensive input validation\n- Comprehensive console test driver\n\n## How to Run\n\`\`\`bash\njavac Main.java\njava Main\n\`\`\`\n`
+            ]
           },
           portfolioChecklist: [
             "All classes follow clean OOP design principles",
@@ -504,11 +579,20 @@ export class LocalCurriculumProvider implements ICurriculumProvider {
             "The architecture separates data fields from business operations cleanly."
           ],
           projectCompletion: {
+            headline: `🎉 Fantastic Work! You Built ${summary.title}!`,
             celebrationMessage: `Congratulations! You have completed ${summary.title}. You have an authentic, portfolio-ready Java project ready for GitHub!`,
+            congratulations: `Congratulations! You have completed ${summary.title}. You have an authentic, portfolio-ready Java project ready for GitHub!`,
+            skillsDemonstrated: [
+              "Java Software Design",
+              "Algorithm Implementation",
+              "Defensive Programming",
+              "Unit & System Verification"
+            ],
             resumeBullets: [
               `Architected a modular Java application for ${summary.title} enforcing clean OOP design and input validation.`,
               `Designed and executed a multi-case test driver covering normal, boundary, and negative scenarios.`
             ],
+            nextStepAction: "Commit your code to GitHub and continue to the next module in your roadmap.",
             nextSteps: [
               "Push your code to a public GitHub repository.",
               "Add the repository link to your LinkedIn and developer resume.",
