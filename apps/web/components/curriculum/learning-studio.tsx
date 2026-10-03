@@ -410,7 +410,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
                   "Include standard entry point: public static void main(String[] args)",
                   "Ensure your code compiles without syntax errors"
                 ]}
-                initialCode={practiceActivity?.practice?.initialCode || codeActivity?.codeSnippet || `public class Main {\n    public static void main(String[] args) {\n        // TODO: Practice your Java code here\n    }\n}`}
+                initialCode={practiceActivity?.practice?.initialCode || codeActivities[0]?.codeSnippet || `public class Main {\n    public static void main(String[] args) {\n        // TODO: Practice your Java code here\n    }\n}`}
                 expectedOutput={practiceActivity?.practice?.expectedOutput || ""}
                 hints={practiceActivity?.practice?.hints}
               />

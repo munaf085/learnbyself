@@ -250,12 +250,12 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
           <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
             <Terminal className="w-4 h-4 text-purple-600" />
             <h4 className="font-bold text-xs sm:text-sm text-slate-900">
-              The 'new' Keyword &amp; Dot Operator Quick Reference
+              The &apos;new&apos; Keyword &amp; Dot Operator Quick Reference
             </h4>
           </div>
 
           <div className="bg-slate-950 p-4 rounded-xl text-slate-100 font-mono text-xs overflow-x-auto space-y-2">
-            <div className="text-slate-400">// Anatomy of Object Creation:</div>
+            <div className="text-slate-400">{'// Anatomy of Object Creation:'}</div>
             <div>
               <span className="text-purple-400 font-bold">Student</span>{' '}
               <span className="text-amber-300">s1</span> ={' '}
@@ -282,8 +282,8 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
               <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
                 <tr className="hover:bg-slate-50/80">
                   <td className="p-2.5 font-sans font-bold text-slate-900">Setting a Field</td>
-                  <td className="p-2.5 text-brand-700">s1.name = "Rahul";</td>
-                  <td className="p-2.5 font-sans text-slate-600">Assigns "Rahul" into s1's private copy of name</td>
+                  <td className="p-2.5 text-brand-700">s1.name = &quot;Rahul&quot;;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Assigns &quot;Rahul&quot; into s1&apos;s private copy of name</td>
                 </tr>
                 <tr className="hover:bg-slate-50/80">
                   <td className="p-2.5 font-sans font-bold text-slate-900">Reading a Field</td>
@@ -293,7 +293,7 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
                 <tr className="hover:bg-slate-50/80">
                   <td className="p-2.5 font-sans font-bold text-slate-900">Invoking a Method</td>
                   <td className="p-2.5 text-emerald-700 font-bold">s1.displayProfile();</td>
-                  <td className="p-2.5 font-sans text-slate-600">Executes the method using s1's internal state</td>
+                  <td className="p-2.5 font-sans text-slate-600">Executes the method using s1&apos;s internal state</td>
                 </tr>
               </tbody>
             </table>
@@ -317,10 +317,10 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
                 📦 STATE (What It Knows)
               </span>
               <p className="text-xs text-blue-950 leading-relaxed">
-                Stored in <strong>instance variables (fields)</strong>. Describes the object's current condition at any point in time.
+                Stored in <strong>instance variables (fields)</strong>. Describes the object&apos;s current condition at any point in time.
               </p>
               <div className="p-2.5 bg-white rounded-lg font-mono text-[11px] text-blue-900 border border-blue-100">
-                name = "Rahul";<br />
+                name = &quot;Rahul&quot;;<br />
                 age = 20;<br />
                 marks = 85.5;
               </div>
@@ -386,22 +386,22 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
                   <td className="p-2.5 font-sans text-slate-600">Two completely separate objects exist</td>
                 </tr>
                 <tr className="hover:bg-slate-50/80">
-                  <td className="p-2.5 text-brand-700">s1.name = "Rahul";</td>
-                  <td className="p-2.5 text-brand-700 font-bold">name = "Rahul"</td>
+                  <td className="p-2.5 text-brand-700">s1.name = &quot;Rahul&quot;;</td>
+                  <td className="p-2.5 text-brand-700 font-bold">name = &quot;Rahul&quot;</td>
                   <td className="p-2.5 text-slate-400">name = null</td>
                   <td className="p-2.5 font-sans text-slate-600">Setting s1 has zero effect on s2</td>
                 </tr>
                 <tr className="hover:bg-slate-50/80">
-                  <td className="p-2.5 text-brand-700">s2.name = "Priya";</td>
-                  <td className="p-2.5 text-brand-700 font-bold">name = "Rahul"</td>
-                  <td className="p-2.5 text-emerald-700 font-bold">name = "Priya"</td>
+                  <td className="p-2.5 text-brand-700">s2.name = &quot;Priya&quot;;</td>
+                  <td className="p-2.5 text-brand-700 font-bold">name = &quot;Rahul&quot;</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">name = &quot;Priya&quot;</td>
                   <td className="p-2.5 font-sans text-slate-600">Both hold their own distinct values</td>
                 </tr>
                 <tr className="hover:bg-slate-50/80 bg-brand-50/30">
-                  <td className="p-2.5 text-rose-700 font-bold">s1.name = "Vikram";</td>
-                  <td className="p-2.5 text-rose-700 font-bold">name = "Vikram"</td>
-                  <td className="p-2.5 text-emerald-700 font-bold">name = "Priya"</td>
-                  <td className="p-2.5 font-sans text-slate-900 font-semibold">s2.name STILL equals "Priya"!</td>
+                  <td className="p-2.5 text-rose-700 font-bold">s1.name = &quot;Vikram&quot;;</td>
+                  <td className="p-2.5 text-rose-700 font-bold">name = &quot;Vikram&quot;</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">name = &quot;Priya&quot;</td>
+                  <td className="p-2.5 font-sans text-slate-900 font-semibold">s2.name STILL equals &quot;Priya&quot;!</td>
                 </tr>
               </tbody>
             </table>
@@ -424,7 +424,7 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
           </div>
 
           <div className="p-4 bg-slate-950 rounded-xl text-slate-100 font-mono text-xs space-y-3">
-            <div className="text-amber-400 font-bold">// Canonical Student Profile Project Architecture:</div>
+            <div className="text-amber-400 font-bold">{'// Canonical Student Profile Project Architecture:'}</div>
             <pre className="text-slate-300 text-[11px] leading-relaxed">
 {`class Student {
     String name;
@@ -499,7 +499,7 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
                   <td className="p-2.5 font-bold text-brand-700 font-mono">1. new Class()</td>
                   <td className="p-2.5 text-slate-700">Allocates blank heap memory; sets default values (null, 0, false)</td>
                   <td className="p-2.5 text-indigo-600 font-semibold">JVM Runtime</td>
-                  <td className="p-2.5 text-slate-600">'new' allocates space; constructor does NOT allocate memory</td>
+                  <td className="p-2.5 text-slate-600">&apos;new&apos; allocates space; constructor does NOT allocate memory</td>
                 </tr>
                 <tr className="hover:bg-slate-50/80">
                   <td className="p-2.5 font-bold text-emerald-700 font-mono">2. Constructor()</td>
@@ -648,7 +648,7 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
           <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
             <Lightbulb className="w-4 h-4 text-amber-500" />
             <h4 className="font-bold text-xs sm:text-sm text-slate-900">
-              Variable Shadowing &amp; 'this' Reference Cheat Sheet
+              Variable Shadowing &amp; &apos;this&apos; Reference Cheat Sheet
             </h4>
           </div>
 
@@ -665,7 +665,7 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
             <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
               <span className="font-bold text-emerald-800 font-mono">✓ Idiomatic Fix: this.name = name;</span>
               <p className="text-slate-700 leading-relaxed text-[11px]">
-                'this' points to the current heap instance, explicitly anchoring the assignment to the field.
+                &apos;this&apos; points to the current heap instance, explicitly anchoring the assignment to the field.
                 <code className="block mt-1 p-1 bg-white rounded font-mono text-[11px] text-emerald-700 border border-emerald-200">
                   this.name = name; // Stored directly in instance memory!
                 </code>
@@ -687,8 +687,8 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
 
           <div className="p-3.5 rounded-xl bg-slate-950 font-mono text-xs text-amber-200 border border-slate-800/80 leading-relaxed">
             <pre>&#47;&#47; Chaining Architecture: Small Constructors forward to Master Constructor
-Student()                      ──► this("Unknown", 18, "General");
-Student(String name)           ──► this(name, 18, "General");
+Student()                      ──► this(&quot;Unknown&quot;, 18, &quot;General&quot;);
+Student(String name)           ──► this(name, 18, &quot;General&quot;);
 Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual assignments]</pre>
           </div>
 
@@ -746,7 +746,7 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
                   <td className="p-2.5 font-bold text-slate-900">Return Type</td>
                   <td className="p-2.5 font-bold text-rose-700 font-mono">NO return type (not even void!)</td>
                   <td className="p-2.5 text-emerald-700 font-mono font-semibold">MUST specify type or void</td>
-                  <td className="p-2.5 text-rose-700 font-semibold">Writing 'void Student()' turns it into a method!</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">Writing &apos;void Student()&apos; turns it into a method!</td>
                 </tr>
                 <tr className="hover:bg-slate-50/80">
                   <td className="p-2.5 font-bold text-slate-900">Invocation</td>
@@ -787,7 +787,7 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
               </thead>
               <tbody className="divide-y divide-slate-100">
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">BankAccount class with accountHolder, accountNumber, balance</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
-                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Master Constructor initializes all 3 fields using 'this'</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Master Constructor initializes all 3 fields using &apos;this&apos;</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Validation clamps negative starting balances to 0.0</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">2-arg constructor chains to Master via this(holder, number, 0.0)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
                 <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">No-arg constructor chains with default Guest User credentials</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
