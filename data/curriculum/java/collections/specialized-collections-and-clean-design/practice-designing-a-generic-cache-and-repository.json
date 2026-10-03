@@ -1,0 +1,201 @@
+{
+  "id": "les-col-sp-5-generic-cache-repository",
+  "slug": "practice-designing-a-generic-cache-and-repository",
+  "sectionSlug": "collections",
+  "moduleSlug": "specialized-collections-and-clean-design",
+  "languageSlug": "java",
+  "title": "Practice: Designing a Generic Cache & Repository",
+  "summary": "Synthesize collections and generics into an enterprise in-memory repository: build GenericRepository<T, ID> with primary HashMap indexing, secondary TreeSet indices, functional Predicate queries, and defensive encapsulation.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 40,
+  "orderIndex": 5,
+  "prerequisites": [
+    "the-java-collections-decision-tree"
+  ],
+  "learningObjectives": [
+    "Design a decoupled GenericRepository<T, ID> interface supporting type-safe CRUD operations",
+    "Implement primary indexing via HashMap and secondary sorted indexing via TreeSet",
+    "Integrate functional interfaces (Predicate<T>, Function<T, ID>) for dynamic entity filtering",
+    "Return Optional<T> and immutable collection snapshots to maintain defensive encapsulation",
+    "Ensure transactional consistency across primary storage and secondary index data structures"
+  ],
+  "expectedOutcomes": [
+    "Construct production-grade in-memory mock repositories for testing and local caching",
+    "Apply the PECS principle and modern collections to build clean, maintainable domain abstractions",
+    "Prevent internal state pollution through defensive snapshotting and immutability"
+  ],
+  "activities": [
+    {
+      "id": "act-col-sp-5-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Library Circulation Desk & Multi-Tier Card Catalog",
+      "description": "How primary storage and secondary indices harmonize to provide fast, flexible data retrieval.",
+      "content": "In a grand research library, books are stored in physical shelving racks identified by unique barcode IDs (`HashMap<ID, Book>`). If a patron knows the exact barcode, retrieval takes seconds.\n\nHowever, patrons frequently ask: 'Show me all physics books published after 2020 in chronological order'. Wandering every shelf linearly ($O(N)$) is unacceptable. The library maintains a secondary card catalog: cards sorted chronologically (`TreeSet<Book>`) and grouped by topic (`Map<Category, Set<ID>>`). When a book is added or discarded, the librarian updates both the physical shelf and all catalog cards simultaneously.\n\nAn enterprise repository combines primary hash lookups, secondary sorted trees, and functional query predicates to deliver $O(1)$ ID lookups and logarithmic range queries while strictly shielding internal records from external tampering."
+    },
+    {
+      "id": "act-col-sp-5-concept",
+      "type": "concept",
+      "title": "Architecture of a Generic In-Memory Repository",
+      "description": "Interface contracts, dual-index synchronization, functional filtering, and defensive encapsulation.",
+      "content": "### Formal Computer Science Definition\nA generic repository is an architectural design pattern that abstracts data storage and retrieval mechanisms behind a strongly typed, collection-oriented interface (`Repository<T, ID>`). It encapsulates entity lifecycle mutations, maintains index invariants across multiple data structures, and provides declarative query capabilities.\n\n### Architectural Layout\n\n```\n                                  GenericRepository<T, ID>\n                                             |\n                 +---------------------------+---------------------------+\n                 |                                                       |\n          Primary Index                                          Secondary Index\n      Map<ID, T> storage                                     TreeSet<T> sortedIndex\n    - O(1) findById(id)                                    - O(log N) range queries\n    - O(1) save(entity)                                    - Natural / Comparator order\n    - O(1) deleteById(id)                                  - Sync on every mutation\n                 |\n                 +--> Query Engine: findWhere(Predicate<? super T> filter)\n                 +--> Encapsulation: findAll() returns List.copyOf(snapshot)\n                 +--> Null Safety: findById(id) returns Optional<T>\n```\n\n### Core Design Principles\n\n#### 1. Identity Resolution\nTo operate generically over any entity type `T` without forcing entities to inherit an intrusive base class, the repository accepts an identity extractor: `Function<T, ID> idExtractor`. This decouples domain entity modeling from repository persistence.\n\n#### 2. Dual-Index Synchronization Invariant\nWhen `save(T entity)` is invoked:\n1. If an existing entity with the same ID exists, it must first be removed from all secondary indices.\n2. The new entity is stored in the primary map.\n3. The new entity is inserted into the secondary sorted indices.\nFailure to synchronize secondary indices leads to orphaned entries and memory leaks.\n\n#### 3. Defensive Encapsulation & Optional Returns\n- **Never return raw null**: `findById(ID id)` returns `Optional<T>`. Callers explicitly handle present and absent states without null pointer risks.\n- **Never expose internal collections**: `findAll()` returns `List.copyOf(storage.values())`, guaranteeing that external callers cannot mutate internal repository storage."
+    },
+    {
+      "id": "act-col-sp-5-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Complete Executable Repository: Dual-Index, Predicates, and Optional",
+      "description": "Production implementation of an in-memory User repository with primary ID lookup, age sorting, and status filtering.",
+      "content": "```java\nimport java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.TreeSet;\nimport java.util.function.Function;\nimport java.util.function.Predicate;\n\npublic class RepositoryMasteryDemo {\n\n    // Generic Repository Contract\n    public interface Repository<T, ID> {\n        void save(T entity);\n        Optional<T> findById(ID id);\n        List<T> findAll();\n        List<T> findWhere(Predicate<? super T> predicate);\n        boolean deleteById(ID id);\n        int count();\n    }\n\n    // In-Memory Repository Implementation\n    public static class InMemoryRepository<T, ID> implements Repository<T, ID> {\n        private final Map<ID, T> storage = new HashMap<>();\n        private final TreeSet<T> sortedIndex;\n        private final Function<T, ID> idExtractor;\n\n        public InMemoryRepository(Function<T, ID> idExtractor, Comparator<? super T> comparator) {\n            this.idExtractor = idExtractor;\n            this.sortedIndex = new TreeSet<>(comparator);\n        }\n\n        @Override\n        public void save(T entity) {\n            if (entity == null) throw new IllegalArgumentException(\"Entity cannot be null\");\n            ID id = idExtractor.apply(entity);\n            if (id == null) throw new IllegalArgumentException(\"Entity ID cannot be null\");\n\n            // Remove previous entity version from sorted index if updating\n            T existing = storage.get(id);\n            if (existing != null) {\n                sortedIndex.remove(existing);\n            }\n\n            storage.put(id, entity);\n            sortedIndex.add(entity);\n        }\n\n        @Override\n        public Optional<T> findById(ID id) {\n            if (id == null) return Optional.empty();\n            return Optional.ofNullable(storage.get(id));\n        }\n\n        @Override\n        public List<T> findAll() {\n            return List.copyOf(sortedIndex); // returns sorted immutable snapshot\n        }\n\n        @Override\n        public List<T> findWhere(Predicate<? super T> predicate) {\n            List<T> matching = new ArrayList<>();\n            for (T item : sortedIndex) {\n                if (predicate.test(item)) {\n                    matching.add(item);\n                }\n            }\n            return List.copyOf(matching);\n        }\n\n        @Override\n        public boolean deleteById(ID id) {\n            if (id == null) return false;\n            T removed = storage.remove(id);\n            if (removed != null) {\n                sortedIndex.remove(removed);\n                return true;\n            }\n            return false;\n        }\n\n        @Override\n        public int count() {\n            return storage.size();\n        }\n    }\n\n    // Domain Entity\n    static class Employee {\n        final String id;\n        final String name;\n        final int salary;\n\n        Employee(String id, String name, int salary) {\n            this.id = id;\n            this.name = name;\n            this.salary = salary;\n        }\n\n        @Override\n        public String toString() {\n            return id + \":\" + name + \"($\" + salary + \")\";\n        }\n    }\n\n    public static void main(String[] args) {\n        // Order employees by salary descending, then by name\n        Comparator<Employee> salaryOrder = Comparator\n            .comparingInt((Employee e) -> e.salary).reversed()\n            .thenComparing(e -> e.name);\n\n        Repository<Employee, String> repo = new InMemoryRepository<>(e -> e.id, salaryOrder);\n\n        repo.save(new Employee(\"E101\", \"Alice\", 95000));\n        repo.save(new Employee(\"E102\", \"Bob\", 72000));\n        repo.save(new Employee(\"E103\", \"Charlie\", 120000));\n\n        System.out.println(\"Total count: \" + repo.count());\n        System.out.println(\"All employees sorted by salary: \" + repo.findAll());\n\n        // Find by ID\n        Optional<Employee> alice = repo.findById(\"E101\");\n        alice.ifPresent(e -> System.out.println(\"Found by ID: \" + e));\n\n        // Predicate query\n        List<Employee> highEarners = repo.findWhere(e -> e.salary > 80000);\n        System.out.println(\"Employees earning > 80k: \" + highEarners);\n\n        // Update entity\n        repo.save(new Employee(\"E102\", \"Bob\", 130000));\n        System.out.println(\"After Bob promotion, order: \" + repo.findAll());\n\n        // Delete\n        repo.deleteById(\"E101\");\n        System.out.println(\"After Alice deletion, count: \" + repo.count());\n    }\n}\n```\n\n```text\nTotal count: 3\nAll employees sorted by salary: [E103:Charlie($120000), E101:Alice($95000), E102:Bob($72000)]\nFound by ID: E101:Alice($95000)\nEmployees earning > 80k: [E103:Charlie($120000), E101:Alice($95000)]\nAfter Bob promotion, order: [E102:Bob($130000), E103:Charlie($120000)]\nAfter Alice deletion, count: 2\n```"
+    },
+    {
+      "id": "act-col-sp-5-mcq",
+      "type": "mcq",
+      "title": "Repository Architecture Evaluation",
+      "description": "Assess proficiency in generic repository design, index synchronization, and defensive isolation.",
+      "questions": [
+        {
+          "question": "When updating an entity in a dual-index repository (HashMap + TreeSet), why must the existing entity be removed from the TreeSet before inserting the updated entity?",
+          "options": [
+            "Because TreeSet does not allow duplicate references under any circumstances",
+            "Because if the mutated property affects the Comparator, TreeSet will not re-sort the node in-place, corrupting binary tree invariants",
+            "Because HashMap throws an exception on overwrite",
+            "Because TreeSet only accepts immutable records"
+          ],
+          "correctAnswer": 1,
+          "explanation": "TreeSet positions nodes based on Comparator comparisons at insertion time. If an object is modified while in the tree such that its sort order changes, the tree cannot detect it, corrupting tree balance and search paths. Removing before re-inserting guarantees correct re-indexing."
+        },
+        {
+          "question": "Why should findById(ID id) return Optional<T> rather than returning null when an entity is not found?",
+          "options": [
+            "Optional executes faster than null checks at the bytecode level",
+            "Optional forces the caller to explicitly consider the absence of data, eliminating accidental NullPointerExceptions",
+            "Optional allows multiple return values from a single method",
+            "Java 17 deprecated returning null in generic methods"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Optional<T> expresses intentional absence as a type contract. Callers are compelled to handle or map empty states (via ifPresent, orElse, orElseThrow), preventing silent null pointer bugs."
+        },
+        {
+          "question": "What is the primary purpose of returning List.copyOf(internalList) instead of internalList directly in findAll()?",
+          "options": [
+            "To convert the list into a linked structure",
+            "To prevent callers from modifying internal repository storage by providing an unmodifiable defensive snapshot",
+            "To sort the list in reverse order",
+            "To enable serialization over network sockets"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Returning direct internal collections allows external code to call .clear() or .add(), violating encapsulation and corrupting repository state. Returning List.copyOf() ensures complete defensive isolation."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-5-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Architect System Design Interview Questions",
+      "description": "Staff-level design problems on repository caching, secondary indexing, and thread-safety.",
+      "questions": [
+        {
+          "question": "How would you design a thread-safe in-memory cache repository supporting 10,000 reads/sec and 50 writes/sec with sorted pagination?",
+          "answer": "For this read-dominant workload:\n1. Primary storage: ConcurrentHashMap<ID, T> provides lock-free O(1) reads for findById requests.\n2. Sorted index: ReentrantReadWriteLock protects secondary index structures (or ConcurrentSkipListMap for lock-free sorted navigation).\n3. Pagination & range queries: Acquire the read lock to read the ConcurrentSkipListMap or take an immutable snapshot with List.copyOf(), allowing paginated slicing without holding locks during caller consumption.\n4. Write path: Acquire the write lock to update primary map and secondary skip list atomically, ensuring readers never observe partial updates."
+        },
+        {
+          "question": "Why is Function<T, ID> idExtractor preferred over defining an interface like Identifiable<ID> on every domain model?",
+          "answer": "Requiring entities to implement Identifiable<ID> couples the domain model directly to the persistence/repository framework (invasive design). It also makes it difficult to use the repository with third-party classes, legacy beans, or external DTOs whose code cannot be modified.\n\nPassing Function<T, ID> adheres to the Dependency Inversion Principle: the repository is non-invasive and can persist any type T by simply supplying a method reference (e.g., User::getId or Account::accountNumber) without altering domain classes."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-5-self-eval",
+      "type": "self_evaluation",
+      "title": "Generic Repository Competency Checklist",
+      "description": "Assess your readiness to design robust, generic repository layers.",
+      "items": [
+        "I know how to design generic interfaces with decoupled identity extractors (Function<T, ID>).",
+        "I understand why updating an entity requires removing it from secondary sorted sets prior to re-insertion.",
+        "I use Optional<T> to represent potential data absence in retrieval methods.",
+        "I protect internal repository state by returning immutable snapshots via List.copyOf().",
+        "I can filter entities dynamically using functional predicates (Predicate<? super T>)."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col-sp-5-1",
+      "title": "Basic Generic In-Memory Cache",
+      "difficulty": "medium",
+      "problemStatement": "Implement `SimpleCache<K, V>` providing `void put(K key, V value)`, `Optional<V> get(K key)`, `boolean contains(K key)`, and `int size()`. Keys and values cannot be null (throw `IllegalArgumentException`).",
+      "starterCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\n\npublic class SimpleCache<K, V> {\n    private final Map<K, V> storage = new HashMap<>();\n\n    public void put(K key, V value) {\n        // TODO\n    }\n\n    public Optional<V> get(K key) {\n        // TODO\n        return Optional.empty();\n    }\n\n    public boolean contains(K key) {\n        // TODO\n        return false;\n    }\n\n    public int size() {\n        // TODO\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\n\npublic class SimpleCache<K, V> {\n    private final Map<K, V> storage = new HashMap<>();\n\n    public void put(K key, V value) {\n        if (key == null || value == null) {\n            throw new IllegalArgumentException(\"Key and value must not be null\");\n        }\n        storage.put(key, value);\n    }\n\n    public Optional<V> get(K key) {\n        if (key == null) return Optional.empty();\n        return Optional.ofNullable(storage.get(key));\n    }\n\n    public boolean contains(K key) {\n        if (key == null) return false;\n        return storage.containsKey(key);\n    }\n\n    public int size() {\n        return storage.size();\n    }\n}",
+      "expectedOutput": "Optional[val1]",
+      "testCases": [
+        {
+          "input": "put('k1', 'val1'), get('k1')",
+          "expectedOutput": "Optional[val1]"
+        },
+        {
+          "input": "get('non-existent')",
+          "expectedOutput": "Optional.empty"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-5-2",
+      "title": "Predicate Filter Query Executor",
+      "difficulty": "medium",
+      "problemStatement": "Implement `List<T> filterEntities(List<T> entities, Predicate<? super T> condition)` that evaluates `condition` on each non-null item in `entities` and returns an unmodifiable list of matching entities using `List.copyOf()`.",
+      "starterCode": "import java.util.List;\nimport java.util.function.Predicate;\n\npublic class QueryExecutor {\n    public static <T> List<T> filterEntities(List<T> entities, Predicate<? super T> condition) {\n        // TODO: Implement predicate query\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.function.Predicate;\n\npublic class QueryExecutor {\n    public static <T> List<T> filterEntities(List<T> entities, Predicate<? super T> condition) {\n        if (entities == null || condition == null) return List.of();\n        List<T> matched = new ArrayList<>();\n        for (T entity : entities) {\n            if (entity != null && condition.test(entity)) {\n                matched.add(entity);\n            }\n        }\n        return List.copyOf(matched);\n    }\n}",
+      "expectedOutput": "[12, 14]",
+      "testCases": [
+        {
+          "input": "[10, 11, 12, 13, 14], n -> n % 2 == 0 && n > 11",
+          "expectedOutput": "[12, 14]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-5-3",
+      "title": "Secondary Categorical Index Manager",
+      "difficulty": "medium",
+      "problemStatement": "Implement `SecondaryIndex<ID, Tag>` that maps a single entity `ID` to multiple categorical tags `Tag`. Implement `void addTag(ID id, Tag tag)`, `void removeTag(ID id, Tag tag)`, and `Set<ID> findByTag(Tag tag)` returning an unmodifiable Set (or empty Set if absent).",
+      "starterCode": "import java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.Map;\nimport java.util.Set;\n\npublic class SecondaryIndex<ID, Tag> {\n    private final Map<Tag, Set<ID>> tagIndex = new HashMap<>();\n\n    public void addTag(ID id, Tag tag) {\n        // TODO\n    }\n\n    public void removeTag(ID id, Tag tag) {\n        // TODO\n    }\n\n    public Set<ID> findByTag(Tag tag) {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.Map;\nimport java.util.Set;\n\npublic class SecondaryIndex<ID, Tag> {\n    private final Map<Tag, Set<ID>> tagIndex = new HashMap<>();\n\n    public void addTag(ID id, Tag tag) {\n        if (id != null && tag != null) {\n            tagIndex.computeIfAbsent(tag, k -> new HashSet<>()).add(id);\n        }\n    }\n\n    public void removeTag(ID id, Tag tag) {\n        if (id != null && tag != null) {\n            Set<ID> set = tagIndex.get(tag);\n            if (set != null) {\n                set.remove(id);\n                if (set.isEmpty()) {\n                    tagIndex.remove(tag);\n                }\n            }\n        }\n    }\n\n    public Set<ID> findByTag(Tag tag) {\n        if (tag == null) return Set.of();\n        Set<ID> set = tagIndex.get(tag);\n        return set == null ? Set.of() : Set.copyOf(set);\n    }\n}",
+      "expectedOutput": "[E101, E102]",
+      "testCases": [
+        {
+          "input": "addTag(E101, 'ENG'), addTag(E102, 'ENG'), findByTag('ENG')",
+          "expectedOutput": "[E101, E102]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-5-4",
+      "title": "Sorted Snapshot Repository",
+      "difficulty": "medium",
+      "problemStatement": "Implement `SortedRepository<T>` that accepts a `Comparator<T>` at construction. Implement `void add(T item)` and `List<T> getTop(int n)` which returns up to `n` highest-ranked items in sorted order as an immutable List snapshot.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.Comparator;\nimport java.util.List;\nimport java.util.TreeSet;\n\npublic class SortedRepository<T> {\n    private final TreeSet<T> items;\n\n    public SortedRepository(Comparator<T> comparator) {\n        this.items = new TreeSet<>(comparator);\n    }\n\n    public void add(T item) {\n        // TODO\n    }\n\n    public List<T> getTop(int n) {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Comparator;\nimport java.util.List;\nimport java.util.TreeSet;\n\npublic class SortedRepository<T> {\n    private final TreeSet<T> items;\n\n    public SortedRepository(Comparator<T> comparator) {\n        this.items = new TreeSet<>(comparator);\n    }\n\n    public void add(T item) {\n        if (item != null) {\n            items.add(item);\n        }\n    }\n\n    public List<T> getTop(int n) {\n        if (n <= 0) return List.of();\n        List<T> result = new ArrayList<>();\n        for (T item : items) {\n            result.add(item);\n            if (result.size() >= n) break;\n        }\n        return List.copyOf(result);\n    }\n}",
+      "expectedOutput": "[10, 20]",
+      "testCases": [
+        {
+          "input": "Natural order repo, add 50, 20, 10, getTop(2)",
+          "expectedOutput": "[10, 20]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-5-5",
+      "title": "Keyed Identity Registry with Auto-Deduplication",
+      "difficulty": "medium",
+      "problemStatement": "Implement `Registry<T, K>` with constructor `Registry(Function<T, K> keyFunction)`. Implement `void register(T item)` that overwrites existing items with the same key, and `Optional<T> lookup(K key)`.",
+      "starterCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.function.Function;\n\npublic class Registry<T, K> {\n    private final Map<K, T> map = new HashMap<>();\n    private final Function<T, K> keyFunction;\n\n    public Registry(Function<T, K> keyFunction) {\n        this.keyFunction = keyFunction;\n    }\n\n    public void register(T item) {\n        // TODO\n    }\n\n    public Optional<T> lookup(K key) {\n        // TODO\n        return Optional.empty();\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.function.Function;\n\npublic class Registry<T, K> {\n    private final Map<K, T> map = new HashMap<>();\n    private final Function<T, K> keyFunction;\n\n    public Registry(Function<T, K> keyFunction) {\n        this.keyFunction = keyFunction;\n    }\n\n    public void register(T item) {\n        if (item != null) {\n            K key = keyFunction.apply(item);\n            if (key != null) {\n                map.put(key, item);\n            }\n        }\n    }\n\n    public Optional<T> lookup(K key) {\n        if (key == null) return Optional.empty();\n        return Optional.ofNullable(map.get(key));\n    }\n}",
+      "expectedOutput": "Optional[User2]",
+      "testCases": [
+        {
+          "input": "register User1(id=1), then register User2(id=1), lookup(1)",
+          "expectedOutput": "Optional[User2]"
+        }
+      ]
+    }
+  ]
+}

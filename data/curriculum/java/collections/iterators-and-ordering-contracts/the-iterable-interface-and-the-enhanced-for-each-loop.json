@@ -1,0 +1,216 @@
+{
+  "id": "les-col-iterable-foreach",
+  "slug": "the-iterable-interface-and-the-enhanced-for-each-loop",
+  "sectionSlug": "collections",
+  "moduleSlug": "iterators-and-ordering-contracts",
+  "languageSlug": "java",
+  "title": "The Iterable Interface & The Enhanced for-each Loop",
+  "summary": "How the compiler translates for-each loops into iterator(), hasNext(), and next(), and implementing Iterable on custom domain classes.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [
+    "The Collection Hierarchy & Root Interfaces",
+    "Classes & Objects in Java",
+    "Java Interfaces & Abstract Classes"
+  ],
+  "learningObjectives": [
+    "Understand the formal contract of java.lang.Iterable<T> and its role as the root of the Collection hierarchy",
+    "Trace javac compiler de-sugaring of enhanced for-each loops into bytecode iterator operations",
+    "Implement Iterable<T> and custom Iterator<T> on domain business entities",
+    "Differentiate when for-each iteration is appropriate versus when an explicit Iterator reference is mandatory"
+  ],
+  "expectedOutcomes": [
+    "Ability to explain the mechanics of the enhanced for-each loop in placement interviews",
+    "Confidence creating custom domain data structures that integrate seamlessly with standard Java loops"
+  ],
+  "activities": [
+    {
+      "id": "act-col6-l1-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Turntable Carousel Luggage Retrieval",
+      "analogy": {
+        "headline": "Practical Context: Turntable Carousel Luggage Retrieval",
+        "story": "At an airport baggage claim, luggage arrives on a revolving carousel. The carousel itself does not expose its internal gears, motors, or electrical wiring. Instead, it presents a simple mechanical interface: suitcases emerge sequentially one after another.\n\nYou do not need to know whether the conveyor belt is driven by a chain or a hydraulic rotor. You simply stand at the pickup point, observe whether the next suitcase is arriving (`hasNext()`), and pick it up (`next()`).\n\nThe `Iterable` interface serves as this exact consumer contract: any object implementing `Iterable` promises to supply a sequential stream of items on demand.",
+        "keyTakeaway": "Iterable defines the universal capability of an object to produce an Iterator. It allows any custom data structure to be traversed using Java's clean for-each loop."
+      },
+      "content": "At an airport baggage claim, luggage arrives on a revolving carousel. The carousel itself does not expose its internal gears, motors, or electrical wiring. Instead, it presents a simple mechanical interface: suitcases emerge sequentially one after another.\n\nYou do not need to know whether the conveyor belt is driven by a chain or a hydraulic rotor. You simply stand at the pickup point, observe whether the next suitcase is arriving (`hasNext()`), and pick it up (`next()`).\n\nThe `Iterable` interface serves as this exact consumer contract: any object implementing `Iterable` promises to supply a sequential stream of items on demand."
+    },
+    {
+      "id": "act-col6-l1-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "The Iterable Contract & Compiler De-Sugaring Mechanics",
+      "breakdown": {
+        "keyTakeaways": [
+          "java.lang.Iterable<T> is the superinterface of java.util.Collection<E>",
+          "Any class implementing Iterable<T> can be traversed directly using Java's enhanced for-each loop",
+          "The compiler transforms for-each loops into while (iterator.hasNext()) { Object x = iterator.next(); }",
+          "Implementing custom Iterable requires returning a compliant java.util.Iterator<T> instance",
+          "Enhanced for-each loops cannot mutate the collection (remove elements) during traversal"
+        ]
+      },
+      "content": "### Definition of the java.lang.Iterable Interface\n\nThe **`java.lang.Iterable<T>`** interface is the root superinterface for the entire Java Collection Framework (`Collection<E> extends Iterable<E>`). Implementing this interface allows an object to be the target of the **enhanced for-loop** statement (also known as the `for-each` loop):\n```java\npackage java.lang;\nimport java.util.Iterator;\n\npublic interface Iterable<T> {\n    Iterator<T> iterator();\n}\n```\n\n---\n\n### Compiler De-Sugaring of the Enhanced for-each Loop\n\nThe enhanced for-each loop introduced in Java 5 is pure **syntactic sugar**. At compile-time, `javac` translates your high-level for-each loop into an explicit `while` loop utilizing `Iterator`:\n\n```java\n// What you write:\nfor (String item : collection) {\n    System.out.println(item);\n}\n\n// What the compiler generates in bytecode:\nfor (Iterator<String> it = collection.iterator(); it.hasNext(); ) {\n    String item = it.next();\n    System.out.println(item);\n}\n```\nBecause the underlying `Iterator` reference is synthetic and inaccessible in code, you **cannot call `iterator.remove()`** inside an enhanced for-each loop. Attempting to call `collection.remove()` directly inside the loop triggers a runtime `ConcurrentModificationException`.\n\n---\n\n### Implementing Custom Iterable on Domain Classes\n\nTo make a custom class iterable, implement `Iterable<T>` and return an `Iterator<T>` that implements `hasNext()` and `next()`:\n```java\npublic class Inventory implements Iterable<String> {\n    private final String[] items = {\"Laptop\", \"Monitor\", \"Keyboard\"};\n\n    @Override\n    public Iterator<String> iterator() {\n        return new Iterator<>() {\n            private int cursor = 0;\n            @Override\n            public boolean hasNext() { return cursor < items.length; }\n            @Override\n            public String next() { return items[cursor++]; }\n        };\n    }\n}\n```\nNow `for (String item : inventory)` compiles and executes natively.\n\n---\n\n### Executable Demonstration: Custom Team Roster with Iterable",
+      "codeExample": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\npublic class CustomIterableDemo {\n    // Custom domain container implementing Iterable<String>\n    static class DevTeam implements Iterable<String> {\n        private final String[] members;\n        private int count = 0;\n\n        public DevTeam(int capacity) {\n            this.members = new String[capacity];\n        }\n\n        public void addMember(String name) {\n            if (count < members.length) {\n                members[count++] = name;\n            }\n        }\n\n        @Override\n        public Iterator<String> iterator() {\n            return new Iterator<>() {\n                private int index = 0;\n\n                @Override\n                public boolean hasNext() {\n                    return index < count;\n                }\n\n                @Override\n                public String next() {\n                    if (!hasNext()) {\n                        throw new NoSuchElementException(\"No more team members\");\n                    }\n                    return members[index++];\n                }\n            };\n        }\n    }\n\n    public static void main(String[] args) {\n        DevTeam team = new DevTeam(5);\n        team.addMember(\"Alice (Lead)\");\n        team.addMember(\"Bob (Backend)\");\n        team.addMember(\"Charlie (DevOps)\");\n\n        // Native enhanced for-each loop over our custom domain class!\n        System.out.println(\"Active Development Team Roster:\");\n        for (String member : team) {\n            System.out.println(\" -> \" + member);\n        }\n    }\n}\n// Expected Output:\n// Active Development Team Roster:\n//  -> Alice (Lead)\n//  -> Bob (Backend)\n//  -> Charlie (DevOps)"
+    },
+    {
+      "id": "act-col6-l1-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Custom Integer Range Generator",
+      "description": "Trace a lightweight, memory-efficient Integer range generator implementing Iterable<Integer>.",
+      "code": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\npublic class IntRange implements Iterable<Integer> {\n    private final int start;\n    private final int end;\n\n    public IntRange(int start, int end) {\n        this.start = start;\n        this.end = end;\n    }\n\n    @Override\n    public Iterator<Integer> iterator() {\n        return new Iterator<>() {\n            private int current = start;\n\n            @Override\n            public boolean hasNext() {\n                return current <= end;\n            }\n\n            @Override\n            public Integer next() {\n                if (!hasNext()) throw new NoSuchElementException();\n                return current++;\n            }\n        };\n    }\n\n    public static void main(String[] args) {\n        IntRange range = new IntRange(5, 8);\n        System.out.print(\"Range numbers: \");\n        for (int num : range) {\n            System.out.print(num + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "4-9",
+          "description": "IntRange implements Iterable<Integer>. It stores start and end bounds without creating any array in memory."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "12-25",
+          "description": "iterator() returns an anonymous Iterator<Integer>. hasNext() evaluates current <= end; next() returns current and increments."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "30-33",
+          "description": "The for-each loop consumes the range cleanly. Zero array allocation overhead, executing with O(1) memory."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l1-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Iterable & for-each Loop Assessment",
+      "questions": [
+        {
+          "id": "col6-l1-q1",
+          "question": "What interface must a Java class implement in order to be used as the target of an enhanced for-each loop?",
+          "options": [
+            "java.util.Iterator",
+            "java.lang.Iterable",
+            "java.util.Collection",
+            "java.lang.Cloneable"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In Java, any class that implements java.lang.Iterable (or an array) can be used as the target of the enhanced for-each loop."
+        },
+        {
+          "id": "col6-l1-q2",
+          "question": "Why can you not remove elements from a collection during an enhanced for-each loop?",
+          "options": [
+            "Because for-each loops only work on immutable arrays",
+            "Because the underlying Iterator instance created by the compiler is anonymous and cannot be referenced to call iterator.remove()",
+            "Because Java collections do not support removal",
+            "Because for-each executes on a background daemon thread"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "The compiler creates a hidden synthetic Iterator variable to drive the loop. Because you do not have a reference to this synthetic iterator, you cannot call it.remove(). Calling collection.remove() directly triggers ConcurrentModificationException."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l1-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Iterable vs Iterator",
+      "qaList": [
+        {
+          "question": "What is the difference between java.lang.Iterable and java.util.Iterator, and why does a collection not implement Iterator directly?",
+          "answer": "Iterable represents an aggregation that CAN BE iterated over (it has an 'iterator()' factory method). Iterator represents the STATE of an in-flight traversal (it maintains the cursor, with 'hasNext()', 'next()', and 'remove()').\n\nIf a collection implemented Iterator directly, it could only maintain ONE active cursor at a time. Two nested loops iterating over the same collection ('for (x : c) for (y : c)') or two concurrent threads reading the collection would overwrite each other's cursor position. By separating Iterable (the data container) from Iterator (the independent cursor state), multiple consumers can traverse the same collection simultaneously and independently."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l1-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand the difference between Iterable (the container) and Iterator (the traversal cursor)",
+        "I can explain how javac de-sugars for-each loops into while (it.hasNext())",
+        "I know how to implement Iterable<T> and Iterator<T> on custom domain classes",
+        "I understand why calling collection.remove() inside a for-each loop fails"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "it-range-generator",
+      "title": "Step-Aware Custom Integer Range",
+      "difficulty": "medium",
+      "problemStatement": "Implement a class SteppedRange that implements Iterable<Integer>. The constructor takes start, end, and step. The iterator must yield numbers from start to end stepping by step.",
+      "starterCode": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\npublic class SteppedRange implements Iterable<Integer> {\n    // Implement constructor and iterator\n\n    public SteppedRange(int start, int end, int step) {\n    }\n\n    public Iterator<Integer> iterator() {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        SteppedRange range = new SteppedRange(0, 10, 2);\n        for (int val : range) {\n            System.out.print(val + \" \"); // 0 2 4 6 8 10 \n        }\n        System.out.println();\n    }\n}",
+      "solutionCode": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\npublic class SteppedRange implements Iterable<Integer> {\n    private final int start;\n    private final int end;\n    private final int step;\n\n    public SteppedRange(int start, int end, int step) {\n        if (step <= 0) throw new IllegalArgumentException(\"Step must be positive\");\n        this.start = start;\n        this.end = end;\n        this.step = step;\n    }\n\n    @Override\n    public Iterator<Integer> iterator() {\n        return new Iterator<>() {\n            private int current = start;\n\n            @Override\n            public boolean hasNext() {\n                return current <= end;\n            }\n\n            @Override\n            public Integer next() {\n                if (!hasNext()) throw new NoSuchElementException();\n                int val = current;\n                current += step;\n                return val;\n            }\n        };\n    }\n\n    public static void main(String[] args) {\n        SteppedRange range = new SteppedRange(0, 10, 2);\n        for (int val : range) {\n            System.out.print(val + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "SteppedRange(0, 10, 2)",
+          "expectedOutput": "0 2 4 6 8 10 "
+        }
+      ],
+      "expectedOutput": "0 2 4 6 8 10 "
+    },
+    {
+      "id": "it-words-tokenizer",
+      "title": "Iterable String Word Tokenizer",
+      "difficulty": "medium",
+      "problemStatement": "Implement a class SentenceWords implementing Iterable<String> that splits a given sentence by whitespace and allows for-each traversal over the words.",
+      "starterCode": "import java.util.Iterator;\n\npublic class SentenceWords implements Iterable<String> {\n    public SentenceWords(String sentence) {\n    }\n\n    public Iterator<String> iterator() {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        SentenceWords words = new SentenceWords(\"Java collections are powerful\");\n        for (String w : words) {\n            System.out.println(w);\n        }\n    }\n}",
+      "solutionCode": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\npublic class SentenceWords implements Iterable<String> {\n    private final String[] tokens;\n\n    public SentenceWords(String sentence) {\n        if (sentence == null || sentence.trim().isEmpty()) {\n            this.tokens = new String[0];\n        } else {\n            this.tokens = sentence.trim().split(\"\\\\s+\");\n        }\n    }\n\n    @Override\n    public Iterator<String> iterator() {\n        return new Iterator<>() {\n            private int cursor = 0;\n\n            @Override\n            public boolean hasNext() {\n                return cursor < tokens.length;\n            }\n\n            @Override\n            public String next() {\n                if (!hasNext()) throw new NoSuchElementException();\n                return tokens[cursor++];\n            }\n        };\n    }\n\n    public static void main(String[] args) {\n        SentenceWords words = new SentenceWords(\"Java collections are powerful\");\n        for (String w : words) {\n            System.out.println(w);\n        }\n    }\n}",
+      "testCases": [
+        {
+          "input": "\"Java collections are powerful\"",
+          "expectedOutput": "Java\ncollections\nare\npowerful"
+        }
+      ],
+      "expectedOutput": "Java\ncollections\nare\npowerful"
+    },
+    {
+      "id": "it-filtered-iterable",
+      "title": "Predicate Filtered Iterable Wrapper",
+      "difficulty": "hard",
+      "problemStatement": "Implement a generic class FilteredIterable<T> that wraps an Iterable<T> and a Predicate<T>. It must only yield elements that satisfy the predicate.",
+      "starterCode": "import java.util.Iterator;\nimport java.util.List;\nimport java.util.function.Predicate;\n\npublic class FilteredIterable<T> implements Iterable<T> {\n    public FilteredIterable(Iterable<T> source, Predicate<T> predicate) {\n    }\n\n    public Iterator<T> iterator() {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = List.of(1, 2, 3, 4, 5, 6);\n        FilteredIterable<Integer> evens = new FilteredIterable<>(nums, n -> n % 2 == 0);\n        for (int n : evens) {\n            System.out.print(n + \" \"); // 2 4 6 \n        }\n        System.out.println();\n    }\n}",
+      "solutionCode": "import java.util.Iterator;\nimport java.util.List;\nimport java.util.NoSuchElementException;\nimport java.util.function.Predicate;\n\npublic class FilteredIterable<T> implements Iterable<T> {\n    private final Iterable<T> source;\n    private final Predicate<T> predicate;\n\n    public FilteredIterable(Iterable<T> source, Predicate<T> predicate) {\n        this.source = source;\n        this.predicate = predicate;\n    }\n\n    @Override\n    public Iterator<T> iterator() {\n        return new Iterator<>() {\n            private final Iterator<T> underlying = source.iterator();\n            private T nextElement = null;\n            private boolean hasNextFound = false;\n\n            @Override\n            public boolean hasNext() {\n                if (hasNextFound) return true;\n                while (underlying.hasNext()) {\n                    T candidate = underlying.next();\n                    if (predicate.test(candidate)) {\n                        nextElement = candidate;\n                        hasNextFound = true;\n                        return true;\n                    }\n                }\n                return false;\n            }\n\n            @Override\n            public T next() {\n                if (!hasNext()) throw new NoSuchElementException();\n                hasNextFound = false;\n                T result = nextElement;\n                nextElement = null;\n                return result;\n            }\n        };\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = List.of(1, 2, 3, 4, 5, 6);\n        FilteredIterable<Integer> evens = new FilteredIterable<>(nums, n -> n % 2 == 0);\n        for (int n : evens) {\n            System.out.print(n + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "nums = [1, 2, 3, 4, 5, 6], predicate = even",
+          "expectedOutput": "2 4 6 "
+        }
+      ],
+      "expectedOutput": "2 4 6 "
+    },
+    {
+      "id": "it-reverse-array-iterable",
+      "title": "Reverse Array Iterable",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic class ReverseArrayIterable<T> that wraps an array T[] and iterates through its elements from the last index down to index 0.",
+      "starterCode": "import java.util.Iterator;\n\npublic class ReverseArrayIterable<T> implements Iterable<T> {\n    public ReverseArrayIterable(T[] array) {\n    }\n\n    public Iterator<T> iterator() {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        String[] letters = {\"A\", \"B\", \"C\"};\n        for (String s : new ReverseArrayIterable<>(letters)) {\n            System.out.print(s + \" \"); // C B A \n        }\n        System.out.println();\n    }\n}",
+      "solutionCode": "import java.util.Iterator;\nimport java.util.NoSuchElementException;\n\npublic class ReverseArrayIterable<T> implements Iterable<T> {\n    private final T[] array;\n\n    public ReverseArrayIterable(T[] array) {\n        this.array = array;\n    }\n\n    @Override\n    public Iterator<T> iterator() {\n        return new Iterator<>() {\n            private int cursor = array != null ? array.length - 1 : -1;\n\n            @Override\n            public boolean hasNext() {\n                return cursor >= 0;\n            }\n\n            @Override\n            public T next() {\n                if (!hasNext()) throw new NoSuchElementException();\n                return array[cursor--];\n            }\n        };\n    }\n\n    public static void main(String[] args) {\n        String[] letters = {\"A\", \"B\", \"C\"};\n        for (String s : new ReverseArrayIterable<>(letters)) {\n            System.out.print(s + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"A\", \"B\", \"C\"]",
+          "expectedOutput": "C B A "
+        }
+      ],
+      "expectedOutput": "C B A "
+    },
+    {
+      "id": "it-composite-iterable",
+      "title": "Dual-List Composite Concatenation Iterable",
+      "difficulty": "hard",
+      "problemStatement": "Implement a class CompositeIterable<T> that takes two Iterable<T> sources and iterates through all elements of the first source followed by all elements of the second source.",
+      "starterCode": "import java.util.Iterator;\nimport java.util.List;\n\npublic class CompositeIterable<T> implements Iterable<T> {\n    public CompositeIterable(Iterable<T> first, Iterable<T> second) {\n    }\n\n    public Iterator<T> iterator() {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        List<String> l1 = List.of(\"A\", \"B\");\n        List<String> l2 = List.of(\"C\", \"D\");\n        for (String s : new CompositeIterable<>(l1, l2)) {\n            System.out.print(s + \" \"); // A B C D \n        }\n        System.out.println();\n    }\n}",
+      "solutionCode": "import java.util.Iterator;\nimport java.util.List;\nimport java.util.NoSuchElementException;\n\npublic class CompositeIterable<T> implements Iterable<T> {\n    private final Iterable<T> first;\n    private final Iterable<T> second;\n\n    public CompositeIterable(Iterable<T> first, Iterable<T> second) {\n        this.first = first;\n        this.second = second;\n    }\n\n    @Override\n    public Iterator<T> iterator() {\n        return new Iterator<>() {\n            private final Iterator<T> it1 = first != null ? first.iterator() : null;\n            private final Iterator<T> it2 = second != null ? second.iterator() : null;\n\n            @Override\n            public boolean hasNext() {\n                if (it1 != null && it1.hasNext()) return true;\n                return it2 != null && it2.hasNext();\n            }\n\n            @Override\n            public T next() {\n                if (it1 != null && it1.hasNext()) return it1.next();\n                if (it2 != null && it2.hasNext()) return it2.next();\n                throw new NoSuchElementException();\n            }\n        };\n    }\n\n    public static void main(String[] args) {\n        List<String> l1 = List.of(\"A\", \"B\");\n        List<String> l2 = List.of(\"C\", \"D\");\n        for (String s : new CompositeIterable<>(l1, l2)) {\n            System.out.print(s + \" \");\n        }\n        System.out.println();\n    }\n}",
+      "testCases": [
+        {
+          "input": "l1 = [\"A\", \"B\"], l2 = [\"C\", \"D\"]",
+          "expectedOutput": "A B C D "
+        }
+      ],
+      "expectedOutput": "A B C D "
+    }
+  ]
+}

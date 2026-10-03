@@ -1,0 +1,201 @@
+{
+  "id": "les-col-sp-6-collections-generics-gotchas",
+  "slug": "debugging-and-placement-interview-gotchas-collections-and-generics",
+  "sectionSlug": "collections",
+  "moduleSlug": "specialized-collections-and-clean-design",
+  "languageSlug": "java",
+  "title": "Debugging & Placement Interview Gotchas",
+  "summary": "Master high-frequency interview traps and production bugs in Java Collections and Generics: explain why new T[10] is illegal, resolve heap pollution with @SafeVarargs, debug mutable HashMap keys, avoid subList ConcurrentModificationException, and fix primitive Arrays.asList mistakes.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 40,
+  "orderIndex": 6,
+  "prerequisites": [
+    "practice-designing-a-generic-cache-and-repository"
+  ],
+  "learningObjectives": [
+    "Explain the fundamental tension between array covariance/reification and generic invariance/erasure that forbids new T[10]",
+    "Diagnose and prevent heap pollution in generic varargs methods using @SafeVarargs",
+    "Debug invisible HashMap and HashSet memory leaks caused by mutating key fields after insertion",
+    "Understand structural modification traps when manipulating List.subList() views",
+    "Avoid the primitive array autoboxing pitfall in Arrays.asList(int[])"
+  ],
+  "expectedOutcomes": [
+    "Confidently answer tricky placement exam and staff-level interview questions on Java memory and type system quirks",
+    "Debug elusive production issues like 'lost' keys in HashMaps and mysterious ConcurrentModificationExceptions in single-threaded subList operations",
+    "Safely create generic array-backed structures using Array.newInstance(Class<T>, int) and reflection"
+  ],
+  "activities": [
+    {
+      "id": "act-col-sp-6-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Counterfeit Cargo Containers & Label Tampering",
+      "description": "How mismatched compile-time labels and runtime physical realities create catastrophic runtime failures.",
+      "content": "Imagine an automated shipping port. Every shipping container has a physical barcode scanner on the bottom that inspects weight and contents during transit. If you label a container 'Fragile Porcelain' on paper (compile-time type), but the physical crate at runtime has no internal type verification, someone can load heavy scrap metal into it. The moment an automated crane lifts it expecting 50 kilograms, it snaps and destroys the facility.\n\nJava arrays are physical containers: they know their exact type at runtime (`reified`) and enforce it on every write (`ArrayStoreException`). Generics are paper manifests: the compiler validates types, but erases them completely at runtime (`erased`). When developers try to combine erased manifests with reified containers (`new T[10]`), or change the contents of a sealed container after indexing (`mutable HashMap keys`), the system experiences catastrophic runtime crashes (heap pollution, lost keys, and ClassCastExceptions)."
+    },
+    {
+      "id": "act-col-sp-6-concept",
+      "type": "concept",
+      "title": "Top 5 Collections & Generics Interview Pitfalls",
+      "description": "Exhaustive technical dissection of array reification vs erasure, heap pollution, mutable map keys, subList invalidation, and primitive array boxing.",
+      "content": "### Formal Computer Science Definition\nA language runtime anomaly occurs when static type verification guarantees are bypassed due to type erasure, covariant array assignments, or mutable state violation of collection indexing invariants, resulting in heap pollution, silent lookup failures, or unexpected runtime exceptions.\n\n### The 5 Classic Gotchas Dissected\n\n```\n                         Collections & Generics Gotchas\n                                       |\n       +-------------------+-----------+-----------+-------------------+\n       |                   |                       |                   |\n1. Generic Arrays    2. Heap Pollution       3. Mutable Keys     4. subList Trap\n- new T[10] banned   - List<String>...       - Mutating key      - Mutating parent\n- Reified vs Erased  - @SafeVarargs fix        breaks hash bucket  invalidates view\n```\n\n#### 1. Why `new T[10]` is Forbidden\n- **Arrays are Reified and Covariant**: An array knows its component type at runtime and checks every element store (`String[]` knows it only holds Strings; `Object[] arr = new String[1]; arr[0] = 123;` throws `ArrayStoreException`). Furthermore, `String[]` is a subtype of `Object[]`.\n- **Generics are Erased and Invariant**: Type parameters (`T`) are erased to `Object` (or bound) at compile time. At runtime, the JVM has no idea what `T` is.\n- **The Conflict**: If `new T[10]` were allowed, the compiler would create `new Object[10]`. If assigned to `T[]` where `T = String`, code could write integers into it, destroying the type safety guarantee of generics without triggering `ArrayStoreException`.\n- **The Solution**: Use `(T[]) Array.newInstance(clazz, capacity)` or pass a generator `IntFunction<T[]>`.\n\n#### 2. Heap Pollution and `@SafeVarargs`\nVarargs (`T... args`) is syntactic sugar for array allocation (`new T[] args`). When combined with generics, Java is forced to allocate a raw array: `new List[args.length]`.\n- **Heap Pollution**: Occurs when a variable of a parameterized type references an object that is not of that type.\n- If a method modifies the array or exposes it to untrusted code, runtime `ClassCastException` results.\n- **`@SafeVarargs` Rule**: Use `@SafeVarargs` **only** when:\n  1. The method does not store anything into the varargs array.\n  2. The method does not allow the reference to the varargs array to escape.\n\n#### 3. The Mutable Key / Set Element Trap\n`HashMap` calculates bucket index via `hash(key.hashCode()) & (table.length - 1)` at the moment `put()` is called.\n- If an instance field that participates in `hashCode()` or `equals()` is subsequently mutated, the key's hash code changes.\n- Future calls to `map.get(key)` calculate the **new** bucket index and search a completely different bucket!\n- The original entry remains orphaned in the old bucket: `map.containsKey(key)` returns `false`, yet the entry cannot be garbage-collected, creating a **silent memory leak**.\n- **Golden Rule**: Map keys and Set elements must be strictly immutable (e.g., Java `record`, `String`, `UUID`, primitive wrappers).\n\n#### 4. The `subList` Structural Mutation Invalidation\n`List.subList(from, to)` returns a view over the backing list with an internal `expectedModCount`.\n- If the **backing list** is structurally modified (e.g. `list.add(\"item\")`) after the sublist is created, any subsequent call on `subList` (e.g. `subList.size()`) detects `modCount != expectedModCount` and immediately throws `ConcurrentModificationException`\u2014even in a single-threaded program!\n- Any mutations must be performed **through the sublist itself** (`subList.add(...)`).\n\n#### 5. Primitive Array `Arrays.asList(int[])` Trap\nGenerics require reference types. When passing a primitive array `int[] nums = {1, 2, 3};` to `Arrays.asList(nums)`:\n- The compiler cannot bind `T` to `int`.\n- Instead, it binds `T` to `int[]` (an array is an Object!).\n- The returned list is a `List<int[]>` of **size 1** whose single element is the entire primitive array!"
+    },
+    {
+      "id": "act-col-sp-6-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Executable Demonstration: Reproducing and Resolving All 5 Gotchas",
+      "description": "Hands-on code demonstrating mutable HashMap key corruption, subList invalidation, and primitive array traps.",
+      "content": "```java\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Objects;\n\npublic class GotchasMasteryDemo {\n\n    // Mutable key that breaks HashMap invariants\n    static class MutableKey {\n        String id;\n        MutableKey(String id) { this.id = id; }\n        @Override public int hashCode() { return Objects.hash(id); }\n        @Override public boolean equals(Object o) {\n            if (this == o) return true;\n            if (!(o instanceof MutableKey)) return false;\n            return Objects.equals(id, ((MutableKey) o).id);\n        }\n        @Override public String toString() { return \"Key(\" + id + \")\"; }\n    }\n\n    public static void main(String[] args) {\n        // 1. Mutable Key Gotcha\n        Map<MutableKey, String> sessionMap = new HashMap<>();\n        MutableKey userKey = new MutableKey(\"SESSION_101\");\n        sessionMap.put(userKey, \"Alice\");\n        System.out.println(\"Lookup before mutation: \" + sessionMap.get(userKey));\n\n        // Mutating key field alters hashCode()!\n        userKey.id = \"SESSION_999\";\n        System.out.println(\"Lookup AFTER mutation: \" + sessionMap.get(userKey)); // returns null!\n        System.out.println(\"Map contains key? \" + sessionMap.containsKey(userKey)); // false!\n        System.out.println(\"Map size (orphaned memory): \" + sessionMap.size()); // 1!\n\n        // 2. The subList Invalidation Trap\n        List<String> logs = new ArrayList<>(Arrays.asList(\"log1\", \"log2\", \"log3\", \"log4\"));\n        List<String> slice = logs.subList(1, 3);\n        System.out.println(\"Slice before modification: \" + slice);\n\n        // Direct mutation to parent list invalidates slice\n        logs.add(\"log5\");\n        try {\n            slice.get(0); // throws CME\n        } catch (Exception e) {\n            System.out.println(\"Caught expected subList invalidation: \" + e.getClass().getSimpleName());\n        }\n\n        // 3. Arrays.asList Primitive Array Trap\n        int[] primitives = {10, 20, 30};\n        List<int[]> boxedList = Arrays.asList(primitives);\n        System.out.println(\"Arrays.asList(int[]) size: \" + boxedList.size()); // 1, NOT 3!\n        System.out.println(\"Element 0 type: \" + boxedList.get(0).getClass().getSimpleName());\n\n        // Correct conversion for primitives:\n        List<Integer> correctList = Arrays.stream(primitives).boxed().toList();\n        System.out.println(\"Correct boxed list: \" + correctList + \" (size: \" + correctList.size() + \")\");\n    }\n}\n```\n\n```text\nLookup before mutation: Alice\nLookup AFTER mutation: null\nMap contains key? false\nMap size (orphaned memory): 1\nSlice before modification: [log2, log3]\nCaught expected subList invalidation: ConcurrentModificationException\nArrays.asList(int[]) size: 1\nElement 0 type: int[]\nCorrect boxed list: [10, 20, 30] (size: 3)\n```"
+    },
+    {
+      "id": "act-col-sp-6-mcq",
+      "type": "mcq",
+      "title": "Interview Gotchas Precision Assessment",
+      "description": "Assess technical mastery over edge-case failure modes in collections and generics.",
+      "questions": [
+        {
+          "question": "Why does calling 'new T[10]' cause a compilation error in Java?",
+          "options": [
+            "Because the JVM does not have sufficient heap memory for generic allocations",
+            "Because arrays are reified (they require runtime knowledge of component type), whereas generic types are erased at compile-time",
+            "Because generics only support single object references",
+            "Because generic arrays must extend Serializable"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays require exact runtime type information to enforce ArrayStoreException. Because generic type parameters are erased at compile-time to Object, the JVM cannot reify the array's true element type, making generic array creation illegal."
+        },
+        {
+          "question": "What is the result of executing Arrays.asList(new int[]{1, 2, 3}).size()?",
+          "options": [
+            "3",
+            "1",
+            "Compilation error because int is not an Object",
+            "Throws NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays.asList(T... a) expects reference types. Because int is primitive, the entire int[] array matches T as a single Object, resulting in a List<int[]> containing 1 element."
+        },
+        {
+          "question": "What causes a ConcurrentModificationException when calling subList.get(0) in a single-threaded program?",
+          "options": [
+            "The subList index was out of bounds",
+            "The parent backing list was structurally modified (e.g., add or remove) after the subList view was created",
+            "The garbage collector reclaimed the subList",
+            "The list contained null elements"
+          ],
+          "correctAnswer": 1,
+          "explanation": "subList maintains an expectedModCount matching the backing list. If the parent list is structurally modified directly, modCount changes, and any subsequent interaction with the sublist detects the mismatch and throws ConcurrentModificationException."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-6-interview-qa",
+      "type": "interview_qa",
+      "title": "Placement Exam & Elite Technical Interview Questions",
+      "description": "High-stakes interview questions asked by Tier-1 tech companies.",
+      "questions": [
+        {
+          "question": "What is heap pollution in Java, and under what conditions can a developer safely annotate a method with @SafeVarargs?",
+          "answer": "Heap pollution occurs when a variable of a parameterized type refers to an object that is not of that parameterized type (e.g., a List<String> reference pointing to a List<Integer> object). This usually arises when generic varargs methods (which compile to raw Object[] arrays) allow unsafe references to escape or overwrite array slots.\n\nA developer can safely annotate a method with @SafeVarargs if and only if:\n1. The method does not write or store any elements into the varargs array parameter.\n2. The method does not allow the reference to the varargs array to escape (i.e., it is not returned, assigned to an external field, or passed to untrusted code).\nIf the method merely iterates over the varargs elements to read them, it is safe."
+        },
+        {
+          "question": "How can an object in a HashMap become un-retrievable, and why does this cause a memory leak?",
+          "answer": "When an object is used as a HashMap key, its bucket index is computed from key.hashCode(). If an instance field contributing to hashCode() is mutated after insertion, the object's hash code changes.\n\nWhen map.get(key) or map.remove(key) is subsequently called with that same object, the HashMap calculates the new hash code and searches the corresponding new bucket, finding nothing (null). The entry remains stuck in the original bucket indefinitely. Because the HashMap's table retains a hard reference to the key and value, neither can be garbage-collected, creating a silent memory leak that grows over time."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-6-self-eval",
+      "type": "self_evaluation",
+      "title": "Interview Gotchas Competency Checklist",
+      "description": "Verify your readiness to ace technical interviews and placement exams.",
+      "items": [
+        "I can explain why 'new T[10]' is forbidden due to array reification vs generic erasure.",
+        "I know the exact two conditions required to safely apply @SafeVarargs.",
+        "I understand why mutating a HashMap key causes permanent key loss and memory leaks.",
+        "I know that modifying a parent list invalidates any outstanding subList views with ConcurrentModificationException.",
+        "I know to use Arrays.stream(primitiveArray).boxed().toList() instead of Arrays.asList(primitiveArray)."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col-sp-6-1",
+      "title": "Type-Safe Generic Array Allocator",
+      "difficulty": "medium",
+      "problemStatement": "Implement `<T> T[] createGenericArray(Class<T> clazz, int capacity)` using `java.lang.reflect.Array.newInstance` to dynamically allocate a reified generic array of the specified capacity.",
+      "starterCode": "import java.lang.reflect.Array;\n\npublic class GenericArrayFactory {\n    @SuppressWarnings(\"unchecked\")\n    public static <T> T[] createGenericArray(Class<T> clazz, int capacity) {\n        // TODO: Allocate reified generic array via reflection\n        return null;\n    }\n}",
+      "solutionCode": "import java.lang.reflect.Array;\n\npublic class GenericArrayFactory {\n    @SuppressWarnings(\"unchecked\")\n    public static <T> T[] createGenericArray(Class<T> clazz, int capacity) {\n        if (clazz == null || capacity < 0) {\n            throw new IllegalArgumentException(\"Invalid arguments\");\n        }\n        return (T[]) Array.newInstance(clazz, capacity);\n    }\n}",
+      "expectedOutput": "String[5] array instance",
+      "testCases": [
+        {
+          "input": "String.class, 5",
+          "expectedOutput": "String[5] array instance"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-6-2",
+      "title": "Primitive Array Boxed Converter",
+      "difficulty": "easy",
+      "problemStatement": "Implement `List<Integer> convertPrimitiveArray(int[] numbers)` that correctly converts a primitive `int[]` into a `List<Integer>` of matching size, avoiding the `Arrays.asList(int[])` single-element trap.",
+      "starterCode": "import java.util.Arrays;\nimport java.util.List;\n\npublic class PrimitiveArrayConverter {\n    public static List<Integer> convertPrimitiveArray(int[] numbers) {\n        // TODO: Convert int[] to List<Integer>\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\nimport java.util.List;\n\npublic class PrimitiveArrayConverter {\n    public static List<Integer> convertPrimitiveArray(int[] numbers) {\n        if (numbers == null) return List.of();\n        return Arrays.stream(numbers).boxed().toList();\n    }\n}",
+      "expectedOutput": "[1, 2, 3]",
+      "testCases": [
+        {
+          "input": "[1, 2, 3]",
+          "expectedOutput": "[1, 2, 3]"
+        },
+        {
+          "input": "[]",
+          "expectedOutput": "[]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-6-3",
+      "title": "Safe SubList Extraction and Detachment",
+      "difficulty": "medium",
+      "problemStatement": "Implement `List<String> getDetachedSubList(List<String> source, int fromIndex, int toIndex)` that returns a completely detached copy of the sublist slice so that subsequent modifications to `source` do not invalidate the returned list.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class SubListSafeExtractor {\n    public static List<String> getDetachedSubList(List<String> source, int fromIndex, int toIndex) {\n        // TODO: Return detached independent copy\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class SubListSafeExtractor {\n    public static List<String> getDetachedSubList(List<String> source, int fromIndex, int toIndex) {\n        if (source == null || fromIndex < 0 || toIndex > source.size() || fromIndex > toIndex) {\n            throw new IllegalArgumentException(\"Invalid range or null source\");\n        }\n        return new ArrayList<>(source.subList(fromIndex, toIndex));\n    }\n}",
+      "expectedOutput": "[B, C]",
+      "testCases": [
+        {
+          "input": "source = ['A', 'B', 'C', 'D'], from = 1, to = 3",
+          "expectedOutput": "[B, C]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-6-4",
+      "title": "Safe Varargs Collector",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic method `@SafeVarargs public static <T> List<T> safeCollect(T... items)` that returns an unmodifiable List of items without causing heap pollution. If items is null, return `List.of()`.",
+      "starterCode": "import java.util.List;\n\npublic class VarargsSafety {\n    // TODO: Annotate and implement safeCollect\n    public static <T> List<T> safeCollect(T... items) {\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class VarargsSafety {\n    @SafeVarargs\n    public static <T> List<T> safeCollect(T... items) {\n        if (items == null || items.length == 0) {\n            return List.of();\n        }\n        List<T> list = new ArrayList<>();\n        for (T item : items) {\n            if (item != null) {\n                list.add(item);\n            }\n        }\n        return List.copyOf(list);\n    }\n}",
+      "expectedOutput": "[X, Y]",
+      "testCases": [
+        {
+          "input": "safeCollect('X', 'Y')",
+          "expectedOutput": "[X, Y]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-6-5",
+      "title": "Immutable Key Wrapper for HashMap",
+      "difficulty": "medium",
+      "problemStatement": "Implement an immutable key wrapper `record SecureKey(String tenantId, String resourceId)` to prevent hash bucket corruption when used as a HashMap key. Implement `String getLookupKey(Map<SecureKey, String> map, String tenantId, String resourceId)`.",
+      "starterCode": "import java.util.Map;\n\npublic class KeySecurityDemo {\n    public record SecureKey(String tenantId, String resourceId) {}\n\n    public static String getLookupKey(Map<SecureKey, String> map, String tenantId, String resourceId) {\n        // TODO: Lookup in map using SecureKey\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Map;\n\npublic class KeySecurityDemo {\n    public record SecureKey(String tenantId, String resourceId) {}\n\n    public static String getLookupKey(Map<SecureKey, String> map, String tenantId, String resourceId) {\n        if (map == null || tenantId == null || resourceId == null) return null;\n        return map.get(new SecureKey(tenantId, resourceId));\n    }\n}",
+      "expectedOutput": "AdminResource",
+      "testCases": [
+        {
+          "input": "map with (SecureKey('T1', 'R1') -> 'AdminResource'), lookup('T1', 'R1')",
+          "expectedOutput": "AdminResource"
+        }
+      ]
+    }
+  ]
+}

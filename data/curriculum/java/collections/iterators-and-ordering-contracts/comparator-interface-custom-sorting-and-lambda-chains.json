@@ -1,0 +1,216 @@
+{
+  "id": "les-col-comparator-custom-sorting",
+  "slug": "comparator-interface-custom-sorting-and-lambda-chains",
+  "sectionSlug": "collections",
+  "moduleSlug": "iterators-and-ordering-contracts",
+  "languageSlug": "java",
+  "title": "Comparator Interface: Custom Sorting & Lambda Chains",
+  "summary": "Write reusable external sorting strategies with Comparator<T>: anonymous classes, lambda expressions, Comparator.comparing(), and thenComparing().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "Comparable Interface: Defining Natural Ordering",
+    "Java Lambda Expressions & Functional Interfaces",
+    "The Collections Framework & Lists"
+  ],
+  "learningObjectives": [
+    "Master java.util.Comparator<T> to establish external, decoupled sorting strategies",
+    "Compose clean, declarative multi-level comparator chains with Comparator.comparing() and thenComparing()",
+    "Invert sort order dynamically using comparator.reversed()",
+    "Safely handle null elements in sort pipelines using Comparator.nullsFirst() and nullsLast()"
+  ],
+  "expectedOutcomes": [
+    "Ability to architect flexible, customizable sorting engines for e-commerce, banking, and analytics",
+    "Mastery of modern functional comparator composition in Java 8+"
+  ],
+  "activities": [
+    {
+      "id": "act-col6-l6-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Flight Booking Engine Search Filters",
+      "analogy": {
+        "headline": "Practical Context: Flight Booking Engine Search Filters",
+        "story": "When you search for airline flights online, an airline ticket does not possess a single 'natural' way to be displayed. A student traveler wants flights sorted by 'Cheapest Price First'. A business executive wants 'Shortest Flight Duration First'. A morning commuter wants 'Earliest Departure Time First'.\n\nThe Flight class itself remains completely unchanged. Instead, the booking engine applies external lenses (Comparators) to sort the exact same list of flights according to whichever criteria the user selected in the dropdown menu.\n\nThe `Comparator` interface represents this exact external lens: decoupling the sorting policy from the data model.",
+        "keyTakeaway": "Comparator defines external sorting strategies that can be swapped dynamically at runtime without modifying the underlying class definition."
+      },
+      "content": "When you search for airline flights online, an airline ticket does not possess a single 'natural' way to be displayed. A student traveler wants flights sorted by 'Cheapest Price First'. A business executive wants 'Shortest Flight Duration First'. A morning commuter wants 'Earliest Departure Time First'.\n\nThe Flight class itself remains completely unchanged. Instead, the booking engine applies external lenses (Comparators) to sort the exact same list of flights according to whichever criteria the user selected in the dropdown menu.\n\nThe `Comparator` interface represents this exact external lens: decoupling the sorting policy from the data model."
+    },
+    {
+      "id": "act-col6-l6-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Modern Comparator Architecture: Composition, Inversion & Null-Safety",
+      "breakdown": {
+        "keyTakeaways": [
+          "Comparator<T> is a @FunctionalInterface whose single abstract method is int compare(T o1, T o2)",
+          "Comparator.comparing(Function) creates type-safe comparators using method references",
+          "thenComparing(Function) chains secondary and tertiary tie-breakers",
+          "reversed() inverts the sorting order cleanly",
+          "Comparator.nullsFirst() and nullsLast() protect against NullPointerExceptions in dirty data streams"
+        ]
+      },
+      "content": "### The java.util.Comparator Interface\n\nA **`Comparator<T>`** is a comparison function that imposes a *total ordering* on some collection of objects. Unlike `Comparable`, which is implemented inside the class, a `Comparator` is an external object passed to sorting methods (`Collections.sort(list, comp)`, `list.sort(comp)`, or `new TreeSet<>(comp)`):\n```java\n@FunctionalInterface\npublic interface Comparator<T> {\n    int compare(T o1, T o2);\n}\n```\n\n---\n\n### The Modern Java 8+ Fluent Comparator API\n\nHistorically, writing comparators required verbose anonymous inner classes. Java 8+ introduced rich static and default factory methods that enable readable, type-safe declarative comparator pipelines:\n\n```java\n// 1. Basic property comparator via method reference:\nComparator<Flight> byPrice = Comparator.comparingDouble(Flight::getPrice);\n\n// 2. Chained multi-level sorting:\nComparator<Flight> multiSort = Comparator\n    .comparingDouble(Flight::getPrice)            // Primary: Lowest price first\n    .thenComparingInt(Flight::getDurationMinutes) // Secondary: Shortest duration\n    .thenComparing(Flight::getAirline);           // Tertiary: Airline alphabetical\n\n// 3. Reversing order:\nComparator<Flight> expensiveFirst = byPrice.reversed();\n```\n\n---\n\n### Null-Safe Sorting: nullsFirst & nullsLast\n\nSorting collections containing `null` elements or objects whose fields may be `null` naively throws a `NullPointerException`. Java provides built-in null decorators:\n```java\n// Treats null elements as smaller than non-null elements (placed at the beginning):\nComparator<String> safeAsc = Comparator.nullsFirst(String::compareToIgnoreCase);\n\n// Treats null elements as larger than non-null elements (placed at the end):\nComparator<String> safeDesc = Comparator.nullsLast(Comparator.reverseOrder());\n```\n\n---\n\n### Executable Demonstration: Production E-Commerce Product Sorter",
+      "codeExample": "import java.util.ArrayList;\nimport java.util.Comparator;\nimport java.util.List;\n\npublic class ComparatorDemo {\n    static class Product {\n        final String name;\n        final double price;\n        final double rating;\n\n        Product(String name, double price, double rating) {\n            this.name = name;\n            this.price = price;\n            this.rating = rating;\n        }\n\n        public String getName() { return name; }\n        public double getPrice() { return price; }\n        public double getRating() { return rating; }\n\n        @Override\n        public String toString() {\n            return String.format(\"%-12s: $%.2f (\u2605%.1f)\", name, price, rating);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Product> catalog = new ArrayList<>(List.of(\n            new Product(\"Keyboard\", 89.99, 4.5),\n            new Product(\"Mouse\", 29.99, 4.8),\n            new Product(\"Headset\", 89.99, 4.9),\n            new Product(\"Mousepad\", 15.00, 4.2)\n        ));\n\n        // Pipeline: Sort by price ascending; tie-break by rating descending\n        Comparator<Product> bestDeal = Comparator\n            .comparingDouble(Product::getPrice)\n            .thenComparing(Comparator.comparingDouble(Product::getRating).reversed());\n\n        catalog.sort(bestDeal);\n\n        System.out.println(\"Best Deal Catalog:\");\n        for (Product p : catalog) {\n            System.out.println(\" -> \" + p);\n        }\n    }\n}\n// Expected Output:\n// Best Deal Catalog:\n//  -> Mousepad    : $15.00 (\u26054.2)\n//  -> Mouse       : $29.99 (\u26054.8)\n//  -> Headset     : $89.99 (\u26054.9)\n//  -> Keyboard    : $89.99 (\u26054.5)"
+    },
+    {
+      "id": "act-col6-l6-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Null-Safe Multi-Tier User Profile Sorter",
+      "description": "Trace a dirty user database records sorter that handles null departments and null names gracefully.",
+      "code": "import java.util.ArrayList;\nimport java.util.Comparator;\nimport java.util.List;\n\npublic class NullSafeProfileSorter {\n    static class Profile {\n        final String department;\n        final String username;\n\n        Profile(String department, String username) {\n            this.department = department;\n            this.username = username;\n        }\n\n        public String getDepartment() { return department; }\n        public String getUsername() { return username; }\n\n        @Override\n        public String toString() { return \"[\" + department + \"/\" + username + \"]\"; }\n    }\n\n    public static void main(String[] args) {\n        List<Profile> profiles = new ArrayList<>();\n        profiles.add(new Profile(\"Engineering\", \"Alice\"));\n        profiles.add(new Profile(null, \"GhostUser\"));\n        profiles.add(new Profile(\"Engineering\", \"Bob\"));\n        profiles.add(new Profile(\"Analytics\", \"Charlie\"));\n\n        // Comparator: null departments placed last, case-insensitive\n        Comparator<Profile> comp = Comparator\n            .comparing(Profile::getDepartment, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))\n            .thenComparing(Profile::getUsername);\n\n        profiles.sort(comp);\n        System.out.println(\"Sorted profiles:\");\n        for (Profile p : profiles) {\n            System.out.println(\" -> \" + p);\n        }\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "29-31",
+          "description": "Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER) wraps the string comparator, guaranteeing null departments are pushed to the end without crashing."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "31",
+          "description": "thenComparing(Profile::getUsername) breaks ties within the same department."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "33",
+          "description": "profiles.sort(comp) sorts in-place using Java's list.sort() default method."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l6-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Comparator Composition Assessment",
+      "questions": [
+        {
+          "id": "col6-l6-q1",
+          "question": "What is the result of invoking 'Comparator.comparing(Person::getAge).reversed()' on a list of Person objects?",
+          "options": [
+            "It sorts by age ascending",
+            "It sorts by age descending (oldest person first)",
+            "It throws an UnsupportedOperationException",
+            "It reverses the entire list without comparing"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Comparator.comparing(Person::getAge) sorts in natural ascending order. Calling .reversed() inverts the comparator's comparison results, sorting ages in descending order."
+        },
+        {
+          "id": "col6-l6-q2",
+          "question": "How do you prevent a NullPointerException when comparing a field that can be null using Comparator.comparing()?",
+          "options": [
+            "Surround the comparator in a try-catch block",
+            "Use the two-argument overload: Comparator.comparing(keyExtractor, Comparator.nullsLast(...))",
+            "Set the JVM flag -Ddisable.null.checks=true",
+            "Cast the field to Optional"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Comparator.comparing(keyExtractor, keyComparator) accepts a custom key comparator. Supplying Comparator.nullsFirst(...) or nullsLast(...) safely handles null key values without throwing NullPointerException."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l6-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Performance of Lambda Comparators",
+      "qaList": [
+        {
+          "question": "Does using 'Comparator.comparingDouble(Employee::getSalary)' cause autoboxing overhead compared to writing a raw lambda?",
+          "answer": "No. When using primitive specialized methods like 'comparingDouble()', 'comparingInt()', or 'comparingLong()', the extractor function is a ToDoubleFunction, ToIntFunction, or ToLongFunction which extracts unboxed primitive values directly and compares them using Double.compare() or Integer.compare(). If you accidentally used the generic 'Comparator.comparing(Employee::getSalary)' where getSalary() returns double, Java would autobox the double into a java.lang.Double object on every comparison, generating millions of transient heap objects during large sorts. Always use the primitive-specialized comparingInt/Long/Double overloads for primitive properties."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l6-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I know how to write declarative comparators with Comparator.comparing() and thenComparing()",
+        "I understand how to invert sort order with .reversed()",
+        "I know how to handle null elements and null keys safely with nullsFirst and nullsLast",
+        "I know to use primitive specialized comparators (comparingInt, comparingDouble) to avoid autoboxing"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "it-flight-sorter-pipeline",
+      "title": "Flight Booking Sorter Pipeline",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method sortFlights(List<Flight> flights) that sorts flights primarily by price ascending, tie-breaking by durationMinutes ascending using Comparator.comparing().",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Comparator;\n\npublic class FlightSorter {\n    public static class Flight {\n        final String flightNumber;\n        final double price;\n        final int durationMinutes;\n\n        public Flight(String fn, double price, int duration) {\n            this.flightNumber = fn;\n            this.price = price;\n            this.durationMinutes = duration;\n        }\n        public double getPrice() { return price; }\n        public int getDurationMinutes() { return durationMinutes; }\n        @Override public String toString() { return flightNumber; }\n    }\n\n    public static void sortFlights(List<Flight> flights) {\n        // In-place sort using Comparator chaining\n    }\n\n    public static void main(String[] args) {\n        List<Flight> flights = new ArrayList<>(List.of(\n            new Flight(\"F1\", 250.0, 180),\n            new Flight(\"F2\", 150.0, 120),\n            new Flight(\"F3\", 150.0, 90)\n        ));\n        sortFlights(flights);\n        System.out.println(flights); // [F3, F2, F1]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Comparator;\n\npublic class FlightSorter {\n    public static class Flight {\n        final String flightNumber;\n        final double price;\n        final int durationMinutes;\n\n        public Flight(String fn, double price, int duration) {\n            this.flightNumber = fn;\n            this.price = price;\n            this.durationMinutes = duration;\n        }\n        public double getPrice() { return price; }\n        public int getDurationMinutes() { return durationMinutes; }\n        @Override public String toString() { return flightNumber; }\n    }\n\n    public static void sortFlights(List<Flight> flights) {\n        if (flights == null) return;\n        flights.sort(\n            Comparator.comparingDouble(Flight::getPrice)\n                      .thenComparingInt(Flight::getDurationMinutes)\n        );\n    }\n\n    public static void main(String[] args) {\n        List<Flight> flights = new ArrayList<>(List.of(\n            new Flight(\"F1\", 250.0, 180),\n            new Flight(\"F2\", 150.0, 120),\n            new Flight(\"F3\", 150.0, 90)\n        ));\n        sortFlights(flights);\n        System.out.println(flights);\n    }\n}",
+      "testCases": [
+        {
+          "input": "flights: F1(250, 180), F2(150, 120), F3(150, 90)",
+          "expectedOutput": "[F3, F2, F1]"
+        }
+      ],
+      "expectedOutput": "[F3, F2, F1]"
+    },
+    {
+      "id": "it-sort-by-length-then-alpha",
+      "title": "String Sorter: Length Ascending, Lexical Tie-Break",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method sortWords(List<String> words) that sorts strings by length ascending, tie-breaking alphabetically in-place.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Comparator;\n\npublic class WordLengthSorter {\n    public static void sortWords(List<String> words) {\n    }\n\n    public static void main(String[] args) {\n        List<String> words = new ArrayList<>(List.of(\"banana\", \"apple\", \"fig\", \"kiwi\", \"pear\"));\n        sortWords(words);\n        System.out.println(words); // [fig, kiwi, pear, apple, banana]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Comparator;\n\npublic class WordLengthSorter {\n    public static void sortWords(List<String> words) {\n        if (words == null) return;\n        words.sort(\n            Comparator.comparingInt(String::length)\n                      .thenComparing(Comparator.naturalOrder())\n        );\n    }\n\n    public static void main(String[] args) {\n        List<String> words = new ArrayList<>(List.of(\"banana\", \"apple\", \"fig\", \"kiwi\", \"pear\"));\n        sortWords(words);\n        System.out.println(words);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"banana\", \"apple\", \"fig\", \"kiwi\", \"pear\"]",
+          "expectedOutput": "[fig, kiwi, pear, apple, banana]"
+        }
+      ],
+      "expectedOutput": "[fig, kiwi, pear, apple, banana]"
+    },
+    {
+      "id": "it-null-safe-string-sort",
+      "title": "Null-Safe Descending String Sorter",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method sortWithNullsLast(List<String> words) that sorts strings descending alphabetically, placing null strings at the very end of the list.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Comparator;\n\npublic class NullSafeStringSorter {\n    public static void sortWithNullsLast(List<String> words) {\n    }\n\n    public static void main(String[] args) {\n        List<String> items = new ArrayList<>(Arrays.asList(\"banana\", null, \"apple\", null, \"cherry\"));\n        sortWithNullsLast(items);\n        System.out.println(items); // [cherry, banana, apple, null, null]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Comparator;\n\npublic class NullSafeStringSorter {\n    public static void sortWithNullsLast(List<String> words) {\n        if (words == null) return;\n        words.sort(Comparator.nullsLast(Comparator.reverseOrder()));\n    }\n\n    public static void main(String[] args) {\n        List<String> items = new ArrayList<>(Arrays.asList(\"banana\", null, \"apple\", null, \"cherry\"));\n        sortWithNullsLast(items);\n        System.out.println(items);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"banana\", null, \"apple\", null, \"cherry\"]",
+          "expectedOutput": "[cherry, banana, apple, null, null]"
+        }
+      ],
+      "expectedOutput": "[cherry, banana, apple, null, null]"
+    },
+    {
+      "id": "it-custom-comparator-inverter",
+      "title": "Reverse Arbitrary Comparator Utility",
+      "difficulty": "easy",
+      "problemStatement": "Implement a generic static method <T> Comparator<T> invert(Comparator<T> comp) that returns an inverted version of the supplied comparator without modifying the original.",
+      "starterCode": "import java.util.Comparator;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class ComparatorInverter {\n    public static <T> Comparator<T> invert(Comparator<T> comp) {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        Comparator<Integer> natural = Integer::compare;\n        Comparator<Integer> reversed = invert(natural);\n        List<Integer> nums = new ArrayList<>(List.of(1, 4, 2));\n        nums.sort(reversed);\n        System.out.println(nums); // [4, 2, 1]\n    }\n}",
+      "solutionCode": "import java.util.Comparator;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class ComparatorInverter {\n    public static <T> Comparator<T> invert(Comparator<T> comp) {\n        if (comp == null) return null;\n        return comp.reversed();\n    }\n\n    public static void main(String[] args) {\n        Comparator<Integer> natural = Integer::compare;\n        Comparator<Integer> reversed = invert(natural);\n        List<Integer> nums = new ArrayList<>(List.of(1, 4, 2));\n        nums.sort(reversed);\n        System.out.println(nums);\n    }\n}",
+      "testCases": [
+        {
+          "input": "nums = [1, 4, 2], invert(Integer::compare)",
+          "expectedOutput": "[4, 2, 1]"
+        }
+      ],
+      "expectedOutput": "[4, 2, 1]"
+    },
+    {
+      "id": "it-sort-by-frequency-then-value",
+      "title": "Sort by Frequency Then Value",
+      "difficulty": "hard",
+      "problemStatement": "Implement a method sortByFrequency(List<Integer> nums) that sorts integers primarily by their occurrence frequency descending, and tie-breaks by numerical value ascending.",
+      "starterCode": "import java.util.*;\n\npublic class FrequencyValueSorter {\n    public static void sortByFrequency(List<Integer> nums) {\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = new ArrayList<>(List.of(4, 5, 6, 5, 4, 3));\n        sortByFrequency(nums);\n        System.out.println(nums); // [4, 4, 5, 5, 3, 6]\n    }\n}",
+      "solutionCode": "import java.util.*;\n\npublic class FrequencyValueSorter {\n    public static void sortByFrequency(List<Integer> nums) {\n        if (nums == null || nums.size() <= 1) return;\n        Map<Integer, Integer> freqMap = new HashMap<>();\n        for (int n : nums) {\n            freqMap.put(n, freqMap.getOrDefault(n, 0) + 1);\n        }\n\n        nums.sort(\n            Comparator.<Integer>comparingInt(freqMap::get).reversed()\n                      .thenComparing(Comparator.naturalOrder())\n        );\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = new ArrayList<>(List.of(4, 5, 6, 5, 4, 3));\n        sortByFrequency(nums);\n        System.out.println(nums);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[4, 5, 6, 5, 4, 3]",
+          "expectedOutput": "[4, 4, 5, 5, 3, 6]"
+        }
+      ],
+      "expectedOutput": "[4, 4, 5, 5, 3, 6]"
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+{
+  "id": "les-col-sp-1-modern-immutable-collections",
+  "slug": "modern-unmodifiable-and-immutable-collections",
+  "sectionSlug": "collections",
+  "moduleSlug": "specialized-collections-and-clean-design",
+  "languageSlug": "java",
+  "title": "Modern Unmodifiable & Immutable Collections",
+  "summary": "Master modern Java immutable collection factories (List.of, Set.of, Map.of, copyOf): contrast structural immutability with unmodifiable views and Arrays.asList, understand null-rejection policies, and examine compact memory layouts.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 30,
+  "orderIndex": 1,
+  "prerequisites": [
+    "the-collections-utility-class-algorithms-and-best-practices"
+  ],
+  "learningObjectives": [
+    "Contrast List.of(), Arrays.asList(), and Collections.unmodifiableList() across mutability and view semantics",
+    "Explain the fail-fast null-rejection and duplicate-detection contracts of Java 9+ factory methods",
+    "Analyze the compact internal memory layout of List12 and ListN implementations",
+    "Implement true defensive isolation using List.copyOf(), Set.copyOf(), and Map.copyOf()",
+    "Prevent race conditions and memory leaks in multi-threaded systems via immutable value objects"
+  ],
+  "expectedOutcomes": [
+    "Select the precise collection factory required for API return values and thread-safe domain state",
+    "Anticipate and eliminate NullPointerExceptions and IllegalArgumentExceptions caused by modern factory constraints",
+    "Eliminate unwanted mutation side-effects caused by unmodifiable view wrappers"
+  ],
+  "activities": [
+    {
+      "id": "act-col-sp-1-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Read-Only Lens vs Laser-Etched Diamond",
+      "description": "Why modern systems require structural immutability rather than fragile wrapper views.",
+      "content": "Consider two ways to protect a blueprint in an engineering facility. In the first approach, you place a laminated plastic sheet over the blueprint. Technicians looking through the glass cannot draw on the blueprint directly, but if someone modifies the original paper underneath the sheet, everyone looking through the glass sees the alterations.\n\nIn the second approach, the blueprint is laser-etched into a solid block of synthetic diamond. It is physically impossible to alter, has no backing paper to tamper with, and occupies the minimum possible space.\n\n`Collections.unmodifiableList(list)` is the laminated sheet: an unmodifiable wrapper view whose contents change if the backing collection is mutated. In contrast, `List.of()` and `List.copyOf()` are laser-etched diamond: true structurally immutable collections with zero external backing dependencies, guaranteed thread safety, and zero mutation susceptibility."
+    },
+    {
+      "id": "act-col-sp-1-concept",
+      "type": "concept",
+      "title": "Architecture of Modern Immutable Collections",
+      "description": "Comprehensive comparison of factory methods, view mechanics, null policies, and memory compaction.",
+      "content": "### Formal Computer Science Definition\nAn immutable collection is an algebraic data structure whose state cannot be modified after instantiation. In the Java runtime, immutable collections instantiated via `of()` and `copyOf()` factories provide structural immutability, disallow `null` references, strictly reject duplicate keys or set elements at construction, and utilize compact field-based layouts to minimize heap footprint.\n\n### Comparative Architectural Matrix\n\n| Feature | `Arrays.asList(arr)` | `Collections.unmodifiableList(c)` | `List.of(...)` / `List.copyOf(c)` |\n| :--- | :--- | :--- | :--- |\n| **Mutability** | Fixed-size mutable (`set()` allowed, `add()`/`remove()` fail) | Read-only view (mutations fail, backing list can mutate) | **Truly Immutable** (all mutations throw `UnsupportedOperationException`) |\n| **Backing Dependency** | Direct link to original array | Direct link to backing collection | Independent snapshot (zero backing dependency) |\n| **Null Support** | Allowed | Allowed (if backing allows) | **Strictly Forbidden** (throws `NullPointerException`) |\n| **Thread Safety** | Thread-unsafe if shared | Thread-unsafe if backing collection mutates | **Inherently Thread-Safe** |\n| **Memory Footprint** | Object header + array ref | Wrapper object + backing collection overhead | Highly optimized (`List12` uses 2 fields; `ListN` uses 1 flat array) |\n\n### Core Contracts and Behavioral Dimensions\n\n```\n                    Modern Immutable Collections (Java 9+)\n                                      |\n        +-----------------------------+-----------------------------+\n        |                                                           |\nDirect Construction                                         Defensive Snapshot\n- List.of(e1, e2, ...)                                      - List.copyOf(collection)\n- Set.of(e1, e2, ...)                                       - Set.copyOf(collection)\n- Map.of(k1, v1, k2, v2, ...)                               - Map.copyOf(map)\n- Map.ofEntries(entry(k, v), ...)\n        |\n        +--> Rejects null elements (throws NullPointerException)\n        +--> Rejects duplicate elements in Set/Map (throws IllegalArgumentException)\n        +--> Disallows all mutators (throws UnsupportedOperationException)\n        +--> Memory compaction (List0, List12, ListN)\n```\n\n### Detailed Implementation Mechanics\n\n#### 1. Compact Internal Implementations (`List12` vs `ListN`)\nStandard `ArrayList` allocates an `Object[]` buffer with default capacity 10, resulting in substantial pointer overhead. In contrast, `List.of()` uses specialized compact internal classes:\n- `List0`: A static singleton representing the empty list (zero allocation).\n- `List12`: Holds 1 or 2 elements in dedicated fields (`E e0; E e1;`) rather than an array, eliminating array object header overhead.\n- `ListN`: Allocates a tightly sized array of exactly $N$ elements with zero excess capacity.\n\n#### 2. Strict Null Rejection and Duplicate Detection\nModern factories enforce defensive preconditions:\n- Passing `null` to `List.of()`, `Set.of()`, or `Map.of()` immediately throws `NullPointerException`.\n- Passing duplicate elements to `Set.of(\"A\", \"A\")` or duplicate keys to `Map.of(\"k\", 1, \"k\", 2)` immediately throws `IllegalArgumentException` at compile-time/runtime.\n\n#### 3. Defensive Copying with `copyOf()`\n`List.copyOf(Collection<? extends E> coll)` inspects the runtime type of `coll`:\n- If `coll` is already an unmodifiable collection created by `List.of()` or `List.copyOf()`, it simply returns `coll` directly without allocating a new object ($O(1)$ time and $O(1)$ space).\n- If `coll` is any other mutable collection (e.g., `ArrayList`, `HashSet`), it iterates, validates non-nullity, and produces an independent compact immutable snapshot ($O(N)$ time)."
+    },
+    {
+      "id": "act-col-sp-1-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Executable Demonstration: Factory Construction, Null Rejection, and copyOf() Optimization",
+      "description": "Verifying structural immutability, duplicate exception handling, and copyOf identity optimization.",
+      "content": "```java\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Set;\n\npublic class ImmutableCollectionsDemo {\n\n    public static void main(String[] args) {\n        // 1. Structural Immutability with List.of\n        List<String> frameworkRoles = List.of(\"USER\", \"MANAGER\", \"ADMIN\");\n        System.out.println(\"Immutable roles: \" + frameworkRoles);\n        System.out.println(\"Implementation class: \" + frameworkRoles.getClass().getSimpleName());\n\n        try {\n            frameworkRoles.add(\"SUPER_ADMIN\");\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Caught expected rejection: add() forbidden\");\n        }\n\n        // 2. Arrays.asList vs List.of (mutation leakage)\n        String[] rawArray = {\"ALPHA\", \"BETA\"};\n        List<String> arrayView = Arrays.asList(rawArray);\n        arrayView.set(0, \"MODIFIED_ALPHA\");\n        System.out.println(\"Arrays.asList modified backing array: \" + rawArray[0]);\n\n        // 3. Null rejection policy\n        try {\n            List.of(\"VALID\", null);\n        } catch (NullPointerException e) {\n            System.out.println(\"List.of rejected null element with NPE\");\n        }\n\n        // 4. Duplicate rejection in Set.of\n        try {\n            Set.of(\"DUPLICATE\", \"UNIQUE\", \"DUPLICATE\");\n        } catch (IllegalArgumentException e) {\n            System.out.println(\"Set.of rejected duplicate key: \" + e.getMessage());\n        }\n\n        // 5. copyOf() optimization\n        List<String> mutableList = new ArrayList<>(Arrays.asList(\"EAST\", \"WEST\"));\n        List<String> snapshot1 = List.copyOf(mutableList);\n        System.out.println(\"Snapshot 1: \" + snapshot1);\n        mutableList.add(\"NORTH\");\n        System.out.println(\"Backing list after mutation: \" + mutableList);\n        System.out.println(\"Snapshot 1 remains untouched: \" + snapshot1);\n\n        // Invoking copyOf on already immutable list yields identical reference (O(1))\n        List<String> snapshot2 = List.copyOf(snapshot1);\n        System.out.println(\"snapshot1 == snapshot2: \" + (snapshot1 == snapshot2));\n\n        // 6. Map.of and Map.ofEntries\n        Map<String, Integer> endpoints = Map.of(\n            \"/health\", 200,\n            \"/api/v1\", 200,\n            \"/auth\", 401\n        );\n        System.out.println(\"Immutable endpoint map size: \" + endpoints.size());\n    }\n}\n```\n\n```text\nImmutable roles: [USER, MANAGER, ADMIN]\nImplementation class: ListN\nCaught expected rejection: add() forbidden\nArrays.asList modified backing array: MODIFIED_ALPHA\nList.of rejected null element with NPE\nSet.of rejected duplicate key: duplicate element: DUPLICATE\nSnapshot 1: [EAST, WEST]\nBacking list after mutation: [EAST, WEST, NORTH]\nSnapshot 1 remains untouched: [EAST, WEST]\nsnapshot1 == snapshot2: true\nImmutable endpoint map size: 3\n```"
+    },
+    {
+      "id": "act-col-sp-1-mcq",
+      "type": "mcq",
+      "title": "Immutability & Factory Mechanics Assessment",
+      "description": "Test understanding of structural immutability, copyOf optimization, and exception guarantees.",
+      "questions": [
+        {
+          "question": "What happens when Set.of(\"apple\", \"banana\", \"apple\") is executed at runtime?",
+          "options": [
+            "It creates a Set with 2 unique elements: [apple, banana]",
+            "It throws IllegalArgumentException because Set.of strictly disallows duplicate elements",
+            "It throws NullPointerException",
+            "It compiles into a TreeSet that automatically deduplicates values"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Set.of() and Map.of() treat duplicate elements/keys as programming bugs and strictly throw IllegalArgumentException to enforce contract correctness at runtime."
+        },
+        {
+          "question": "When List.copyOf(source) is invoked where 'source' is already an immutable list created by List.of(), what is the performance and memory behavior?",
+          "options": [
+            "It allocates a new array and clones all references in O(N) time",
+            "It performs a deep clone of all stored objects",
+            "It returns 'source' directly in O(1) time with 0 additional heap allocation because source is already known to be structurally immutable",
+            "It throws UnsupportedOperationException"
+          ],
+          "correctAnswer": 2,
+          "explanation": "List.copyOf(), Set.copyOf(), and Map.copyOf() recognize internal immutable collection classes and return the same reference immediately in O(1) time without redundant memory allocation."
+        },
+        {
+          "question": "Which of the following allows elements to be replaced via set(int index, E element)?",
+          "options": [
+            "List.of(\"a\", \"b\")",
+            "Collections.unmodifiableList(new ArrayList<>())",
+            "Arrays.asList(\"a\", \"b\")",
+            "List.copyOf(List.of(\"a\", \"b\"))"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Arrays.asList() creates a fixed-size wrapper around an array. While it disallows structural additions or removals, it permits in-place element replacement via set(index, element)."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-1-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Architect Interview Questions",
+      "description": "Deep-dive questions on defensive encapsulation, memory optimization, and concurrency safety.",
+      "questions": [
+        {
+          "question": "Why is Collections.unmodifiableList(list) insufficient for defensive encapsulation in multi-threaded systems?",
+          "answer": "Collections.unmodifiableList creates a read-only decorator view over the existing list. It does not create an isolated copy. If another thread maintains a reference to the underlying mutable list and modifies it, the view immediately reflects those modifications.\n\nFurthermore, if one thread iterates over the unmodifiable view while another thread mutates the backing list, a ConcurrentModificationException will be thrown. To achieve true defensive isolation and concurrent safety, systems must use List.copyOf() to create a detached, structurally immutable snapshot."
+        },
+        {
+          "question": "How do List12 and ListN internal classes optimize memory consumption compared to traditional ArrayList?",
+          "answer": "An ArrayList has object overhead plus an internal Object[] array reference with default capacity (10 slots), even if storing only 1 or 2 items. This creates two heap allocations and unused pointer slots.\n\nIn contrast, List.of() with 1 or 2 elements returns an instance of List12, which stores the references in direct instance fields (e0, e1) without allocating an array object at all. For 3 or more elements, ListN allocates an array with exact size matching the element count. This drastically reduces object overhead and garbage collection pressure in high-throughput services."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-1-self-eval",
+      "type": "self_evaluation",
+      "title": "Immutable Collections Mastery Checklist",
+      "description": "Verify your understanding of modern factory methods and defensive collection design.",
+      "items": [
+        "I know that List.of(), Set.of(), and Map.of() immediately throw NullPointerException if any element or key/value is null.",
+        "I understand that Set.of() and Map.of() throw IllegalArgumentException on duplicate elements or duplicate keys.",
+        "I recognize that Arrays.asList() allows set(i, val) mutation which alters the underlying array.",
+        "I know that Collections.unmodifiableList() is a view and does not protect against mutations of the underlying backing collection.",
+        "I leverage List.copyOf() for true O(1) zero-allocation reuse when source is already an immutable collection."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col-sp-1-1",
+      "title": "Safe Defensive Snapshot Factory",
+      "difficulty": "easy",
+      "problemStatement": "Implement `List<String> createSnapshot(List<String> source)` that returns an immutable list snapshot using `List.copyOf()`. If `source` is null, return an empty immutable list via `List.of()`.",
+      "starterCode": "import java.util.List;\n\npublic class SnapshotFactory {\n    public static List<String> createSnapshot(List<String> source) {\n        // TODO: Implement defensive immutable snapshot\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class SnapshotFactory {\n    public static List<String> createSnapshot(List<String> source) {\n        if (source == null) {\n            return List.of();\n        }\n        return List.copyOf(source);\n    }\n}",
+      "expectedOutput": "[alpha, beta]",
+      "testCases": [
+        {
+          "input": "['alpha', 'beta']",
+          "expectedOutput": "[alpha, beta]"
+        },
+        {
+          "input": "null",
+          "expectedOutput": "[]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-1-2",
+      "title": "Null-Safe Immutable List Builder",
+      "difficulty": "medium",
+      "problemStatement": "Because `List.of()` throws `NullPointerException` if any element is null, implement `List<String> safeImmutableList(String... items)` that filters out any null elements and returns an immutable list of the remaining elements using `List.copyOf()` or `List.of()`.",
+      "starterCode": "import java.util.List;\n\npublic class SafeListBuilder {\n    public static List<String> safeImmutableList(String... items) {\n        // TODO: Filter null elements and return an immutable list\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class SafeListBuilder {\n    public static List<String> safeImmutableList(String... items) {\n        if (items == null || items.length == 0) {\n            return List.of();\n        }\n        List<String> nonNull = new ArrayList<>();\n        for (String item : items) {\n            if (item != null) {\n                nonNull.add(item);\n            }\n        }\n        return List.copyOf(nonNull);\n    }\n}",
+      "expectedOutput": "[A, C]",
+      "testCases": [
+        {
+          "input": "items = ['A', null, 'C']",
+          "expectedOutput": "[A, C]"
+        },
+        {
+          "input": "items = [null, null]",
+          "expectedOutput": "[]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-1-3",
+      "title": "Strict Deduplicated Immutable Set",
+      "difficulty": "medium",
+      "problemStatement": "Because `Set.of()` throws `IllegalArgumentException` on duplicate items, implement `Set<String> safeImmutableSet(List<String> items)` that filters duplicates and nulls safely before converting to an immutable `Set` using `Set.copyOf()`.",
+      "starterCode": "import java.util.List;\nimport java.util.Set;\n\npublic class SafeSetBuilder {\n    public static Set<String> safeImmutableSet(List<String> items) {\n        // TODO: Handle null and duplicates, returning an immutable Set\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\npublic class SafeSetBuilder {\n    public static Set<String> safeImmutableSet(List<String> items) {\n        if (items == null || items.isEmpty()) {\n            return Set.of();\n        }\n        Set<String> unique = new HashSet<>();\n        for (String item : items) {\n            if (item != null) {\n                unique.add(item);\n            }\n        }\n        return Set.copyOf(unique);\n    }\n}",
+      "expectedOutput": "[alpha, beta]",
+      "testCases": [
+        {
+          "input": "['alpha', 'beta', 'alpha', null]",
+          "expectedOutput": "[alpha, beta]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-1-4",
+      "title": "Immutable Configuration Map Builder",
+      "difficulty": "medium",
+      "problemStatement": "Implement `Map<String, String> buildConfig(List<String> keys, List<String> values)` that pairs corresponding non-null keys and non-null values into an immutable `Map`. If key and value list sizes differ, throw `IllegalArgumentException`. If duplicate keys exist, the last occurrence wins.",
+      "starterCode": "import java.util.List;\nimport java.util.Map;\n\npublic class ConfigBuilder {\n    public static Map<String, String> buildConfig(List<String> keys, List<String> values) {\n        // TODO: Build immutable map with last-key-wins semantics\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\npublic class ConfigBuilder {\n    public static Map<String, String> buildConfig(List<String> keys, List<String> values) {\n        if (keys == null || values == null || keys.size() != values.size()) {\n            throw new IllegalArgumentException(\"Keys and values must be non-null and equal length\");\n        }\n        Map<String, String> map = new HashMap<>();\n        for (int i = 0; i < keys.size(); i++) {\n            String k = keys.get(i);\n            String v = values.get(i);\n            if (k != null && v != null) {\n                map.put(k, v);\n            }\n        }\n        return Map.copyOf(map);\n    }\n}",
+      "expectedOutput": "{env=prod, port=8080}",
+      "testCases": [
+        {
+          "input": "keys = ['env', 'port'], values = ['prod', '8080']",
+          "expectedOutput": "{env=prod, port=8080}"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-1-5",
+      "title": "Immutability Guard Validator",
+      "difficulty": "easy",
+      "problemStatement": "Implement `boolean isStructurallyImmutable(List<String> list)` that tests whether `list` rejects modifications by calling `list.add(\"test\")` inside a try-catch block. If `UnsupportedOperationException` is caught, return `true`. Otherwise return `false`.",
+      "starterCode": "import java.util.List;\n\npublic class ImmutabilityTester {\n    public static boolean isStructurallyImmutable(List<String> list) {\n        // TODO: Detect if list throws UnsupportedOperationException on add\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.List;\n\npublic class ImmutabilityTester {\n    public static boolean isStructurallyImmutable(List<String> list) {\n        if (list == null) return false;\n        try {\n            list.add(\"__probe__\");\n            list.remove(\"__probe__\");\n            return false;\n        } catch (UnsupportedOperationException e) {\n            return true;\n        }\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "List.of('x', 'y')",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "new ArrayList<>()",
+          "expectedOutput": "false"
+        }
+      ]
+    }
+  ]
+}

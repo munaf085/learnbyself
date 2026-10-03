@@ -1,0 +1,216 @@
+{
+  "id": "les-col-comparable-natural-order",
+  "slug": "comparable-interface-defining-natural-ordering",
+  "sectionSlug": "collections",
+  "moduleSlug": "iterators-and-ordering-contracts",
+  "languageSlug": "java",
+  "title": "Comparable Interface: Defining Natural Ordering",
+  "summary": "Implement Comparable<T> and compareTo(T o): the 3-way return value (-1, 0, 1), consistency with equals(), and enabling Collections.sort().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "prerequisites": [
+    "Object Class & Equality Contracts",
+    "Java Interfaces & Abstract Classes",
+    "The Collections Framework & Lists"
+  ],
+  "learningObjectives": [
+    "Implement java.lang.Comparable<T> and define domain natural ordering using compareTo(T other)",
+    "Master the 3-way return sign contract (negative, zero, positive) and mathematical ordering axioms",
+    "Understand the critical importance of consistency between compareTo() and equals()",
+    "Diagnose the integer subtraction overflow anti-pattern and use Integer.compare(a, b)"
+  ],
+  "expectedOutcomes": [
+    "Ability to implement robust natural sorting on any domain entity without boundary overflow bugs",
+    "Deep understanding of how TreeSet and TreeMap utilize compareTo() instead of equals()"
+  ],
+  "activities": [
+    {
+      "id": "act-col6-l5-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Postal Service Standardized Shipping Parcel Sizing",
+      "analogy": {
+        "headline": "Practical Context: Postal Service Standardized Shipping Parcel Sizing",
+        "story": "A postal package sorting center sorts packages using an intrinsic physical metric: volumetric weight. Every parcel possesses an innate weight and dimensions stamped onto its shipping label.\n\nWhen two parcels meet on a sorting conveyor diverter, the mechanism asks: 'Is Parcel A heavier than Parcel B?' A parcel inherently knows how to measure itself against another parcel of the same specification (natural ordering).\n\nThe `Comparable` interface models this exact intrinsic capability: an object knows its own natural rank when lined up alongside peers of its own kind.",
+        "keyTakeaway": "Comparable defines the single intrinsic natural order for a class. Implementing it enables automatic sorting in Arrays.sort(), Collections.sort(), and TreeSet."
+      },
+      "content": "A postal package sorting center sorts packages using an intrinsic physical metric: volumetric weight. Every parcel possesses an innate weight and dimensions stamped onto its shipping label.\n\nWhen two parcels meet on a sorting conveyor diverter, the mechanism asks: 'Is Parcel A heavier than Parcel B?' A parcel inherently knows how to measure itself against another parcel of the same specification (natural ordering).\n\nThe `Comparable` interface models this exact intrinsic capability: an object knows its own natural rank when lined up alongside peers of its own kind."
+    },
+    {
+      "id": "act-col6-l5-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "The compareTo() Contract, Mathematical Axioms & equals() Consistency",
+      "breakdown": {
+        "keyTakeaways": [
+          "Comparable<T> requires implementing int compareTo(T o)",
+          "Returns negative if this < o; zero if this equals o; positive if this > o",
+          "Must satisfy antisymmetry, transitivity, and congruence axioms",
+          "Crucial recommendation: (x.compareTo(y) == 0) == (x.equals(y))",
+          "TreeSet and TreeMap use compareTo() for uniqueness, NOT equals()!"
+        ]
+      },
+      "content": "### The java.lang.Comparable Interface\n\nThe **`java.lang.Comparable<T>`** interface imposes a total ordering on the objects of each class that implements it. This ordering is referred to as the class's **natural ordering**:\n```java\npackage java.lang;\n\npublic interface Comparable<T> {\n    int compareTo(T o);\n}\n```\nClasses like `String`, `Integer`, `Double`, `LocalDate`, and `BigDecimal` all implement `Comparable<T>`.\n\n---\n\n### The Three-Way Return Sign Contract\n\nThe method `compareTo(T other)` compares this object with the specified object for order:\n* Returns a **negative integer** if `this < other`.\n* Returns **zero (`0`)** if `this` is considered equal in ordering to `other`.\n* Returns a **positive integer** if `this > other`.\n* Throws `NullPointerException` if `other` is `null` (natural comparison with null is forbidden).\n\n---\n\n### Mathematical Ordering Axioms\n\nTo prevent erratic sorting failures and infinite re-balancing loops in `TreeSet`/`TreeMap`, `compareTo()` must strictly adhere to three mathematical laws:\n1. **Antisymmetry**: `sgn(x.compareTo(y)) == -sgn(y.compareTo(x))` for all `x` and `y`.\n2. **Transitivity**: If `x.compareTo(y) > 0` and `y.compareTo(z) > 0`, then `x.compareTo(z) > 0`.\n3. **Congruence**: If `x.compareTo(y) == 0`, then `sgn(x.compareTo(z)) == sgn(y.compareTo(z))` for all `z`.\n\n---\n\n### Consistency with equals() and the TreeSet Dilemma\n\nIt is strongly recommended that **`(x.compareTo(y) == 0) == (x.equals(y))`**. If a class violates this recommendation, collections like `TreeSet` and `TreeMap` will violate the general `Set` / `Map` interface contract!\n\n**The Infamous BigDecimal Trap**:\n```java\nBigDecimal b1 = new BigDecimal(\"2.0\");\nBigDecimal b2 = new BigDecimal(\"2.00\");\n\nSystem.out.println(b1.equals(b2));       // false (different scale: 1 vs 2)\nSystem.out.println(b1.compareTo(b2));    // 0     (identical numerical value!)\n\nSet<BigDecimal> hashSet = new HashSet<>();\nhashSet.add(b1); hashSet.add(b2);\nSystem.out.println(hashSet.size());      // 2 (HashSet uses equals())\n\nSet<BigDecimal> treeSet = new TreeSet<>();\ntreeSet.add(b1); treeSet.add(b2);\nSystem.out.println(treeSet.size());      // 1 (TreeSet uses compareTo() == 0!)\n```\n\n---\n\n### Executable Demonstration: Domain Natural Ordering with Safe Comparisons",
+      "codeExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Objects;\n\npublic class ComparableDemo {\n    static class Employee implements Comparable<Employee> {\n        final int id;\n        final String name;\n        final double salary;\n\n        Employee(int id, String name, double salary) {\n            this.id = id;\n            this.name = name;\n            this.salary = salary;\n        }\n\n        // Natural order: Primary by salary descending; Secondary by id ascending\n        @Override\n        public int compareTo(Employee other) {\n            // SAFE: Use Double.compare to avoid numeric overflow / NaN issues!\n            int salaryCmp = Double.compare(other.salary, this.salary); // Descending\n            if (salaryCmp != 0) return salaryCmp;\n            return Integer.compare(this.id, other.id); // Ascending tie-breaker\n        }\n\n        @Override\n        public boolean equals(Object o) {\n            if (this == o) return true;\n            if (!(o instanceof Employee)) return false;\n            Employee e = (Employee) o;\n            return id == e.id && Double.compare(e.salary, salary) == 0 && Objects.equals(name, e.name);\n        }\n\n        @Override\n        public int hashCode() {\n            return Objects.hash(id, name, salary);\n        }\n\n        @Override\n        public String toString() {\n            return String.format(\"[%s: id=%d, $%.0f]\", name, id, salary);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Employee> roster = new ArrayList<>();\n        roster.add(new Employee(103, \"Charlie\", 85000));\n        roster.add(new Employee(101, \"Alice\", 95000));\n        roster.add(new Employee(102, \"Bob\", 85000));\n\n        // Sorts using natural ordering (Comparable)\n        Collections.sort(roster);\n\n        System.out.println(\"Sorted Roster (Highest Salary First):\");\n        for (Employee e : roster) {\n            System.out.println(\" -> \" + e);\n        }\n    }\n}\n// Expected Output:\n// Sorted Roster (Highest Salary First):\n//  -> [Alice: id=101, $95000]\n//  -> [Bob: id=102, $85000]\n//  -> [Charlie: id=103, $85000]"
+    },
+    {
+      "id": "act-col6-l5-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Multi-Attribute Version Number Natural Sorter",
+      "description": "Trace a Semantic Versioning (SemVer) class implementing Comparable across major, minor, and patch numbers.",
+      "code": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\npublic class SemanticVersion implements Comparable<SemanticVersion> {\n    final int major;\n    final int minor;\n    final int patch;\n\n    public SemanticVersion(int major, int minor, int patch) {\n        this.major = major;\n        this.minor = minor;\n        this.patch = patch;\n    }\n\n    @Override\n    public int compareTo(SemanticVersion o) {\n        int cmp = Integer.compare(this.major, o.major);\n        if (cmp != 0) return cmp;\n        cmp = Integer.compare(this.minor, o.minor);\n        if (cmp != 0) return cmp;\n        return Integer.compare(this.patch, o.patch);\n    }\n\n    @Override\n    public String toString() { return major + \".\" + minor + \".\" + patch; }\n\n    public static void main(String[] args) {\n        List<SemanticVersion> versions = new ArrayList<>(List.of(\n            new SemanticVersion(2, 1, 0),\n            new SemanticVersion(1, 9, 5),\n            new SemanticVersion(2, 0, 1),\n            new SemanticVersion(2, 1, 4)\n        ));\n\n        Collections.sort(versions);\n        System.out.println(\"Sorted versions: \" + versions);\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "16-22",
+          "description": "Compare major version first using Integer.compare(). If non-zero, return immediately."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "19-21",
+          "description": "If major versions are equal, fall through to compare minor, then patch."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "33",
+          "description": "Collections.sort(versions) orders versions ascending: 1.9.5, 2.0.1, 2.1.0, 2.1.4."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l5-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Comparable Contract Assessment",
+      "questions": [
+        {
+          "id": "col6-l5-q1",
+          "question": "What happens if a class's compareTo() method violates the transitivity law (a > b and b > c, but a < c)?",
+          "options": [
+            "The compiler catches the violation at build-time",
+            "Sorting algorithms like TimSort may crash at runtime with an IllegalArgumentException: Comparison method violates its general contract!",
+            "Collections.sort() defaults to reverse order",
+            "The JVM falls back to sorting by hashCode"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Java's sorting algorithm (TimSort) verifies ordering invariants during its merge steps. If a comparator or compareTo violates transitivity or antisymmetry, TimSort throws an IllegalArgumentException: Comparison method violates its general contract!"
+        },
+        {
+          "id": "col6-l5-q2",
+          "question": "Why does adding new BigDecimal(\"2.0\") and new BigDecimal(\"2.00\") to a TreeSet result in a set of size 1?",
+          "options": [
+            "Because TreeSet removes duplicates by calling hashCode()",
+            "Because TreeSet determines element uniqueness using compareTo() == 0 rather than equals()",
+            "Because BigDecimal implements Set",
+            "Because the second element is rejected as invalid input"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "TreeSet is a NavigableSet based on a Red-Black tree. It determines duplicate elements strictly by testing if compareTo(a, b) == 0. Because 2.0 and 2.00 are numerically equal (compareTo returns 0), TreeSet treats them as duplicates even though equals() returns false."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l5-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: Comparable vs Comparator",
+      "qaList": [
+        {
+          "question": "When should you implement Comparable<T> on a domain entity versus defining an external Comparator<T>?",
+          "answer": "Implement 'Comparable<T>' when an entity has a single, obvious, uncontroversial 'natural' ordering that applies in 90% of use cases (e.g., Integer by numeric value, LocalDate by chronological date, Employee by employee ID). It modifies the class itself.\n\nUse an external 'Comparator<T>' when: 1. You need secondary or situational orderings (e.g., sort employees by salary, by last name, or by department). 2. You do not own the source code of the class and cannot modify it to implement Comparable. 3. You want to parameterize sorting strategies at runtime (e.g., user selects 'Sort by Price: Low to High' on an e-commerce catalog). Comparator decouples the sorting strategy from the entity."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l5-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand the 3-way return sign contract of compareTo()",
+        "I know the three mathematical axioms: antisymmetry, transitivity, congruence",
+        "I understand why consistency between compareTo() and equals() is critical for TreeSet",
+        "I always use Integer.compare() and Double.compare() instead of subtraction"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "it-student-gpa-id-natural",
+      "title": "Student Natural Order: GPA Descending, ID Ascending",
+      "difficulty": "medium",
+      "problemStatement": "Implement Comparable<Student> for a class Student (int id, String name, double gpa). Sort primarily by gpa descending (higher GPA first), tie-breaking by id ascending.",
+      "starterCode": "import java.util.Collections;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class Student implements Comparable<Student> {\n    final int id;\n    final String name;\n    final double gpa;\n\n    public Student(int id, String name, double gpa) {\n        this.id = id;\n        this.name = name;\n        this.gpa = gpa;\n    }\n\n    @Override\n    public int compareTo(Student o) {\n        return 0;\n    }\n\n    @Override\n    public String toString() { return name + \"(\" + id + \",\" + gpa + \")\"; }\n\n    public static void main(String[] args) {\n        List<Student> students = new ArrayList<>(List.of(\n            new Student(101, \"Alice\", 3.8),\n            new Student(103, \"Charlie\", 3.9),\n            new Student(102, \"Bob\", 3.8)\n        ));\n        Collections.sort(students);\n        System.out.println(students); // [Charlie(103,3.9), Alice(101,3.8), Bob(102,3.8)]\n    }\n}",
+      "solutionCode": "import java.util.Collections;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class Student implements Comparable<Student> {\n    final int id;\n    final String name;\n    final double gpa;\n\n    public Student(int id, String name, double gpa) {\n        this.id = id;\n        this.name = name;\n        this.gpa = gpa;\n    }\n\n    @Override\n    public int compareTo(Student o) {\n        int gpaCmp = Double.compare(o.gpa, this.gpa); // Descending\n        if (gpaCmp != 0) return gpaCmp;\n        return Integer.compare(this.id, o.id);        // Ascending tie-breaker\n    }\n\n    @Override\n    public String toString() { return name + \"(\" + id + \",\" + gpa + \")\"; }\n\n    public static void main(String[] args) {\n        List<Student> students = new ArrayList<>(List.of(\n            new Student(101, \"Alice\", 3.8),\n            new Student(103, \"Charlie\", 3.9),\n            new Student(102, \"Bob\", 3.8)\n        ));\n        Collections.sort(students);\n        System.out.println(students);\n    }\n}",
+      "testCases": [
+        {
+          "input": "students: Alice(101, 3.8), Charlie(103, 3.9), Bob(102, 3.8)",
+          "expectedOutput": "[Charlie(103,3.9), Alice(101,3.8), Bob(102,3.8)]"
+        }
+      ],
+      "expectedOutput": "[Charlie(103,3.9), Alice(101,3.8), Bob(102,3.8)]"
+    },
+    {
+      "id": "it-transaction-timestamp-order",
+      "title": "Financial Transaction Chronological Natural Order",
+      "difficulty": "easy",
+      "problemStatement": "Implement Comparable<Transaction> for class Transaction(String id, long timestamp, double amount) sorting chronologically by timestamp ascending.",
+      "starterCode": "import java.util.Collections;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class Transaction implements Comparable<Transaction> {\n    final String id;\n    final long timestamp;\n    final double amount;\n\n    public Transaction(String id, long timestamp, double amount) {\n        this.id = id;\n        this.timestamp = timestamp;\n        this.amount = amount;\n    }\n\n    @Override\n    public int compareTo(Transaction o) {\n        return 0;\n    }\n\n    @Override\n    public String toString() { return id; }\n\n    public static void main(String[] args) {\n        List<Transaction> txs = new ArrayList<>(List.of(\n            new Transaction(\"TX3\", 3000L, 50.0),\n            new Transaction(\"TX1\", 1000L, 20.0),\n            new Transaction(\"TX2\", 2000L, 10.0)\n        ));\n        Collections.sort(txs);\n        System.out.println(txs); // [TX1, TX2, TX3]\n    }\n}",
+      "solutionCode": "import java.util.Collections;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class Transaction implements Comparable<Transaction> {\n    final String id;\n    final long timestamp;\n    final double amount;\n\n    public Transaction(String id, long timestamp, double amount) {\n        this.id = id;\n        this.timestamp = timestamp;\n        this.amount = amount;\n    }\n\n    @Override\n    public int compareTo(Transaction o) {\n        return Long.compare(this.timestamp, o.timestamp);\n    }\n\n    @Override\n    public String toString() { return id; }\n\n    public static void main(String[] args) {\n        List<Transaction> txs = new ArrayList<>(List.of(\n            new Transaction(\"TX3\", 3000L, 50.0),\n            new Transaction(\"TX1\", 1000L, 20.0),\n            new Transaction(\"TX2\", 2000L, 10.0)\n        ));\n        Collections.sort(txs);\n        System.out.println(txs);\n    }\n}",
+      "testCases": [
+        {
+          "input": "TX3(3000), TX1(1000), TX2(2000)",
+          "expectedOutput": "[TX1, TX2, TX3]"
+        }
+      ],
+      "expectedOutput": "[TX1, TX2, TX3]"
+    },
+    {
+      "id": "it-product-sku-lexical-order",
+      "title": "Product SKU Lexicographical Natural Order",
+      "difficulty": "easy",
+      "problemStatement": "Implement Comparable<Product> for class Product(String sku, double price) where natural order sorts lexicographically by sku ascending.",
+      "starterCode": "import java.util.Collections;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class Product implements Comparable<Product> {\n    final String sku;\n    final double price;\n\n    public Product(String sku, double price) {\n        this.sku = sku;\n        this.price = price;\n    }\n\n    @Override\n    public int compareTo(Product o) {\n        return 0;\n    }\n\n    @Override\n    public String toString() { return sku; }\n\n    public static void main(String[] args) {\n        List<Product> prods = new ArrayList<>(List.of(\n            new Product(\"PROD-Z\", 10.0),\n            new Product(\"PROD-A\", 50.0),\n            new Product(\"PROD-M\", 20.0)\n        ));\n        Collections.sort(prods);\n        System.out.println(prods); // [PROD-A, PROD-M, PROD-Z]\n    }\n}",
+      "solutionCode": "import java.util.Collections;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class Product implements Comparable<Product> {\n    final String sku;\n    final double price;\n\n    public Product(String sku, double price) {\n        this.sku = sku;\n        this.price = price;\n    }\n\n    @Override\n    public int compareTo(Product o) {\n        if (this.sku == null && o.sku == null) return 0;\n        if (this.sku == null) return -1;\n        if (o.sku == null) return 1;\n        return this.sku.compareTo(o.sku);\n    }\n\n    @Override\n    public String toString() { return sku; }\n\n    public static void main(String[] args) {\n        List<Product> prods = new ArrayList<>(List.of(\n            new Product(\"PROD-Z\", 10.0),\n            new Product(\"PROD-A\", 50.0),\n            new Product(\"PROD-M\", 20.0)\n        ));\n        Collections.sort(prods);\n        System.out.println(prods);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"PROD-Z\", \"PROD-A\", \"PROD-M\"]",
+          "expectedOutput": "[PROD-A, PROD-M, PROD-Z]"
+        }
+      ],
+      "expectedOutput": "[PROD-A, PROD-M, PROD-Z]"
+    },
+    {
+      "id": "it-verify-equals-consistency",
+      "title": "Audit compareTo Consistency with equals",
+      "difficulty": "medium",
+      "problemStatement": "Implement a generic method boolean isConsistentWithEquals(T a, T b) for <T extends Comparable<T>> that returns true if (a.compareTo(b) == 0) == a.equals(b).",
+      "starterCode": "public class ConsistencyAuditor {\n    public static <T extends Comparable<T>> boolean isConsistentWithEquals(T a, T b) {\n        return false;\n    }\n\n    public static void main(String[] args) {\n        String s1 = \"hello\";\n        String s2 = \"hello\";\n        System.out.println(isConsistentWithEquals(s1, s2)); // true\n        \n        java.math.BigDecimal b1 = new java.math.BigDecimal(\"2.0\");\n        java.math.BigDecimal b2 = new java.math.BigDecimal(\"2.00\");\n        System.out.println(isConsistentWithEquals(b1, b2)); // false\n    }\n}",
+      "solutionCode": "public class ConsistencyAuditor {\n    public static <T extends Comparable<T>> boolean isConsistentWithEquals(T a, T b) {\n        if (a == null && b == null) return true;\n        if (a == null || b == null) return false;\n        boolean compareZero = a.compareTo(b) == 0;\n        boolean equalsTrue = a.equals(b);\n        return compareZero == equalsTrue;\n    }\n\n    public static void main(String[] args) {\n        String s1 = \"hello\";\n        String s2 = \"hello\";\n        System.out.println(isConsistentWithEquals(s1, s2));\n        \n        java.math.BigDecimal b1 = new java.math.BigDecimal(\"2.0\");\n        java.math.BigDecimal b2 = new java.math.BigDecimal(\"2.00\");\n        System.out.println(isConsistentWithEquals(b1, b2));\n    }\n}",
+      "testCases": [
+        {
+          "input": "String(\"hello\", \"hello\"), BigDecimal(\"2.0\", \"2.00\")",
+          "expectedOutput": "true\nfalse"
+        }
+      ],
+      "expectedOutput": "true\nfalse"
+    },
+    {
+      "id": "it-clamp-comparable",
+      "title": "Comparable Boundary Clamper",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method clampComparable(T val, T lower, T upper) for <T extends Comparable<T>> that returns lower if val < lower, upper if val > upper, and val otherwise.",
+      "starterCode": "public class BoundaryClamper {\n    public static <T extends Comparable<T>> T clampComparable(T val, T lower, T upper) {\n        return null;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(clampComparable(5, 10, 20));  // 10\n        System.out.println(clampComparable(15, 10, 20)); // 15\n        System.out.println(clampComparable(25, 10, 20)); // 20\n    }\n}",
+      "solutionCode": "public class BoundaryClamper {\n    public static <T extends Comparable<T>> T clampComparable(T val, T lower, T upper) {\n        if (val.compareTo(lower) < 0) return lower;\n        if (val.compareTo(upper) > 0) return upper;\n        return val;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(clampComparable(5, 10, 20));\n        System.out.println(clampComparable(15, 10, 20));\n        System.out.println(clampComparable(25, 10, 20));\n    }\n}",
+      "testCases": [
+        {
+          "input": "clampComparable(5, 10, 20), (15, 10, 20), (25, 10, 20)",
+          "expectedOutput": "10\n15\n20"
+        }
+      ],
+      "expectedOutput": "10\n15\n20"
+    }
+  ]
+}

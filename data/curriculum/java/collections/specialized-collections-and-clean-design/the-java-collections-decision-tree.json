@@ -1,0 +1,213 @@
+{
+  "id": "les-col-sp-4-collections-decision-tree",
+  "slug": "the-java-collections-decision-tree",
+  "sectionSlug": "collections",
+  "moduleSlug": "specialized-collections-and-clean-design",
+  "languageSlug": "java",
+  "title": "The Java Collections Decision Tree",
+  "summary": "Master the senior architect decision framework for selecting optimal collections: compare time complexities, memory footprints, ordering guarantees, uniqueness contracts, and concurrency requirements across all 15 core Java collection types.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 35,
+  "orderIndex": 4,
+  "prerequisites": [
+    "synchronized-wrappers-vs-concurrent-collections"
+  ],
+  "learningObjectives": [
+    "Navigate the complete architectural decision tree to select the ideal collection for any production scenario",
+    "Compare amortized time complexities and CPU cache locality across ArrayList, LinkedList, ArrayDeque, and hash structures",
+    "Differentiate ordering semantics: unordered (HashSet), insertion-ordered (LinkedHashSet), and sorted (TreeSet)",
+    "Analyze memory overheads per element across pointer-heavy nodes and compact array buffers",
+    "Identify and avoid anti-patterns such as using legacy Vector/Stack or using LinkedList for stacks"
+  ],
+  "expectedOutcomes": [
+    "Select the mathematically optimal collection structure for high-throughput enterprise systems",
+    "Defend architectural choices in placement exams and system design interviews",
+    "Minimize GC pauses by selecting memory-compact collections over node-heavy graphs"
+  ],
+  "activities": [
+    {
+      "id": "act-col-sp-4-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Choosing the Right Transport Vehicle",
+      "description": "Why matching data structure mechanics to workload requirements is essential.",
+      "content": "In logistics engineering, you do not use an ocean container ship to deliver a single urgent heart medication across town, nor do you hire 10,000 courier bicycles to haul 50,000 tons of crude iron ore. A high-speed bicycle (ArrayList), a multi-lane container train (ArrayDeque), a heavy-duty cargo vessel (TreeSet), and a pneumatic tube (ConcurrentLinkedQueue) each solve fundamentally different transit equations.\n\nSelecting a collection follows identical physics. Using `LinkedList` because you think insertion is fast ignores CPU cache misses, adding 24 bytes of pointer overhead per element. Using `TreeSet` when order does not matter introduces an unnecessary $O(\\log N)$ tree balancing tax on every insert. The Java Collections Decision Tree provides the deterministic engineering algorithm for picking the exact vehicle for your data payload."
+    },
+    {
+      "id": "act-col-sp-4-concept",
+      "type": "concept",
+      "title": "The Unified Java Collections Decision Algorithm",
+      "description": "Systematic selection framework, complexity taxonomy, and memory footprint analysis.",
+      "content": "### Formal Computer Science Definition\nThe Java Collections Decision Tree is a deterministic hierarchical classification algorithm that maps software functional constraints (key-value vs single value, duplicate tolerance, ordering requirements, concurrency model) and non-functional requirements (CPU cache locality, memory limits, asymptotic complexity bounds) to the optimal concrete collection type.\n\n### The Senior Architect Decision Flowchart\n\n```\n                                START: Do you need to store data?\n                                                |\n                 +------------------------------+------------------------------+\n                 |                                                             |\n         Key-Value Pairs (MAP)                                         Single Values (COLLECTION)\n                 |                                                             |\n      +----------+----------+                                    +-------------+-------------+\n      |                     |                                    |                           |\nIs Key an Enum?    Concurrent System?                    Duplicates Allowed?         Buffer / FIFO / LIFO?\n  YES -> EnumMap     YES -> ConcurrentHashMap                    |                           |\n  NO:                NO:                                 YES (LIST)       NO (SET)       Queue / Deque\n  +--------------------+                                 |                |              |\n  | Need Sorted Order? |                           +-----+-----+    +-----+-----+   Need Priority?\n  |  YES -> TreeMap    |                           |           |    |           |    YES -> PriorityQueue\n  | Need Insertion?    |                     Default:   Middle-Ins? Unordered?  Sorted?  NO -> ArrayDeque\n  |  YES -> LinkedHM   |                     ArrayList  (Rarely     HashSet     TreeSet\n  | Default:           |                                LinkedList) Preserved?  Enum?\n  |  HashMap           |                                            LinkedHS    EnumSet\n  +--------------------+                                            \n```\n\n### Comprehensive Asymptotic Complexity & Memory Matrix\n\n| Collection | Random Read | Search / Contains | Insertion (Head/Tail) | Memory Overhead per Elem |\n| :--- | :--- | :--- | :--- | :--- |\n| **`ArrayList`** | $O(1)$ | $O(N)$ | Amortized $O(1)$ at tail, $O(N)$ head | Minimal (flat `Object[]`, 4-8 bytes/ref) |\n| **`ArrayDeque`** | $O(1)$ peek | $O(N)$ | $O(1)$ amortized both ends | Minimal (circular `Object[]`) |\n| **`LinkedList`** | $O(N)$ | $O(N)$ | $O(1)$ both ends | High (24 bytes for `Node` + 2 refs) |\n| **`HashSet`** | N/A | $O(1)$ amortized | $O(1)$ amortized | High (~32 bytes for `HashMap.Node`) |\n| **`LinkedHashSet`** | N/A | $O(1)$ amortized | $O(1)$ amortized | Very High (node + before/after refs) |\n| **`TreeSet`** | N/A | $O(\\log N)$ | $O(\\log N)$ | High (32+ bytes for Red-Black `Entry`) |\n| **`EnumSet`** | N/A | $O(1)$ single-cycle | $O(1)$ single-cycle | Zero (1 primitive `long` for $\\le 64$ enums) |\n| **`HashMap`** | N/A | $O(1)$ amortized | $O(1)$ amortized | ~32 bytes per entry |\n| **`TreeMap`** | N/A | $O(\\log N)$ | $O(\\log N)$ | ~40 bytes per tree node |\n\n### Key Decision Rules\n1. **Default List is ALWAYS `ArrayList`**: Even for insertions at the start or middle for collections under a few thousand elements, `ArrayList`'s contiguous memory and CPU cache prefetching outperform `LinkedList`'s pointer chasing.\n2. **Default Queue/Deque is ALWAYS `ArrayDeque`**: Never use legacy `Stack` (extends `Vector`, has synchronized lock overhead) or `LinkedList` as a queue.\n3. **Default Set/Map is ALWAYS `HashSet` / `HashMap`**: Unless sorted order is required (use `TreeSet`/`TreeMap`), insertion order matters (use `LinkedHashSet`/`LinkedHashMap`), or keys are enums (use `EnumSet`/`EnumMap`)."
+    },
+    {
+      "id": "act-col-sp-4-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Executable Demonstration: Decision-Tree Implementation Patterns",
+      "description": "Demonstrating when to use ArrayDeque over Stack, LinkedHashMap for LRU caching, and TreeSet for range views.",
+      "content": "```java\nimport java.util.ArrayDeque;\nimport java.util.Deque;\nimport java.util.LinkedHashMap;\nimport java.util.Map;\nimport java.util.NavigableSet;\nimport java.util.TreeSet;\n\npublic class DecisionTreeDemo {\n\n    // 1. ArrayDeque as modern high-performance LIFO Stack\n    public static void demonstrateModernStack() {\n        Deque<String> stack = new ArrayDeque<>();\n        stack.push(\"ROUTE_FIRST\");\n        stack.push(\"ROUTE_SECOND\");\n        stack.push(\"ROUTE_THIRD\");\n\n        System.out.println(\"Popping from ArrayDeque stack:\");\n        while (!stack.isEmpty()) {\n            System.out.println(\"  Popped: \" + stack.pop());\n        }\n    }\n\n    // 2. LinkedHashMap as simple LRU (Least Recently Used) cache\n    public static void demonstrateLruCache() {\n        final int MAX_ENTRIES = 3;\n        // accessOrder = true enables LRU eviction order\n        Map<String, String> lruCache = new LinkedHashMap<String, String>(16, 0.75f, true) {\n            @Override\n            protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {\n                return size() > MAX_ENTRIES;\n            }\n        };\n\n        lruCache.put(\"A\", \"Alpha\");\n        lruCache.put(\"B\", \"Beta\");\n        lruCache.put(\"C\", \"Gamma\");\n        System.out.println(\"Initial Cache: \" + lruCache.keySet());\n\n        // Access 'A' to promote it\n        lruCache.get(\"A\");\n        // Insert 'D' - evicts eldest accessed ('B')\n        lruCache.put(\"D\", \"Delta\");\n        System.out.println(\"Cache after accessing 'A' and adding 'D' (B evicted): \" + lruCache.keySet());\n    }\n\n    // 3. NavigableSet for Sorted Range Queries\n    public static void demonstrateRangeQueries() {\n        NavigableSet<Integer> scores = new TreeSet<>();\n        scores.add(45);\n        scores.add(88);\n        scores.add(92);\n        scores.add(67);\n        scores.add(75);\n\n        System.out.println(\"Scores in range [60, 90]: \" + scores.subSet(60, true, 90, true));\n        System.out.println(\"Highest score <= 70: \" + scores.floor(70));\n        System.out.println(\"Lowest score >= 70: \" + scores.ceiling(70));\n    }\n\n    public static void main(String[] args) {\n        demonstrateModernStack();\n        demonstrateLruCache();\n        demonstrateRangeQueries();\n    }\n}\n```\n\n```text\nPopping from ArrayDeque stack:\n  Popped: ROUTE_THIRD\n  Popped: ROUTE_SECOND\n  Popped: ROUTE_FIRST\nInitial Cache: [A, B, C]\nCache after accessing 'A' and adding 'D' (B evicted): [C, A, D]\nScores in range [60, 90]: [67, 75, 88]\nHighest score <= 70: 67\nLowest score >= 70: 75\n```"
+    },
+    {
+      "id": "act-col-sp-4-mcq",
+      "type": "mcq",
+      "title": "Architectural Decision Assessment",
+      "description": "Test ability to evaluate performance trade-offs, ordering semantics, and memory footprints.",
+      "questions": [
+        {
+          "question": "Why is ArrayDeque strictly preferred over java.util.Stack for LIFO stack operations in modern Java?",
+          "options": [
+            "ArrayDeque allows null elements while Stack does not",
+            "Stack extends Vector and incurs coarse synchronized monitor lock overhead on every method; ArrayDeque is unsynchronized, circular-array backed, and cache-friendly",
+            "ArrayDeque uses red-black trees under the hood",
+            "Stack is limited to 1024 elements"
+          ],
+          "correctAnswer": 1,
+          "explanation": "java.util.Stack is a legacy class inheriting from Vector, synchronizing every method and incurring lock penalties. ArrayDeque is designed specifically for queue and stack operations using a contiguous circular array with zero lock overhead."
+        },
+        {
+          "question": "Which collection should you choose if you need fast O(1) lookups by key while retaining the order in which entries were accessed (for an LRU cache)?",
+          "options": [
+            "TreeMap",
+            "HashMap",
+            "LinkedHashMap with accessOrder set to true",
+            "ConcurrentSkipListMap"
+          ],
+          "correctAnswer": 2,
+          "explanation": "LinkedHashMap with accessOrder = true maintains a doubly-linked list running through its entries ordered by access frequency (least-recently accessed at head, most-recently at tail), ideal for LRU caching."
+        },
+        {
+          "question": "Under what circumstance does LinkedList significantly outperform ArrayList in practice?",
+          "options": [
+            "Random access reads by integer index",
+            "Iterating sequentially through all elements",
+            "Frequent insertions and deletions at the current position of an active ListIterator",
+            "Storing millions of primitive numbers with low heap footprint"
+          ],
+          "correctAnswer": 2,
+          "explanation": "With an active ListIterator already positioned at the target node, LinkedList.add() or remove() updates node pointers in O(1) time without shifting array elements. In virtually all other cases, ArrayList outperforms LinkedList."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-4-interview-qa",
+      "type": "interview_qa",
+      "title": "Staff Engineer Architectural Interview Questions",
+      "description": "System design trade-offs regarding memory overhead, cache locality, and collection selection.",
+      "questions": [
+        {
+          "question": "Why does ArrayList generally outperform LinkedList even for insertions near the beginning or middle of small-to-medium lists?",
+          "answer": "Modern CPUs rely heavily on L1/L2/L3 hardware caches. ArrayList stores elements in a contiguous memory array. When reading or copying elements during insertion, CPU hardware prefetchers load contiguous memory blocks into cache lines simultaneously, and System.arraycopy performs hardware-accelerated memory block copies.\n\nIn contrast, LinkedList allocates independent Node objects scattered randomly across the heap. Traversal causes frequent cache misses (pointer chasing). Furthermore, each LinkedList node consumes 24 additional bytes of pointer overhead on a 64-bit JVM, creating massive memory bloat."
+        },
+        {
+          "question": "Given a requirement to store 10 million unique integers for quick existence checks in a memory-constrained microservice, which collection should you select and why?",
+          "answer": "HashSet<Integer> is disastrous: 10 million boxed Integers plus 10 million HashMap.Node objects will consume approximately 320 to 400 MB of heap memory.\n\nA senior architect would choose a primitive bit-vector structure such as java.util.BitSet or an off-heap/primitive library (RoaringBitmap). A BitSet storing integers up to 10 million consumes only ~1.2 MB of memory\u2014a 300x reduction\u2014with single-instruction O(1) bit testing."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-4-self-eval",
+      "type": "self_evaluation",
+      "title": "Collections Selection Competency Checklist",
+      "description": "Assess your proficiency with the Java collection selection framework.",
+      "items": [
+        "I know to default to ArrayList for lists and ArrayDeque for stacks and queues.",
+        "I know when to pick LinkedHashMap (LRU cache, deterministic order) over HashMap.",
+        "I understand why LinkedList is almost never the right choice due to CPU cache misses and node overhead.",
+        "I understand the difference between TreeSet (sorted) and LinkedHashSet (insertion ordered).",
+        "I can evaluate memory footprint trade-offs between node-based and array-based collections."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col-sp-4-1",
+      "title": "Collection Type Decider Utility",
+      "difficulty": "easy",
+      "problemStatement": "Implement `String recommendCollection(boolean requiresKeyValue, boolean requiresUnique, boolean requiresSorting, boolean isQueue)` that returns the recommended Java interface or class name:\n- If `isQueue`: return `'ArrayDeque'`\n- If `requiresKeyValue`: return `requiresSorting ? 'TreeMap' : 'HashMap'`\n- If `requiresUnique`: return `requiresSorting ? 'TreeSet' : 'HashSet'`\n- Otherwise: return `'ArrayList'`",
+      "starterCode": "public class CollectionAdvisor {\n    public static String recommendCollection(boolean requiresKeyValue, boolean requiresUnique, boolean requiresSorting, boolean isQueue) {\n        // TODO: Implement decision logic\n        return null;\n    }\n}",
+      "solutionCode": "public class CollectionAdvisor {\n    public static String recommendCollection(boolean requiresKeyValue, boolean requiresUnique, boolean requiresSorting, boolean isQueue) {\n        if (isQueue) return \"ArrayDeque\";\n        if (requiresKeyValue) {\n            return requiresSorting ? \"TreeMap\" : \"HashMap\";\n        }\n        if (requiresUnique) {\n            return requiresSorting ? \"TreeSet\" : \"HashSet\";\n        }\n        return \"ArrayList\";\n    }\n}",
+      "expectedOutput": "ArrayDeque",
+      "testCases": [
+        {
+          "input": "false, false, false, true",
+          "expectedOutput": "ArrayDeque"
+        },
+        {
+          "input": "true, false, true, false",
+          "expectedOutput": "TreeMap"
+        },
+        {
+          "input": "false, true, false, false",
+          "expectedOutput": "HashSet"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-4-2",
+      "title": "Insertion-Preserving Unique Collector",
+      "difficulty": "easy",
+      "problemStatement": "Implement `LinkedHashSet<String> deduplicatePreservingOrder(List<String> rawTokens)` that takes a list of tokens and returns a `LinkedHashSet` maintaining the exact order tokens were first encountered, ignoring duplicates and nulls.",
+      "starterCode": "import java.util.LinkedHashSet;\nimport java.util.List;\n\npublic class OrderedDeduplicator {\n    public static LinkedHashSet<String> deduplicatePreservingOrder(List<String> rawTokens) {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashSet;\nimport java.util.List;\n\npublic class OrderedDeduplicator {\n    public static LinkedHashSet<String> deduplicatePreservingOrder(List<String> rawTokens) {\n        LinkedHashSet<String> result = new LinkedHashSet<>();\n        if (rawTokens == null) return result;\n        for (String token : rawTokens) {\n            if (token != null) {\n                result.add(token);\n            }\n        }\n        return result;\n    }\n}",
+      "expectedOutput": "[alpha, beta, gamma]",
+      "testCases": [
+        {
+          "input": "['alpha', 'beta', 'alpha', 'gamma', null]",
+          "expectedOutput": "[alpha, beta, gamma]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-4-3",
+      "title": "Sorted Boundary Extractor with NavigableSet",
+      "difficulty": "medium",
+      "problemStatement": "Implement `int[] findRangeBounds(TreeSet<Integer> sortedScores, int target)` that uses `floor()` and `ceiling()` to return a 2-element array `[floor, ceiling]`. If either does not exist, substitute with `-1`.",
+      "starterCode": "import java.util.TreeSet;\n\npublic class ScoreBoundaryFinder {\n    public static int[] findRangeBounds(TreeSet<Integer> sortedScores, int target) {\n        // TODO: Use floor and ceiling\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\n\npublic class ScoreBoundaryFinder {\n    public static int[] findRangeBounds(TreeSet<Integer> sortedScores, int target) {\n        if (sortedScores == null || sortedScores.isEmpty()) {\n            return new int[]{-1, -1};\n        }\n        Integer floor = sortedScores.floor(target);\n        Integer ceiling = sortedScores.ceiling(target);\n        return new int[]{\n            floor != null ? floor : -1,\n            ceiling != null ? ceiling : -1\n        };\n    }\n}",
+      "expectedOutput": "[40, 50]",
+      "testCases": [
+        {
+          "input": "scores = [10, 20, 40, 50, 70], target = 45",
+          "expectedOutput": "[40, 50]"
+        },
+        {
+          "input": "scores = [10, 20], target = 5",
+          "expectedOutput": "[-1, 10]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-4-4",
+      "title": "High-Speed Bracket Matcher with ArrayDeque",
+      "difficulty": "medium",
+      "problemStatement": "Implement `boolean isBalanced(String expression)` using an `ArrayDeque<Character>` as a LIFO stack to validate balanced parenthesis `()`, brackets `[]`, and braces `{}`. Returns `true` if balanced, `false` otherwise.",
+      "starterCode": "import java.util.ArrayDeque;\nimport java.util.Deque;\n\npublic class BracketValidator {\n    public static boolean isBalanced(String expression) {\n        // TODO: Use ArrayDeque as stack\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.ArrayDeque;\nimport java.util.Deque;\n\npublic class BracketValidator {\n    public static boolean isBalanced(String expression) {\n        if (expression == null) return true;\n        Deque<Character> stack = new ArrayDeque<>();\n        for (char ch : expression.toCharArray()) {\n            if (ch == '(' || ch == '[' || ch == '{') {\n                stack.push(ch);\n            } else if (ch == ')' || ch == ']' || ch == '}') {\n                if (stack.isEmpty()) return false;\n                char open = stack.pop();\n                if (ch == ')' && open != '(') return false;\n                if (ch == ']' && open != '[') return false;\n                if (ch == '}' && open != '{') return false;\n            }\n        }\n        return stack.isEmpty();\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "'{[()]}'",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "'{[(])}'",
+          "expectedOutput": "false"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-4-5",
+      "title": "Bounded LRU Cache Implementation",
+      "difficulty": "medium",
+      "problemStatement": "Implement `LruCache<K, V>` with maximum capacity $C$ extending `LinkedHashMap<K, V>`. Ensure that when the cache exceeds $C$ entries, the eldest entry is automatically evicted upon `put()`.",
+      "starterCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class LruCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n\n    public LruCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        // TODO\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashMap;\nimport java.util.Map;\n\npublic class LruCache<K, V> extends LinkedHashMap<K, V> {\n    private final int capacity;\n\n    public LruCache(int capacity) {\n        super(capacity, 0.75f, true);\n        this.capacity = capacity;\n    }\n\n    @Override\n    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {\n        return size() > capacity;\n    }\n}",
+      "expectedOutput": "Size limited to capacity",
+      "testCases": [
+        {
+          "input": "LruCache(2) with put(1, A), put(2, B), put(3, C) -> key 1 evicted",
+          "expectedOutput": "Size limited to capacity"
+        }
+      ]
+    }
+  ]
+}

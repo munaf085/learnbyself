@@ -1,0 +1,216 @@
+{
+  "id": "les-col-listiterator",
+  "slug": "listiterator-bi-directional-traversal-and-list-mutation",
+  "sectionSlug": "collections",
+  "moduleSlug": "iterators-and-ordering-contracts",
+  "languageSlug": "java",
+  "title": "ListIterator: Bi-Directional Traversal & List Mutation",
+  "summary": "Master ListIterator: hasPrevious(), previous(), nextIndex(), previousIndex(), set(), and add() for precise index-aware bidirectional navigation.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "prerequisites": [
+    "Iterator: Safe In-Flight Modification & Traversal",
+    "The List Contract & ArrayList Internals"
+  ],
+  "learningObjectives": [
+    "Understand the cursor positioning model of java.util.ListIterator<E>",
+    "Perform backward and bidirectional list traversal using hasPrevious() and previous()",
+    "Perform in-flight element replacement using listIterator.set(E)",
+    "Perform in-flight element insertion using listIterator.add(E) without triggering ConcurrentModificationException"
+  ],
+  "expectedOutcomes": [
+    "Ability to execute complex index-aware sequence algorithms using ListIterator",
+    "Confidence implementing bidirectional text editors and history undo buffers"
+  ],
+  "activities": [
+    {
+      "id": "act-col6-l3-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Cassette Tape Read/Write Head",
+      "analogy": {
+        "headline": "Practical Context: Cassette Tape Read/Write Head",
+        "story": "Consider the magnetic read/write head of an audio cassette deck. Unlike a basic vinyl turntable stylus that can only spin forward in one direction, a cassette head sits on a bi-directional motorized mechanism.\n\nIt can play forward (`next()`), rewind backward (`previous()`), query its precise counter position (`nextIndex()`), overwrite a faulty audio segment right under the head (`set()`), or splice in fresh tape stock (`add()`).\n\n`ListIterator` provides this exact two-way, mutable scrubbing capability across Java list collections.",
+        "keyTakeaway": "ListIterator extends Iterator exclusively for Lists, supporting forward/backward traversal, index inspection, and in-flight element replacement (set) and insertion (add)."
+      },
+      "content": "Consider the magnetic read/write head of an audio cassette deck. Unlike a basic vinyl turntable stylus that can only spin forward in one direction, a cassette head sits on a bi-directional motorized mechanism.\n\nIt can play forward (`next()`), rewind backward (`previous()`), query its precise counter position (`nextIndex()`), overwrite a faulty audio segment right under the head (`set()`), or splice in fresh tape stock (`add()`).\n\n`ListIterator` provides this exact two-way, mutable scrubbing capability across Java list collections."
+    },
+    {
+      "id": "act-col6-l3-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "ListIterator Architecture: The Between-Element Cursor Model",
+      "breakdown": {
+        "keyTakeaways": [
+          "ListIterator is available exclusively on List implementations via list.listIterator()",
+          "The cursor sits BETWEEN elements: index 0 is before element 0; index N is after element N-1",
+          "previous() steps backward and returns the element before the cursor",
+          "set(E) replaces the last element returned by next() or previous()",
+          "add(E) inserts an element immediately BEFORE the cursor without triggering CME"
+        ]
+      },
+      "content": "### The Between-Elements Cursor Model\n\nUnlike an integer array index that points directly to a cell, a **`ListIterator` cursor always lies *between* elements**:\n```text\n  Element(0)     Element(1)     Element(2)     Element(3)\n^              ^              ^              ^              ^\nIndex 0        Index 1        Index 2        Index 3        Index 4\n```\n* Calling `next()` moves the cursor forward and returns the element hopped over.\n* Calling `previous()` is guarded by hasPrevious() and moves the cursor backward and returns the element hopped over.\n* `nextIndex()` returns the index of the element that would be returned by `next()`.\n* `previousIndex()` returns the index of the element that would be returned by `previous()`.\n\n---\n\n### Advanced In-Flight Mutations: `set()` and `add()`\n\nBeyond `remove()`, `ListIterator` introduces two powerful mutation operations:\n1. **`void set(E e)`**:\n   Replaces the element returned by the **most recent** call to `next()` or `previous()`. Fails with `IllegalStateException` if neither has been called, or if `add()` or `remove()` was called since.\n2. **`void add(E e)`**:\n   Inserts the specified element into the list immediately **before** the cursor position. A subsequent call to `previous()` will return this new element; a call to `next()` is unaffected.\n\n---\n\n### Bidirectional Iteration Methods Summary\n\n| Method | Direction | Cursor Effect | Mutation Capability |\n| :--- | :--- | :--- | :--- |\n| **`next()`** | Forward | Advances cursor right by 1 | Prerequisite for `set()` or `remove()` |\n| **`previous()`** | Backward | Advances cursor left by 1 | Prerequisite for `set()` or `remove()` |\n| **`set(e)`** | In-place | Cursor position unchanged | Replaces last element returned |\n| **`add(e)`** | Insertion | Inserts element before cursor | Leaves next element untouched |\n\n---\n\n### Executable Demonstration: Bidirectional Navigation & Replacement",
+      "codeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.ListIterator;\n\npublic class ListIteratorDemo {\n    public static void main(String[] args) {\n        List<String> script = new ArrayList<>();\n        script.add(\"init\");\n        script.add(\"connect\");\n        script.add(\"poll\");\n        script.add(\"teardown\");\n\n        ListIterator<String> it = script.listIterator();\n\n        // 1. Forward traversal with in-place replacement (set)\n        while (it.hasNext()) {\n            String step = it.next();\n            if (step.equals(\"poll\")) {\n                it.set(\"stream_data\"); // In-flight replacement!\n                it.add(\"flush_buffer\"); // In-flight insertion!\n            }\n        }\n        System.out.println(\"After modification: \" + script);\n\n        // 2. Backward traversal from end of list\n        System.out.print(\"Reverse traversal:  \");\n        while (it.hasPrevious()) {\n            System.out.print(it.previous() + \" <- \");\n        }\n        System.out.println(\"START\");\n    }\n}\n// Expected Output:\n// After modification: [init, connect, stream_data, flush_buffer, teardown]\n// Reverse traversal:  teardown <- flush_buffer <- stream_data <- connect <- init <- START"
+    },
+    {
+      "id": "act-col6-l3-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Bidirectional Palindrome Verification Engine",
+      "description": "Trace a bidirectional palindrome detector comparing head and tail cursors simultaneously using ListIterator.",
+      "code": "import java.util.List;\nimport java.util.ListIterator;\nimport java.util.Objects;\n\npublic class ListPalindromeChecker {\n    public static <T> boolean isPalindrome(List<T> list) {\n        if (list == null || list.size() <= 1) return true;\n        ListIterator<T> forward = list.listIterator();\n        ListIterator<T> backward = list.listIterator(list.size());\n\n        while (forward.nextIndex() < backward.previousIndex()) {\n            T head = forward.next();\n            T tail = backward.previous();\n            if (!Objects.equals(head, tail)) {\n                return false;\n            }\n        }\n        return true;\n    }\n\n    public static void main(String[] args) {\n        List<String> radar = List.of(\"R\", \"A\", \"D\", \"A\", \"R\");\n        List<String> code = List.of(\"J\", \"A\", \"V\", \"A\");\n\n        System.out.println(\"Is RADAR a palindrome? \" + isPalindrome(radar)); // true\n        System.out.println(\"Is JAVA a palindrome?  \" + isPalindrome(code));  // false\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "6-8",
+          "description": "Initialize forward cursor at index 0 and backward cursor at index list.size()."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "10-16",
+          "description": "While forward.nextIndex() < backward.previousIndex(), step inwards: forward.next() moves right, backward.previous() moves left."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "20-24",
+          "description": "O(N) time and O(1) extra space. Avoids index lookups and works efficiently across both ArrayList and LinkedList."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l3-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "ListIterator Operations Assessment",
+      "questions": [
+        {
+          "id": "col6-l3-q1",
+          "question": "Which collections support the creation of a ListIterator?",
+          "options": [
+            "All classes implementing java.util.Collection",
+            "Classes implementing java.util.List only",
+            "Classes implementing java.util.Set only",
+            "Classes implementing java.util.Queue only"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "ListIterator is specific to indexed sequence collections. Only classes implementing java.util.List provide the listIterator() method."
+        },
+        {
+          "id": "col6-l3-q2",
+          "question": "What is the difference between listIterator.set(e) and listIterator.add(e)?",
+          "options": [
+            "set(e) replaces the last returned element; add(e) inserts a new element immediately before the cursor",
+            "set(e) inserts at the end; add(e) inserts at the beginning",
+            "set(e) throws an exception if the list is full; add(e) expands the list",
+            "Both methods perform the exact same operation"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "set(e) overwrites the element that was returned by the most recent call to next() or previous(). add(e) inserts a new element into the list before the cursor position without altering existing elements."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l3-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Senior Engineer Interview: ListIterator on LinkedList vs ArrayList",
+      "qaList": [
+        {
+          "question": "Why is performing multiple insertions using 'ListIterator.add()' on a LinkedList O(1) per insertion, whereas doing 'linkedList.add(index, element)' in a for-loop is O(N^2)?",
+          "answer": "When you call 'linkedList.add(index, element)', LinkedList must traverse the doubly-linked node chain from the head (or tail) from scratch to find the node at 'index', taking O(N) traversal time for each operation. Performing N insertions this way takes O(N^2) total time.\n\nIn contrast, 'ListIterator' already holds a direct reference to the current Node object where the cursor resides. Calling 'listIterator.add(element)' simply updates the 'prev' and 'next' pointers of the adjacent nodes right at the cursor, taking strictly O(1) time without re-traversing the list. Therefore, batch insertions via ListIterator run in optimal O(N) overall time."
+        }
+      ]
+    },
+    {
+      "id": "act-col6-l3-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation Checklist",
+      "checklist": [
+        "I understand the between-elements cursor model of ListIterator",
+        "I know how to traverse lists backward using hasPrevious() and previous()",
+        "I can replace elements in-flight using listIterator.set()",
+        "I can insert elements in-flight using listIterator.add() without CME",
+        "I know why ListIterator enables O(1) insertions on LinkedList"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "it-replace-target-string",
+      "title": "In-Flight Word Replacement with ListIterator",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method replaceAllOccurrences(List<String> list, String target, String replacement) using a ListIterator to replace every occurrence of target with replacement.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class WordReplacer {\n    public static void replaceAllOccurrences(List<String> list, String target, String replacement) {\n    }\n\n    public static void main(String[] args) {\n        List<String> words = new ArrayList<>(List.of(\"cat\", \"dog\", \"cat\", \"bird\"));\n        replaceAllOccurrences(words, \"cat\", \"lion\");\n        System.out.println(words); // [lion, dog, lion, bird]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\nimport java.util.Objects;\n\npublic class WordReplacer {\n    public static void replaceAllOccurrences(List<String> list, String target, String replacement) {\n        if (list == null) return;\n        ListIterator<String> it = list.listIterator();\n        while (it.hasNext()) {\n            if (Objects.equals(it.next(), target)) {\n                it.set(replacement);\n            }\n        }\n    }\n\n    public static void main(String[] args) {\n        List<String> words = new ArrayList<>(List.of(\"cat\", \"dog\", \"cat\", \"bird\"));\n        replaceAllOccurrences(words, \"cat\", \"lion\");\n        System.out.println(words);\n    }\n}",
+      "testCases": [
+        {
+          "input": "words = [\"cat\", \"dog\", \"cat\", \"bird\"], target = \"cat\", rep = \"lion\"",
+          "expectedOutput": "[lion, dog, lion, bird]"
+        }
+      ],
+      "expectedOutput": "[lion, dog, lion, bird]"
+    },
+    {
+      "id": "it-duplicate-every-element",
+      "title": "Duplicate Each Element with ListIterator.add",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method duplicateEach(List<T> list) that uses ListIterator to duplicate every element in the list so [1, 2, 3] becomes [1, 1, 2, 2, 3, 3].",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class ElementDuplicator {\n    public static <T> void duplicateEach(List<T> list) {\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = new ArrayList<>(List.of(1, 2, 3));\n        duplicateEach(nums);\n        System.out.println(nums); // [1, 1, 2, 2, 3, 3]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class ElementDuplicator {\n    public static <T> void duplicateEach(List<T> list) {\n        if (list == null) return;\n        ListIterator<T> it = list.listIterator();\n        while (it.hasNext()) {\n            T item = it.next();\n            it.add(item);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = new ArrayList<>(List.of(1, 2, 3));\n        duplicateEach(nums);\n        System.out.println(nums);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[1, 2, 3]",
+          "expectedOutput": "[1, 1, 2, 2, 3, 3]"
+        }
+      ],
+      "expectedOutput": "[1, 1, 2, 2, 3, 3]"
+    },
+    {
+      "id": "it-interleave-sentinel",
+      "title": "Interleave Delimiter Sentinel with ListIterator",
+      "difficulty": "medium",
+      "problemStatement": "Implement a method interleaveDelimiter(List<String> list, String delimiter) that inserts delimiter between every pair of adjacent elements. [A, B, C] -> [A, -, B, -, C].",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class DelimiterInterleaver {\n    public static void interleaveDelimiter(List<String> list, String delimiter) {\n    }\n\n    public static void main(String[] args) {\n        List<String> tokens = new ArrayList<>(List.of(\"A\", \"B\", \"C\"));\n        interleaveDelimiter(tokens, \"-\");\n        System.out.println(tokens); // [A, -, B, -, C]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class DelimiterInterleaver {\n    public static void interleaveDelimiter(List<String> list, String delimiter) {\n        if (list == null || list.size() <= 1) return;\n        ListIterator<String> it = list.listIterator();\n        if (it.hasNext()) it.next(); // skip first item\n        while (it.hasNext()) {\n            it.previous();\n            it.add(delimiter);\n            it.next(); // skip delimiter\n            it.next(); // skip original next element\n        }\n    }\n\n    public static void main(String[] args) {\n        List<String> tokens = new ArrayList<>(List.of(\"A\", \"B\", \"C\"));\n        interleaveDelimiter(tokens, \"-\");\n        System.out.println(tokens);\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"A\", \"B\", \"C\"], delimiter = \"-\"",
+          "expectedOutput": "[A, -, B, -, C]"
+        }
+      ],
+      "expectedOutput": "[A, -, B, -, C]"
+    },
+    {
+      "id": "it-reverse-list-builder",
+      "title": "Reverse Traversal List Collector",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method collectReversed(List<T> list) that uses list.listIterator(list.size()) to traverse the list backwards and collect all elements into a new ArrayList<T>.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class ReverseCollector {\n    public static <T> List<T> collectReversed(List<T> list) {\n        return new ArrayList<>();\n    }\n\n    public static void main(String[] args) {\n        List<String> data = List.of(\"one\", \"two\", \"three\");\n        System.out.println(collectReversed(data)); // [three, two, one]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class ReverseCollector {\n    public static <T> List<T> collectReversed(List<T> list) {\n        List<T> result = new ArrayList<>();\n        if (list == null) return result;\n        ListIterator<T> it = list.listIterator(list.size());\n        while (it.hasPrevious()) {\n            result.add(it.previous());\n        }\n        return result;\n    }\n\n    public static void main(String[] args) {\n        List<String> data = List.of(\"one\", \"two\", \"three\");\n        System.out.println(collectReversed(data));\n    }\n}",
+      "testCases": [
+        {
+          "input": "[\"one\", \"two\", \"three\"]",
+          "expectedOutput": "[three, two, one]"
+        }
+      ],
+      "expectedOutput": "[three, two, one]"
+    },
+    {
+      "id": "it-increment-all-integers",
+      "title": "In-Place List Transformation via set()",
+      "difficulty": "easy",
+      "problemStatement": "Implement a method incrementAll(List<Integer> list, int delta) that uses ListIterator.set() to increment every integer in the list by delta in-place.",
+      "starterCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class ListIncrementer {\n    public static void incrementAll(List<Integer> list, int delta) {\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));\n        incrementAll(nums, 5);\n        System.out.println(nums); // [15, 25, 35]\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.ArrayList;\nimport java.util.ListIterator;\n\npublic class ListIncrementer {\n    public static void incrementAll(List<Integer> list, int delta) {\n        if (list == null) return;\n        ListIterator<Integer> it = list.listIterator();\n        while (it.hasNext()) {\n            int current = it.next();\n            it.set(current + delta);\n        }\n    }\n\n    public static void main(String[] args) {\n        List<Integer> nums = new ArrayList<>(List.of(10, 20, 30));\n        incrementAll(nums, 5);\n        System.out.println(nums);\n    }\n}",
+      "testCases": [
+        {
+          "input": "nums = [10, 20, 30], delta = 5",
+          "expectedOutput": "[15, 25, 35]"
+        }
+      ],
+      "expectedOutput": "[15, 25, 35]"
+    }
+  ]
+}

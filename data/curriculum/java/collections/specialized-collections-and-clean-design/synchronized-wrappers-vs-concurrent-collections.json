@@ -1,0 +1,201 @@
+{
+  "id": "les-col-sp-3-synchronized-vs-concurrent",
+  "slug": "synchronized-wrappers-vs-concurrent-collections",
+  "sectionSlug": "collections",
+  "moduleSlug": "specialized-collections-and-clean-design",
+  "languageSlug": "java",
+  "title": "Synchronized Wrappers vs Concurrent Collections",
+  "summary": "Examine thread-safety architectures: compare coarse-grained monitor locks in Collections.synchronizedList() with lock-striping, CAS, and non-blocking reads in java.util.concurrent collections (ConcurrentHashMap, CopyOnWriteArrayList).",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 35,
+  "orderIndex": 3,
+  "prerequisites": [
+    "enumset-and-enummap-extreme-performance-collections"
+  ],
+  "learningObjectives": [
+    "Identify the thread contention and throughput bottlenecks of Collections.synchronizedX() coarse-grained locks",
+    "Explain why iteration over synchronized wrappers requires explicit external monitor synchronization to prevent ConcurrentModificationException",
+    "Analyze the non-blocking read and lock-striping/CAS architecture of ConcurrentHashMap",
+    "Evaluate CopyOnWriteArrayList for read-dominant workloads like listener registries and event dispatchers",
+    "Select the optimal concurrency model (coarse lock, lock-free CAS, copy-on-write, blocking queue) based on throughput and contention profiles"
+  ],
+  "expectedOutcomes": [
+    "Eliminate severe thread contention by replacing synchronized wrappers with modern concurrent data structures",
+    "Safely iterate over synchronized legacy collections without risking intermittent ConcurrentModificationExceptions",
+    "Architect high-throughput thread-safe registries and shared caches using ConcurrentHashMap and CopyOnWriteArrayList"
+  ],
+  "activities": [
+    {
+      "id": "act-col-sp-3-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Single Bank Teller vs Multiple Self-Service ATMs",
+      "description": "Why coarse-grained mutual exclusion destroys multi-threaded performance.",
+      "content": "Imagine a bank branch with 100 customer deposit boxes. In the old model (`Collections.synchronizedList`), the branch has a single security guard stationed at the front door. Even if 50 customers only want to read a document or deposit money into separate boxes, only one customer is allowed inside the building at a time. The rest queue outside on the sidewalk, wasting massive CPU cycles waiting for the lock.\n\nNow imagine a modern automated branch (`ConcurrentHashMap`). Instead of locking the whole building, there is no door guard. Customers reading accounts proceed immediately without waiting (lock-free reads). Customers modifying separate deposit boxes only lock their specific row or box via electronic keys (lock striping and fine-grained CAS). Throughput scales linearly with the number of processors."
+    },
+    {
+      "id": "act-col-sp-3-concept",
+      "type": "concept",
+      "title": "Concurrency Architectures: Coarse Locks vs Fine-Grained Concurrency",
+      "description": "Deep architectural analysis of monitor wrappers, CAS operations, lock striping, and copy-on-write memory arrays.",
+      "content": "### Formal Computer Science Definition\nA thread-safe collection maintains structural integrity and visibility invariants across concurrent invocations. Synchronized wrappers enforce thread safety via coarse-grained mutual exclusion (pessimistic monitor locks), while `java.util.concurrent` structures utilize fine-grained concurrency primitives including Compare-And-Swap (CAS), lock striping, volatile reads, and copy-on-write arrays to maximize parallelism.\n\n### Comparative Concurrency Matrix\n\n| Attribute | `Collections.synchronizedList` / `Map` | `ConcurrentHashMap` | `CopyOnWriteArrayList` |\n| :--- | :--- | :--- | :--- |\n| **Lock Granularity** | Entire collection (single `mutex`) | Bucket-level CAS / node-level synchronized | Array-level copy on write; zero locks on read |\n| **Read Contention** | Blocks on every write or other read | Lock-free volatile reads ($O(1)$) | Lock-free reads on immutable array snapshot |\n| **Write Contention** | Complete serialization | Concurrent writes across different hash bins | High cost (allocates new array copy on every write) |\n| **Iteration Safety** | Throws `ConcurrentModificationException` unless externally synchronized | Weakly consistent iterator (never throws CME, never locks) | Snapshot iterator (never throws CME, unaffected by mutations) |\n| **Ideal Workload** | Legacy codebases with trivial concurrency | High-throughput concurrent read/write caches | 99% reads, rare writes (event listeners, routing tables) |\n\n### Detailed Technical Breakdown\n\n```\n                               Thread-Safe Collections\n                                         |\n        +--------------------------------+--------------------------------+\n        |                                                                 |\nCoarse-Grained Wrappers (Legacy)                       java.util.concurrent Collections (Modern)\n- Collections.synchronizedList(list)                   - ConcurrentHashMap: CAS on head, volatile reads\n- Collections.synchronizedMap(map)                     - CopyOnWriteArrayList: Snapshot reads, copy on write\n- Uses single monitor lock (mutex)                     - ConcurrentLinkedQueue: Lock-free Michael-Scott CAS queue\n- Iteration requires manual synchronization!            - BlockingQueue: Producer-consumer thread signaling\n```\n\n#### 1. The Synchronized Wrapper Iteration Trap\nIn `Collections.synchronizedList(list)`, individual methods (`add`, `get`, `remove`) are synchronized on an internal mutex. However, calling `iterator()` merely returns a standard iterator. As soon as the call returns, the lock is released.\n- If another thread adds an item while the first thread loops, `modCount` changes and `next()` immediately throws `ConcurrentModificationException`.\n- **The Rule**: Callers **must manually synchronize** on the wrapper when iterating:\n```java\nList<String> syncList = Collections.synchronizedList(new ArrayList<>());\nsynchronized (syncList) {\n    for (String item : syncList) {\n        // safely read without CME\n    }\n}\n```\n\n#### 2. ConcurrentHashMap Architecture (Java 8+)\n- **Reads**: Zero locking. Table elements are stored in `volatile Node<K,V>[] table`, and node `val` and `next` fields are marked `volatile`. Reads execute via atomic CPU memory barriers without blocking.\n- **Writes**: If a bucket is empty, the first node is placed via atomic `Unsafe.compareAndSwapObject` (CAS). If a collision occurs, only the first node of that specific bin is locked via `synchronized(node)`. Other bins remain accessible to other concurrent threads.\n- **Iterators**: Weakly consistent iterators reflect the state of the hash table at or after the iterator was created. They **never throw `ConcurrentModificationException`**.\n\n#### 3. CopyOnWriteArrayList Mechanics\n- Reads are completely un-synchronized: `get(i)` directly indexes a private `volatile Object[] array` reference.\n- Any mutation (`add`, `set`, `remove`) locks an internal `ReentrantLock`, allocates a new array of size $N+1$, copies existing elements, modifies the target index, and updates the volatile array reference via a pointer swap.\n- Extremely efficient when reads vastly outnumber writes."
+    },
+    {
+      "id": "act-col-sp-3-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Executable Demonstration: Synchronized Traps, ConcurrentHashMap CAS, and CopyOnWrite Snapshots",
+      "description": "Practical verification of iteration synchronization, ConcurrentHashMap computeIfAbsent, and CopyOnWrite snapshot consistency.",
+      "content": "```java\nimport java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.concurrent.ConcurrentHashMap;\nimport java.util.concurrent.CopyOnWriteArrayList;\n\npublic class ConcurrencyCollectionsDemo {\n\n    public static void main(String[] args) throws InterruptedException {\n        // 1. Synchronized wrapper iteration protocol\n        List<String> syncList = Collections.synchronizedList(new ArrayList<>());\n        syncList.add(\"ALPHA\");\n        syncList.add(\"BETA\");\n        syncList.add(\"GAMMA\");\n\n        // Correct iteration: explicit synchronization on the wrapper monitor\n        synchronized (syncList) {\n            for (String item : syncList) {\n                System.out.println(\"Synchronized iteration item: \" + item);\n            }\n        }\n\n        // 2. High-performance ConcurrentHashMap with atomic compute\n        ConcurrentHashMap<String, Integer> pageVisits = new ConcurrentHashMap<>();\n        pageVisits.put(\"/home\", 100);\n\n        // Atomic atomic update without external locking\n        pageVisits.compute(\"/home\", (k, v) -> v == null ? 1 : v + 1);\n        pageVisits.computeIfAbsent(\"/pricing\", k -> 1);\n\n        System.out.println(\"Page visits: \" + pageVisits);\n\n        // 3. CopyOnWriteArrayList snapshot iteration\n        CopyOnWriteArrayList<String> listeners = new CopyOnWriteArrayList<>();\n        listeners.add(\"AuthListener\");\n        listeners.add(\"AuditListener\");\n\n        // Iteration captures array snapshot; in-flight mutation does not throw CME\n        System.out.println(\"Starting CopyOnWrite traversal...\");\n        for (String listener : listeners) {\n            System.out.println(\"Notifying: \" + listener);\n            // Safe in-flight mutation during iteration\n            if (listener.equals(\"AuthListener\")) {\n                listeners.add(\"MetricsListener\");\n            }\n        }\n\n        System.out.println(\"Listeners after iteration mutation: \" + listeners);\n    }\n}\n```\n\n```text\nSynchronized iteration item: ALPHA\nSynchronized iteration item: BETA\nSynchronized iteration item: GAMMA\nPage visits: {/pricing=1, /home=101}\nStarting CopyOnWrite traversal...\nNotifying: AuthListener\nNotifying: AuditListener\nListeners after iteration mutation: [AuthListener, AuditListener, MetricsListener]\n```"
+    },
+    {
+      "id": "act-col-sp-3-mcq",
+      "type": "mcq",
+      "title": "Concurrency Mechanics Assessment",
+      "description": "Evaluate understanding of lock granularity, iteration safety, and copy-on-write semantics.",
+      "questions": [
+        {
+          "question": "What happens if two threads iterate and add elements concurrently to a Collections.synchronizedList without external synchronization blocks?",
+          "options": [
+            "The operation is completely thread-safe because every method on the wrapper is synchronized",
+            "The iterating thread is likely to throw ConcurrentModificationException because iteration traverses the backing list without holding the monitor lock",
+            "The adding thread is permanently deadlocked",
+            "The list converts automatically into a ConcurrentLinkedQueue"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Collections.synchronizedList synchronizes individual operations, but its iterator() releases the lock upon return. Without an external 'synchronized (list)' block enclosing the loop, concurrent modifications alter modCount and throw ConcurrentModificationException."
+        },
+        {
+          "question": "Why does ConcurrentHashMap achieve drastically higher throughput than Collections.synchronizedMap in read-heavy applications?",
+          "options": [
+            "It runs inside a hardware transactional memory chip",
+            "Read operations are lock-free and access volatile table buckets without acquiring any monitor locks",
+            "It stores all entries in serialized byte buffers",
+            "It uses a single spinlock that never context-switches"
+          ],
+          "correctAnswer": 1,
+          "explanation": "ConcurrentHashMap uses volatile fields and memory barriers so that get() and traversal operations execute with zero lock contention, allowing unlimited concurrent readers simultaneously."
+        },
+        {
+          "question": "When is CopyOnWriteArrayList an anti-pattern that severely degrades performance?",
+          "options": [
+            "When 99% of operations are read queries",
+            "When used for event listener registries with infrequent updates",
+            "When used in write-intensive workloads with frequent insertions or updates on large lists",
+            "When iterated with an enhanced for-each loop"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Every mutation in CopyOnWriteArrayList allocates a complete new array and copies all existing elements. In write-heavy workloads or with large lists, this creates severe memory allocation, GC pressure, and O(N) write latency."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-3-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Concurrency Architect Interview Questions",
+      "description": "Senior-level inquiries into lock striping, weakly consistent iterators, and lock-free algorithms.",
+      "questions": [
+        {
+          "question": "Explain what a 'weakly consistent' iterator is in ConcurrentHashMap and how it differs from a fail-fast iterator.",
+          "answer": "A fail-fast iterator (like HashMap or ArrayList) tracks a modCount field. If any structural modification occurs during iteration, the iterator immediately throws a ConcurrentModificationException to fail fast and prevent silent state corruption.\n\nIn contrast, ConcurrentHashMap iterators are weakly consistent: they never throw ConcurrentModificationException, never acquire locks, and are safe against concurrent modifications. They guarantee to reflect the state of the map at or after the iterator was created, traversing elements as they existed without requiring a complete snapshot copy."
+        },
+        {
+          "question": "How does Java 8+ ConcurrentHashMap implement concurrent writes without locking the entire table?",
+          "answer": "ConcurrentHashMap uses a combination of Compare-And-Swap (CAS) and synchronized blocks on individual bin heads:\n1. If a hash bucket is currently empty (null), the new Node is inserted using atomic CAS (compare-and-set) on the table array slot without any thread synchronization or locks.\n2. If the bucket already contains a linked list or red-black tree, the thread synchronizes only on the head Node of that specific bucket (synchronized(firstNode)).\n3. Because synchronization is isolated to individual bin heads, threads modifying different buckets proceed completely concurrently with zero contention."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-3-self-eval",
+      "type": "self_evaluation",
+      "title": "Concurrent Collections Competency Checklist",
+      "description": "Verify your readiness to design high-throughput, multi-threaded Java applications.",
+      "items": [
+        "I know why iterating over Collections.synchronizedList requires an external 'synchronized (list)' block.",
+        "I understand how ConcurrentHashMap achieves lock-free reads using volatile memory semantics.",
+        "I understand that ConcurrentHashMap uses CAS for empty buckets and locks only the bucket head Node during collisions.",
+        "I know when to choose CopyOnWriteArrayList (read-heavy observer lists) and when to avoid it (frequent mutations).",
+        "I know that concurrent collection iterators are weakly consistent and never throw ConcurrentModificationException."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col-sp-3-1",
+      "title": "Thread-Safe Event Listener Registry",
+      "difficulty": "medium",
+      "problemStatement": "Implement `EventListenerRegistry` using `CopyOnWriteArrayList<Consumer<String>>`. Provide `registerListener(Consumer<String> listener)`, `unregisterListener(Consumer<String> listener)`, and `dispatch(String event)` which notifies all listeners safely even if a listener tries to register/unregister during dispatch.",
+      "starterCode": "import java.util.concurrent.CopyOnWriteArrayList;\nimport java.util.function.Consumer;\n\npublic class EventListenerRegistry {\n    private final CopyOnWriteArrayList<Consumer<String>> listeners = new CopyOnWriteArrayList<>();\n\n    public void registerListener(Consumer<String> listener) {\n        // TODO\n    }\n\n    public void unregisterListener(Consumer<String> listener) {\n        // TODO\n    }\n\n    public void dispatch(String event) {\n        // TODO\n    }\n}",
+      "solutionCode": "import java.util.concurrent.CopyOnWriteArrayList;\nimport java.util.function.Consumer;\n\npublic class EventListenerRegistry {\n    private final CopyOnWriteArrayList<Consumer<String>> listeners = new CopyOnWriteArrayList<>();\n\n    public void registerListener(Consumer<String> listener) {\n        if (listener != null) {\n            listeners.add(listener);\n        }\n    }\n\n    public void unregisterListener(Consumer<String> listener) {\n        if (listener != null) {\n            listeners.remove(listener);\n        }\n    }\n\n    public void dispatch(String event) {\n        for (Consumer<String> listener : listeners) {\n            listener.accept(event);\n        }\n    }\n}",
+      "expectedOutput": "All registered listeners receive dispatch without CME",
+      "testCases": [
+        {
+          "input": "Register 2 listeners, dispatch 'EVENT_A'",
+          "expectedOutput": "All registered listeners receive dispatch without CME"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-3-2",
+      "title": "Atomic Metric Counter with ConcurrentHashMap",
+      "difficulty": "easy",
+      "problemStatement": "Implement `MetricAggregator` using `ConcurrentHashMap<String, Long>`. Implement `void recordEvent(String metricName)` that atomically increments the counter for `metricName` by 1 using `compute()` or `merge()`, and `long getCount(String metricName)` which returns 0 if absent.",
+      "starterCode": "import java.util.concurrent.ConcurrentHashMap;\n\npublic class MetricAggregator {\n    private final ConcurrentHashMap<String, Long> metrics = new ConcurrentHashMap<>();\n\n    public void recordEvent(String metricName) {\n        // TODO: Atomically increment\n    }\n\n    public long getCount(String metricName) {\n        // TODO: Return count or 0\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.concurrent.ConcurrentHashMap;\n\npublic class MetricAggregator {\n    private final ConcurrentHashMap<String, Long> metrics = new ConcurrentHashMap<>();\n\n    public void recordEvent(String metricName) {\n        if (metricName != null) {\n            metrics.merge(metricName, 1L, Long::sum);\n        }\n    }\n\n    public long getCount(String metricName) {\n        if (metricName == null) return 0;\n        return metrics.getOrDefault(metricName, 0L);\n    }\n}",
+      "expectedOutput": "2",
+      "testCases": [
+        {
+          "input": "recordEvent('login') twice, getCount('login')",
+          "expectedOutput": "2"
+        },
+        {
+          "input": "getCount('unknown')",
+          "expectedOutput": "0"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-3-3",
+      "title": "Synchronized List Snapshot Extractor",
+      "difficulty": "medium",
+      "problemStatement": "Implement `List<String> extractSnapshot(List<String> synchronizedList)` that safely extracts an independent snapshot copy of `synchronizedList` by explicitly synchronizing on `synchronizedList` monitor during iteration to prevent `ConcurrentModificationException`.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class SynchronizedSnapshotExtractor {\n    public static List<String> extractSnapshot(List<String> synchronizedList) {\n        // TODO: Synchronize on the monitor and extract snapshot\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class SynchronizedSnapshotExtractor {\n    public static List<String> extractSnapshot(List<String> synchronizedList) {\n        if (synchronizedList == null) {\n            return new ArrayList<>();\n        }\n        synchronized (synchronizedList) {\n            return new ArrayList<>(synchronizedList);\n        }\n    }\n}",
+      "expectedOutput": "[item1, item2]",
+      "testCases": [
+        {
+          "input": "synchronizedList containing ['item1', 'item2']",
+          "expectedOutput": "[item1, item2]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-3-4",
+      "title": "Concurrent Memoizing Cache",
+      "difficulty": "medium",
+      "problemStatement": "Implement `Memoizer<K, V>` using `ConcurrentHashMap<K, V>`. Provide `V computeIfAbsent(K key, Function<K, V> computeFunc)` that guarantees atomic computation of values for a key without redundant calculations under concurrent calls.",
+      "starterCode": "import java.util.concurrent.ConcurrentHashMap;\nimport java.util.function.Function;\n\npublic class Memoizer<K, V> {\n    private final ConcurrentHashMap<K, V> cache = new ConcurrentHashMap<>();\n\n    public V computeIfAbsent(K key, Function<K, V> computeFunc) {\n        // TODO: Implement atomic memoization\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.concurrent.ConcurrentHashMap;\nimport java.util.function.Function;\n\npublic class Memoizer<K, V> {\n    private final ConcurrentHashMap<K, V> cache = new ConcurrentHashMap<>();\n\n    public V computeIfAbsent(K key, Function<K, V> computeFunc) {\n        if (key == null || computeFunc == null) return null;\n        return cache.computeIfAbsent(key, computeFunc);\n    }\n}",
+      "expectedOutput": "computed_value",
+      "testCases": [
+        {
+          "input": "computeIfAbsent('key1', k -> 'val_' + k)",
+          "expectedOutput": "val_key1"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-3-5",
+      "title": "Producer-Consumer Buffer Guard",
+      "difficulty": "medium",
+      "problemStatement": "Implement `BoundedTaskQueue<T>` with a maximum capacity $N$ backed by `ArrayBlockingQueue<T>`. Provide `boolean offer(T task)` (non-blocking, returns false if full) and `T poll()` (non-blocking, returns null if empty).",
+      "starterCode": "import java.util.concurrent.ArrayBlockingQueue;\n\npublic class BoundedTaskQueue<T> {\n    private final ArrayBlockingQueue<T> queue;\n\n    public BoundedTaskQueue(int capacity) {\n        this.queue = new ArrayBlockingQueue<>(capacity);\n    }\n\n    public boolean offer(T task) {\n        // TODO\n        return false;\n    }\n\n    public T poll() {\n        // TODO\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.concurrent.ArrayBlockingQueue;\n\npublic class BoundedTaskQueue<T> {\n    private final ArrayBlockingQueue<T> queue;\n\n    public BoundedTaskQueue(int capacity) {\n        this.queue = new ArrayBlockingQueue<>(capacity);\n    }\n\n    public boolean offer(T task) {\n        if (task == null) return false;\n        return queue.offer(task);\n    }\n\n    public T poll() {\n        return queue.poll();\n    }\n}",
+      "expectedOutput": "true, then polled element",
+      "testCases": [
+        {
+          "input": "offer('task1') into capacity 1 -> returns true; offer('task2') -> returns false",
+          "expectedOutput": "true then false"
+        }
+      ]
+    }
+  ]
+}

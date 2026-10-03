@@ -1,0 +1,213 @@
+{
+  "id": "les-col-sp-2-enumset-and-enummap",
+  "slug": "enumset-and-enummap-extreme-performance-collections",
+  "sectionSlug": "collections",
+  "moduleSlug": "specialized-collections-and-clean-design",
+  "languageSlug": "java",
+  "title": "EnumSet & EnumMap: Extreme Performance Collections",
+  "summary": "Discover why EnumSet and EnumMap drastically outperform HashSet and HashMap: explore 64-bit long bitmask vectors in RegularEnumSet, direct ordinal array indexing in EnumMap, zero collision overhead, and production state machine designs.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 30,
+  "orderIndex": 2,
+  "prerequisites": [
+    "modern-unmodifiable-and-immutable-collections"
+  ],
+  "learningObjectives": [
+    "Explain the internal bit-vector representation of RegularEnumSet (single 64-bit long primitive) and JumboEnumSet (long[])",
+    "Analyze how EnumMap achieves O(1) direct array indexing via enum ordinal() without hash computation or bucket collisions",
+    "Compare heap memory footprint and CPU cache efficiency between EnumSet/EnumMap and HashSet/HashMap",
+    "Construct specialized EnumSet instances using noneOf(), allOf(), of(), range(), and complementOf()",
+    "Architect high-throughput permission systems and finite state machines utilizing EnumSet and EnumMap"
+  ],
+  "expectedOutcomes": [
+    "Replace slow HashSet/HashMap instances with EnumSet/EnumMap whenever keys or elements belong to an enum type",
+    "Execute ultra-fast bitwise set algebra (unions, intersections, complements) at CPU instruction speed",
+    "Guarantee deterministic key iteration order matching enum declaration order without sorted collection overhead"
+  ],
+  "activities": [
+    {
+      "id": "act-col-sp-2-analogy",
+      "type": "analogy",
+      "title": "Practical Context: Rotary Telephone Switch vs Telephone Directory Lookup",
+      "description": "Why fixed-domain lookups are orders of magnitude faster than generic hash hashing.",
+      "content": "Imagine locating an employee's desk. In a city of 10 million people, you must consult a massive global directory, compute a district hash, traverse streets, and handle name collisions\u2014this is `HashMap` and `HashSet`.\n\nNow imagine an aircraft cockpit with a fixed panel of 12 circuit switches. The flight engineer doesn't consult an alphabetical directory to flip the landing gear switch; each switch has an immutable hardware index (0 to 11). Checking whether all hydraulic systems are active requires inspecting a single 16-bit register in one clock cycle.\n\n`EnumSet` and `EnumMap` are the hardware cockpit: because the entire universe of keys is fixed and numbered at compile-time (via `ordinal()`), Java bypasses hashing, linked nodes, tree bins, and memory pointers entirely, operating directly on CPU bitmasks and contiguous array slots."
+    },
+    {
+      "id": "act-col-sp-2-concept",
+      "type": "concept",
+      "title": "Bit-Vector and Ordinal Indexing Mechanics",
+      "description": "Under the hood of RegularEnumSet, JumboEnumSet, and EnumMap flat array memory architectures.",
+      "content": "### Formal Computer Science Definition\n`EnumSet` is a specialized high-performance `Set` implementation for use with enum types, representing set membership as a compact bit-vector. `EnumMap` is an array-backed `Map` whose keys are enum constants, mapping each key directly to its array offset via `key.ordinal()`.\n\n### Bitmask Mechanics of `EnumSet`\n\n`EnumSet` is an abstract class that instantiates one of two private concrete subclasses based on the enum's universe size:\n1. **`RegularEnumSet`** (universe size $\\le 64$ elements):\n   - Backed by a **single primitive `long elements`** (64 bits).\n   - Membership test: `(elements & (1L << e.ordinal())) != 0`.\n   - Insertion: `elements |= (1L << e.ordinal())`.\n   - Removal: `elements &= ~(1L << e.ordinal())`.\n   - **Performance**: Every basic set operation compiles down to single CPU bitwise operations (`AND`, `OR`, `XOR`, `NOT`) executing in a single clock cycle.\n2. **`JumboEnumSet`** (universe size $> 64$ elements):\n   - Backed by a `long[] elements` array, where word index is `e.ordinal() >>> 6` and bit offset is `e.ordinal() & 63`.\n\n```\n                      RegularEnumSet (64-bit primitive long)\nBit Index:   63 62 ... 5   4   3   2   1   0\n            +---+---+ ... +---+---+---+---+---+\nValue:      | 0 | 0 | ... | 1 | 0 | 1 | 1 | 0 |  --> Represents {READ, WRITE, EXECUTE}\n            +---+---+ ... +---+---+---+---+---+\n                           ^       ^   ^\n                           |       |   +-- ORDINAL 1: READ\n                           |       +------ ORDINAL 2: WRITE\n                           +-------------- ORDINAL 4: EXECUTE\n```\n\n### Internal Architecture of `EnumMap`\nUnlike `HashMap`, which allocates an array of `Node<K, V>` references with hash codes, linked lists, and tree nodes, `EnumMap` allocates:\n- A private array `Object[] vals` of exact length matching `keyUniverse.length`.\n- Lookup: `vals[key.ordinal()]` ($O(1)$ guaranteed, zero hashing, zero collisions, zero branch mispredictions).\n- Space overhead is negligible: exactly one reference per potential enum constant.\n- Iteration order is strictly the enum's declaration order (`ordinal` 0 to $N-1$).\n\n### Structural Comparison Matrix\n\n| Attribute | `HashSet` / `HashMap` | `EnumSet` / `EnumMap` |\n| :--- | :--- | :--- |\n| **Underlying Storage** | Hash table with linked buckets / red-black trees | Primitive `long` bitmask (`EnumSet`) / flat `Object[]` (`EnumMap`) |\n| **Time Complexity** | $O(1)$ average, $O(N)$ or $O(\\log N)$ worst | Guaranteed $O(1)$ single-cycle bitwise / array dereference |\n| **Memory Allocation** | ~32 bytes per node + table array resizing overhead | Single 64-bit primitive or tight array (zero extra nodes) |\n| **Cache Locality** | Poor (pointer chasing across heap nodes) | Exceptional (contiguous CPU L1 cache locality) |\n| **Null Support** | Allows 1 null key | Strictly forbids `null` keys/elements (throws NPE) |"
+    },
+    {
+      "id": "act-col-sp-2-code-walkthrough",
+      "type": "code_walkthrough",
+      "title": "Production Implementation: Permission System & State Machine",
+      "description": "Building a high-throughput role-based access controller and order state transition validator using EnumSet and EnumMap.",
+      "content": "```java\nimport java.util.EnumMap;\nimport java.util.EnumSet;\nimport java.util.Map;\nimport java.util.Set;\n\npublic class EnumCollectionsDemo {\n\n    public enum Permission {\n        READ, WRITE, EXECUTE, DELETE, AUDIT\n    }\n\n    public enum OrderState {\n        CREATED, PAID, PROCESSING, SHIPPED, DELIVERED, CANCELLED\n    }\n\n    public static void main(String[] args) {\n        // 1. Bitmask operations with EnumSet\n        EnumSet<Permission> userPerms = EnumSet.of(Permission.READ);\n        EnumSet<Permission> adminPerms = EnumSet.allOf(Permission.class);\n        EnumSet<Permission> editorPerms = EnumSet.range(Permission.READ, Permission.WRITE);\n\n        System.out.println(\"User permissions: \" + userPerms);\n        System.out.println(\"Editor permissions: \" + editorPerms);\n        System.out.println(\"Admin permissions: \" + adminPerms);\n\n        // Union (OR)\n        EnumSet<Permission> combined = EnumSet.copyOf(userPerms);\n        combined.addAll(editorPerms);\n        System.out.println(\"Combined: \" + combined);\n\n        // Complement (NOT)\n        EnumSet<Permission> nonAdminRestricted = EnumSet.complementOf(userPerms);\n        System.out.println(\"Permissions user lacks: \" + nonAdminRestricted);\n\n        // Ultra-fast containment check (single bitwise test)\n        boolean canWrite = editorPerms.contains(Permission.WRITE);\n        System.out.println(\"Editor can write: \" + canWrite);\n\n        // 2. High-Performance State Machine with EnumMap\n        Map<OrderState, Set<OrderState>> validTransitions = new EnumMap<>(OrderState.class);\n\n        validTransitions.put(OrderState.CREATED, EnumSet.of(OrderState.PAID, OrderState.CANCELLED));\n        validTransitions.put(OrderState.PAID, EnumSet.of(OrderState.PROCESSING, OrderState.CANCELLED));\n        validTransitions.put(OrderState.PROCESSING, EnumSet.of(OrderState.SHIPPED, OrderState.CANCELLED));\n        validTransitions.put(OrderState.SHIPPED, EnumSet.of(OrderState.DELIVERED));\n        validTransitions.put(OrderState.DELIVERED, EnumSet.noneOf(OrderState.class));\n        validTransitions.put(OrderState.CANCELLED, EnumSet.noneOf(OrderState.class));\n\n        // Test state transition validation\n        OrderState current = OrderState.PAID;\n        OrderState nextValid = OrderState.PROCESSING;\n        OrderState nextInvalid = OrderState.DELIVERED;\n\n        boolean isAllowed1 = validTransitions.get(current).contains(nextValid);\n        boolean isAllowed2 = validTransitions.get(current).contains(nextInvalid);\n\n        System.out.println(\"Transition PAID -> PROCESSING allowed: \" + isAllowed1);\n        System.out.println(\"Transition PAID -> DELIVERED allowed: \" + isAllowed2);\n    }\n}\n```\n\n```text\nUser permissions: [READ]\nEditor permissions: [READ, WRITE]\nAdmin permissions: [READ, WRITE, EXECUTE, DELETE, AUDIT]\nCombined: [READ, WRITE]\nPermissions user lacks: [WRITE, EXECUTE, DELETE, AUDIT]\nEditor can write: true\nTransition PAID -> PROCESSING allowed: true\nTransition PAID -> DELIVERED allowed: false\n```"
+    },
+    {
+      "id": "act-col-sp-2-mcq",
+      "type": "mcq",
+      "title": "EnumSet & EnumMap Architecture Evaluation",
+      "description": "Assess technical knowledge of bit-vector mechanics and array-indexed hashing alternatives.",
+      "questions": [
+        {
+          "question": "How does RegularEnumSet store membership for an enum with 16 constants?",
+          "options": [
+            "In an array of 16 boolean flags",
+            "In a single 64-bit primitive long bitmask where each bit index corresponds to an enum ordinal",
+            "In a balanced binary search tree indexed by name",
+            "In an internal HashMap<Enum, Boolean>"
+          ],
+          "correctAnswer": 1,
+          "explanation": "RegularEnumSet uses a single primitive long field ('long elements'). Because the enum has 16 constants, each constant maps to bit (1L << ordinal()), requiring no heap node allocation."
+        },
+        {
+          "question": "Why does EnumMap guarantee zero hash collision and deterministic O(1) performance?",
+          "options": [
+            "Because it runs an MD5 cryptographic hash on enum names",
+            "Because keys are mapped directly to array offsets using their fixed ordinal() integers",
+            "Because it dynamically resizes its capacity when collisions occur",
+            "Because it uses spinlocks to serialize key hashing"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Every enum constant has a unique, dense, zero-based integer index returned by ordinal(). EnumMap directly indexes an internal Object[] array with key.ordinal(), completely bypassing hashing and collision resolution."
+        },
+        {
+          "question": "What is the iteration order of keys in an EnumMap?",
+          "options": [
+            "Alphabetical by enum constant name",
+            "Insertion order",
+            "Natural declaration order of the enum constants in source code",
+            "Unpredictable hash bucket order"
+          ],
+          "correctAnswer": 2,
+          "explanation": "EnumMap iterations traverse the internal array from index 0 to length - 1, which guarantees traversal in the exact order the enum constants were declared."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-2-interview-qa",
+      "type": "interview_qa",
+      "title": "Principal Performance Engineering Interview Questions",
+      "description": "Staff-level questions covering cache locality, bitwise algebra, and garbage collection reduction.",
+      "questions": [
+        {
+          "question": "Why should high-frequency trading and low-latency financial systems strictly replace HashSet<Enum> with EnumSet?",
+          "answer": "HashSet<Enum> incurs significant CPU and memory penalties: it creates a HashMap.Node object for every entry, runs hashCode() and equals() checks, and accesses memory via pointer chasing across random heap locations, triggering CPU L1/L2 cache misses.\n\nIn contrast, EnumSet (RegularEnumSet) represents all members within a single primitive long. Set containment, union, and intersection compile directly to single CPU instructions (AND, OR, NOT). Furthermore, it produces zero heap allocations during containment checks and fits entirely inside a single CPU register, delivering microsecond-level latency improvements."
+        },
+        {
+          "question": "How does EnumSet handle enums that define more than 64 constants?",
+          "answer": "When an enum exceeds 64 constants, EnumSet.noneOf() or of() automatically instantiates JumboEnumSet instead of RegularEnumSet. JumboEnumSet is backed by a 'long[] elements' array, where each element is a 64-bit word. The bit position is calculated as wordIndex = ordinal >>> 6 and bitOffset = ordinal & 63. While slightly slower than a single long, it remains drastically faster and more compact than HashSet."
+        }
+      ]
+    },
+    {
+      "id": "act-col-sp-2-self-eval",
+      "type": "self_evaluation",
+      "title": "Enum Collections Competency Checklist",
+      "description": "Verify your architectural readiness for ultra-performance collection design.",
+      "items": [
+        "I know that RegularEnumSet is backed by a single 64-bit long primitive bitmask.",
+        "I understand that EnumMap maps keys directly to array slots using ordinal() with zero hash collisions.",
+        "I know how to construct EnumSets using noneOf(), allOf(), of(), range(), and complementOf().",
+        "I recognize that both EnumSet and EnumMap strictly reject null keys/elements with NullPointerException.",
+        "I can architect finite state machines and RBAC permission systems using EnumMap and EnumSet."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col-sp-2-1",
+      "title": "Bitmask Permission Checker",
+      "difficulty": "easy",
+      "problemStatement": "Given `enum Privilege { READ, WRITE, EXECUTE, DELETE }`, implement `boolean hasAllPrivileges(EnumSet<Privilege> userPrivileges, EnumSet<Privilege> requiredPrivileges)` that returns `true` if `userPrivileges` contains every privilege present in `requiredPrivileges`.",
+      "starterCode": "import java.util.EnumSet;\n\npublic class PermissionGuard {\n    public enum Privilege { READ, WRITE, EXECUTE, DELETE }\n\n    public static boolean hasAllPrivileges(EnumSet<Privilege> userPrivileges, EnumSet<Privilege> requiredPrivileges) {\n        // TODO: Test full subset containment\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.EnumSet;\n\npublic class PermissionGuard {\n    public enum Privilege { READ, WRITE, EXECUTE, DELETE }\n\n    public static boolean hasAllPrivileges(EnumSet<Privilege> userPrivileges, EnumSet<Privilege> requiredPrivileges) {\n        if (userPrivileges == null || requiredPrivileges == null) return false;\n        return userPrivileges.containsAll(requiredPrivileges);\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "user = [READ, WRITE, EXECUTE], required = [READ, WRITE]",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "user = [READ], required = [READ, DELETE]",
+          "expectedOutput": "false"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-2-2",
+      "title": "EnumMap Inventory Counter",
+      "difficulty": "medium",
+      "problemStatement": "Given `enum Severity { LOW, MEDIUM, HIGH, CRITICAL }`, implement `EnumMap<Severity, Integer> countSeverities(Severity[] alerts)` that tallies the occurrences of each `Severity` present in `alerts`. Missing severities should not be in the map (or have count 0). If `alerts` is null or empty, return an empty `EnumMap`.",
+      "starterCode": "import java.util.EnumMap;\n\npublic class AlertAggregator {\n    public enum Severity { LOW, MEDIUM, HIGH, CRITICAL }\n\n    public static EnumMap<Severity, Integer> countSeverities(Severity[] alerts) {\n        // TODO: Populate and return EnumMap\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.EnumMap;\n\npublic class AlertAggregator {\n    public enum Severity { LOW, MEDIUM, HIGH, CRITICAL }\n\n    public static EnumMap<Severity, Integer> countSeverities(Severity[] alerts) {\n        EnumMap<Severity, Integer> counts = new EnumMap<>(Severity.class);\n        if (alerts == null) return counts;\n        for (Severity s : alerts) {\n            if (s != null) {\n                counts.put(s, counts.getOrDefault(s, 0) + 1);\n            }\n        }\n        return counts;\n    }\n}",
+      "expectedOutput": "{LOW=2, CRITICAL=1}",
+      "testCases": [
+        {
+          "input": "[LOW, CRITICAL, LOW]",
+          "expectedOutput": "{LOW=2, CRITICAL=1}"
+        },
+        {
+          "input": "[]",
+          "expectedOutput": "{}"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-2-3",
+      "title": "Complementary Access Filter",
+      "difficulty": "medium",
+      "problemStatement": "Given `enum Role { GUEST, USER, MODERATOR, ADMIN, ROOT }`, implement `EnumSet<Role> findRestrictedRoles(EnumSet<Role> grantedRoles)` that returns an `EnumSet` containing all roles from `Role` that have NOT been granted, using `EnumSet.complementOf()`.",
+      "starterCode": "import java.util.EnumSet;\n\npublic class RoleSecurity {\n    public enum Role { GUEST, USER, MODERATOR, ADMIN, ROOT }\n\n    public static EnumSet<Role> findRestrictedRoles(EnumSet<Role> grantedRoles) {\n        // TODO: Compute complement set\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.EnumSet;\n\npublic class RoleSecurity {\n    public enum Role { GUEST, USER, MODERATOR, ADMIN, ROOT }\n\n    public static EnumSet<Role> findRestrictedRoles(EnumSet<Role> grantedRoles) {\n        if (grantedRoles == null || grantedRoles.isEmpty()) {\n            return EnumSet.allOf(Role.class);\n        }\n        return EnumSet.complementOf(grantedRoles);\n    }\n}",
+      "expectedOutput": "[ADMIN, ROOT]",
+      "testCases": [
+        {
+          "input": "granted = [GUEST, USER, MODERATOR]",
+          "expectedOutput": "[ADMIN, ROOT]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-2-4",
+      "title": "Sequential Level Range Selector",
+      "difficulty": "medium",
+      "problemStatement": "Given `enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL }`, implement `EnumSet<Level> getActiveLevels(Level minLevel)` that returns an `EnumSet` containing all levels from `minLevel` up to `Level.FATAL` inclusive, using `EnumSet.range()`.",
+      "starterCode": "import java.util.EnumSet;\n\npublic class LogFilter {\n    public enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL }\n\n    public static EnumSet<Level> getActiveLevels(Level minLevel) {\n        // TODO: Return range from minLevel to Level.FATAL\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.EnumSet;\n\npublic class LogFilter {\n    public enum Level { TRACE, DEBUG, INFO, WARN, ERROR, FATAL }\n\n    public static EnumSet<Level> getActiveLevels(Level minLevel) {\n        if (minLevel == null) {\n            return EnumSet.allOf(Level.class);\n        }\n        return EnumSet.range(minLevel, Level.FATAL);\n    }\n}",
+      "expectedOutput": "[WARN, ERROR, FATAL]",
+      "testCases": [
+        {
+          "input": "minLevel = WARN",
+          "expectedOutput": "[WARN, ERROR, FATAL]"
+        },
+        {
+          "input": "minLevel = FATAL",
+          "expectedOutput": "[FATAL]"
+        }
+      ]
+    },
+    {
+      "id": "prob-col-sp-2-5",
+      "title": "State Transition Registry",
+      "difficulty": "medium",
+      "problemStatement": "Implement a state transition validator `StateTransitionGuard<S extends Enum<S>>` using an internal `EnumMap<S, EnumSet<S>>`. Provide `addTransition(S from, S to)` and `boolean isValid(S from, S to)`.",
+      "starterCode": "import java.util.EnumMap;\nimport java.util.EnumSet;\n\npublic class StateTransitionGuard<S extends Enum<S>> {\n    private final EnumMap<S, EnumSet<S>> transitions;\n\n    public StateTransitionGuard(Class<S> enumClass) {\n        this.transitions = new EnumMap<>(enumClass);\n    }\n\n    public void addTransition(S from, S to) {\n        // TODO\n    }\n\n    public boolean isValid(S from, S to) {\n        // TODO\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.EnumMap;\nimport java.util.EnumSet;\n\npublic class StateTransitionGuard<S extends Enum<S>> {\n    private final EnumMap<S, EnumSet<S>> transitions;\n    private final Class<S> enumClass;\n\n    public StateTransitionGuard(Class<S> enumClass) {\n        this.enumClass = enumClass;\n        this.transitions = new EnumMap<>(enumClass);\n    }\n\n    public void addTransition(S from, S to) {\n        if (from != null && to != null) {\n            transitions.computeIfAbsent(from, k -> EnumSet.noneOf(enumClass)).add(to);\n        }\n    }\n\n    public boolean isValid(S from, S to) {\n        if (from == null || to == null) return false;\n        EnumSet<S> validNext = transitions.get(from);\n        return validNext != null && validNext.contains(to);\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "Transition A -> B registered, isValid(A, B)",
+          "expectedOutput": "true"
+        },
+        {
+          "input": "Transition A -> B registered, isValid(A, C)",
+          "expectedOutput": "false"
+        }
+      ]
+    }
+  ]
+}
