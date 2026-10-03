@@ -12,7 +12,8 @@ import {
   EyeOff,
   Lightbulb,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  ListChecks
 } from 'lucide-react';
 
 interface PracticeProblemsListProps {
@@ -180,9 +181,24 @@ export const PracticeProblemsList: React.FC<PracticeProblemsListProps> = ({
                 </Badge>
               </div>
 
-              {/* Formatted Problem Description */}
-              {(prob.description || prob.problemStatement) && (
-                renderProblemDescription(prob.description || prob.problemStatement || '')
+              {/* Formatted Problem Description / Scenario */}
+              {prob.description && (
+                <div className="text-xs sm:text-sm text-slate-800 leading-relaxed font-normal">
+                  {renderProblemDescription(prob.description)}
+                </div>
+              )}
+
+              {/* Detailed Problem Specifications & Requirements */}
+              {prob.problemStatement && prob.problemStatement.trim() !== (prob.description || '').trim() && (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <ListChecks className="w-3.5 h-3.5 text-brand-600" />
+                    Problem Specifications &amp; Requirements
+                  </span>
+                  <div className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
+                    {renderProblemDescription(prob.problemStatement)}
+                  </div>
+                </div>
               )}
 
               {/* Starter Code / Code to Inspect & Fix */}
