@@ -1,0 +1,340 @@
+{
+  "id": "java-oop-mod5-les1",
+  "slug": "why-inheritance",
+  "sectionSlug": "oop",
+  "moduleSlug": "inheritance",
+  "languageSlug": "java",
+  "title": "Why Inheritance?",
+  "summary": "Discover why inheritance exists in object-oriented programming: eliminate catastrophic code duplication, enforce code reuse, and model real-world hierarchical relationships.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "classes-and-objects",
+    "encapsulation-and-access-control"
+  ],
+  "learningObjectives": [
+    "Identify the code maintenance and duplication crisis of building systems without inheritance",
+    "Understand the DRY (Don't Repeat Yourself) principle applied to class hierarchies",
+    "Distinguish between base shared capabilities and specialized subclass extensions",
+    "Recognize when inheritance is appropriate versus mere copy-pasting"
+  ],
+  "expectedOutcomes": [
+    "Ability to explain the architectural motivation for inheritance in engineering interviews",
+    "Skill to refactor duplicate class structures into clean, maintainable parent-child hierarchies"
+  ],
+  "activities": [
+    {
+      "id": "act-wi-1",
+      "type": "analogy",
+      "title": "The Smartphone Lineage Analogy",
+      "content": "Imagine an electronics manufacturer building three phones: a Basic Phone, a Camera Pro Phone, and a Gaming Phone.\n\nWithout a common lineage, the engineering team would have to design, manufacture, wire, and test a separate battery, speaker, cellular antenna, and microphone for each phone from scratch. If a defect is found in the cellular antenna, all three assembly lines must be shut down and rewritten independently.\n\nWith inheritance, engineers build one shared **Base Phone Chassis** containing the battery, cellular antenna, microphone, and speaker. The Camera Pro Phone inherits this chassis and adds a telephoto sensor; the Gaming Phone inherits the chassis and adds cooling fans and shoulder triggers. If the antenna needs an upgrade, updating the base chassis fixes every phone in the catalog automatically."
+    },
+    {
+      "id": "act-wi-2",
+      "type": "concept",
+      "title": "The Code Duplication Crisis and the DRY Principle",
+      "content": "In real-world software, systems evolve rapidly. When multiple classes share identical state (fields) and logic (methods), copy-pasting code leads to catastrophic technical debt.\n\n### 1. The Cost of Copy-Paste Architecture:\n- **Bug Proliferation**: A bug fixed in class `A` is forgotten in copied classes `B` and `C`.\n- **Bloated Codebase**: Thousands of duplicate lines make code reviews and onboarding painful.\n- **Inconsistent Evolution**: Changes to core validation rules deviate across classes over time.\n\n### 2. The Solution: Inheritance\nInheritance allows a new class to **acquire properties and behaviors** of an existing class. The existing class is called the **superclass** (parent/base class), and the new class is called the **subclass** (child/derived class).\n\n```\n               +-----------------------+\n               |        Vehicle        |\n               |-----------------------|\n               | - registrationNumber  |\n               | - speed               |\n               | + startEngine()       |\n               | + applyBrake()        |\n               +-----------------------+\n                          ^\n                          |\n            +-------------+-------------+\n            |                           |\n  +-------------------+       +-------------------+\n  |        Car        |       |       Truck       |\n  |-------------------|       |-------------------|\n  | - numDoors        |       | - payloadTons     |\n  | + openTrunk()     |       | + loadCargo()     |\n  +-------------------+       +-------------------+\n```\n\n### Core Rules:\n- **Shared attributes move up**: Common fields (`speed`, `brand`) live in the parent class.\n- **Specialized attributes move down**: Unique fields (`payloadTons`, `numDoors`) live in the child class.\n- **Principle of Reusability**: Write once in the parent, use everywhere across child subclasses.\n\n**The DRY Principle**: Don't Repeat Yourself. Centralizing shared logic in the superclass eliminates code duplication across all child entities."
+    },
+    {
+      "id": "act-wi-3",
+      "type": "code_walkthrough",
+      "title": "Before vs After Inheritance: Eliminating Duplication",
+      "description": "Examine how redundant field declarations across Car and Truck are eliminated by extracting a common Vehicle superclass.",
+      "code": "// === BEFORE INHERITANCE: DUPLICATION HELL ===\nclass BadCar {\n    String vin;\n    int speed;\n    int doors;\n    void accelerate() { speed += 10; }\n}\nclass BadTruck {\n    String vin;\n    int speed;\n    double cargoCapacity;\n    void accelerate() { speed += 10; }\n}\n\n// === AFTER INHERITANCE: CLEAN & DRY ===\nclass Vehicle {\n    protected String vin;\n    protected int speed;\n    \n    public Vehicle(String vin) {\n        this.vin = vin;\n        this.speed = 0;\n    }\n    \n    public void accelerate(int amount) {\n        this.speed += amount;\n        System.out.println(vin + \" accelerating to \" + speed + \" km/h\");\n    }\n}\n\nclass Car extends Vehicle {\n    private int doors;\n    \n    public Car(String vin, int doors) {\n        super(vin);\n        this.doors = doors;\n    }\n    \n    public void openTrunk() {\n        System.out.println(\"Car \" + vin + \" opened trunk with \" + doors + \" doors\");\n    }\n}\n\npublic class InheritanceDemo {\n    public static void main(String[] args) {\n        Car myCar = new Car(\"VIN-8821\", 4);\n        // Inherited method from Vehicle\n        myCar.accelerate(50);\n        // Specialized method from Car\n        myCar.openTrunk();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Identify duplicated members (vin, speed, accelerate) common to all moving vehicles."
+        },
+        {
+          "step": 2,
+          "description": "Extract them into the Vehicle base class with protected access so subclasses can read them."
+        },
+        {
+          "step": 3,
+          "description": "Define Car using 'extends Vehicle', inheriting vin, speed, and accelerate() without writing a single line of duplicate logic."
+        },
+        {
+          "step": 4,
+          "description": "Add the specialized doors attribute and openTrunk() behavior unique to Car."
+        }
+      ]
+    },
+    {
+      "id": "act-wi-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Bug Fix Propagation Across Subclasses",
+      "description": "Witness how a single validation guard added in the superclass instantly protects all subclasses.",
+      "code": "class Account {\n    protected String accountNumber;\n    protected double balance;\n    \n    public Account(String accountNumber, double balance) {\n        this.accountNumber = accountNumber;\n        this.balance = balance;\n    }\n    \n    // Fix bug once here: prevent negative deposits\n    public void deposit(double amount) {\n        if (amount <= 0) {\n            System.out.println(\"Invalid deposit amount: \" + amount);\n            return;\n        }\n        this.balance += amount;\n        System.out.println(\"Deposited $\" + amount + \", new balance: $\" + balance);\n    }\n}\n\nclass PremiumSavingsAccount extends Account {\n    public PremiumSavingsAccount(String id, double initial) {\n        super(id, initial);\n    }\n}\n\npublic class BugFixDemo {\n    public static void main(String[] args) {\n        PremiumSavingsAccount savings = new PremiumSavingsAccount(\"SAV-101\", 500.0);\n        // Subclass immediately benefits from the central deposit guard\n        savings.deposit(-50.0); // Rejected!\n        savings.deposit(200.0); // Accepted!\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Base Account class encapsulates core balance management and input validation."
+        },
+        {
+          "step": 2,
+          "description": "PremiumSavingsAccount extends Account without repeating deposit logic."
+        },
+        {
+          "step": 3,
+          "description": "Any defensive security patch applied to deposit() immediately protects PremiumSavingsAccount and all other derived account types."
+        }
+      ]
+    },
+    {
+      "id": "act-wi-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Why Inheritance? (10 Questions)",
+      "questions": [
+        {
+          "id": "q-wi-1",
+          "question": "What is the primary motivation for adopting inheritance in object-oriented software?",
+          "options": [
+            "To make all class fields public for easier debugging",
+            "To promote code reuse and eliminate duplicate state/logic across related entities",
+            "To force all classes to run in separate JVM threads",
+            "To bypass constructor initialization requirements"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Inheritance enables classes to acquire existing fields and methods, eliminating copy-paste duplication and promoting central maintainability."
+        },
+        {
+          "id": "q-wi-2",
+          "question": "Which principle does inheritance directly help fulfill by centralizing common logic?",
+          "options": [
+            "WET (Write Everything Twice)",
+            "DRY (Don't Repeat Yourself)",
+            "YAGNI (You Aren't Gonna Need It)",
+            "KISS (Keep It Simple, Stupid)"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "DRY stands for Don't Repeat Yourself. Centralizing shared logic in a superclass prevents duplicate code spread across multiple classes."
+        },
+        {
+          "id": "q-wi-3",
+          "question": "If a bug is discovered in a method shared by 15 separate copy-pasted classes, what is the consequence compared to inheritance?",
+          "options": [
+            "The compiler automatically synchronizes the fix across all 15 classes",
+            "The engineer must manually find, test, and patch the bug in all 15 files, risking missed errors",
+            "The JVM throws a DuplicateMethodException at runtime",
+            "There is no difference in maintenance overhead"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Without inheritance, each copied instance must be manually located and patched, creating severe bug proliferation risk."
+        },
+        {
+          "id": "q-wi-4",
+          "question": "In an inheritance relationship between `Employee` and `Manager`, what is `Employee` called?",
+          "options": [
+            "Subclass or Derived class",
+            "Superclass, Parent class, or Base class",
+            "Child class or Leaf class",
+            "Static interface"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The class that is extended is known as the superclass, parent class, or base class."
+        },
+        {
+          "id": "q-wi-5",
+          "question": "In an inheritance relationship between `Vehicle` and `Car`, what is `Car` called?",
+          "options": [
+            "Superclass",
+            "Subclass, Child class, or Derived class",
+            "Base class",
+            "Root class"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The class that inherits from another class is called the subclass, child class, or derived class."
+        },
+        {
+          "id": "q-wi-6",
+          "question": "What is the relationship modeled by inheritance?",
+          "options": [
+            "HAS-A relationship (Composition)",
+            "IS-A relationship (Specialization)",
+            "USES-A relationship (Dependency)",
+            "RUNS-ON relationship"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Inheritance models the IS-A relationship: a Car IS-A Vehicle, a Dog IS-A Mammal, a Manager IS-A Employee."
+        },
+        {
+          "id": "q-wi-7",
+          "question": "Where should specialized attributes unique to a specific entity be declared?",
+          "options": [
+            "In the root superclass so every subclass has them",
+            "In the specific subclass that requires them",
+            "In a separate global utility file",
+            "In static final local variables"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Specialized fields (e.g. `hasSunroof` on `Car`) belong only in the specific child class, keeping the parent clean and generic."
+        },
+        {
+          "id": "q-wi-8",
+          "question": "Can a subclass directly access private fields of its parent class?",
+          "options": [
+            "Yes, all private parent fields become public in the child class",
+            "No, private members are strictly accessible only within the declaring class itself",
+            "Yes, using the super keyword without getters",
+            "Only if both classes have the same file name"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Private fields remain strictly encapsulated within the parent class. Subclasses must use protected members or public getters/setters."
+        },
+        {
+          "id": "q-wi-9",
+          "question": "What happens when a child class object calls an inherited public method from its parent class?",
+          "options": [
+            "A compilation error occurs unless the child re-declares the method",
+            "The method executes normally using the parent's definition",
+            "The JVM throws an AbstractMethodError",
+            "The method creates a clone of the child object"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The child object directly inherits and executes the parent's method logic seamlessly."
+        },
+        {
+          "id": "q-wi-10",
+          "question": "Which of the following is an example of improper use of inheritance?",
+          "options": [
+            "ElectricCar extending Vehicle",
+            "CheckingAccount extending Account",
+            "Tree extending Engine",
+            "Dog extending Animal"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "A Tree is NOT an Engine! Inheritance must only be applied when an authentic IS-A relationship exists."
+        }
+      ]
+    },
+    {
+      "id": "act-wi-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Why Inheritance?",
+      "interviewQA": [
+        {
+          "question": "What is inheritance and why is it considered a cornerstone of OOP?",
+          "answer": "Inheritance is the mechanism by which one class acquires the fields and methods of another class. It promotes the DRY principle by eliminating redundant code, establishes an intuitive IS-A domain hierarchy, and centralizes shared logic and bug fixes in a single maintainable superclass.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "How does inheritance reduce maintenance costs in enterprise systems?",
+          "answer": "In enterprise applications, business rules (e.g. validation, audit logging, tax calculation) are written once in a shared base class. When rules change or vulnerabilities are patched, updating the base class instantly propagates the correct behavior to all derived subclasses without modifying dozens of independent files.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "What is the difference between an IS-A relationship and a HAS-A relationship?",
+          "answer": "IS-A represents inheritance (e.g. A Car IS-A Vehicle, a Manager IS-A Employee). HAS-A represents composition or aggregation (e.g. A Car HAS-A Engine, a Library HAS-A List of Books). Inheritance should only be used when the subclass truly is a specialized type of the superclass.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "What problems arise if a developer abuses inheritance for code reuse without an IS-A relationship?",
+          "answer": "Using inheritance purely to steal utility methods (e.g. Stack extending ArrayList) breaks encapsulation, exposes unwanted parent methods to clients, tightly couples unrelated domains, and creates fragile architectures where base class changes corrupt unrelated child behavior.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Does a subclass inherit private members of a parent class in Java?",
+          "answer": "Conceptually, private fields exist in the memory allocated for the child instance, but the child class code cannot directly reference them by name. Access is restricted according to encapsulation rules, requiring protected access modifiers or public getter/setter methods.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "Can inheritance lead to fragile base class problems? How do engineers mitigate it?",
+          "answer": "Yes. A change in superclass logic can inadvertently alter or break subclass behavior. Engineers mitigate this by designing for inheritance consciously, marking classes final when inheritance is inappropriate, and favoring composition over inheritance when relationships are not strictly hierarchical.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-wi-7",
+      "type": "self_evaluation",
+      "title": "Module 5 Lesson 1 Mastery Checkpoint",
+      "checklist": [
+        "I can explain why copy-pasting code leads to technical debt and bug proliferation",
+        "I understand the DRY (Don't Repeat Yourself) principle and how inheritance fulfills it",
+        "I know the terminology: Superclass / Base Class / Parent vs Subclass / Derived Class / Child",
+        "I understand the IS-A relationship and can differentiate it from HAS-A",
+        "I understand how shared fields and methods move up into the superclass",
+        "I understand how specialized attributes remain in specific subclasses",
+        "I recognize that private parent fields cannot be accessed directly by child code",
+        "I know how bug fixes in a superclass propagate to all subclasses",
+        "I can identify inappropriate inheritance relationships (e.g. Tree extending Engine)",
+        "I can model a simple 2-level hierarchy with base and derived classes in Java"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-wi-1",
+      "title": "Warmup: Extract Common User State into Superclass",
+      "difficulty": "easy",
+      "description": "Refactor duplicated Student and Teacher classes into a clean Person superclass hierarchy.",
+      "problemStatement": "You are given a system with duplicate fields across Student and Teacher. Complete the Person superclass with name and email, then make Student and Teacher inherit from Person.",
+      "initialCode": "// Refactor into Person superclass\nclass Person {\n    protected String name;\n    protected String email;\n    \n    public Person(String name, String email) {\n        this.name = name;\n        this.email = email;\n    }\n    \n    public void printDetails() {\n        System.out.println(name + \" <\" + email + \">\");\n    }\n}\n\nclass Student extends Person {\n    private String rollNumber;\n    \n    public Student(String name, String email, String rollNumber) {\n        super(name, email);\n        this.rollNumber = rollNumber;\n    }\n    \n    public void displayStudent() {\n        printDetails();\n        System.out.println(\"Roll: \" + rollNumber);\n    }\n}",
+      "expectedOutput": "Alice <alice@school.edu>\nRoll: S101",
+      "hints": [
+        "Ensure Person constructor initializes name and email properly.",
+        "Student constructor should invoke super(name, email) as its first line.",
+        "Call printDetails() inside displayStudent() to reuse the inherited method."
+      ],
+      "solutionCode": "class Person {\n    protected String name;\n    protected String email;\n    \n    public Person(String name, String email) {\n        this.name = name;\n        this.email = email;\n    }\n    \n    public void printDetails() {\n        System.out.println(name + \" <\" + email + \">\");\n    }\n}\n\nclass Student extends Person {\n    private String rollNumber;\n    \n    public Student(String name, String email, String rollNumber) {\n        super(name, email);\n        this.rollNumber = rollNumber;\n    }\n    \n    public void displayStudent() {\n        printDetails();\n        System.out.println(\"Roll: \" + rollNumber);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Student s = new Student(\"Alice\", \"alice@school.edu\", \"S101\");\n        s.displayStudent();\n    }\n}"
+    },
+    {
+      "id": "prob-wi-2",
+      "title": "Code from Scratch: Appliance and WashingMachine Hierarchy",
+      "difficulty": "medium",
+      "description": "Design an Appliance base class and a WashingMachine subclass from scratch with power validation.",
+      "problemStatement": "Create an Appliance base class with brand (String), powerWatts (int), and turnOn() method. Then create a WashingMachine subclass that adds drumCapacityKg (int) and washCycle() method. From scratch, without starter code.",
+      "expectedOutput": "Bosch appliance powered on (2000W)\nStarting 8kg wash cycle...",
+      "hints": [
+        "Create public class Appliance with brand and powerWatts.",
+        "Use extends Appliance in class WashingMachine.",
+        "Remember to pass brand and powerWatts to super constructor."
+      ],
+      "solutionCode": "class Appliance {\n    protected String brand;\n    protected int powerWatts;\n    \n    public Appliance(String brand, int powerWatts) {\n        this.brand = brand;\n        this.powerWatts = powerWatts;\n    }\n    \n    public void turnOn() {\n        System.out.println(brand + \" appliance powered on (\" + powerWatts + \"W)\");\n    }\n}\n\nclass WashingMachine extends Appliance {\n    private int drumCapacityKg;\n    \n    public WashingMachine(String brand, int powerWatts, int drumCapacityKg) {\n        super(brand, powerWatts);\n        this.drumCapacityKg = drumCapacityKg;\n    }\n    \n    public void washCycle() {\n        turnOn();\n        System.out.println(\"Starting \" + drumCapacityKg + \"kg wash cycle...\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        WashingMachine wm = new WashingMachine(\"Bosch\", 2000, 8);\n        wm.washCycle();\n    }\n}"
+    },
+    {
+      "id": "prob-wi-3",
+      "title": "Code from Scratch: Bank Account Specialization",
+      "difficulty": "medium",
+      "description": "Build an Account superclass and a FixedDepositAccount subclass with maturity months and interest projection.",
+      "problemStatement": "Build an Account class with accountNumber (String) and balance (double). Subclass FixedDepositAccount adds lockPeriodMonths (int). Include calculateMaturityAmount(double annualRatePercentage) returning balance + (balance * annualRatePercentage * lockPeriodMonths / 1200.0).",
+      "expectedOutput": "Account FD-991 locked for 12 months. Maturity amount: $10700.0",
+      "hints": [
+        "Base class fields can be protected so FixedDepositAccount can compute with balance.",
+        "Use formula: balance + (balance * rate * months / 1200.0).",
+        "Print formatted result in a displaySummary() method."
+      ],
+      "solutionCode": "class Account {\n    protected String accountNumber;\n    protected double balance;\n    \n    public Account(String accountNumber, double balance) {\n        this.accountNumber = accountNumber;\n        this.balance = balance;\n    }\n}\n\nclass FixedDepositAccount extends Account {\n    private int lockPeriodMonths;\n    \n    public FixedDepositAccount(String accountNumber, double balance, int lockPeriodMonths) {\n        super(accountNumber, balance);\n        this.lockPeriodMonths = lockPeriodMonths;\n    }\n    \n    public double calculateMaturityAmount(double rate) {\n        return balance + (balance * rate * lockPeriodMonths / 1200.0);\n    }\n    \n    public void displaySummary(double rate) {\n        double maturity = calculateMaturityAmount(rate);\n        System.out.println(\"Account \" + accountNumber + \" locked for \" + lockPeriodMonths + \" months. Maturity amount: $\" + maturity);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        FixedDepositAccount fd = new FixedDepositAccount(\"FD-991\", 10000.0, 12);\n        fd.displaySummary(7.0);\n    }\n}"
+    },
+    {
+      "id": "prob-wi-4",
+      "title": "Fix Broken Code: Copy-Paste Bug Across Employee Subclasses",
+      "difficulty": "easy",
+      "description": "Fix a broken codebase where a duplicate raiseSalary method was implemented with inconsistent validation.",
+      "problemStatement": "In the provided code, Developer and Manager duplicate salary fields and methods, but Developer forgot negative raise validation. Refactor both to extend an Employee base class with verified raiseSalary logic.",
+      "initialCode": "// BROKEN: Duplicate code with missing validation in Developer\nclass BadDeveloper {\n    double salary = 80000;\n    void giveRaise(double amount) {\n        // BUG: Negative raises accepted!\n        salary += amount;\n    }\n}\n\nclass BadManager {\n    double salary = 110000;\n    void giveRaise(double amount) {\n        if (amount > 0) salary += amount;\n    }\n}",
+      "expectedOutput": "Employee Alice salary: 85000.0\nRejected invalid raise: -2000.0",
+      "hints": [
+        "Create class Employee with protected double salary.",
+        "Add giveRaise(double amount) in Employee with if (amount <= 0) validation.",
+        "Both Developer and Manager simply extend Employee and inherit giveRaise."
+      ],
+      "solutionCode": "class Employee {\n    protected String name;\n    protected double salary;\n    \n    public Employee(String name, double salary) {\n        this.name = name;\n        this.salary = salary;\n    }\n    \n    public void giveRaise(double amount) {\n        if (amount <= 0) {\n            System.out.println(\"Rejected invalid raise: \" + amount);\n            return;\n        }\n        this.salary += amount;\n        System.out.println(\"Employee \" + name + \" salary: \" + salary);\n    }\n}\n\nclass Developer extends Employee {\n    public Developer(String name, double salary) {\n        super(name, salary);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Developer dev = new Developer(\"Alice\", 80000.0);\n        dev.giveRaise(5000.0);\n        dev.giveRaise(-2000.0);\n    }\n}"
+    },
+    {
+      "id": "prob-wi-5",
+      "title": "Challenge: Multi-Level Media Catalog Hierarchy",
+      "difficulty": "hard",
+      "description": "Architect a MediaItem base class and specialized Book and Video subclasses with runtime playback/reading stats.",
+      "problemStatement": "Build a media catalog hierarchy. Base class MediaItem contains id (String), title (String), and isAvailable (boolean). Subclass Book adds pageCount (int) and readBook(int pages). Subclass Video adds durationMinutes (int) and streamVideo(int qualityResolution).",
+      "expectedOutput": "Streaming 'Clean Architecture' at 1080p (Duration: 120m)\nReading 'Design Patterns' (450 pages)",
+      "hints": [
+        "MediaItem constructor sets id, title, and default isAvailable = true.",
+        "Video and Book both call super(id, title).",
+        "Ensure clear output formatting matching the specification."
+      ],
+      "solutionCode": "class MediaItem {\n    protected String id;\n    protected String title;\n    protected boolean isAvailable;\n    \n    public MediaItem(String id, String title) {\n        this.id = id;\n        this.title = title;\n        this.isAvailable = true;\n    }\n}\n\nclass Video extends MediaItem {\n    private int durationMinutes;\n    \n    public Video(String id, String title, int durationMinutes) {\n        super(id, title);\n        this.durationMinutes = durationMinutes;\n    }\n    \n    public void streamVideo(int quality) {\n        System.out.println(\"Streaming '\" + title + \"' at \" + quality + \"p (Duration: \" + durationMinutes + \"m)\");\n    }\n}\n\nclass Book extends MediaItem {\n    private int pageCount;\n    \n    public Book(String id, String title, int pageCount) {\n        super(id, title);\n        this.pageCount = pageCount;\n    }\n    \n    public void readBook() {\n        System.out.println(\"Reading '\" + title + \"' (\" + pageCount + \" pages)\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Video vid = new Video(\"V1\", \"Clean Architecture\", 120);\n        Book bk = new Book(\"B1\", \"Design Patterns\", 450);\n        vid.streamVideo(1080);\n        bk.readBook();\n    }\n}"
+    }
+  ]
+}

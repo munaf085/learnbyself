@@ -1,0 +1,330 @@
+{
+  "id": "java-oop-mod5-les10",
+  "slug": "constructor-execution-in-inheritance",
+  "sectionSlug": "oop",
+  "moduleSlug": "inheritance",
+  "languageSlug": "java",
+  "title": "Constructor Execution in Inheritance",
+  "summary": "Master the exact runtime sequence of constructor chaining: why parent constructors execute first, implicit super() insertion, and order of initialization in Java.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "the-super-keyword"
+  ],
+  "learningObjectives": [
+    "Trace the exact step-by-step order of constructor execution from Object down to the leaf child class",
+    "Understand why the compiler inserts an implicit super() call when no explicit constructor call is written",
+    "Analyze common constructor initialization pitfalls (e.g. calling overridden methods inside constructors)",
+    "Diagnose and fix compilation failures when a parent class lacks a default constructor"
+  ],
+  "expectedOutcomes": [
+    "Confidence predicting constructor output in technical interview tracing challenges",
+    "Ability to write rock-solid constructor chains in complex inheritance hierarchies"
+  ],
+  "activities": [
+    {
+      "id": "act-cei-1",
+      "type": "analogy",
+      "title": "The House Construction Analogy",
+      "content": "When constructing a two-story home, you cannot begin by painting the walls of the second-floor master bedroom.\n\n1. **First**, the foundation must be poured into the ground (analogous to `Object` constructor).\n2. **Second**, the first-floor load-bearing framing and utilities must be erected (analogous to `Parent` constructor).\n3. **Third**, the second-floor framing and rooms are added on top of the first floor (analogous to `Child` constructor).\n\nIf you tried to build the second floor before pouring the ground-level foundation, the structure would collapse. Java enforces this exact structural order: the foundation (superclass) is always completely built before the upper levels (subclasses) execute."
+    },
+    {
+      "id": "act-cei-2",
+      "type": "concept",
+      "title": "The Precise Order of Constructor Chaining and Initialization",
+      "content": "When a subclass object is instantiated with `new Subclass()`, the JVM follows a deterministic, non-negotiable sequence.\n\n### 1. Step-by-Step Initialization Order:\n1. **Memory Allocation**: Contiguous heap memory is allocated for all fields from `Object` down to `Subclass` (initialized to default zeroes/nulls).\n2. **Constructor Invocation (Upward Phase)**:\n   - `Subclass` constructor is entered.\n   - Its first line (`super()` or explicit `super(...)`) invokes the `Parent` constructor.\n   - `Parent` constructor invokes `Grandparent` constructor, until `java.lang.Object` is reached.\n3. **Constructor Execution (Downward Phase)**:\n   - `Object` constructor finishes and returns.\n   - `Grandparent` instance variable initializers run, then its constructor body executes.\n   - `Parent` instance variable initializers run, then its constructor body executes.\n   - `Subclass` instance variable initializers run, then its constructor body executes.\n\n### 2. Implicit vs Explicit `super()`:\n- If you do not write an explicit `super(...)` call on line 1, the compiler inserts **`super();`** automatically.\n- **Crucial Rule**: If the parent class has defined a constructor with parameters, the compiler **does NOT provide a default zero-arg constructor**. If the child does not explicitly call `super(args)`, compilation fails!\n\n### 3. Golden Rule of Inheritance Constructors:\nNever call overridable public methods inside a constructor. The subclass fields will not have initialized yet when the parent constructor is running!"
+    },
+    {
+      "id": "act-cei-3",
+      "type": "code_walkthrough",
+      "title": "Tracing Constructor Call and Execution Order",
+      "description": "Trace console output step-by-step through a 3-tier hierarchy.",
+      "code": "class Grandparent {\n    public Grandparent() {\n        System.out.println(\"1. Grandparent constructor executed\");\n    }\n}\n\nclass Parent extends Grandparent {\n    public Parent() {\n        // Implicit super() called here automatically\n        System.out.println(\"2. Parent constructor executed\");\n    }\n}\n\nclass Child extends Parent {\n    public Child() {\n        // Implicit super() called here automatically\n        System.out.println(\"3. Child constructor executed\");\n    }\n}\n\npublic class ExecutionOrderDemo {\n    public static void main(String[] args) {\n        System.out.println(\"--- Creating Child instance ---\");\n        new Child();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "'new Child()' calls Child constructor."
+        },
+        {
+          "step": 2,
+          "description": "Child's implicit super() calls Parent constructor."
+        },
+        {
+          "step": 3,
+          "description": "Parent's implicit super() calls Grandparent constructor."
+        },
+        {
+          "step": 4,
+          "description": "Grandparent executes first, then Parent executes, then Child executes."
+        }
+      ]
+    },
+    {
+      "id": "act-cei-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Parameter Passing in Constructor Chains",
+      "description": "Follow explicit constructor parameter routing through multiple inheritance tiers.",
+      "code": "class Account {\n    protected String id;\n    public Account(String id) {\n        this.id = id;\n        System.out.println(\"Account created: \" + id);\n    }\n}\n\nclass SavingsAccount extends Account {\n    protected double rate;\n    public SavingsAccount(String id, double rate) {\n        super(id); // Explicit forwarding to Account\n        this.rate = rate;\n        System.out.println(\"Savings configured with rate: \" + rate + \"%\");\n    }\n}\n\npublic class ParamRoutingDemo {\n    public static void main(String[] args) {\n        new SavingsAccount(\"SAV-800\", 4.5);\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "SavingsAccount receives id and rate."
+        },
+        {
+          "step": 2,
+          "description": "super(id) forwards the id parameter to Account constructor before rate is assigned."
+        }
+      ]
+    },
+    {
+      "id": "act-cei-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Constructor Execution in Inheritance (10 Questions)",
+      "questions": [
+        {
+          "id": "q-cei-1",
+          "question": "In what order do constructors execute when a subclass object is instantiated?",
+          "options": [
+            "Subclass first, then Superclass",
+            "Superclass first, then Subclass",
+            "Simultaneously in parallel threads",
+            "Random order depending on compiler optimization"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Parent constructors execute before child constructors to establish foundation invariants."
+        },
+        {
+          "id": "q-cei-2",
+          "question": "What statement does the Java compiler automatically insert on line 1 of a subclass constructor if none is written?",
+          "options": [
+            "this();",
+            "super();",
+            "return;",
+            "super.init();"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The compiler automatically inserts 'super();' (invoking the parent's zero-argument constructor)."
+        },
+        {
+          "id": "q-cei-3",
+          "question": "Given class A { A() { print('A'); } } and class B extends A { B() { print('B'); } }. What does 'new B()' print?",
+          "options": [
+            "B",
+            "AB",
+            "BA",
+            "Nothing until a method is called"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "A constructor executes before B constructor, printing 'AB'."
+        },
+        {
+          "id": "q-cei-4",
+          "question": "If class Parent has ONLY the constructor 'Parent(int x)', what happens if class Child defines 'Child() { }'?",
+          "options": [
+            "It compiles normally with x = 0",
+            "Compile-time error: constructor Parent() is undefined",
+            "Runtime NoSuchMethodException",
+            "Child constructor is deleted"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Because Parent defines Parent(int), no default Parent() exists. Child's implicit super() call fails to compile."
+        },
+        {
+          "id": "q-cei-5",
+          "question": "How can the child class in the previous question fix the compilation error?",
+          "options": [
+            "By writing super(10); explicitly on the first line of Child's constructor",
+            "By marking Child static",
+            "By removing extends Parent",
+            "By making the Parent constructor private"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Explicitly invoking 'super(10);' on line 1 satisfies the parent's parameterized constructor."
+        },
+        {
+          "id": "q-cei-6",
+          "question": "Given A -> B -> C inheritance chain, what is the output of 'new C()'?",
+          "options": [
+            "C B A",
+            "A B C",
+            "B A C",
+            "A C B"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors execute from top to bottom: Grandparent A, then Parent B, then Child C."
+        },
+        {
+          "id": "q-cei-7",
+          "question": "When do instance variable initializers (e.g. 'int count = 5;') execute relative to constructors?",
+          "options": [
+            "Before any constructor is called",
+            "Immediately after the super() constructor call returns, before the current constructor body",
+            "At the very end of program execution",
+            "During class loading"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Instance variable initializers run immediately after super() returns, before the remainder of the constructor body."
+        },
+        {
+          "id": "q-cei-8",
+          "question": "Why is it dangerous to call an overridable method inside a superclass constructor?",
+          "options": [
+            "It causes an OutOfMemoryError",
+            "The subclass's overridden method might run before the subclass fields have been initialized",
+            "It makes the constructor static",
+            "Java forbids calling methods inside constructors"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The subclass method may access subclass fields that are still null or 0, causing subtle bugs or NullPointerExceptions."
+        },
+        {
+          "id": "q-cei-9",
+          "question": "Can a constructor be declared final in Java?",
+          "options": [
+            "Yes, to prevent subclasses from modifying it",
+            "No, constructors cannot be declared final (they are never inherited or overridden)",
+            "Only private constructors can be final",
+            "Only in abstract classes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors are never inherited, so marking them final is meaningless and illegal syntax."
+        },
+        {
+          "id": "q-cei-10",
+          "question": "Can a constructor be declared static in Java?",
+          "options": [
+            "Yes, to initialize static variables",
+            "No, constructors initialize instance state and cannot be static",
+            "Only zero-argument constructors can be static",
+            "Only in utility classes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors create instances; they can never be static."
+        }
+      ]
+    },
+    {
+      "id": "act-cei-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Constructor Execution in Inheritance",
+      "interviewQA": [
+        {
+          "question": "Explain the exact execution order of constructors in an inheritance hierarchy.",
+          "answer": "When an instance is created, memory is allocated. Constructor calls propagate upward via explicit or implicit super() calls until java.lang.Object is reached. The constructor bodies then execute top-down: Object first, followed by each descending superclass, and finally the leaf subclass constructor body.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "What is implicit constructor chaining in Java?",
+          "answer": "If a constructor does not explicitly invoke super(...) or this(...), the Java compiler automatically prepends an implicit 'super();' call on line 1. This guarantees that parent class initialization is never bypassed.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "What compile-time error happens when a parent class has only parameterized constructors?",
+          "answer": "When a parent class declares 'Parent(int x)', the compiler does not generate a default zero-arg constructor. If a subclass constructor doesn't explicitly call 'super(x)', the compiler inserts 'super();', which fails with 'constructor Parent() is undefined'.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "Why is invoking overridable methods in a constructor considered an anti-pattern?",
+          "answer": "When the parent constructor executes, the subclass instance fields have not yet been initialized. If the parent constructor calls an overridden method, the subclass implementation will execute while its own fields are still default zero/null, leading to unexpected behavior or NullPointerExceptions.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Can a constructor be private in a parent class? What is the consequence for inheritance?",
+          "answer": "Yes. If all constructors in a class are private, subclasses cannot invoke super() and therefore cannot extend the class. This is used in utility classes or singleton designs to prevent inheritance without marking the class final.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "What is the difference between constructor chaining using this() vs super()?",
+          "answer": "this() chains constructors horizontally within the same class (e.g. from an overloaded constructor to a master constructor). super() chains constructors vertically upward to the immediate parent class.",
+          "companyTag": "Bloomberg"
+        }
+      ]
+    },
+    {
+      "id": "act-cei-7",
+      "type": "self_evaluation",
+      "title": "Module 5 Lesson 10 Mastery Checkpoint",
+      "checklist": [
+        "I can trace top-down constructor execution in a multi-tier inheritance hierarchy",
+        "I understand why the compiler inserts an implicit super() on line 1",
+        "I know what causes 'constructor Super() is undefined' and how to resolve it",
+        "I understand when instance field initializers run relative to super()",
+        "I understand why calling overridable methods inside constructors is dangerous",
+        "I know that constructors cannot be declared final, static, or abstract",
+        "I understand how private constructors prevent a class from being extended",
+        "I can differentiate horizontal constructor chaining (this()) from vertical chaining (super())",
+        "I can solve constructor tracing interview puzzles with 100% accuracy",
+        "I can write robust constructor chains across multiple inheritance tiers in Java"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-cei-1",
+      "title": "Warmup: Trace 3-Tier Constructor Execution Order",
+      "difficulty": "easy",
+      "description": "Construct Alpha -> Beta -> Gamma and verify the exact top-down execution output.",
+      "problemStatement": "Create Alpha printing 'Alpha init', Beta extending Alpha printing 'Beta init', and Gamma extending Beta printing 'Gamma init'. Instantiate Gamma.",
+      "initialCode": "class Alpha {\n    public Alpha() {\n        System.out.println(\"Alpha init\");\n    }\n}\n\nclass Beta extends Alpha {\n    public Beta() {\n        System.out.println(\"Beta init\");\n    }\n}\n\n// Complete Gamma\nclass Gamma extends Beta {\n    public Gamma() {\n        System.out.println(\"Gamma init\");\n    }\n}",
+      "expectedOutput": "Alpha init\nBeta init\nGamma init",
+      "hints": [
+        "Constructors execute top-down: Alpha first, then Beta, then Gamma."
+      ],
+      "solutionCode": "class Alpha {\n    public Alpha() {\n        System.out.println(\"Alpha init\");\n    }\n}\n\nclass Beta extends Alpha {\n    public Beta() {\n        System.out.println(\"Beta init\");\n    }\n}\n\nclass Gamma extends Beta {\n    public Gamma() {\n        System.out.println(\"Gamma init\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        new Gamma();\n    }\n}"
+    },
+    {
+      "id": "prob-cei-2",
+      "title": "Code from Scratch: Parameterized Constructor Routing in Banking",
+      "difficulty": "medium",
+      "description": "Forward account holder and initial balance through BankAccount -> SavingsAccount -> TieredSavingsAccount.",
+      "problemStatement": "Build BankAccount(String holder, double balance). Subclass SavingsAccount(String holder, double balance, double rate) forwards holder, balance to super. Subclass TieredSavingsAccount adds tierLevel (int) and prints full account creation status. From scratch.",
+      "expectedOutput": "Account established for Alice ($5000.0)\nSavings rate configured: 4.5%\nTiered Account Ready: Tier 2 (Balance: $5000.0)",
+      "hints": [
+        "BankAccount constructor prints account established message.",
+        "SavingsAccount constructor calls super and prints rate configured.",
+        "TieredSavingsAccount constructor calls super and prints tiered account ready."
+      ],
+      "solutionCode": "class BankAccount {\n    protected String holder;\n    protected double balance;\n    public BankAccount(String holder, double balance) {\n        this.holder = holder;\n        this.balance = balance;\n        System.out.println(\"Account established for \" + holder + \" ($\" + balance + \")\");\n    }\n}\n\nclass SavingsAccount extends BankAccount {\n    protected double rate;\n    public SavingsAccount(String holder, double balance, double rate) {\n        super(holder, balance);\n        this.rate = rate;\n        System.out.println(\"Savings rate configured: \" + rate + \"%\");\n    }\n}\n\nclass TieredSavingsAccount extends SavingsAccount {\n    private int tierLevel;\n    public TieredSavingsAccount(String holder, double balance, double rate, int tier) {\n        super(holder, balance, rate);\n        this.tierLevel = tier;\n        System.out.println(\"Tiered Account Ready: Tier \" + tierLevel + \" (Balance: $\" + balance + \")\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        new TieredSavingsAccount(\"Alice\", 5000.0, 4.5, 2);\n    }\n}"
+    },
+    {
+      "id": "prob-cei-3",
+      "title": "Code from Scratch: Hardware Inventory Constructor Chain",
+      "difficulty": "medium",
+      "description": "Construct HardwareComponent -> Motherboard -> ServerBoard with chipset and socket specifications.",
+      "problemStatement": "Build HardwareComponent(serialNumber). Subclass Motherboard adds socketType. Subclass ServerBoard adds dualCpuSupport (boolean) and prints complete hardware manifest. From scratch.",
+      "expectedOutput": "Hardware Serial SN-9988 registered\nMotherboard Socket: LGA4677 configured\nServer Board initialized. Dual CPU: true",
+      "hints": [
+        "Each class prints during constructor execution.",
+        "ServerBoard forwards serialNumber and socketType to super()."
+      ],
+      "solutionCode": "class HardwareComponent {\n    protected String serialNumber;\n    public HardwareComponent(String sn) {\n        this.serialNumber = sn;\n        System.out.println(\"Hardware Serial \" + serialNumber + \" registered\");\n    }\n}\n\nclass Motherboard extends HardwareComponent {\n    protected String socketType;\n    public Motherboard(String sn, String socket) {\n        super(sn);\n        this.socketType = socket;\n        System.out.println(\"Motherboard Socket: \" + socketType + \" configured\");\n    }\n}\n\nclass ServerBoard extends Motherboard {\n    private boolean dualCpuSupport;\n    public ServerBoard(String sn, String socket, boolean dualCpu) {\n        super(sn, socket);\n        this.dualCpuSupport = dualCpu;\n        System.out.println(\"Server Board initialized. Dual CPU: \" + dualCpuSupport);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        new ServerBoard(\"SN-9988\", \"LGA4677\", true);\n    }\n}"
+    },
+    {
+      "id": "prob-cei-4",
+      "title": "Fix Broken Code: Missing Parent Constructor Arguments",
+      "difficulty": "easy",
+      "description": "Fix a compilation failure caused by parent having only a parameterized constructor with no default.",
+      "problemStatement": "The code fails to compile because BaseConfig has BaseConfig(String env) and ChildConfig attempts an implicit super(). Fix ChildConfig by explicitly passing 'PRODUCTION' to super.",
+      "initialCode": "class BaseConfig {\n    protected String environment;\n    public BaseConfig(String env) {\n        this.environment = env;\n        System.out.println(\"Base environment: \" + environment);\n    }\n}\n\n// COMPILE ERROR: constructor BaseConfig() is undefined\nclass ChildConfig extends BaseConfig {\n    private int port;\n    public ChildConfig(int port) {\n        // BUG: missing explicit super(env)\n        this.port = port;\n    }\n}",
+      "expectedOutput": "Base environment: PRODUCTION\nChild port: 8080",
+      "hints": [
+        "In ChildConfig constructor, add super(\"PRODUCTION\"); as the first statement."
+      ],
+      "solutionCode": "class BaseConfig {\n    protected String environment;\n    public BaseConfig(String env) {\n        this.environment = env;\n        System.out.println(\"Base environment: \" + environment);\n    }\n}\n\nclass ChildConfig extends BaseConfig {\n    private int port;\n    public ChildConfig(int port) {\n        super(\"PRODUCTION\");\n        this.port = port;\n    }\n    public void display() {\n        System.out.println(\"Child port: \" + port);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        ChildConfig cfg = new ChildConfig(8080);\n        cfg.display();\n    }\n}"
+    },
+    {
+      "id": "prob-cei-5",
+      "title": "Challenge: Multi-Generation Transaction Audit Chaining",
+      "difficulty": "hard",
+      "description": "Architect a 3-tier transaction verification pipeline with timestamped constructor audits.",
+      "problemStatement": "Create Transaction(id, amount). Create VerifiedTransaction adding verifierId (String). Create SettledTransaction adding settlementBatch (String) and printAuditTrail() displaying the cumulative state.",
+      "expectedOutput": "Transaction TX-100 ($7500.0) logged\nVerified by Officer V-42\nSettled in Batch BATCH-2026-Q3\nAudit Trail: TX-100 | Amount: $7500.0 | Verifier: V-42 | Batch: BATCH-2026-Q3",
+      "hints": [
+        "Each constructor prints its stage confirmation.",
+        "SettledTransaction calls super(id, amount, verifierId).",
+        "printAuditTrail prints the combined trail string."
+      ],
+      "solutionCode": "class Transaction {\n    protected String id;\n    protected double amount;\n    public Transaction(String id, double amount) {\n        this.id = id;\n        this.amount = amount;\n        System.out.println(\"Transaction \" + id + \" ($\" + amount + \") logged\");\n    }\n}\n\nclass VerifiedTransaction extends Transaction {\n    protected String verifierId;\n    public VerifiedTransaction(String id, double amount, String verifier) {\n        super(id, amount);\n        this.verifierId = verifier;\n        System.out.println(\"Verified by Officer \" + verifierId);\n    }\n}\n\nclass SettledTransaction extends VerifiedTransaction {\n    private String settlementBatch;\n    public SettledTransaction(String id, double amount, String verifier, String batch) {\n        super(id, amount, verifier);\n        this.settlementBatch = batch;\n        System.out.println(\"Settled in Batch \" + settlementBatch);\n    }\n    public void printAuditTrail() {\n        System.out.println(\"Audit Trail: \" + id + \" | Amount: $\" + amount + \" | Verifier: \" + verifierId + \" | Batch: \" + settlementBatch);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SettledTransaction st = new SettledTransaction(\"TX-100\", 7500.0, \"V-42\", \"BATCH-2026-Q3\");\n        st.printAuditTrail();\n    }\n}"
+    }
+  ]
+}

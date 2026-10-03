@@ -1352,6 +1352,378 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
         </Card>
       )}
 
+      {/* MODULE 5: INHERITANCE (11 CHEAT SHEETS) */}
+
+      {/* Lesson 1: why-inheritance */}
+      {(slug === 'why-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Why Inheritance? — Architecture &amp; Reusability Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Aspect</th>
+                  <th className="p-2.5">Without Inheritance (Copy-Paste)</th>
+                  <th className="p-2.5 rounded-r-lg">With Inheritance (OOP Superclass)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Code Duplication</td>
+                  <td className="p-2.5 text-rose-600">High: Identical fields and methods copied across N classes</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">Zero: Shared code centralized in 1 superclass</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Bug Fixes</td>
+                  <td className="p-2.5 text-rose-600">Must manually find and patch in every copied file</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">Fix once in superclass; propagates to all subclasses</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Architecture</td>
+                  <td className="p-2.5 text-rose-600">Disjointed, uncoordinated, high maintenance debt</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">Structured IS-A hierarchy modeling real-world domains</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Core Principle</td>
+                  <td className="p-2.5 text-rose-600">WET (Write Everything Twice)</td>
+                  <td className="p-2.5 text-emerald-600 font-bold">DRY (Don&apos;t Repeat Yourself)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: parent-and-child-classes */}
+      {(slug === 'parent-and-child-classes') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <BookOpen className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Superclass vs Subclass Terminology &amp; The IS-A Test
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
+                Superclass (Base / Parent)
+              </span>
+              <ul className="space-y-1 text-slate-600 list-disc list-inside">
+                <li>Represents <strong>Generalization</strong> (shared concepts)</li>
+                <li>Root ancestor of all Java classes is <code className="font-mono text-brand-600 font-bold">java.lang.Object</code></li>
+                <li>Holds universal state: <code className="font-mono text-slate-700">id, name, speed</code></li>
+                <li>Has zero compile-time awareness of subclass fields</li>
+              </ul>
+            </div>
+
+            <div className="p-3.5 bg-brand-50/40 border border-brand-200/70 rounded-xl space-y-2">
+              <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                Subclass (Derived / Child)
+              </span>
+              <ul className="space-y-1 text-slate-600 list-disc list-inside">
+                <li>Represents <strong>Specialization</strong> (unique refinements)</li>
+                <li>Created using the <code className="font-mono text-brand-600 font-bold">extends</code> keyword</li>
+                <li>Inherits all accessible members of the superclass</li>
+                <li>Single contiguous object allocated in heap memory</li>
+              </ul>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: the-extends-keyword */}
+      {(slug === 'the-extends-keyword') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-blue-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The extends Keyword — Member Accessibility Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Superclass Modifier</th>
+                  <th className="p-2.5">Subclass in Same Package</th>
+                  <th className="p-2.5">Subclass in Different Package</th>
+                  <th className="p-2.5 rounded-r-lg">Direct Access in Child?</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-brand-700 font-bold">public</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible</td><td className="p-2.5 text-emerald-600 font-bold">YES everywhere</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-brand-700 font-bold">protected</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible (via inheritance)</td><td className="p-2.5 text-emerald-600 font-bold">YES in subclasses</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-700">package-private (default)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible</td><td className="p-2.5 text-rose-600">✗ Blocked</td><td className="p-2.5 text-amber-600">Only within package</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-rose-600 font-bold">private</td><td className="p-2.5 text-rose-600">✗ Blocked</td><td className="p-2.5 text-rose-600">✗ Blocked</td><td className="p-2.5 text-rose-600 font-bold">NO (Use getters/setters)</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-purple-700 font-bold">Constructors</td><td className="p-2.5 text-rose-600">Not inherited</td><td className="p-2.5 text-rose-600">Not inherited</td><td className="p-2.5 text-amber-600">Must invoke via super()</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: single-inheritance */}
+      {(slug === 'single-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Single Inheritance Architecture &amp; Call Graph Simplicity
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5">
+              <span className="font-bold text-slate-900">Rule of One</span>
+              <p className="text-slate-600 leading-relaxed">
+                A class can have <strong>at most one</strong> direct parent class. Commas in extends cause a compiler syntax error.
+              </p>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5">
+              <span className="font-bold text-slate-900">Linear Method Lookup</span>
+              <p className="text-slate-600 leading-relaxed">
+                Method resolution is a straight path: <code className="font-mono text-brand-600">Child -&gt; Parent -&gt; Object</code> with zero branching ambiguity.
+              </p>
+            </div>
+
+            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1.5">
+              <span className="font-bold text-slate-900">Contiguous Heap Layout</span>
+              <p className="text-slate-600 leading-relaxed">
+                The JVM lays out parent fields directly followed by child fields in one contiguous block in memory.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: multilevel-inheritance */}
+      {(slug === 'multilevel-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Multilevel Inheritance — Cumulative State &amp; Transitivity
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Tier Level</th>
+                  <th className="p-2.5">Example Class</th>
+                  <th className="p-2.5">Introduced State</th>
+                  <th className="p-2.5 rounded-r-lg">Cumulative Access in Leaf</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Grandparent</td><td className="p-2.5 font-mono text-brand-700">Device</td><td className="p-2.5">brand, powerOn()</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Parent</td><td className="p-2.5 font-mono text-brand-700">Computer</td><td className="p-2.5">ramGb, loadOS()</td><td className="p-2.5 text-emerald-600 font-bold">✓ Accessible</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Child (Leaf)</td><td className="p-2.5 font-mono text-brand-700">Laptop</td><td className="p-2.5">weightKg, openLid()</td><td className="p-2.5 text-emerald-600 font-bold">Own members</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[11px] text-slate-500 italic">
+            * Best Practice: Keep hierarchy depth between 2 to 3 tiers to prevent the Fragile Base Class problem.
+          </p>
+        </Card>
+      )}
+
+      {/* Lesson 6: hierarchical-inheritance */}
+      {(slug === 'hierarchical-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-cyan-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Hierarchical Inheritance — Branching &amp; Strict Sibling Isolation
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+              <span className="font-bold text-slate-900">Shared Base (Vertical)</span>
+              <p className="text-slate-600 leading-relaxed">
+                One superclass (<code className="font-mono text-brand-600">BankAccount</code>) provides core state (<code className="font-mono text-slate-700">balance</code>) to all siblings: <code className="font-mono text-slate-700">SavingsAccount</code>, <code className="font-mono text-slate-700">CheckingAccount</code>.
+              </p>
+            </div>
+
+            <div className="p-3 bg-rose-50/40 border border-rose-200/70 rounded-xl space-y-2">
+              <span className="font-bold text-slate-900">Strict Sibling Isolation (Horizontal)</span>
+              <p className="text-slate-600 leading-relaxed">
+                Siblings cannot see each other&apos;s fields. <code className="font-mono text-rose-700">SavingsAccount</code> cannot call <code className="font-mono text-rose-700">CheckingAccount.writeCheck()</code>.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: why-no-multiple-class-inheritance */}
+      {(slug === 'why-no-multiple-class-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Diamond Problem &amp; Why Java Forbids Multiple Class Inheritance
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Pitfall in C++ Multiple Inheritance</th>
+                  <th className="p-2.5">Root Cause</th>
+                  <th className="p-2.5 rounded-r-lg">Java&apos;s Architectural Solution</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">The Diamond Problem</td><td className="p-2.5">Two parents override method() from common grandparent</td><td className="p-2.5 text-emerald-600 font-bold">Prohibit multiple class inheritance entirely</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Field Duplication</td><td className="p-2.5">Child inherits 2 separate copies of grandparent fields</td><td className="p-2.5 text-emerald-600 font-bold">Single parent ensures 1 copy of state in heap</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Multiple Capabilities</td><td className="p-2.5">Need for a class to wear multiple hats</td><td className="p-2.5 text-emerald-600 font-bold">Interfaces: multiple inheritance of type without state</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: multiple-inheritance-through-interfaces */}
+      {(slug === 'multiple-inheritance-through-interfaces') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Class Extension vs Interface Implementation Comparison
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Class Inheritance (extends)</th>
+                  <th className="p-2.5 rounded-r-lg">Interface Implementation (implements)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Relationship</td><td className="p-2.5">IS-A (Core Identity)</td><td className="p-2.5 text-emerald-600 font-bold">CAN-DO (Behavioral Contract)</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Allowed Count</td><td className="p-2.5 text-amber-700 font-bold">At most ONE class</td><td className="p-2.5 text-emerald-600 font-bold">UNLIMITED interfaces</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Instance Variables</td><td className="p-2.5">Can declare state fields</td><td className="p-2.5 text-emerald-600 font-bold">ZERO instance fields (only static constants)</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">Constructors</td><td className="p-2.5">Has constructors</td><td className="p-2.5 text-emerald-600 font-bold">ZERO constructors</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: the-super-keyword */}
+      {(slug === 'the-super-keyword') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 3 Powers of super — Complete Reference Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Use Case</th>
+                  <th className="p-2.5">Syntax</th>
+                  <th className="p-2.5">Strict Rule</th>
+                  <th className="p-2.5 rounded-r-lg">Purpose</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">1. Constructor</td><td className="p-2.5 font-mono text-brand-700 font-bold">super(...)</td><td className="p-2.5 text-rose-600 font-bold">MUST be Line 1</td><td className="p-2.5">Executes parent constructor before child logic</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">2. Method Call</td><td className="p-2.5 font-mono text-brand-700 font-bold">super.method()</td><td className="p-2.5">Any non-static method</td><td className="p-2.5">Invokes parent&apos;s method implementation</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-bold text-slate-900">3. Shadowed Field</td><td className="p-2.5 font-mono text-brand-700 font-bold">super.field</td><td className="p-2.5">Any non-static scope</td><td className="p-2.5">Reads parent variable hidden by child variable</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 10: constructor-execution-in-inheritance */}
+      {(slug === 'constructor-execution-in-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Constructor Execution Order — Step-by-Step Chaining Sequence
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Step #</th>
+                  <th className="p-2.5">Phase</th>
+                  <th className="p-2.5 rounded-r-lg">Action Performed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5 font-bold text-slate-900">Memory Allocation</td><td className="p-2.5">JVM allocates unified heap object with default values (0, null, false)</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5 font-bold text-slate-900">Call Propagation (Up)</td><td className="p-2.5">Child calls super(), Parent calls super() until java.lang.Object is reached</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5 font-bold text-slate-900">Execution Phase (Down)</td><td className="p-2.5">Object constructor runs first, then Grandparent, then Parent, then Child</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5 font-bold text-slate-900">Implicit super()</td><td className="p-2.5">Compiler automatically inserts super(); if no explicit super() or this() is written</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 11: employee-role-hierarchy-project */}
+      {(slug === 'employee-role-hierarchy-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Employee Role Hierarchy — 10-Point Architectural Checklist
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Architecture Requirement</th>
+                  <th className="p-2.5 rounded-r-lg">Implementation Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">Base Employee class encapsulates id, name, and baseSalary with validation</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Developer extends Employee as a sibling subclass with isolated state</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Manager extends Employee as a sibling subclass adding team size and budget</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">Director extends Manager as a multilevel subclass accumulating all state</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">All constructors invoke super(...) on line 1 without compilation errors</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">calculateTotalCompensation computes role-specific performance packages</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">Sibling isolation strictly preserved (Developer cannot see Manager fields)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">Shadowed fields resolved cleanly using super where appropriate</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Inheritance tree remains shallow (3 levels max) to prevent fragile bases</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Clean pedagogical boundaries: zero abstract classes or interfaces</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+
       {/* Lesson: java-and-jvm */}
       {(slug === 'java-and-jvm' || slug === 'what-is-java-and-the-jvm') && (
         <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">

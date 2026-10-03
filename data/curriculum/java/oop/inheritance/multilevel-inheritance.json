@@ -1,0 +1,333 @@
+{
+  "id": "java-oop-mod5-les5",
+  "slug": "multilevel-inheritance",
+  "sectionSlug": "oop",
+  "moduleSlug": "inheritance",
+  "languageSlug": "java",
+  "title": "Multilevel Inheritance",
+  "summary": "Master multilevel inheritance chains: how classes inherit cumulatively through grandparent, parent, and child hierarchies, and how state accumulates down the lineage.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "single-inheritance"
+  ],
+  "learningObjectives": [
+    "Understand the transitive nature of inheritance across multiple generation layers",
+    "Trace state and method accumulation from Grandparent -> Parent -> Child",
+    "Understand the memory footprint of deep inheritance chains",
+    "Identify when multilevel inheritance is beneficial versus when it creates fragile base classes"
+  ],
+  "expectedOutcomes": [
+    "Ability to architect and trace multi-generation inheritance hierarchies in enterprise applications",
+    "Skill to avoid excessive coupling in deep class inheritance trees"
+  ],
+  "activities": [
+    {
+      "id": "act-mi-1",
+      "type": "analogy",
+      "title": "The Evolutionary Computing Hardware Family Tree",
+      "content": "Consider the evolution of personal computing devices: Electronic Circuit -> Computer -> Laptop -> Ultrabook.\n\n- The **Electronic Circuit** introduced electrical power, input, and ground terminals.\n- The **Computer** inherited circuits and added CPU, RAM, and storage controllers.\n- The **Laptop** inherited all Computer capabilities and added a battery, keyboard, and screen.\n- The **Ultrabook** inherited all Laptop capabilities and added ultra-slim chassis, biometric sensors, and touch screens.\n\nAn Ultrabook does not just have a touchscreen; it fundamentally has RAM, storage, a CPU, and electrical circuits because it inherited them cumulatively through the generations."
+    },
+    {
+      "id": "act-mi-2",
+      "type": "concept",
+      "title": "The Transitive Nature of Multilevel Inheritance",
+      "content": "Multilevel inheritance occurs when a class extends a class that is already extending another class.\n\n```\n     +-------------------------+\n     |      Grandparent        | (Device)\n     +-------------------------+\n                  ^\n                  |\n     +-------------------------+\n     |         Parent          | (Computer extends Device)\n     +-------------------------+\n                  ^\n                  |\n     +-------------------------+\n     |         Child           | (Laptop extends Computer)\n     +-------------------------+\n```\n\n### 1. Cumulative Inheritance (Transitivity):\n- If class `B` extends `A`, and class `C` extends `B`, then `C` automatically inherits all accessible members of **both `A` and `B`**.\n- `C` is a direct child of `B`, and an indirect descendant of `A`.\n\n### 2. Constructor Chaining Across Generations:\n- When `new Laptop()` is called, the constructor execution chain begins at the top: `Object` -> `Device` -> `Computer` -> `Laptop`.\n- Every generation must have its invariants established before the next layer executes.\n\n### 3. Engineering Best Practice \u2014 Hierarchy Depth:\n- In production software, keep inheritance hierarchies shallow (ideally 2 to 3 levels deep).\n- Deep hierarchies (5+ levels) create the **Fragile Base Class** problem, where small edits to the grandparent break dozens of distant descendants."
+    },
+    {
+      "id": "act-mi-3",
+      "type": "code_walkthrough",
+      "title": "Device -> Computer -> Laptop Cumulative Tracing",
+      "description": "Trace how fields and methods accumulate across three generation levels in Java.",
+      "code": "class Device {\n    protected String brand;\n    public Device(String brand) {\n        this.brand = brand;\n    }\n    public void powerOn() {\n        System.out.println(brand + \" device powered on\");\n    }\n}\n\nclass Computer extends Device {\n    protected int ramGigabytes;\n    public Computer(String brand, int ram) {\n        super(brand);\n        this.ramGigabytes = ram;\n    }\n    public void loadOS() {\n        powerOn(); // Inherited from Device\n        System.out.println(\"Booting OS with \" + ramGigabytes + \"GB RAM\");\n    }\n}\n\nclass Laptop extends Computer {\n    private double weightKg;\n    public Laptop(String brand, int ram, double weight) {\n        super(brand, ram);\n        this.weightKg = weight;\n    }\n    public void openLid() {\n        loadOS(); // Inherited from Computer\n        System.out.println(\"Laptop ready for mobile use (Weight: \" + weightKg + \"kg)\");\n    }\n}\n\npublic class MultilevelDemo {\n    public static void main(String[] args) {\n        Laptop myLaptop = new Laptop(\"Dell\", 32, 1.4);\n        // Cumulative access across all 3 levels\n        myLaptop.openLid();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Device introduces brand and powerOn()."
+        },
+        {
+          "step": 2,
+          "description": "Computer inherits Device, adding ramGigabytes and loadOS()."
+        },
+        {
+          "step": 3,
+          "description": "Laptop inherits Computer, adding weightKg and openLid()."
+        },
+        {
+          "step": 4,
+          "description": "A single Laptop instance seamlessly coordinates behaviors from Device, Computer, and Laptop."
+        }
+      ]
+    },
+    {
+      "id": "act-mi-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Vehicle -> CommercialVehicle -> DeliveryVan",
+      "description": "Witness real-world enterprise domain specialization in logistics fleet management.",
+      "code": "class Vehicle {\n    protected String vin;\n    public Vehicle(String vin) { this.vin = vin; }\n}\n\nclass CommercialVehicle extends Vehicle {\n    protected String commercialLicenseId;\n    public CommercialVehicle(String vin, String license) {\n        super(vin);\n        this.commercialLicenseId = license;\n    }\n}\n\nclass DeliveryVan extends CommercialVehicle {\n    private int maxPackages;\n    public DeliveryVan(String vin, String license, int packages) {\n        super(vin, license);\n        this.maxPackages = packages;\n    }\n    public void printFleetManifest() {\n        System.out.println(\"Van VIN: \" + vin + \" [Permit: \" + commercialLicenseId + \"] Capacity: \" + maxPackages + \" parcels\");\n    }\n}\n\npublic class FleetDemo {\n    public static void main(String[] args) {\n        DeliveryVan van = new DeliveryVan(\"1HGCR2F83HA001\", \"COM-PERMIT-99\", 150);\n        van.printFleetManifest();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "DeliveryVan can directly access both grandparent field 'vin' and parent field 'commercialLicenseId'."
+        },
+        {
+          "step": 2,
+          "description": "The constructor calls super(vin, license), which in turn calls super(vin)."
+        }
+      ]
+    },
+    {
+      "id": "act-mi-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Multilevel Inheritance (10 Questions)",
+      "questions": [
+        {
+          "id": "q-mi-1",
+          "question": "What is multilevel inheritance in Java?",
+          "options": [
+            "A class extending multiple classes in a single declaration",
+            "A class extending a class that already extends another class (Grandparent -> Parent -> Child)",
+            "A class having multiple constructors",
+            "A class implementing multiple interfaces simultaneously"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Multilevel inheritance is a chain of single inheritances where child extends parent, and parent extends grandparent."
+        },
+        {
+          "id": "q-mi-2",
+          "question": "If class C extends B, and class B extends A, which members does class C inherit?",
+          "options": [
+            "Only members of class B",
+            "Only members of class A",
+            "Accessible members of both class A and class B",
+            "None, because inheritance stops at one level"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Inheritance is transitive. Class C inherits all accessible members from both B and A."
+        },
+        {
+          "id": "q-mi-3",
+          "question": "When an instance of the lowest child class is created in a 3-level hierarchy, in what order do constructors execute?",
+          "options": [
+            "Child -> Parent -> Grandparent",
+            "Grandparent -> Parent -> Child",
+            "Parent -> Child -> Grandparent",
+            "Random order chosen by JIT"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Constructors execute top-down: the top-most ancestor (Object/Grandparent) completes before Parent, which completes before Child."
+        },
+        {
+          "id": "q-mi-4",
+          "question": "What is the 'Fragile Base Class' problem often caused by excessively deep inheritance trees?",
+          "options": [
+            "The base class runs out of memory",
+            "A change in a high-level base class inadvertently breaks distant descendant classes",
+            "The JVM refuses to garbage collect the base class",
+            "Constructors in the base class cannot be declared public"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Deep hierarchies tightly couple descendants to high-level ancestors, making base class modifications perilous."
+        },
+        {
+          "id": "q-mi-5",
+          "question": "What is the recommended maximum depth for class inheritance hierarchies in clean production software?",
+          "options": [
+            "10 to 15 levels",
+            "2 to 3 levels",
+            "Exactly 1 level only",
+            "No limit, deeper is always better"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Industry best practice recommends keeping class hierarchies shallow (2\u20133 levels) to prevent fragile coupling."
+        },
+        {
+          "id": "q-mi-6",
+          "question": "Can the child class in multilevel inheritance directly access protected fields of its grandparent class?",
+          "options": [
+            "No, only direct parent fields are accessible",
+            "Yes, protected members of any ancestor are accessible by subclasses",
+            "Only if grandparent has a public constructor",
+            "Only through reflection"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Protected members remain accessible to all descendants in the inheritance chain."
+        },
+        {
+          "id": "q-mi-7",
+          "question": "Does multilevel inheritance violate Java's single inheritance rule?",
+          "options": [
+            "Yes, because a child class has multiple ancestors",
+            "No, because at every level, each class has exactly ONE direct parent",
+            "Only if there are more than 3 levels",
+            "Yes, unless configured in compiler flags"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "No rule is violated. Each individual class in the chain has exactly one direct parent."
+        },
+        {
+          "id": "q-mi-8",
+          "question": "In the chain 'Object -> Employee -> Engineer -> DevOpsEngineer', which class is the direct superclass of DevOpsEngineer?",
+          "options": [
+            "Object",
+            "Employee",
+            "Engineer",
+            "None, it is a root class"
+          ],
+          "correctOptionIndex": 2,
+          "explanation": "Engineer is the direct superclass; Employee and Object are indirect ancestors."
+        },
+        {
+          "id": "q-mi-9",
+          "question": "If class Grandparent has a private field, can Child access it directly in multilevel inheritance?",
+          "options": [
+            "Yes, because it is 2 levels away",
+            "No, private members are strictly accessible only within the declaring class",
+            "Yes, using super.super.fieldName",
+            "Yes, if Parent re-exports it"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Private fields are never directly accessible to subclasses or descendants at any distance."
+        },
+        {
+          "id": "q-mi-10",
+          "question": "Can you use 'super.super' in Java to access a grandparent method directly?",
+          "options": [
+            "Yes, super.super is standard Java syntax",
+            "No, super.super is illegal syntax in Java",
+            "Yes, but only in static methods",
+            "Only in Java 21 LTS"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "'super.super' is not valid Java syntax. Encapsulation respects the immediate parent interface."
+        }
+      ]
+    },
+    {
+      "id": "act-mi-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Multilevel Inheritance",
+      "interviewQA": [
+        {
+          "question": "What is multilevel inheritance and how does member resolution work in a multi-tier hierarchy?",
+          "answer": "Multilevel inheritance is a chain where class C extends B, and B extends A. When a member is referenced on an instance of C, the JVM starts search at C. If not declared in C, it checks B, then A, then Object. Accessible members from all ancestors are inherited cumulatively.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "Why is 'super.super' not allowed in Java?",
+          "answer": "Allowing 'super.super' would violate the encapsulation boundary of the immediate parent class. If class B intentionally overrides or modifies behavior from A, allowing C to bypass B using 'super.super' would break B's contractual guarantees and invariants.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "Explain constructor chaining in a multilevel inheritance hierarchy.",
+          "answer": "When a leaf subclass constructor is invoked, its first action (explicit or compiler-inserted implicit 'super()') is to call the immediate parent constructor. This recurses upward until java.lang.Object constructor executes. The constructors then return downward in order: Object -> Grandparent -> Parent -> Child.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "What is the Fragile Base Class problem and how does multilevel inheritance exacerbate it?",
+          "answer": "The Fragile Base Class problem occurs when modifications to an ancestor class inadvertently break the behavior or assumptions of descendant classes. In deep multilevel trees, descendants are tightly coupled to ancestral implementation details, making safe refactoring extremely difficult.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "How do you distinguish multilevel inheritance from hierarchical inheritance?",
+          "answer": "Multilevel inheritance is vertical (A -> B -> C: linear grandparent to grandchild lineage). Hierarchical inheritance is horizontal/branching (A -> B and A -> C: one common parent shared by multiple sibling subclasses).",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "How does composition offer an alternative to deep multilevel inheritance?",
+          "answer": "Instead of building a 5-level deep hierarchy, a class can inherit from a shallow base class and compose needed features as instance variables (HAS-A). This keeps components loosely coupled, testable with mocks, and interchangeable at runtime.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-mi-7",
+      "type": "self_evaluation",
+      "title": "Module 5 Lesson 5 Mastery Checkpoint",
+      "checklist": [
+        "I understand the transitive property of inheritance across multiple generation layers",
+        "I know how state and methods accumulate down a Grandparent -> Parent -> Child chain",
+        "I understand constructor chaining execution order (top-down from Object)",
+        "I know that 'super.super' is illegal syntax in Java and understand why",
+        "I can explain the Fragile Base Class problem",
+        "I know the recommended maximum hierarchy depth in production software (2-3 levels)",
+        "I understand that private ancestor fields remain strictly encapsulated",
+        "I know how protected fields are accessible across the entire descendant chain",
+        "I can trace multilevel method resolution through ancestor classes",
+        "I can build a 3-tier enterprise device or logistics hierarchy in Java"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-mi-1",
+      "title": "Warmup: 3-Tier Person -> Student -> GraduateStudent",
+      "difficulty": "easy",
+      "description": "Construct a 3-level academic hierarchy accumulating personal, student, and thesis information.",
+      "problemStatement": "Implement Person with name (String). Subclass Student extends Person, adding studentId (String). Subclass GraduateStudent extends Student, adding thesisTopic (String) and displaySummary().",
+      "initialCode": "class Person {\n    protected String name;\n    public Person(String name) { this.name = name; }\n}\n\nclass Student extends Person {\n    protected String studentId;\n    public Student(String name, String studentId) {\n        super(name);\n        this.studentId = studentId;\n    }\n}\n\n// Complete GraduateStudent extending Student\nclass GraduateStudent extends Student {\n    private String thesisTopic;\n    \n    public GraduateStudent(String name, String studentId, String thesis) {\n        super(name, studentId);\n        this.thesisTopic = thesis;\n    }\n    \n    public void displaySummary() {\n        System.out.println(name + \" (ID: \" + studentId + \") - Thesis: \" + thesisTopic);\n    }\n}",
+      "expectedOutput": "Elena Rostova (ID: GS-409) - Thesis: Quantum Compiler Optimization",
+      "hints": [
+        "GraduateStudent constructor passes name and studentId to super(name, studentId).",
+        "displaySummary() accesses inherited name (from Person) and studentId (from Student)."
+      ],
+      "solutionCode": "class Person {\n    protected String name;\n    public Person(String name) { this.name = name; }\n}\n\nclass Student extends Person {\n    protected String studentId;\n    public Student(String name, String studentId) {\n        super(name);\n        this.studentId = studentId;\n    }\n}\n\nclass GraduateStudent extends Student {\n    private String thesisTopic;\n    \n    public GraduateStudent(String name, String studentId, String thesis) {\n        super(name, studentId);\n        this.thesisTopic = thesis;\n    }\n    \n    public void displaySummary() {\n        System.out.println(name + \" (ID: \" + studentId + \") - Thesis: \" + thesisTopic);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        GraduateStudent gs = new GraduateStudent(\"Elena Rostova\", \"GS-409\", \"Quantum Compiler Optimization\");\n        gs.displaySummary();\n    }\n}"
+    },
+    {
+      "id": "prob-mi-2",
+      "title": "Code from Scratch: 3-Tier Account Hierarchy with VIP Benefits",
+      "difficulty": "medium",
+      "description": "Build Account -> SavingsAccount -> VipSavingsAccount with waived transaction fees.",
+      "problemStatement": "Create Account with accNumber (String), balance (double). Create SavingsAccount extending Account with interestRate (double). Create VipSavingsAccount extending SavingsAccount with dedicatedAdvisor (String) and displayVipPortfolio(). From scratch.",
+      "expectedOutput": "VIP Account VIP-777 [Advisor: Sarah Jenkins] Balance: $250000.0 (Interest Rate: 5.5%)",
+      "hints": [
+        "Store fields as protected so descendants can read them.",
+        "Each subclass constructor forwards appropriate arguments to super().",
+        "displayVipPortfolio prints formatted summary."
+      ],
+      "solutionCode": "class Account {\n    protected String accNumber;\n    protected double balance;\n    public Account(String accNumber, double balance) {\n        this.accNumber = accNumber;\n        this.balance = balance;\n    }\n}\n\nclass SavingsAccount extends Account {\n    protected double interestRate;\n    public SavingsAccount(String accNumber, double balance, double interestRate) {\n        super(accNumber, balance);\n        this.interestRate = interestRate;\n    }\n}\n\nclass VipSavingsAccount extends SavingsAccount {\n    private String dedicatedAdvisor;\n    public VipSavingsAccount(String accNumber, double balance, double interestRate, String advisor) {\n        super(accNumber, balance, interestRate);\n        this.dedicatedAdvisor = advisor;\n    }\n    public void displayVipPortfolio() {\n        System.out.println(\"VIP Account \" + accNumber + \" [Advisor: \" + dedicatedAdvisor + \"] Balance: $\" + balance + \" (Interest Rate: \" + interestRate + \"%)\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        VipSavingsAccount vip = new VipSavingsAccount(\"VIP-777\", 250000.0, 5.5, \"Sarah Jenkins\");\n        vip.displayVipPortfolio();\n    }\n}"
+    },
+    {
+      "id": "prob-mi-3",
+      "title": "Code from Scratch: Vehicle -> CommercialTruck -> RefrigeratedTruck",
+      "difficulty": "medium",
+      "description": "Construct a 3-tier logistics hierarchy with cold-chain temperature monitoring.",
+      "problemStatement": "Build Vehicle (vin, model). Subclass CommercialTruck adds maxWeightTons. Subclass RefrigeratedTruck adds targetTemperatureCelsius and isTemperatureSafe(double currentTemp). From scratch.",
+      "expectedOutput": "Cold Chain Truck VIN-88 [Freightliner] Capacity: 22.5T\nTemperature Check: Current 2.5 C is within target of 4.0 C: true",
+      "hints": [
+        "Vehicle constructor sets vin and model.",
+        "CommercialTruck passes vin and model to super(vin, model).",
+        "RefrigeratedTruck checks if currentTemp <= targetTemperatureCelsius."
+      ],
+      "solutionCode": "class Vehicle {\n    protected String vin;\n    protected String model;\n    public Vehicle(String vin, String model) {\n        this.vin = vin;\n        this.model = model;\n    }\n}\n\nclass CommercialTruck extends Vehicle {\n    protected double maxWeightTons;\n    public CommercialTruck(String vin, String model, double maxWeight) {\n        super(vin, model);\n        this.maxWeightTons = maxWeight;\n    }\n}\n\nclass RefrigeratedTruck extends CommercialTruck {\n    private double targetTemperatureCelsius;\n    public RefrigeratedTruck(String vin, String model, double maxWeight, double targetTemp) {\n        super(vin, model, maxWeight);\n        this.targetTemperatureCelsius = targetTemp;\n    }\n    public boolean isTemperatureSafe(double currentTemp) {\n        return currentTemp <= targetTemperatureCelsius;\n    }\n    public void inspectTruck(double currentTemp) {\n        System.out.println(\"Cold Chain Truck \" + vin + \" [\" + model + \"] Capacity: \" + maxWeightTons + \"T\");\n        System.out.println(\"Temperature Check: Current \" + currentTemp + \" C is within target of \" + targetTemperatureCelsius + \" C: \" + isTemperatureSafe(currentTemp));\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        RefrigeratedTruck rt = new RefrigeratedTruck(\"VIN-88\", \"Freightliner\", 22.5, 4.0);\n        rt.inspectTruck(2.5);\n    }\n}"
+    },
+    {
+      "id": "prob-mi-4",
+      "title": "Fix Broken Code: Broken Multilevel Constructor Chaining",
+      "difficulty": "easy",
+      "description": "Fix a compilation failure caused by missing constructor arguments in intermediate multilevel class.",
+      "problemStatement": "The code fails to compile because Manager did not pass the required employee parameters to BaseEntity. Fix the constructor chaining through all 3 tiers: Entity -> Employee -> Manager.",
+      "initialCode": "class BaseEntity {\n    protected String id;\n    public BaseEntity(String id) { this.id = id; }\n}\n\n// BROKEN: Implicit super() fails because BaseEntity has no 0-arg constructor\nclass Employee extends BaseEntity {\n    protected String name;\n    public Employee(String id, String name) {\n        // BUG: Missing super(id)\n        this.name = name;\n    }\n}\n\nclass Manager extends Employee {\n    private String department;\n    public Manager(String id, String name, String dept) {\n        super(id, name);\n        this.department = dept;\n    }\n}",
+      "expectedOutput": "Manager E-102 (Bob) Department: Engineering",
+      "hints": [
+        "In Employee constructor, add super(id); as the very first statement.",
+        "Manager constructor already calls super(id, name)."
+      ],
+      "solutionCode": "class BaseEntity {\n    protected String id;\n    public BaseEntity(String id) { this.id = id; }\n}\n\nclass Employee extends BaseEntity {\n    protected String name;\n    public Employee(String id, String name) {\n        super(id);\n        this.name = name;\n    }\n}\n\nclass Manager extends Employee {\n    private String department;\n    public Manager(String id, String name, String dept) {\n        super(id, name);\n        this.department = dept;\n    }\n    public void display() {\n        System.out.println(\"Manager \" + id + \" (\" + name + \") Department: \" + department);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Manager m = new Manager(\"E-102\", \"Bob\", \"Engineering\");\n        m.display();\n    }\n}"
+    },
+    {
+      "id": "prob-mi-5",
+      "title": "Challenge: Tiered Cloud Infrastructure Hierarchy",
+      "difficulty": "hard",
+      "description": "Design CloudResource -> ComputeInstance -> KubernetesNode with health checks.",
+      "problemStatement": "Build a 3-tier cloud resource hierarchy. CloudResource defines resourceId (String), region (String). Subclass ComputeInstance adds vCpuCount (int), ramGb (int). Subclass KubernetesNode adds podCapacity (int), allocatedPods (int), and canSchedulePod() returning allocatedPods < podCapacity.",
+      "expectedOutput": "K8s Node i-04a2 [us-east-1] 16 vCPU, 64GB RAM\nPod scheduled! Allocated: 31/32\nScheduling full: false",
+      "hints": [
+        "CloudResource constructor sets resourceId, region.",
+        "ComputeInstance calls super(resourceId, region) and sets vCpuCount, ramGb.",
+        "KubernetesNode calls super(...) and manages pod allocation."
+      ],
+      "solutionCode": "class CloudResource {\n    protected String resourceId;\n    protected String region;\n    public CloudResource(String resourceId, String region) {\n        this.resourceId = resourceId;\n        this.region = region;\n    }\n}\n\nclass ComputeInstance extends CloudResource {\n    protected int vCpuCount;\n    protected int ramGb;\n    public ComputeInstance(String resourceId, String region, int vCpu, int ram) {\n        super(resourceId, region);\n        this.vCpuCount = vCpu;\n        this.ramGb = ram;\n    }\n}\n\nclass KubernetesNode extends ComputeInstance {\n    private int podCapacity;\n    private int allocatedPods;\n    public KubernetesNode(String resourceId, String region, int vCpu, int ram, int capacity) {\n        super(resourceId, region, vCpu, ram);\n        this.podCapacity = capacity;\n        this.allocatedPods = 0;\n    }\n    public boolean schedulePod() {\n        if (allocatedPods < podCapacity) {\n            allocatedPods++;\n            System.out.println(\"Pod scheduled! Allocated: \" + allocatedPods + \"/\" + podCapacity);\n            return true;\n        }\n        return false;\n    }\n    public void displayStatus() {\n        System.out.println(\"K8s Node \" + resourceId + \" [\" + region + \"] \" + vCpuCount + \" vCPU, \" + ramGb + \"GB RAM\");\n        schedulePod();\n        System.out.println(\"Scheduling full: \" + (allocatedPods >= podCapacity));\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        KubernetesNode node = new KubernetesNode(\"i-04a2\", \"us-east-1\", 16, 64, 32);\n        node.displayStatus();\n    }\n}"
+    }
+  ]
+}

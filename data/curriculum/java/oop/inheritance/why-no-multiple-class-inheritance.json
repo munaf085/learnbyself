@@ -1,0 +1,330 @@
+{
+  "id": "java-oop-mod5-les7",
+  "slug": "why-no-multiple-class-inheritance",
+  "sectionSlug": "oop",
+  "moduleSlug": "inheritance",
+  "languageSlug": "java",
+  "title": "Why Java Doesn't Support Multiple Class Inheritance",
+  "summary": "Uncover the profound design choice in Java: the Diamond Problem, method and field collision ambiguity, and why multiple class inheritance is prohibited.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "hierarchical-inheritance"
+  ],
+  "learningObjectives": [
+    "Understand the architectural mechanics of the Diamond Problem in object-oriented programming",
+    "Analyze method signature collisions and field ambiguities in multiple inheritance",
+    "Explain why Java architects deliberately prohibited 'class C extends A, B'",
+    "Recognize how C++ handles multiple inheritance versus Java's safer, cleaner alternative"
+  ],
+  "expectedOutcomes": [
+    "Mastery in answering the top-tier Java interview question: 'Why does Java not support multiple inheritance with classes?'",
+    "Confidence architecting systems that avoid multiple class dependency traps"
+  ],
+  "activities": [
+    {
+      "id": "act-nmi-1",
+      "type": "analogy",
+      "title": "The Conflicting GPS Navigators Analogy",
+      "content": "Imagine you are driving down a highway and have two dashboard GPS navigation systems turned on at the same time: System Alpha and System Beta.\n\nYou arrive at a high-speed fork in the road where you must turn in one second.\n- System Alpha announces: *'Turn Left onto Exit 42!'*\n- System Beta announces: *'Turn Right onto Interstate 95!'*\n\nWhich direction do you steer? You are paralyzed by catastrophic ambiguity. Because both systems have equal authority, there is no unambiguous rule to decide which one is right.\n\nThis is why Java bans multiple class inheritance: when two parent classes define the exact same method with different implementations, a child class inheriting both would cause fatal execution ambiguity."
+    },
+    {
+      "id": "act-nmi-2",
+      "type": "concept",
+      "title": "The Infamous Diamond Problem and Ambiguity Collision",
+      "content": "In C++, a class can inherit from multiple classes. This leads to the classic **Diamond Problem**.\n\n### 1. The Diamond Problem Structure:\n```\n                 +-----------------+\n                 |     Class A     |\n                 |-----------------|\n                 | + display()     |\n                 +-----------------+\n                          ^\n              +-----------+-----------+\n              |                       |\n      +---------------+       +---------------+\n      |    Class B    |       |    Class C    |\n      |---------------|       |---------------|\n      | + display()   |       | + display()   |\n      +---------------+       +---------------+\n              ^                       ^\n              +-----------+-----------+\n                          |\n                 +-----------------+\n                 |     Class D     |\n                 | (extends B, C)  |\n                 +-----------------+\n```\n\n### 2. The Ambiguity:\n- Class `A` has `display()`.\n- Class `B` overrides `display()` to print *\"Hello from B\"*.\n- Class `C` overrides `display()` to print *\"Hello from C\"*.\n- If Class `D` were allowed to extend both `B` and `C`:\n  - When someone calls `d.display()`, **which method runs?** `B`'s version? Or `C`'s version?\n  - What if `A` has an instance variable `int x`? Does `D` contain two copies of `x` (one via `B`, one via `C`)?\n\n### 3. Java's Solution: Zero Tolerance for Diamond Class Ambiguity\n- To keep the language **simple, safe, and robust**, James Gosling and the Java design team eliminated multiple class inheritance entirely.\n- Java's rule: **A class can extend at most ONE class.**\n- For multiple capabilities, Java provides **Interfaces**, which define contracts without conflicting instance state."
+    },
+    {
+      "id": "act-nmi-3",
+      "type": "code_walkthrough",
+      "title": "Hypothetical Diamond Collision in Java (Compile Error)",
+      "description": "Examine the compiler error that prevents ambiguous method collisions in Java.",
+      "code": "class Printer {\n    public void printDocument() {\n        System.out.println(\"Printing via standard ink\");\n    }\n}\n\nclass 3DPrinter {\n    public void printDocument() {\n        System.out.println(\"Printing via 3D plastic filament\");\n    }\n}\n\n// HYPOTHETICAL CODE THAT JAVA FORBIDS:\n// class HybridPrinter extends Printer, 3DPrinter {\n//     // If we call hybrid.printDocument(), the compiler cannot know\n//     // whether to print standard ink or 3D plastic!\n// }\n\n// JAVA'S REAL-WORLD SOLUTION: Composition or Interfaces\nclass RealHybridDevice {\n    private Printer inkPrinter = new Printer();\n    private 3DPrinter plasticPrinter = new 3DPrinter();\n    \n    public void printPaper() {\n        inkPrinter.printDocument(); // Completely unambiguous\n    }\n    \n    public void printPrototype() {\n        plasticPrinter.printDocument(); // Completely unambiguous\n    }\n}\n\npublic class DiamondDemo {\n    public static void main(String[] args) {\n        RealHybridDevice dev = new RealHybridDevice();\n        dev.printPaper();\n        dev.printPrototype();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Both Printer and 3DPrinter have a method named printDocument()."
+        },
+        {
+          "step": 2,
+          "description": "Extending both with a comma causes a compile-time syntax error in Java."
+        },
+        {
+          "step": 3,
+          "description": "Using composition (RealHybridDevice holding instances of both) cleanly resolves the ambiguity."
+        }
+      ]
+    },
+    {
+      "id": "act-nmi-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: State Duplication Ambiguity",
+      "description": "Understand how multiple inheritance duplicates parent state variables in memory.",
+      "code": "class DatabaseConnector {\n    protected int connectionTimeout = 30; // seconds\n}\n\n// If class MySQLConnector extends DatabaseConnector (timeout = 10)\n// and class PostgresConnector extends DatabaseConnector (timeout = 60)\n// What would timeout be in a class DualConnector extending both?\n\npublic class StateCollisionProof {\n    public static void main(String[] args) {\n        System.out.println(\"Java enforces single inheritance of state: an object has exactly ONE unambiguous parent lineage.\");\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "If multiple inheritance were allowed, state variables from a common ancestor would be duplicated in heap memory."
+        },
+        {
+          "step": 2,
+          "description": "Single inheritance guarantees unambiguous state variables in every object."
+        }
+      ]
+    },
+    {
+      "id": "act-nmi-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Why No Multiple Class Inheritance (10 Questions)",
+      "questions": [
+        {
+          "id": "q-nmi-1",
+          "question": "What is the primary reason Java does not support multiple class inheritance?",
+          "options": [
+            "To avoid the Diamond Problem and method/state collision ambiguities",
+            "Because modern microprocessors cannot branch into two parent classes",
+            "To make Java programs run slower for security",
+            "Because Java does not have classes"
+          ],
+          "correctOptionIndex": 0,
+          "explanation": "Multiple inheritance creates the Diamond Problem, method collision ambiguity, and state duplication bugs."
+        },
+        {
+          "id": "q-nmi-2",
+          "question": "What is the Diamond Problem in object-oriented programming?",
+          "options": [
+            "A security vulnerability in diamond-shaped encryption chips",
+            "Ambiguity arising when a child class inherits conflicting implementations of the same method from two parent classes that share a common ancestor",
+            "A memory leak in circular linked lists",
+            "A compile error when declaring four classes in one package"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The Diamond Problem occurs when two parent classes inherit from a common ancestor and override the same method, leaving a derived class uncertain which method to execute."
+        },
+        {
+          "id": "q-nmi-3",
+          "question": "What happens if a developer writes 'class C extends A, B' in Java?",
+          "options": [
+            "The program compiles with a warning",
+            "The compiler reports a syntax error because multiple class extension is illegal",
+            "The JVM randomly picks class A as the parent at runtime",
+            "Class B is ignored"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "The Java grammar rejects commas in the extends clause, raising a compile-time syntax error."
+        },
+        {
+          "id": "q-nmi-4",
+          "question": "How did languages like C++ attempt to solve the Diamond Problem?",
+          "options": [
+            "By completely deleting classes",
+            "Through complex virtual base class inheritance mechanisms and explicit scope resolution (::)",
+            "By restricting methods to 1 line of code",
+            "By running programs in two separate processes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "C++ introduced virtual inheritance, which adds significant cognitive complexity and runtime overhead."
+        },
+        {
+          "id": "q-nmi-5",
+          "question": "How does Java achieve the benefits of multiple capabilities without the Diamond Problem of state?",
+          "options": [
+            "Using static global variables",
+            "Using interfaces, which define contracts without instance state",
+            "By allowing duplicate class names in different files",
+            "By converting classes to byte arrays"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Interfaces allow a class to commit to multiple contracts without inheriting conflicting instance variables."
+        },
+        {
+          "id": "q-nmi-6",
+          "question": "What issue arises regarding instance variables in multiple inheritance?",
+          "options": [
+            "Variables become static automatically",
+            "A common ancestor's fields may be duplicated multiple times in the child object memory",
+            "Variables cannot be assigned numeric values",
+            "Garbage collection deletes all variables"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "If two parents inherit from grandparent A, the child would have two separate copies of A's fields, causing state synchronization bugs."
+        },
+        {
+          "id": "q-nmi-7",
+          "question": "Which design principle did the Java designers prioritize by omitting multiple class inheritance?",
+          "options": [
+            "Maximum language complexity",
+            "Simplicity, safety, and maintainability",
+            "Backward compatibility with Fortran",
+            "Strict dynamic typing"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java was designed to be simple, robust, and free from the treacherous pitfalls of C++."
+        },
+        {
+          "id": "q-nmi-8",
+          "question": "If you need a class to reuse logic from two existing classes in Java, what is the best alternative?",
+          "options": [
+            "Copy-paste the code from both classes",
+            "Use Composition (HAS-A): hold instances of both classes as private fields and delegate tasks to them",
+            "Make both classes final and static",
+            "Name the classes with the same name"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Composition ('favor composition over inheritance') cleanly reuses behavior from multiple sources without inheritance pitfalls."
+        },
+        {
+          "id": "q-nmi-9",
+          "question": "Does Java allow multiple inheritance of type?",
+          "options": [
+            "No, Java has zero forms of multiple inheritance",
+            "Yes, through interfaces (a class can implement multiple interfaces)",
+            "Only in Java EE enterprise editions",
+            "Only for abstract classes"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Java allows multiple inheritance of TYPE (via interfaces), but prohibits multiple inheritance of IMPLEMENTATION STATE (via classes)."
+        },
+        {
+          "id": "q-nmi-10",
+          "question": "In the statement 'class Duck extends Animal implements Flyer, Swimmer', how many classes does Duck extend?",
+          "options": [
+            "Three classes",
+            "Exactly one class (Animal)",
+            "Zero classes",
+            "Two classes and one interface"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Duck extends exactly one class (Animal) and implements two interfaces (Flyer, Swimmer)."
+        }
+      ]
+    },
+    {
+      "id": "act-nmi-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Why No Multiple Class Inheritance",
+      "interviewQA": [
+        {
+          "question": "Why does Java not support multiple class inheritance? Explain the Diamond Problem.",
+          "answer": "Java prohibits multiple class inheritance primarily to eliminate the Diamond Problem. If class A has a method display(), and both subclasses B and C override it, a class D extending both B and C would create fatal ambiguity: the compiler cannot decide whether D inherits B's or C's implementation. It also avoids field duplication where D inherits multiple copies of A's state.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "How did C++ handle the Diamond Problem, and why did Java reject that approach?",
+          "answer": "C++ addressed it using virtual base classes ('virtual public Base'). This requires explicit scope resolution (Base::method), introduces complex virtual pointer tables, and makes constructor invocation order difficult to trace. Java rejected this to keep the language simple, safe, and robust for enterprise engineering.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "What is the difference between multiple inheritance of state versus multiple inheritance of type?",
+          "answer": "Multiple inheritance of state means inheriting instance fields from multiple classes, which causes memory layout ambiguity and field duplication. Multiple inheritance of type means a class commits to multiple interface contracts without inheriting instance state. Java supports multiple inheritance of type via interfaces, but rejects multiple inheritance of state.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "If you need a class to possess behaviors of both a Car and a Boat in Java, how do you architect it?",
+          "answer": "The clean architectural solution is Composition. Create an AmphibiousVehicle class that holds a CarEngine component and a BoatPropeller component as private fields. The class coordinates between both components without any inheritance ambiguity.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Can default methods in Java 8+ interfaces cause a Diamond Problem? How does Java resolve it?",
+          "answer": "Yes, if a class implements two interfaces that both declare an identical default method, the Java compiler will flag a collision error at compile time. Java forces the implementing class to explicitly resolve the conflict by overriding the method and calling 'InterfaceName.super.method()'.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "Why is 'favor composition over inheritance' an industry mantra in OOP?",
+          "answer": "Composition provides greater flexibility: components can be swapped dynamically at runtime, classes remain loosely coupled, unit testing with mocks is straightforward, and the fragility of deep parent-child inheritance hierarchies is completely avoided.",
+          "companyTag": "Netflix"
+        }
+      ]
+    },
+    {
+      "id": "act-nmi-7",
+      "type": "self_evaluation",
+      "title": "Module 5 Lesson 7 Mastery Checkpoint",
+      "checklist": [
+        "I can draw and explain the Diamond Problem diagram in an interview",
+        "I know why method collision causes fatal compiler ambiguity",
+        "I understand state duplication problems when multiple parents share an ancestor",
+        "I know that 'class C extends A, B' causes a compile-time syntax error",
+        "I understand how C++ handles virtual base classes and why Java rejected it",
+        "I know the difference between multiple inheritance of state vs multiple inheritance of type",
+        "I know how to use composition (HAS-A) to combine behaviors from multiple sources",
+        "I understand how Java interfaces enable safe multiple type capabilities",
+        "I understand default method resolution rules when interfaces collide in Java 8+",
+        "I can explain 'favor composition over inheritance' with clear enterprise examples"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-nmi-1",
+      "title": "Warmup: Resolve Multiple Inheritance via Composition",
+      "difficulty": "easy",
+      "description": "Refactor an illegal multiple inheritance design into a clean composition architecture.",
+      "problemStatement": "A developer tried to write 'class SmartTv extends Display, AudioSpeaker'. Refactor SmartTv using composition: it holds a Display and an AudioSpeaker as private fields, providing playVideo() and playAudio().",
+      "initialCode": "class Display {\n    void renderPicture(String content) {\n        System.out.println(\"Displaying: \" + content);\n    }\n}\n\nclass AudioSpeaker {\n    void emitSound(int volume) {\n        System.out.println(\"Sound playing at volume: \" + volume);\n    }\n}\n\n// Complete SmartTv using composition\nclass SmartTv {\n    private Display display = new Display();\n    private AudioSpeaker speaker = new AudioSpeaker();\n    \n    public void streamShow(String showName, int volume) {\n        display.renderPicture(showName);\n        speaker.emitSound(volume);\n    }\n}",
+      "expectedOutput": "Displaying: Stranger Things\nSound playing at volume: 15",
+      "hints": [
+        "SmartTv uses private Display and AudioSpeaker fields.",
+        "streamShow delegates to display.renderPicture and speaker.emitSound."
+      ],
+      "solutionCode": "class Display {\n    public void renderPicture(String content) {\n        System.out.println(\"Displaying: \" + content);\n    }\n}\n\nclass AudioSpeaker {\n    public void emitSound(int volume) {\n        System.out.println(\"Sound playing at volume: \" + volume);\n    }\n}\n\nclass SmartTv {\n    private Display display;\n    private AudioSpeaker speaker;\n    \n    public SmartTv() {\n        this.display = new Display();\n        this.speaker = new AudioSpeaker();\n    }\n    \n    public void streamShow(String showName, int volume) {\n        display.renderPicture(showName);\n        speaker.emitSound(volume);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SmartTv tv = new SmartTv();\n        tv.streamShow(\"Stranger Things\", 15);\n    }\n}"
+    },
+    {
+      "id": "prob-nmi-2",
+      "title": "Code from Scratch: Multi-Protocol Logging via Composition",
+      "difficulty": "medium",
+      "description": "Implement an EnterpriseAuditLogger that combines FileLogger and NetworkLogger using composition.",
+      "problemStatement": "Create FileLogger with logToFile(String msg). Create NetworkLogger with sendOverNetwork(String msg). Create EnterpriseAuditLogger that holds instances of both and logs to both destinations in a single dispatchAudit(String event) call. From scratch.",
+      "expectedOutput": "FILE LOG: [AUDIT-CRITICAL] User admin logged in\nNETWORK LOG: Sent packet to SIEM -> [AUDIT-CRITICAL] User admin logged in",
+      "hints": [
+        "Create FileLogger and NetworkLogger as independent classes.",
+        "EnterpriseAuditLogger contains private final FileLogger and private final NetworkLogger.",
+        "dispatchAudit calls both logging methods sequentially."
+      ],
+      "solutionCode": "class FileLogger {\n    public void logToFile(String msg) {\n        System.out.println(\"FILE LOG: \" + msg);\n    }\n}\n\nclass NetworkLogger {\n    public void sendOverNetwork(String msg) {\n        System.out.println(\"NETWORK LOG: Sent packet to SIEM -> \" + msg);\n    }\n}\n\nclass EnterpriseAuditLogger {\n    private final FileLogger fileLogger = new FileLogger();\n    private final NetworkLogger networkLogger = new NetworkLogger();\n    \n    public void dispatchAudit(String event) {\n        fileLogger.logToFile(event);\n        networkLogger.sendOverNetwork(event);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        EnterpriseAuditLogger auditor = new EnterpriseAuditLogger();\n        auditor.dispatchAudit(\"[AUDIT-CRITICAL] User admin logged in\");\n    }\n}"
+    },
+    {
+      "id": "prob-nmi-3",
+      "title": "Code from Scratch: Printer and Scanner All-In-One",
+      "difficulty": "medium",
+      "description": "Demonstrate composition overcoming the lack of multiple class inheritance for an AllInOneOfficeHub.",
+      "problemStatement": "Build LaserPrinter with printPage(String doc). Build FlatbedScanner with scanPage(String doc). Build AllInOneHub using composition with copyDocument(String doc) which scans then prints the document. From scratch.",
+      "expectedOutput": "Scanning paper document: Annual_Report.pdf\nLaser printing 600dpi copy of: Annual_Report.pdf",
+      "hints": [
+        "LaserPrinter and FlatbedScanner have no inheritance relationship.",
+        "AllInOneHub holds both as private fields.",
+        "copyDocument calls scanPage() followed by printPage()."
+      ],
+      "solutionCode": "class LaserPrinter {\n    public void printPage(String doc) {\n        System.out.println(\"Laser printing 600dpi copy of: \" + doc);\n    }\n}\n\nclass FlatbedScanner {\n    public void scanPage(String doc) {\n        System.out.println(\"Scanning paper document: \" + doc);\n    }\n}\n\nclass AllInOneHub {\n    private final LaserPrinter printer = new LaserPrinter();\n    private final FlatbedScanner scanner = new FlatbedScanner();\n    \n    public void copyDocument(String doc) {\n        scanner.scanPage(doc);\n        printer.printPage(doc);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        AllInOneHub hub = new AllInOneHub();\n        hub.copyDocument(\"Annual_Report.pdf\");\n    }\n}"
+    },
+    {
+      "id": "prob-nmi-4",
+      "title": "Fix Broken Code: Attempted Multiple Extends Syntax",
+      "difficulty": "easy",
+      "description": "Fix a compilation failure caused by writing 'class FlyingCar extends Car, Airplane'.",
+      "problemStatement": "The code fails to compile because Java forbids extending multiple classes. Refactor FlyingCar so it extends Car, and incorporates FlightModule via composition.",
+      "initialCode": "class Car {\n    void drive() { System.out.println(\"Driving on road\"); }\n}\nclass Airplane {\n    void fly() { System.out.println(\"Flying in air\"); }\n}\n\n// COMPILE ERROR: Cannot extend multiple classes!\n// class FlyingCar extends Car, Airplane { }",
+      "expectedOutput": "Driving on road at 65 mph\nFlying in air at 5000 ft",
+      "hints": [
+        "Make FlyingCar extend Car.",
+        "Add private FlightModule flightModule = new FlightModule(); in FlyingCar.",
+        "Implement takeFlight() in FlyingCar delegating to flightModule."
+      ],
+      "solutionCode": "class Car {\n    public void drive(int mph) {\n        System.out.println(\"Driving on road at \" + mph + \" mph\");\n    }\n}\n\nclass FlightModule {\n    public void fly(int altitudeFt) {\n        System.out.println(\"Flying in air at \" + altitudeFt + \" ft\");\n    }\n}\n\nclass FlyingCar extends Car {\n    private FlightModule flightModule = new FlightModule();\n    \n    public void takeFlight(int altitude) {\n        flightModule.fly(altitude);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        FlyingCar fc = new FlyingCar();\n        fc.drive(65);\n        fc.takeFlight(5000);\n    }\n}"
+    },
+    {
+      "id": "prob-nmi-5",
+      "title": "Challenge: Hybrid Smart Vehicle Telemetry Engine",
+      "difficulty": "hard",
+      "description": "Architect a SmartVehicle that composes GpsNavigator, BatteryMonitor, and CombustionEngine telemetry.",
+      "problemStatement": "Design a SmartVehicle utilizing composition over multiple inheritance. Create GpsNavigator (getCoordinates()), BatteryMonitor (getChargeLevel()), and CombustionEngine (getFuelLevel()). SmartVehicle composes all three and provides printDashboardTelemetry().",
+      "expectedOutput": "=== HYBRID SMART TELEMETRY ===\nLocation: 37.7749 N, 122.4194 W\nBattery State: 84% Charge\nFuel State: 45L Fuel Remaining",
+      "hints": [
+        "GpsNavigator, BatteryMonitor, and CombustionEngine are independent components.",
+        "SmartVehicle aggregates all three and delegates telemetry retrieval.",
+        "Print formatted telemetry dashboard matching specification."
+      ],
+      "solutionCode": "class GpsNavigator {\n    public String getCoordinates() { return \"37.7749 N, 122.4194 W\"; }\n}\n\nclass BatteryMonitor {\n    public int getChargeLevel() { return 84; }\n}\n\nclass CombustionEngine {\n    public int getFuelLevel() { return 45; }\n}\n\nclass SmartVehicle {\n    private final GpsNavigator gps = new GpsNavigator();\n    private final BatteryMonitor battery = new BatteryMonitor();\n    private final CombustionEngine engine = new CombustionEngine();\n    \n    public void printDashboardTelemetry() {\n        System.out.println(\"=== HYBRID SMART TELEMETRY ===\");\n        System.out.println(\"Location: \" + gps.getCoordinates());\n        System.out.println(\"Battery State: \" + battery.getChargeLevel() + \"% Charge\");\n        System.out.println(\"Fuel State: \" + engine.getFuelLevel() + \"L Fuel Remaining\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        SmartVehicle vehicle = new SmartVehicle();\n        vehicle.printDashboardTelemetry();\n    }\n}"
+    }
+  ]
+}

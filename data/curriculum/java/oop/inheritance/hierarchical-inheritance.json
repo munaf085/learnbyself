@@ -1,0 +1,332 @@
+{
+  "id": "java-oop-mod5-les6",
+  "slug": "hierarchical-inheritance",
+  "sectionSlug": "oop",
+  "moduleSlug": "inheritance",
+  "languageSlug": "java",
+  "title": "Hierarchical Inheritance",
+  "summary": "Master hierarchical inheritance in Java: how one common superclass is extended by multiple sibling subclasses, ensuring isolated specialization.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "single-inheritance"
+  ],
+  "learningObjectives": [
+    "Understand the architecture of hierarchical inheritance (one parent, multiple siblings)",
+    "Verify complete isolation between sibling subclasses (Sibling A cannot access Sibling B's members)",
+    "Distinguish when to extend an existing parent versus creating a new sibling",
+    "Model real-world polymorphic sibling structures (e.g. Shape -> Circle, Rectangle, Triangle)"
+  ],
+  "expectedOutcomes": [
+    "Ability to design robust sibling hierarchies branching from a common enterprise base class",
+    "Understanding sibling isolation rules in compile-time type checking"
+  ],
+  "activities": [
+    {
+      "id": "act-hi-1",
+      "type": "analogy",
+      "title": "The Universal Vehicle Blueprint in an Automobile Factory",
+      "content": "Imagine an automotive manufacturing plant with a master chassis blueprint: the **MotorVehicle Blueprint**.\n\nFrom this single blueprint, the factory branches into three separate assembly lines:\n1. **The Sedan Assembly Line**: adds family seating and a trunk.\n2. **The Pickup Truck Assembly Line**: adds an open flatbed and heavy-duty towing.\n3. **The Ambulance Assembly Line**: adds emergency sirens and medical life-support beds.\n\nAll three share the identical core motor, steering, and braking engineering from the MotorVehicle parent blueprint. But a Sedan has zero knowledge of an Ambulance siren, and a Truck has zero access to a Sedan trunk. They are independent sibling specializations."
+    },
+    {
+      "id": "act-hi-2",
+      "type": "concept",
+      "title": "Architecture, Branching, and Strict Sibling Isolation",
+      "content": "Hierarchical inheritance occurs when **two or more classes extend the same superclass**.\n\n```\n                    +-------------------+\n                    |      Account      | (Superclass)\n                    +-------------------+\n                              ^\n                              |\n               +--------------+--------------+\n               |                             |\n     +-------------------+         +-------------------+\n     |  SavingsAccount   |         |  CheckingAccount  | (Siblings)\n     +-------------------+         +-------------------+\n```\n\n### 1. Architectural Traits:\n- **One Shared Superclass**: Common fields (`accountNumber`, `balance`) and methods (`deposit()`, `getBalance()`) are centralized.\n- **Multiple Subclasses**: Each subclass introduces its own specialized fields and operations.\n\n### 2. Strict Sibling Isolation (Crucial Interview Concept!):\n- **Siblings do NOT know about each other**: `SavingsAccount` has no access to fields or methods declared in `CheckingAccount`.\n- You **cannot assign** an instance of `SavingsAccount` to a variable of type `CheckingAccount` (they are in completely separate branches of the inheritance tree).\n\n### 3. Core Rules:\n- A superclass is extended by multiple subclasses (`class Dog extends Animal`, `class Cat extends Animal`).\n- Every sibling has independent heap memory and independent runtime state.\n- Changes to the shared superclass propagate to all siblings automatically."
+    },
+    {
+      "id": "act-hi-3",
+      "type": "code_walkthrough",
+      "title": "Bank Account Sibling Hierarchy: Savings vs Checking",
+      "description": "Trace how SavingsAccount and CheckingAccount inherit shared balance logic while keeping specializations isolated.",
+      "code": "class BankAccount {\n    protected String accountId;\n    protected double balance;\n    \n    public BankAccount(String accountId, double initial) {\n        this.accountId = accountId;\n        this.balance = initial;\n    }\n    \n    public void deposit(double amount) {\n        this.balance += amount;\n        System.out.println(accountId + \" balance: $\" + balance);\n    }\n}\n\n// Sibling 1: Adds interest calculation\nclass SavingsAccount extends BankAccount {\n    private double interestRate;\n    public SavingsAccount(String id, double balance, double rate) {\n        super(id, balance);\n        this.interestRate = rate;\n    }\n    public void addInterest() {\n        double interest = balance * (interestRate / 100.0);\n        deposit(interest);\n    }\n}\n\n// Sibling 2: Adds check writing fees\nclass CheckingAccount extends BankAccount {\n    private double feePerCheck;\n    public CheckingAccount(String id, double balance, double fee) {\n        super(id, balance);\n        this.feePerCheck = fee;\n    }\n    public void writeCheck(double amount) {\n        balance -= (amount + feePerCheck);\n        System.out.println(accountId + \" check cleared for $\" + amount + \". Balance: $\" + balance);\n    }\n}\n\npublic class HierarchicalDemo {\n    public static void main(String[] args) {\n        SavingsAccount sav = new SavingsAccount(\"SAV-01\", 1000.0, 4.0);\n        CheckingAccount chk = new CheckingAccount(\"CHK-02\", 500.0, 1.50);\n        \n        sav.addInterest(); // Legal on SavingsAccount\n        chk.writeCheck(100.0); // Legal on CheckingAccount\n        \n        // COMPILER ERROR if attempted:\n        // sav.writeCheck(50.0); // SavingsAccount has no writeCheck()!\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "BankAccount centralizes common state: accountId and balance."
+        },
+        {
+          "step": 2,
+          "description": "SavingsAccount specializes with interestRate and addInterest()."
+        },
+        {
+          "step": 3,
+          "description": "CheckingAccount specializes with feePerCheck and writeCheck()."
+        },
+        {
+          "step": 4,
+          "description": "Notice sibling isolation: SavingsAccount cannot call writeCheck(), and CheckingAccount cannot call addInterest()."
+        }
+      ]
+    },
+    {
+      "id": "act-hi-4",
+      "type": "code_walkthrough",
+      "title": "Example 2: Employee -> Developer and Manager",
+      "description": "Witness sibling branching in corporate role modeling.",
+      "code": "class Employee {\n    protected String name;\n    protected double baseSalary;\n    public Employee(String name, double salary) {\n        this.name = name;\n        this.salary = salary;\n    }\n}\n\nclass Developer extends Employee {\n    private int bugFixCount;\n    public Developer(String name, double salary, int fixes) {\n        super(name, salary);\n        this.bugFixCount = fixes;\n    }\n    public void report() { System.out.println(name + \" fixed \" + bugFixCount + \" bugs\"); }\n}\n\nclass Manager extends Employee {\n    private int teamSize;\n    public Manager(String name, double salary, int team) {\n        super(name, salary);\n        this.teamSize = team;\n    }\n    public void report() { System.out.println(name + \" leads team of \" + teamSize); }\n}\n\npublic class RoleDemo {\n    public static void main(String[] args) {\n        Developer dev = new Developer(\"Alex\", 90000.0, 42);\n        Manager mgr = new Manager(\"Diana\", 130000.0, 8);\n        dev.report();\n        mgr.report();\n    }\n}",
+      "steps": [
+        {
+          "step": 1,
+          "description": "Developer and Manager share Employee's name and salary."
+        },
+        {
+          "step": 2,
+          "description": "Each sibling implements distinct specialized operations independently."
+        }
+      ]
+    },
+    {
+      "id": "act-hi-5",
+      "type": "mcq",
+      "title": "Mastery Verification: Hierarchical Inheritance (10 Questions)",
+      "questions": [
+        {
+          "id": "q-hi-1",
+          "question": "What is hierarchical inheritance in Java?",
+          "options": [
+            "A class having multiple parent classes",
+            "Multiple subclasses extending the same single superclass",
+            "A class having no superclasses except Object",
+            "An interface extending multiple interfaces"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Hierarchical inheritance occurs when one superclass is extended by two or more sibling subclasses."
+        },
+        {
+          "id": "q-hi-2",
+          "question": "If Dog and Cat both extend Animal, can a Dog object access Cat's meow() method?",
+          "options": [
+            "Yes, because they share the same parent Animal",
+            "No, sibling classes are completely isolated and have no access to each other's members",
+            "Yes, using the sibling keyword",
+            "Only if meow() is marked protected"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Sibling classes are completely isolated. Subclass members are not shared horizontally across siblings."
+        },
+        {
+          "id": "q-hi-3",
+          "question": "What happens if a developer attempts: 'CheckingAccount chk = new SavingsAccount(\"S1\", 100);' where both extend BankAccount?",
+          "options": [
+            "It compiles and runs normally",
+            "Compile-time error: Incompatible types (SavingsAccount cannot be converted to CheckingAccount)",
+            "The JVM converts interest into check fees automatically",
+            "Runtime SiblingCastException"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Siblings are unrelated types in the type system. You cannot assign one sibling reference to another."
+        },
+        {
+          "id": "q-hi-4",
+          "question": "What is the primary benefit of hierarchical inheritance?",
+          "options": [
+            "It allows a class to have multiple parents",
+            "It centralizes common logic in a single parent while enabling diverse, specialized child classes",
+            "It eliminates all need for constructors",
+            "It makes memory allocation zero-cost"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "It promotes code reuse across multiple specialized classes derived from one common base."
+        },
+        {
+          "id": "q-hi-5",
+          "question": "If a bug is discovered in the shared superclass of 8 sibling classes, how many files must be patched?",
+          "options": [
+            "All 8 sibling files must be patched",
+            "Only the single superclass file needs to be patched",
+            "The JVM patch tool must be run",
+            "Each sibling must be deleted and regenerated"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Centralizing shared logic in the superclass ensures fixing the bug once repairs all 8 siblings automatically."
+        },
+        {
+          "id": "q-hi-6",
+          "question": "Can two sibling classes declare methods with the exact same name and signature?",
+          "options": [
+            "No, that causes a duplicate method compilation error",
+            "Yes, each sibling is an independent scope and can declare identical method names without conflict",
+            "Only if the superclass declares the method first",
+            "Only if one of them is private"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Because sibling classes are independent class scopes, they can each declare methods with identical names."
+        },
+        {
+          "id": "q-hi-7",
+          "question": "In Java's standard library, java.lang.Number is extended by Integer, Double, Long, and Float. What kind of inheritance is this?",
+          "options": [
+            "Multiple inheritance",
+            "Hierarchical inheritance",
+            "Cyclic inheritance",
+            "Diamond inheritance"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Multiple sibling classes (Integer, Double, Long) extending a single parent (Number) is a classic example of hierarchical inheritance."
+        },
+        {
+          "id": "q-hi-8",
+          "question": "Can a sibling class override a method inherited from the common superclass without affecting other siblings?",
+          "options": [
+            "No, changing one sibling changes all siblings",
+            "Yes, any method customization in one sibling applies only to instances of that specific sibling class",
+            "Only if the superclass method is static",
+            "Only if the parent class is final"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Modifications or specialized methods in a child class affect only instances of that child class."
+        },
+        {
+          "id": "q-hi-9",
+          "question": "Which relationship best models hierarchical inheritance?",
+          "options": [
+            "A horizontal linear sequence",
+            "A branching tree with one root node branching into multiple leaf nodes",
+            "A bidirectional graph with cycles",
+            "An inverted pyramid"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Hierarchical inheritance models a branching tree: one root parent branching into multiple child branches."
+        },
+        {
+          "id": "q-hi-10",
+          "question": "Can an instance of a sibling class access private variables of the shared superclass?",
+          "options": [
+            "Yes, because all siblings share them",
+            "No, private variables are accessible only within the superclass itself",
+            "Only if the sibling is created in the same file",
+            "Only if the sibling calls super.getPrivate()"
+          ],
+          "correctOptionIndex": 1,
+          "explanation": "Private variables in the superclass remain private and cannot be directly accessed by any subclass or sibling."
+        }
+      ]
+    },
+    {
+      "id": "act-hi-6",
+      "type": "interview_qa",
+      "title": "Interview Essentials: Hierarchical Inheritance",
+      "interviewQA": [
+        {
+          "question": "What is hierarchical inheritance and how does it differ from multiple inheritance?",
+          "answer": "Hierarchical inheritance is 'one parent -> multiple children' (e.g. Animal extended by Dog and Cat). Multiple inheritance is 'multiple parents -> one child' (e.g. Child extending ParentA and ParentB). Java fully supports hierarchical inheritance, but prohibits multiple class inheritance.",
+          "companyTag": "Amazon"
+        },
+        {
+          "question": "Explain sibling isolation in Java's type system.",
+          "answer": "Sibling isolation means two classes that share a common superclass have zero relationship with one another horizontally. Sibling A cannot call methods or access fields declared exclusively in Sibling B, and references of type Sibling A cannot hold instances of Sibling B.",
+          "companyTag": "Google"
+        },
+        {
+          "question": "Give an example of hierarchical inheritance from the Java standard library.",
+          "answer": "java.lang.Throwable is the superclass of Exception and Error. java.lang.Number is the superclass of Byte, Short, Integer, Long, Float, and Double. java.io.InputStream is the superclass of FileInputStream, ByteArrayInputStream, and BufferedInputStream.",
+          "companyTag": "Microsoft"
+        },
+        {
+          "question": "How do you decide whether to create a new sibling subclass vs modifying an existing class?",
+          "answer": "If a new requirement represents a distinct specialization with unique fields, validation rules, or business operations that do not apply to other siblings (e.g. adding FixedDepositAccount alongside SavingsAccount), create a new sibling subclass. This adheres to the Open-Closed Principle.",
+          "companyTag": "Oracle"
+        },
+        {
+          "question": "Can sibling classes share code between each other without pushing it to the superclass?",
+          "answer": "If shared code is placed in one sibling, other siblings cannot reach it. To share logic cleanly without cluttering the parent, engineers either move the common logic up to the superclass (if it applies to all siblings), create an intermediate subclass, or extract the logic into a composed helper utility.",
+          "companyTag": "Goldman Sachs"
+        },
+        {
+          "question": "What is the memory layout difference between two instances of different sibling classes?",
+          "answer": "Both instances allocate memory for the superclass fields (e.g. balance, accountId), but each instance allocates additional memory only for its own specialized fields (e.g. SavingsAccount allocates interestRate, while CheckingAccount allocates overdraftFee).",
+          "companyTag": "Uber"
+        }
+      ]
+    },
+    {
+      "id": "act-hi-7",
+      "type": "self_evaluation",
+      "title": "Module 5 Lesson 6 Mastery Checkpoint",
+      "checklist": [
+        "I understand the architecture of hierarchical inheritance (one parent, multiple children)",
+        "I understand strict sibling isolation (no horizontal field or method access between siblings)",
+        "I know why assigning one sibling reference to another sibling type fails compilation",
+        "I can cite standard library examples (Number -> Integer, Double; Throwable -> Exception, Error)",
+        "I understand how shared superclass bug fixes propagate to all sibling subclasses",
+        "I know that siblings can declare methods with identical names without collision",
+        "I understand the memory footprint of sibling instances",
+        "I know when to extract shared logic into the superclass vs keeping it in a sibling",
+        "I can design a branching sibling class tree in Java",
+        "I can implement a working 3-sibling banking or notification system"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-hi-1",
+      "title": "Warmup: Shape Superclass with Circle and Rectangle Siblings",
+      "difficulty": "easy",
+      "description": "Create a Shape superclass extended by Circle and Rectangle sibling subclasses.",
+      "problemStatement": "Implement Shape with color (String). Create sibling Circle adding radius (double) and printArea(). Create sibling Rectangle adding width (double), height (double) and printArea().",
+      "initialCode": "class Shape {\n    protected String color;\n    public Shape(String color) { this.color = color; }\n}\n\nclass Circle extends Shape {\n    private double radius;\n    public Circle(String color, double radius) {\n        super(color);\n        this.radius = radius;\n    }\n    public void printArea() {\n        double area = Math.PI * radius * radius;\n        System.out.println(color + \" Circle area: \" + area);\n    }\n}\n\n// Complete Rectangle sibling\nclass Rectangle extends Shape {\n    private double width;\n    private double height;\n    \n    public Rectangle(String color, double width, double height) {\n        super(color);\n        this.width = width;\n        this.height = height;\n    }\n    \n    public void printArea() {\n        double area = width * height;\n        System.out.println(color + \" Rectangle area: \" + area);\n    }\n}",
+      "expectedOutput": "Red Circle area: 78.53981633974483\nBlue Rectangle area: 40.0",
+      "hints": [
+        "Rectangle constructor calls super(color).",
+        "printArea() in Rectangle computes width * height."
+      ],
+      "solutionCode": "class Shape {\n    protected String color;\n    public Shape(String color) { this.color = color; }\n}\n\nclass Circle extends Shape {\n    private double radius;\n    public Circle(String color, double radius) {\n        super(color);\n        this.radius = radius;\n    }\n    public void printArea() {\n        double area = Math.PI * radius * radius;\n        System.out.println(color + \" Circle area: \" + area);\n    }\n}\n\nclass Rectangle extends Shape {\n    private double width;\n    private double height;\n    public Rectangle(String color, double width, double height) {\n        super(color);\n        this.width = width;\n        this.height = height;\n    }\n    public void printArea() {\n        double area = width * height;\n        System.out.println(color + \" Rectangle area: \" + area);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Circle c = new Circle(\"Red\", 5.0);\n        Rectangle r = new Rectangle(\"Blue\", 8.0, 5.0);\n        c.printArea();\n        r.printArea();\n    }\n}"
+    },
+    {
+      "id": "prob-hi-2",
+      "title": "Code from Scratch: Notification Sibling Hierarchy (Email & SMS)",
+      "difficulty": "medium",
+      "description": "Construct Notification parent class and EmailNotification / SmsNotification sibling subclasses.",
+      "problemStatement": "Build Notification with recipient (String) and message (String). Create sibling EmailNotification adding subject (String) and sendEmail(). Create sibling SmsNotification adding characterLimit (int) and sendSms(). From scratch.",
+      "expectedOutput": "Sending Email to user@domain.com [Subject: Security Alert]: Password reset requested\nSending SMS to +15550199 (Max 160 chars): Your verification code is 4491",
+      "hints": [
+        "Notification constructor initializes recipient and message.",
+        "EmailNotification and SmsNotification each call super(recipient, message).",
+        "Print formatted output matching test expectations."
+      ],
+      "solutionCode": "class Notification {\n    protected String recipient;\n    protected String message;\n    public Notification(String recipient, String message) {\n        this.recipient = recipient;\n        this.message = message;\n    }\n}\n\nclass EmailNotification extends Notification {\n    private String subject;\n    public EmailNotification(String recipient, String message, String subject) {\n        super(recipient, message);\n        this.subject = subject;\n    }\n    public void sendEmail() {\n        System.out.println(\"Sending Email to \" + recipient + \" [Subject: \" + subject + \"]: \" + message);\n    }\n}\n\nclass SmsNotification extends Notification {\n    private int characterLimit;\n    public SmsNotification(String recipient, String message, int charLimit) {\n        super(recipient, message);\n        this.characterLimit = charLimit;\n    }\n    public void sendSms() {\n        System.out.println(\"Sending SMS to \" + recipient + \" (Max \" + characterLimit + \" chars): \" + message);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        EmailNotification email = new EmailNotification(\"user@domain.com\", \"Password reset requested\", \"Security Alert\");\n        SmsNotification sms = new SmsNotification(\"+15550199\", \"Your verification code is 4491\", 160);\n        email.sendEmail();\n        sms.sendSms();\n    }\n}"
+    },
+    {
+      "id": "prob-hi-3",
+      "title": "Code from Scratch: Bank Account Branching with FixedDeposit and CurrentAccount",
+      "difficulty": "medium",
+      "description": "Construct Account superclass with FixedDeposit and CurrentAccount siblings with distinct penalties.",
+      "problemStatement": "Create Account with accountNum (String), balance (double). Create sibling FixedDeposit adding tenureMonths (int) and prematureWithdrawalPenalty (double). Create sibling CurrentAccount adding overdraftLimit (double) and checkLimit(). From scratch.",
+      "expectedOutput": "FD Account FD-10 balance: $50000.0 (Penalty for early exit: 2.5%)\nCurrent Account CA-20 balance: $12000.0 (Overdraft: $5000.0)",
+      "hints": [
+        "In Account, keep fields protected.",
+        "FixedDeposit and CurrentAccount extend Account independently.",
+        "Write displayInfo() in each sibling printing their respective terms."
+      ],
+      "solutionCode": "class Account {\n    protected String accountNum;\n    protected double balance;\n    public Account(String accountNum, double balance) {\n        this.accountNum = accountNum;\n        this.balance = balance;\n    }\n}\n\nclass FixedDeposit extends Account {\n    private int tenureMonths;\n    private double prematureWithdrawalPenalty;\n    public FixedDeposit(String accountNum, double balance, int months, double penalty) {\n        super(accountNum, balance);\n        this.tenureMonths = months;\n        this.prematureWithdrawalPenalty = penalty;\n    }\n    public void displayInfo() {\n        System.out.println(\"FD Account \" + accountNum + \" balance: $\" + balance + \" (Penalty for early exit: \" + prematureWithdrawalPenalty + \"%)\");\n    }\n}\n\nclass CurrentAccount extends Account {\n    private double overdraftLimit;\n    public CurrentAccount(String accountNum, double balance, double overdraft) {\n        super(accountNum, balance);\n        this.overdraftLimit = overdraft;\n    }\n    public void displayInfo() {\n        System.out.println(\"Current Account \" + accountNum + \" balance: $\" + balance + \" (Overdraft: $\" + overdraftLimit + \")\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        FixedDeposit fd = new FixedDeposit(\"FD-10\", 50000.0, 24, 2.5);\n        CurrentAccount ca = new CurrentAccount(\"CA-20\", 12000.0, 5000.0);\n        fd.displayInfo();\n        ca.displayInfo();\n    }\n}"
+    },
+    {
+      "id": "prob-hi-4",
+      "title": "Fix Broken Code: Attempted Cross-Sibling Method Call",
+      "difficulty": "easy",
+      "description": "Fix a compilation failure caused by calling a sibling-specific method on another sibling.",
+      "problemStatement": "In the code, a client attempts to call Dog's bark() method on a Cat instance. Fix the code so both Dog and Cat execute their own respective sibling methods.",
+      "initialCode": "class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n}\n\nclass Dog extends Animal {\n    public Dog(String name) { super(name); }\n    public void bark() { System.out.println(name + \" barks: Woof!\"); }\n}\n\nclass Cat extends Animal {\n    public Cat(String name) { super(name); }\n    public void meow() { System.out.println(name + \" meows: Meow!\"); }\n}\n\npublic class BrokenSibling {\n    public static void main(String[] args) {\n        Dog d = new Dog(\"Rover\");\n        Cat c = new Cat(\"Whiskers\");\n        d.bark();\n        // BUG: Cat has no bark() method! Sibling isolation violation!\n        // c.bark();\n    }\n}",
+      "expectedOutput": "Rover barks: Woof!\nWhiskers meows: Meow!",
+      "hints": [
+        "Call c.meow() instead of c.bark().",
+        "Siblings do not share methods declared in sibling subclasses."
+      ],
+      "solutionCode": "class Animal {\n    protected String name;\n    public Animal(String name) { this.name = name; }\n}\n\nclass Dog extends Animal {\n    public Dog(String name) { super(name); }\n    public void bark() { System.out.println(name + \" barks: Woof!\"); }\n}\n\nclass Cat extends Animal {\n    public Cat(String name) { super(name); }\n    public void meow() { System.out.println(name + \" meows: Meow!\"); }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Dog d = new Dog(\"Rover\");\n        Cat c = new Cat(\"Whiskers\");\n        d.bark();\n        c.meow();\n    }\n}"
+    },
+    {
+      "id": "prob-hi-5",
+      "title": "Challenge: Multi-Channel Cloud Storage Providers",
+      "difficulty": "hard",
+      "description": "Design CloudBucket superclass with S3Bucket, GcsBucket, and AzureBlobBucket sibling subclasses.",
+      "problemStatement": "Create CloudBucket with bucketName (String), region (String), storageClass (String). Create sibling S3Bucket adding versioningEnabled (boolean). Create sibling GcsBucket adding retentionPeriodDays (int). Create sibling AzureBlobBucket adding accessTier (String). Implement displaySpecs() on all three.",
+      "expectedOutput": "S3 Bucket [app-media-prod] in us-east-1 (STANDARD) - Versioning: true\nGCS Bucket [analytics-data] in europe-west1 (COLDLINE) - Retention: 90 days\nAzure Blob [archive-store] in East US (ARCHIVE) - Access Tier: Hot",
+      "hints": [
+        "CloudBucket constructor sets bucketName, region, storageClass.",
+        "Each sibling passes shared attributes to super() and formats output."
+      ],
+      "solutionCode": "class CloudBucket {\n    protected String bucketName;\n    protected String region;\n    protected String storageClass;\n    public CloudBucket(String name, String region, String storageClass) {\n        this.bucketName = name;\n        this.region = region;\n        this.storageClass = storageClass;\n    }\n}\n\nclass S3Bucket extends CloudBucket {\n    private boolean versioningEnabled;\n    public S3Bucket(String name, String region, String storageClass, boolean versioning) {\n        super(name, region, storageClass);\n        this.versioningEnabled = versioning;\n    }\n    public void displaySpecs() {\n        System.out.println(\"S3 Bucket [\" + bucketName + \"] in \" + region + \" (\" + storageClass + \") - Versioning: \" + versioningEnabled);\n    }\n}\n\nclass GcsBucket extends CloudBucket {\n    private int retentionPeriodDays;\n    public GcsBucket(String name, String region, String storageClass, int days) {\n        super(name, region, storageClass);\n        this.retentionPeriodDays = days;\n    }\n    public void displaySpecs() {\n        System.out.println(\"GCS Bucket [\" + bucketName + \"] in \" + region + \" (\" + storageClass + \") - Retention: \" + retentionPeriodDays + \" days\");\n    }\n}\n\nclass AzureBlobBucket extends CloudBucket {\n    private String accessTier;\n    public AzureBlobBucket(String name, String region, String storageClass, String tier) {\n        super(name, region, storageClass);\n        this.accessTier = tier;\n    }\n    public void displaySpecs() {\n        System.out.println(\"Azure Blob [\" + bucketName + \"] in \" + region + \" (\" + storageClass + \") - Access Tier: \" + accessTier);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        S3Bucket s3 = new S3Bucket(\"app-media-prod\", \"us-east-1\", \"STANDARD\", true);\n        GcsBucket gcs = new GcsBucket(\"analytics-data\", \"europe-west1\", \"COLDLINE\", 90);\n        AzureBlobBucket azure = new AzureBlobBucket(\"archive-store\", \"East US\", \"ARCHIVE\", \"Hot\");\n        s3.displaySpecs();\n        gcs.displaySpecs();\n        azure.displaySpecs();\n    }\n}"
+    }
+  ]
+}
