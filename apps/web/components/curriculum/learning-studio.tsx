@@ -280,6 +280,39 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
               <InteractiveCodeExplainer />
             )}
 
+            {/* 1. Real-World Mental Model & Analogy if present */}
+            {analogyActivity && (
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-amber-50/20 border border-amber-200/80 shadow-2xs space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-700">
+                    <Lightbulb className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                    Real-World Mental Model
+                  </span>
+                </div>
+                <h3 className="font-bold text-base sm:text-lg text-slate-900">
+                  {analogyActivity.title || (analogyActivity as any).analogy?.headline || 'Intuitive Concept Overview'}
+                </h3>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2">
+                  {typeof analogyActivity.content === 'string' ? (
+                    analogyActivity.content.split('\n\n').map((paragraph: string, pIdx: number) => (
+                      <p key={pIdx}>{paragraph}</p>
+                    ))
+                  ) : (
+                    <>
+                      <p>{(analogyActivity as any).analogy?.story}</p>
+                      {(analogyActivity as any).analogy?.keyTakeaway && (
+                        <p className="font-semibold text-amber-950 pt-1">
+                          Key Takeaway: {(analogyActivity as any).analogy.keyTakeaway}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* 2. Main Editorial Concept Lesson with Rich Visual Cards & Steps */}
             {conceptActivity && (
               <EditorialArticle
