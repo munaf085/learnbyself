@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod9-les5",
+  "slug": "identity-vs-logical-equality",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "Identity vs Logical Equality",
+  "summary": "Deep dive into the core architectural distinction: Object Identity (memory location) vs Logical Equality (business state equivalence).",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "equals-method"
+  ],
+  "learningObjectives": [
+    "Differentiate Object Identity (heap memory location) from Logical Equality (value equivalence)",
+    "Identify when a class should maintain default identity equality vs when it must override logical equality",
+    "Trace how Java collection data structures utilize identity vs logical equality",
+    "Evaluate java.lang.System.identityHashCode(obj) vs custom hashCode()"
+  ],
+  "expectedOutcomes": [
+    "You can articulate when an object is an Entity (identity-based) vs a Value Object (logical-equality-based)",
+    "You know how to inspect raw system identity hashes independent of custom hash codes"
+  ],
+  "activities": [
+    {
+      "id": "act-les5-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: Two Twenty-Dollar Bills vs Your Passport",
+      "concept": "Identity vs Logical Equality",
+      "realWorldMetaphor": {
+        "scenario": "Pull two \\$20 bills from your wallet. Bill A and Bill B are two distinct physical pieces of paper with different serial numbers. But if you owe a friend \\$20, they do not care whether you hand them Bill A or Bill B. In commerce, all \\$20 bills have *logical equality*. Now consider your Passport. Even if another citizen is also named 'John Smith' and born on the exact same date, their passport has a different identity. You cannot travel on their passport. That is *identity*.",
+        "mapping": "Value objects (Money, Coordinates, Dates) care about Logical Equality (`.equals()`). Stateful runtime agents (Threads, Sockets, Windows, Database Connections) care about Identity (`==`).",
+        "takeaway": "Logical equality compares interchangeable values; identity tracks unique, non-interchangeable entities."
+      }
+    },
+    {
+      "id": "act-les5-concept",
+      "type": "concept",
+      "title": "When to Keep Default Identity vs Override Equality",
+      "content": "### The Fundamental Decision\n\nWhen should a class **NOT** override `equals()` (retaining default identity equality)?\n\n1. **Each instance is inherently unique**: Classes representing active entities or resources rather than values.\n   - *Examples*: `Thread`, `Socket`, `InputStream`, `JFrame`.\n   - Two threads are never logically interchangeable, even if they run the same task!\n2. **Logical equality is meaningless**: A utility or service class (`MathUtils`, `TransferCoordinator`).\n3. **A superclass already provided an appropriate equals**: For example, `AbstractSet` implements `equals()` for all set subclasses.\n\n### When MUST you override equals()?\n- When a class represents a **Value Object** (e.g. `Integer`, `String`, `LocalDate`, `ComplexNumber`, `Money`).\n- A client comparing two `Money` objects expects `$20` to equal `$20`, regardless of which memory address holds the object."
+    },
+    {
+      "id": "act-les5-cw1",
+      "type": "code_walkthrough",
+      "title": "Comparing Identity Hash vs Logical Equality",
+      "codeSnippet": "import java.util.Objects;\n\nclass Money {\n    private double amount;\n    private String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = currency;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Money other = (Money) obj;\n        return Double.compare(amount, other.amount) == 0 &&\n               Objects.equals(currency, other.currency);\n    }\n}\n\npublic class IdentityVsLogicalDemo {\n    public static void main(String[] args) {\n        Money m1 = new Money(20.0, \"USD\");\n        Money m2 = new Money(20.0, \"USD\");\n\n        // 1. Identity Check (==)\n        System.out.println(\"m1 == m2 (Identity):          \" + (m1 == m2)); // false\n        \n        // 2. Logical Equality Check (.equals)\n        System.out.println(\"m1.equals(m2) (Logical):       \" + m1.equals(m2)); // true\n        \n        // 3. System Identity Hash Code (raw memory-derived hash)\n        System.out.println(\"m1 System Hash: \" + System.identityHashCode(m1));\n        System.out.println(\"m2 System Hash: \" + System.identityHashCode(m2));\n    }\n}",
+      "code": "import java.util.Objects;\n\nclass Money {\n    private double amount;\n    private String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = currency;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Money other = (Money) obj;\n        return Double.compare(amount, other.amount) == 0 &&\n               Objects.equals(currency, other.currency);\n    }\n}\n\npublic class IdentityVsLogicalDemo {\n    public static void main(String[] args) {\n        Money m1 = new Money(20.0, \"USD\");\n        Money m2 = new Money(20.0, \"USD\");\n\n        // 1. Identity Check (==)\n        System.out.println(\"m1 == m2 (Identity):          \" + (m1 == m2)); // false\n        \n        // 2. Logical Equality Check (.equals)\n        System.out.println(\"m1.equals(m2) (Logical):       \" + m1.equals(m2)); // true\n        \n        // 3. System Identity Hash Code (raw memory-derived hash)\n        System.out.println(\"m1 System Hash: \" + System.identityHashCode(m1));\n        System.out.println(\"m2 System Hash: \" + System.identityHashCode(m2));\n    }\n}",
+      "language": "java",
+      "explanation": "m1 and m2 are logically equal because their amounts and currencies match, even though they possess distinct identity hash codes and memory addresses.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`m1` and `m2` are allocated separately in heap memory."
+        },
+        {
+          "step": 2,
+          "description": "`m1 == m2` evaluates to `false` because their memory addresses differ."
+        },
+        {
+          "step": 3,
+          "description": "`m1.equals(m2)` evaluates to `true` because amounts ($20.0) and currencies (USD) match."
+        },
+        {
+          "step": 4,
+          "description": "`System.identityHashCode()` confirms both objects have distinct JVM identity hashes."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-cw2",
+      "type": "code_walkthrough",
+      "title": "IdentityHashMap vs Standard HashMap",
+      "codeSnippet": "import java.util.HashMap;\nimport java.util.IdentityHashMap;\nimport java.util.Map;\n\nclass ColorCode {\n    private String hex;\n    public ColorCode(String hex) { this.hex = hex; }\n    @Override\n    public boolean equals(Object obj) {\n        return (obj instanceof ColorCode) && ((ColorCode) obj).hex.equals(this.hex);\n    }\n    @Override\n    public int hashCode() { return hex.hashCode(); }\n}\n\npublic class IdentityMapDemo {\n    public static void main(String[] args) {\n        ColorCode c1 = new ColorCode(\"#FF0000\");\n        ColorCode c2 = new ColorCode(\"#FF0000\");\n\n        // Standard HashMap uses .equals() and .hashCode()\n        Map<ColorCode, String> standardMap = new HashMap<>();\n        standardMap.put(c1, \"Red-1\");\n        standardMap.put(c2, \"Red-2\"); // Overwrites c1 because c1.equals(c2)!\n        System.out.println(\"Standard HashMap size: \" + standardMap.size()); // 1\n\n        // IdentityHashMap uses == and System.identityHashCode()\n        Map<ColorCode, String> identityMap = new IdentityHashMap<>();\n        identityMap.put(c1, \"Red-1\");\n        identityMap.put(c2, \"Red-2\"); // Preserves both because c1 != c2!\n        System.out.println(\"IdentityHashMap size:  \" + identityMap.size()); // 2\n    }\n}",
+      "code": "import java.util.HashMap;\nimport java.util.IdentityHashMap;\nimport java.util.Map;\n\nclass ColorCode {\n    private String hex;\n    public ColorCode(String hex) { this.hex = hex; }\n    @Override\n    public boolean equals(Object obj) {\n        return (obj instanceof ColorCode) && ((ColorCode) obj).hex.equals(this.hex);\n    }\n    @Override\n    public int hashCode() { return hex.hashCode(); }\n}\n\npublic class IdentityMapDemo {\n    public static void main(String[] args) {\n        ColorCode c1 = new ColorCode(\"#FF0000\");\n        ColorCode c2 = new ColorCode(\"#FF0000\");\n\n        // Standard HashMap uses .equals() and .hashCode()\n        Map<ColorCode, String> standardMap = new HashMap<>();\n        standardMap.put(c1, \"Red-1\");\n        standardMap.put(c2, \"Red-2\"); // Overwrites c1 because c1.equals(c2)!\n        System.out.println(\"Standard HashMap size: \" + standardMap.size()); // 1\n\n        // IdentityHashMap uses == and System.identityHashCode()\n        Map<ColorCode, String> identityMap = new IdentityHashMap<>();\n        identityMap.put(c1, \"Red-1\");\n        identityMap.put(c2, \"Red-2\"); // Preserves both because c1 != c2!\n        System.out.println(\"IdentityHashMap size:  \" + identityMap.size()); // 2\n    }\n}",
+      "language": "java",
+      "explanation": "Standard HashMap groups keys by logical equals(), while IdentityHashMap strictly differentiates keys by memory reference identity (==).",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`ColorCode` overrides both `equals` and `hashCode` based on `hex`."
+        },
+        {
+          "step": 2,
+          "description": "In `standardMap`, `c2` overwrites `c1` because `c1.equals(c2)` is true."
+        },
+        {
+          "step": 3,
+          "description": "In `identityMap`, `c1` and `c2` are treated as distinct keys because `c1 == c2` is false."
+        },
+        {
+          "step": 4,
+          "description": "Demonstrates the practical difference between value equivalence and object identity in collections."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-mcq",
+      "type": "mcq",
+      "title": "Identity vs Logical Equality Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the difference between an Entity and a Value Object in domain design?",
+          "options": [
+            "An Entity is defined by ongoing identity; a Value Object is defined purely by its attribute values",
+            "Entities cannot have methods",
+            "Value Objects are always stored in database tables",
+            "They are identical"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Entities have identity (e.g. User with userId); Value Objects are immutable values defined by attributes (e.g. Money, Date).",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q2",
+          "question": "Which of the following classes should deliberately NOT override equals() and retain default identity comparison?",
+          "options": [
+            "java.lang.Thread",
+            "java.lang.String",
+            "java.lang.Integer",
+            "java.time.LocalDate"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Thread represents an active runtime process; two threads are never logically identical, so identity equality is appropriate.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q3",
+          "question": "What does System.identityHashCode(obj) return?",
+          "options": [
+            "The custom hashCode() defined by the class",
+            "The exact hashCode that would be returned by default java.lang.Object.hashCode(), regardless of whether hashCode() was overridden",
+            "The object's size in bytes",
+            "The thread ID"
+          ],
+          "correctAnswer": 1,
+          "explanation": "System.identityHashCode(obj) returns the default Object.hashCode() derived from the JVM identity, bypassing any custom hashCode().",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "How does java.util.IdentityHashMap compare keys?",
+          "options": [
+            "Using k1.equals(k2)",
+            "Using k1 == k2 (reference identity)",
+            "Using k1.compareTo(k2)",
+            "Using regex string matching"
+          ],
+          "correctAnswer": 1,
+          "explanation": "IdentityHashMap intentionally breaks the Map contract by using == and System.identityHashCode for key comparison.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "If two objects have the exact same memory address (a == b), what MUST be true about their logical equality (a.equals(b))?",
+          "options": [
+            "a.equals(b) MUST return true (assuming non-null reflexive contract)",
+            "a.equals(b) might be false",
+            "It throws an error",
+            "They must be strings"
+          ],
+          "correctAnswer": 0,
+          "explanation": "By the reflexivity rule, an object must always equal itself.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "If `a.equals(b)` is true, is `a == b` guaranteed to be true?",
+          "options": [
+            "Yes, always",
+            "No, two distinct heap objects can hold equal field contents",
+            "Only if both are primitives",
+            "Only in Java 17+"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Logical equality does not imply identity equality. Two separate objects can contain identical data.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "Why does a compiler's symbol table often use IdentityHashMap?",
+          "options": [
+            "To treat distinct syntax tree nodes with identical text as separate unique tokens",
+            "To reduce RAM usage",
+            "To speed up disk I/O",
+            "Because standard HashMap doesn't compile"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Compilers must track unique AST nodes based on pointer identity, even if two nodes have identical variable names.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "What is an 'Aliasing Bug'?",
+          "options": [
+            "Accidentally having two variables point to the same mutable object, so mutations via one variable unintentionally modify the other",
+            "A typo in a variable name",
+            "A compiler crash",
+            "A duplicate method name"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Aliasing occurs when two references share the same mutable heap object, causing unintended side effects.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "In Java records (introduced in Java 14), how is equals() implemented by default?",
+          "options": [
+            "Default identity equality (==)",
+            "Value-based logical equality comparing all record components",
+            "Throws UnsupportedOperationException",
+            "Calls toString().equals()"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Records automatically generate value-based equals() comparing every record component for logical equality.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "When is it appropriate for an instantiable class to NOT provide a logical equals method?",
+          "options": [
+            "When instances represent active agents, threads, windows, or connections rather than data values",
+            "Whenever you want to save typing",
+            "When the class has more than 3 fields",
+            "Never"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Active system components (Threads, Streams, Sockets) are distinguished by identity, not value equivalence.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les5-interview",
+      "type": "interview_qa",
+      "title": "Identity vs Logical Equality Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you decide whether a new class needs an overridden equals() method or should retain default identity?",
+          "answer": "Ask: 'Is this a Value Object or an Active Entity?' If it represents descriptive data or a value (e.g. `Coordinate`, `Money`, `Address`, `ComplexNumber`), override `equals()` to provide logical equality. If it represents an active entity, service, or resource with unique lifecycle (e.g. `Thread`, `FileChannel`, `OrderProcessor`), retain default identity.",
+          "expectedAnswer": "Ask: 'Is this a Value Object or an Active Entity?' If it represents descriptive data or a value (e.g. `Coordinate`, `Money`, `Address`, `ComplexNumber`), override `equals()` to provide logical equality. If it represents an active entity, service, or resource with unique lifecycle (e.g. `Thread`, `FileChannel`, `OrderProcessor`), retain default identity.",
+          "keyTakeaway": "Value objects require logical equality; active resources and entities rely on identity.",
+          "keyPoints": [
+            "Value objects require logical equality; active resources and entities rely on identity."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does IdentityHashMap exist in the JDK if it violates the Map contract?",
+          "answer": "`IdentityHashMap` is designed for specialized graph-traversal algorithms, serialization frameworks, and compilers where you need to detect object cycles or track distinct object instances regardless of whether their contents match.",
+          "expectedAnswer": "`IdentityHashMap` is designed for specialized graph-traversal algorithms, serialization frameworks, and compilers where you need to detect object cycles or track distinct object instances regardless of whether their contents match.",
+          "keyTakeaway": "IdentityHashMap is specialized for graph traversal, cycle detection, and serialization.",
+          "keyPoints": [
+            "IdentityHashMap is specialized for graph traversal, cycle detection, and serialization."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How does `System.identityHashCode()` differ from `object.hashCode()`?",
+          "answer": "`object.hashCode()` invokes whatever overridden method the class defined. `System.identityHashCode(object)` bypasses any overridden method and invokes the original `java.lang.Object.hashCode()` implementation directly.",
+          "expectedAnswer": "`object.hashCode()` invokes whatever overridden method the class defined. `System.identityHashCode(object)` bypasses any overridden method and invokes the original `java.lang.Object.hashCode()` implementation directly.",
+          "keyTakeaway": "System.identityHashCode() returns the raw identity hash regardless of overrides.",
+          "keyPoints": [
+            "System.identityHashCode() returns the raw identity hash regardless of overrides."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the relationship between Immutability and Value Objects?",
+          "answer": "Value Objects should almost always be immutable. If an object's identity is defined entirely by its values, mutating those values effectively turns it into a different value, which causes massive bugs if used as keys in hash collections.",
+          "expectedAnswer": "Value Objects should almost always be immutable. If an object's identity is defined entirely by its values, mutating those values effectively turns it into a different value, which causes massive bugs if used as keys in hash collections.",
+          "keyTakeaway": "Value objects whose equality depends on field values should be made immutable.",
+          "keyPoints": [
+            "Value objects whose equality depends on field values should be made immutable."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do Java 14+ Records embody the concept of Value-Based equality?",
+          "answer": "Records are transparent carriers for immutable data. The compiler automatically synthesizes a canonical `equals()` and `hashCode()` that compares every component field for logical equivalence.",
+          "expectedAnswer": "Records are transparent carriers for immutable data. The compiler automatically synthesizes a canonical `equals()` and `hashCode()` that compares every component field for logical equivalence.",
+          "keyTakeaway": "Records provide automatic value-based equality for transparent data carriers.",
+          "keyPoints": [
+            "Records provide automatic value-based equality for transparent data carriers."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can two objects with different memory addresses produce the exact same System.identityHashCode()?",
+          "answer": "Yes! Due to the Pigeonhole Principle, mapping 64-bit heap addresses into a 32-bit integer means hash collisions can and do happen even in `System.identityHashCode()`.",
+          "expectedAnswer": "Yes! Due to the Pigeonhole Principle, mapping 64-bit heap addresses into a 32-bit integer means hash collisions can and do happen even in `System.identityHashCode()`.",
+          "keyTakeaway": "System.identityHashCode is an int and can collide across distinct memory addresses.",
+          "keyPoints": [
+            "System.identityHashCode is an int and can collide across distinct memory addresses."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you decide whether a new class needs an overridden equals() method or should retain default identity?",
+          "answer": "Ask: 'Is this a Value Object or an Active Entity?' If it represents descriptive data or a value (e.g. `Coordinate`, `Money`, `Address`, `ComplexNumber`), override `equals()` to provide logical equality. If it represents an active entity, service, or resource with unique lifecycle (e.g. `Thread`, `FileChannel`, `OrderProcessor`), retain default identity.",
+          "expectedAnswer": "Ask: 'Is this a Value Object or an Active Entity?' If it represents descriptive data or a value (e.g. `Coordinate`, `Money`, `Address`, `ComplexNumber`), override `equals()` to provide logical equality. If it represents an active entity, service, or resource with unique lifecycle (e.g. `Thread`, `FileChannel`, `OrderProcessor`), retain default identity.",
+          "keyTakeaway": "Value objects require logical equality; active resources and entities rely on identity.",
+          "keyPoints": [
+            "Value objects require logical equality; active resources and entities rely on identity."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why does IdentityHashMap exist in the JDK if it violates the Map contract?",
+          "answer": "`IdentityHashMap` is designed for specialized graph-traversal algorithms, serialization frameworks, and compilers where you need to detect object cycles or track distinct object instances regardless of whether their contents match.",
+          "expectedAnswer": "`IdentityHashMap` is designed for specialized graph-traversal algorithms, serialization frameworks, and compilers where you need to detect object cycles or track distinct object instances regardless of whether their contents match.",
+          "keyTakeaway": "IdentityHashMap is specialized for graph traversal, cycle detection, and serialization.",
+          "keyPoints": [
+            "IdentityHashMap is specialized for graph traversal, cycle detection, and serialization."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How does `System.identityHashCode()` differ from `object.hashCode()`?",
+          "answer": "`object.hashCode()` invokes whatever overridden method the class defined. `System.identityHashCode(object)` bypasses any overridden method and invokes the original `java.lang.Object.hashCode()` implementation directly.",
+          "expectedAnswer": "`object.hashCode()` invokes whatever overridden method the class defined. `System.identityHashCode(object)` bypasses any overridden method and invokes the original `java.lang.Object.hashCode()` implementation directly.",
+          "keyTakeaway": "System.identityHashCode() returns the raw identity hash regardless of overrides.",
+          "keyPoints": [
+            "System.identityHashCode() returns the raw identity hash regardless of overrides."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the relationship between Immutability and Value Objects?",
+          "answer": "Value Objects should almost always be immutable. If an object's identity is defined entirely by its values, mutating those values effectively turns it into a different value, which causes massive bugs if used as keys in hash collections.",
+          "expectedAnswer": "Value Objects should almost always be immutable. If an object's identity is defined entirely by its values, mutating those values effectively turns it into a different value, which causes massive bugs if used as keys in hash collections.",
+          "keyTakeaway": "Value objects whose equality depends on field values should be made immutable.",
+          "keyPoints": [
+            "Value objects whose equality depends on field values should be made immutable."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do Java 14+ Records embody the concept of Value-Based equality?",
+          "answer": "Records are transparent carriers for immutable data. The compiler automatically synthesizes a canonical `equals()` and `hashCode()` that compares every component field for logical equivalence.",
+          "expectedAnswer": "Records are transparent carriers for immutable data. The compiler automatically synthesizes a canonical `equals()` and `hashCode()` that compares every component field for logical equivalence.",
+          "keyTakeaway": "Records provide automatic value-based equality for transparent data carriers.",
+          "keyPoints": [
+            "Records provide automatic value-based equality for transparent data carriers."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Can two objects with different memory addresses produce the exact same System.identityHashCode()?",
+          "answer": "Yes! Due to the Pigeonhole Principle, mapping 64-bit heap addresses into a 32-bit integer means hash collisions can and do happen even in `System.identityHashCode()`.",
+          "expectedAnswer": "Yes! Due to the Pigeonhole Principle, mapping 64-bit heap addresses into a 32-bit integer means hash collisions can and do happen even in `System.identityHashCode()`.",
+          "keyTakeaway": "System.identityHashCode is an int and can collide across distinct memory addresses.",
+          "keyPoints": [
+            "System.identityHashCode is an int and can collide across distinct memory addresses."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les5-checklist",
+      "type": "self_evaluation",
+      "title": "Identity vs Logical Equality Checklist",
+      "items": [
+        "I clearly distinguish Object Identity (address) from Logical Equality (value).",
+        "I keep default identity equality for active entities (Threads, Sockets, Services).",
+        "I override equals() for Value Objects (Money, Date, Coordinates).",
+        "I know how IdentityHashMap compares keys using == instead of .equals().",
+        "I know how to call System.identityHashCode(obj) to inspect raw identity hash.",
+        "I make Value Objects immutable to avoid breaking hash collections.",
+        "I understand that Java records synthesize value-based equality automatically.",
+        "I understand how aliasing occurs when reference variables are assigned.",
+        "I know that identity equality (==) implies logical equality (.equals()).",
+        "I know that logical equality (.equals()) does NOT imply identity equality (==)."
+      ],
+      "checklist": [
+        "I clearly distinguish Object Identity (address) from Logical Equality (value).",
+        "I keep default identity equality for active entities (Threads, Sockets, Services).",
+        "I override equals() for Value Objects (Money, Date, Coordinates).",
+        "I know how IdentityHashMap compares keys using == instead of .equals().",
+        "I know how to call System.identityHashCode(obj) to inspect raw identity hash.",
+        "I make Value Objects immutable to avoid breaking hash collections.",
+        "I understand that Java records synthesize value-based equality automatically.",
+        "I understand how aliasing occurs when reference variables are assigned.",
+        "I know that identity equality (==) implies logical equality (.equals()).",
+        "I know that logical equality (.equals()) does NOT imply identity equality (==)."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les5-p1",
+      "lessonId": "java-oop-mod9-les5",
+      "orderIndex": 1,
+      "title": "Value Object Color vs Resource Thread Equality",
+      "difficulty": "easy",
+      "problemStatement": "Demonstrate the difference between a Value Object (logical equality) and an Active Resource (identity equality). Complete `RgbColor.equals` to compare `red`, `green`, and `blue`. Verify that two color objects with identical values are equal, whereas two `Thread` objects are not equal.",
+      "starterCode": "class RgbColor {\n    private int red, green, blue;\n    public RgbColor(int r, int g, int b) { this.red = r; this.green = g; this.blue = b; }\n    \n    // TODO: Override equals(Object obj) comparing red, green, and blue\n}\n\npublic class ValueVsResourceApp {\n    public static void main(String[] args) {\n        RgbColor c1 = new RgbColor(255, 0, 0);\n        RgbColor c2 = new RgbColor(255, 0, 0);\n        System.out.println(\"Colors logically equal: \" + c1.equals(c2));\n        \n        Thread t1 = new Thread(() -> {});\n        Thread t2 = new Thread(() -> {});\n        System.out.println(\"Threads logically equal: \" + t1.equals(t2));\n    }\n}",
+      "initialCode": "class RgbColor {\n    private int red, green, blue;\n    public RgbColor(int r, int g, int b) { this.red = r; this.green = g; this.blue = b; }\n    \n    // TODO: Override equals(Object obj) comparing red, green, and blue\n}\n\npublic class ValueVsResourceApp {\n    public static void main(String[] args) {\n        RgbColor c1 = new RgbColor(255, 0, 0);\n        RgbColor c2 = new RgbColor(255, 0, 0);\n        System.out.println(\"Colors logically equal: \" + c1.equals(c2));\n        \n        Thread t1 = new Thread(() -> {});\n        Thread t2 = new Thread(() -> {});\n        System.out.println(\"Threads logically equal: \" + t1.equals(t2));\n    }\n}",
+      "solutionCode": "class RgbColor {\n    private int red, green, blue;\n    public RgbColor(int r, int g, int b) { this.red = r; this.green = g; this.blue = b; }\n    \n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        RgbColor other = (RgbColor) obj;\n        return red == other.red && green == other.green && blue == other.blue;\n    }\n}\n\npublic class ValueVsResourceApp {\n    public static void main(String[] args) {\n        RgbColor c1 = new RgbColor(255, 0, 0);\n        RgbColor c2 = new RgbColor(255, 0, 0);\n        System.out.println(\"Colors logically equal: \" + c1.equals(c2));\n        \n        Thread t1 = new Thread(() -> {});\n        Thread t2 = new Thread(() -> {});\n        System.out.println(\"Threads logically equal: \" + t1.equals(t2));\n    }\n}",
+      "expectedOutput": "Colors logically equal: true\nThreads logically equal: false",
+      "hints": [
+        "RgbColor is a Value Object: implement equals comparing red, green, and blue.",
+        "Thread inherits default identity Object.equals, so two threads are never equal."
+      ]
+    },
+    {
+      "id": "prob-les5-p2",
+      "lessonId": "java-oop-mod9-les5",
+      "orderIndex": 2,
+      "title": "Immutable Currency Exchange Value Object",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable `CurrencyRate` value object from scratch:\n1. Class `CurrencyRate`: holds `private final String pair` (e.g. \"EUR/USD\") and `private final double rate`.\n   - Constructor initializes both.\n   - Override `equals(Object obj)`: two rates are equal if pair matches and `Double.compare(this.rate, other.rate) == 0`.\n   - Method `public String toString()` returns `pair + ' @ ' + rate`.\n2. In `Main`, create r1 = CurrencyRate(\"EUR/USD\", 1.0850) and r2 = CurrencyRate(\"EUR/USD\", 1.0850).\n3. Print `'Identity equal (==): ' + (r1 == r2)`.\n4. Print `'Logical equal (.equals): ' + r1.equals(r2)`.",
+      "solutionCode": "import java.util.Objects;\n\nclass CurrencyRate {\n    private final String pair;\n    private final double rate;\n\n    public CurrencyRate(String pair, double rate) {\n        this.pair = pair;\n        this.rate = rate;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        CurrencyRate other = (CurrencyRate) obj;\n        return Double.compare(this.rate, other.rate) == 0 &&\n               Objects.equals(this.pair, other.pair);\n    }\n\n    @Override\n    public String toString() {\n        return pair + \" @ \" + rate;\n    }\n}\n\npublic class RateApp {\n    public static void main(String[] args) {\n        CurrencyRate r1 = new CurrencyRate(\"EUR/USD\", 1.0850);\n        CurrencyRate r2 = new CurrencyRate(\"EUR/USD\", 1.0850);\n        \n        System.out.println(\"Identity equal (==): \" + (r1 == r2));\n        System.out.println(\"Logical equal (.equals): \" + r1.equals(r2));\n    }\n}",
+      "expectedOutput": "Identity equal (==): false\nLogical equal (.equals): true",
+      "hints": [
+        "r1 == r2 is false because they are distinct heap allocations.",
+        "r1.equals(r2) is true because pair and rate are logically identical."
+      ]
+    },
+    {
+      "id": "prob-les5-p3",
+      "lessonId": "java-oop-mod9-les5",
+      "orderIndex": 3,
+      "title": "Identity Map vs Value Map Dual Key Registry",
+      "difficulty": "medium",
+      "problemStatement": "Demonstrate the behavior of standard `HashMap` vs `IdentityHashMap` from scratch:\n1. Class `ConfigNode`: holds `private String nodeName`. Constructor initializes it.\n   - Override `equals(Object obj)`: matches if nodeName matches.\n   - Override `hashCode()`: returns `nodeName.hashCode()`.\n2. In `Main`:\n   - Create node1 = new ConfigNode(\"cluster.primary\");\n   - Create node2 = new ConfigNode(\"cluster.primary\");\n   - Insert both into a standard `java.util.HashMap<ConfigNode, String>` with values \"Value 1\" and \"Value 2\". Print `'Standard Map size: ' + map.size()`.\n   - Insert both into an `java.util.IdentityHashMap<ConfigNode, String>` with values \"Value 1\" and \"Value 2\". Print `'Identity Map size: ' + identityMap.size()`.",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.IdentityHashMap;\nimport java.util.Map;\nimport java.util.Objects;\n\nclass ConfigNode {\n    private String nodeName;\n    public ConfigNode(String nodeName) {\n        this.nodeName = nodeName;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        ConfigNode other = (ConfigNode) obj;\n        return Objects.equals(nodeName, other.nodeName);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(nodeName);\n    }\n}\n\npublic class MapApp {\n    public static void main(String[] args) {\n        ConfigNode n1 = new ConfigNode(\"cluster.primary\");\n        ConfigNode n2 = new ConfigNode(\"cluster.primary\");\n        \n        Map<ConfigNode, String> stdMap = new HashMap<>();\n        stdMap.put(n1, \"Value 1\");\n        stdMap.put(n2, \"Value 2\");\n        System.out.println(\"Standard Map size: \" + stdMap.size());\n        \n        Map<ConfigNode, String> idMap = new IdentityHashMap<>();\n        idMap.put(n1, \"Value 1\");\n        idMap.put(n2, \"Value 2\");\n        System.out.println(\"Identity Map size: \" + idMap.size());\n    }\n}",
+      "expectedOutput": "Standard Map size: 1\nIdentity Map size: 2",
+      "hints": [
+        "Standard HashMap collapses n1 and n2 because n1.equals(n2) is true.",
+        "IdentityHashMap keeps both because n1 == n2 is false."
+      ]
+    },
+    {
+      "id": "prob-les5-p4",
+      "lessonId": "java-oop-mod9-les5",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accidental Identity Comparison in Data Record",
+      "difficulty": "medium",
+      "problemStatement": "A developer forgot to override `equals()` on a data record `GeoPoint`. When a customer checks if their saved location is in `visitedList`, `contains()` fails because default `Object.equals` falls back to reference identity `==`! Fix `GeoPoint` by overriding `equals(Object obj)` to compare `latitude` and `longitude`.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass GeoPoint {\n    private double latitude, longitude;\n    public GeoPoint(double lat, double lon) { this.latitude = lat; this.longitude = lon; }\n    // BUG: Missing equals() override! Defaults to reference identity == !\n}\n\npublic class GeoBugApp {\n    public static void main(String[] args) {\n        List<GeoPoint> favorites = new ArrayList<>();\n        favorites.add(new GeoPoint(37.7749, -122.4194)); // San Francisco\n        \n        GeoPoint current = new GeoPoint(37.7749, -122.4194);\n        // Fails because GeoPoint uses default Object.equals (this == obj)\n        boolean exists = favorites.contains(current);\n        System.out.println(\"Location in favorites: \" + exists);\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass GeoPoint {\n    private double latitude, longitude;\n    public GeoPoint(double lat, double lon) { this.latitude = lat; this.longitude = lon; }\n    // BUG: Missing equals() override! Defaults to reference identity == !\n}\n\npublic class GeoBugApp {\n    public static void main(String[] args) {\n        List<GeoPoint> favorites = new ArrayList<>();\n        favorites.add(new GeoPoint(37.7749, -122.4194)); // San Francisco\n        \n        GeoPoint current = new GeoPoint(37.7749, -122.4194);\n        // Fails because GeoPoint uses default Object.equals (this == obj)\n        boolean exists = favorites.contains(current);\n        System.out.println(\"Location in favorites: \" + exists);\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass GeoPoint {\n    private double latitude, longitude;\n    public GeoPoint(double lat, double lon) { this.latitude = lat; this.longitude = lon; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        GeoPoint other = (GeoPoint) obj;\n        return Double.compare(this.latitude, other.latitude) == 0 &&\n               Double.compare(this.longitude, other.longitude) == 0;\n    }\n}\n\npublic class GeoBugApp {\n    public static void main(String[] args) {\n        List<GeoPoint> favorites = new ArrayList<>();\n        favorites.add(new GeoPoint(37.7749, -122.4194));\n        \n        GeoPoint current = new GeoPoint(37.7749, -122.4194);\n        boolean exists = favorites.contains(current);\n        System.out.println(\"Location in favorites: \" + exists);\n    }\n}",
+      "expectedOutput": "Location in favorites: true",
+      "hints": [
+        "Implement equals(Object obj) comparing latitude and longitude.",
+        "Use Double.compare for floating-point safety."
+      ]
+    },
+    {
+      "id": "prob-les5-p5",
+      "lessonId": "java-oop-mod9-les5",
+      "orderIndex": 5,
+      "title": "System Identity Hash Code Discrepancy Analyzer",
+      "difficulty": "hard",
+      "problemStatement": "Build a diagnostic class comparing custom object hash codes against raw system identity hashes from scratch:\n1. Class `DiagnosticItem`: holds `private int id` and `private String tag`.\n   - Constructor initializes both.\n   - Override `equals(Object obj)`: matches if id and tag match.\n   - Override `hashCode()`: returns `java.util.Objects.hash(id, tag)`.\n2. Class `HashDiscrepancyAnalyzer`: method `public static void analyze(DiagnosticItem a, DiagnosticItem b)`:\n   - Prints `'Logical equals: ' + a.equals(b)`.\n   - Prints `'Custom Hash matching: ' + (a.hashCode() == b.hashCode())`.\n   - Prints `'Identity Hash matching: ' + (System.identityHashCode(a) == System.identityHashCode(b))`.\n3. In `Main`, create item1 = new DiagnosticItem(500, \"ALPHA\") and item2 = new DiagnosticItem(500, \"ALPHA\").\n4. Run `HashDiscrepancyAnalyzer.analyze(item1, item2)`.",
+      "solutionCode": "import java.util.Objects;\n\nclass DiagnosticItem {\n    private int id;\n    private String tag;\n\n    public DiagnosticItem(int id, String tag) {\n        this.id = id;\n        this.tag = tag;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        DiagnosticItem other = (DiagnosticItem) obj;\n        return id == other.id && Objects.equals(tag, other.tag);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(id, tag);\n    }\n}\n\nclass HashDiscrepancyAnalyzer {\n    public static void analyze(DiagnosticItem a, DiagnosticItem b) {\n        System.out.println(\"Logical equals: \" + a.equals(b));\n        System.out.println(\"Custom Hash matching: \" + (a.hashCode() == b.hashCode()));\n        System.out.println(\"Identity Hash matching: \" + (System.identityHashCode(a) == System.identityHashCode(b)));\n    }\n}\n\npublic class DiscrepancyApp {\n    public static void main(String[] args) {\n        DiagnosticItem item1 = new DiagnosticItem(500, \"ALPHA\");\n        DiagnosticItem item2 = new DiagnosticItem(500, \"ALPHA\");\n        \n        HashDiscrepancyAnalyzer.analyze(item1, item2);\n    }\n}",
+      "expectedOutput": "Logical equals: true\nCustom Hash matching: true\nIdentity Hash matching: false",
+      "hints": [
+        "item1 and item2 have matching logical equals and matching custom hashCode.",
+        "System.identityHashCode(a) != System.identityHashCode(b) because they occupy distinct heap addresses."
+      ]
+    }
+  ]
+}

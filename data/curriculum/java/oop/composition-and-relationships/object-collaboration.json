@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod8-les7",
+  "slug": "object-collaboration",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Object Collaboration",
+  "summary": "Master object orchestration: passing objects into methods, managing service coordination, and designing clean inter-object workflows.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "composition"
+  ],
+  "learningObjectives": [
+    "Orchestrate multi-object workflows where objects collaborate as service providers and consumers",
+    "Pass objects as method arguments without creating permanent structural coupling",
+    "Differentiate stateless service coordinators from stateful domain entities",
+    "Implement request/response flows between collaborating domain objects"
+  ],
+  "expectedOutcomes": [
+    "You can design realistic business workflows where multiple domain objects coordinate seamlessly",
+    "You can cleanly separate data entities from service orchestrator objects"
+  ],
+  "activities": [
+    {
+      "id": "act-les7-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Restaurant Kitchen Symphony",
+      "concept": "Object Collaboration and Coordination",
+      "realWorldMetaphor": {
+        "scenario": "In a restaurant, the Waiter takes a customer's order and hands the ticket to the Chef. The Chef grabs ingredients from the Refrigerator, cooks the dish on the Stove, and places the plated meal on the counter. The Waiter delivers the plate to the Customer. The Cashier takes the payment.",
+        "mapping": "None of these entities own each other permanently. The `Chef` does not own the `Waiter`. Instead, they collaborate by passing message objects (`OrderTicket`, `Dish`, `Payment`) back and forth across method invocations.",
+        "takeaway": "Object-oriented systems achieve complex business goals through coordinated collaboration between specialized peer objects."
+      }
+    },
+    {
+      "id": "act-les7-concept",
+      "type": "concept",
+      "title": "Designing Clean Object Collaborations",
+      "content": "### What is Object Collaboration?\n\nReal-world systems are rarely modeled by a single object. Instead, specialized objects collaborate to achieve larger business capabilities:\n1. **Domain Entities**: Hold state and business rules (e.g. `BankAccount`, `Customer`, `Order`).\n2. **Service Orchestrators**: Stateless or semi-stateless coordinators that manage business transactions across entities (e.g. `TransferService`, `OrderFulfillmentEngine`).\n\n### Passing Objects into Methods\nWhen an object is passed as a method argument:\n```java\npublic void transfer(Account from, Account to, double amount) {\n    if (from.withdraw(amount)) {\n        to.deposit(amount);\n    }\n}\n```\n- The `TransferService` does **not** permanently hold fields for `from` and `to`.\n- It acts as an **orchestrator**, collaborating with them for the duration of the method call.\n- This keeps memory usage low and decoupling high."
+    },
+    {
+      "id": "act-les7-cw1",
+      "type": "code_walkthrough",
+      "title": "Banking Transfer Service Collaborator",
+      "codeSnippet": "class BankAccount {\n    private String accountId;\n    private double balance;\n\n    public BankAccount(String accountId, double balance) {\n        this.accountId = accountId;\n        this.balance = balance;\n    }\n\n    public boolean debit(double amount) {\n        if (amount > 0 && balance >= amount) {\n            balance -= amount;\n            return true;\n        }\n        return false;\n    }\n\n    public void credit(double amount) {\n        if (amount > 0) balance += amount;\n    }\n\n    public String getStatement() {\n        return accountId + \" | Balance: $\" + balance;\n    }\n}\n\nclass TransferCoordinator {\n    // Stateless orchestrator method collaborating with two BankAccount objects\n    public boolean executeTransfer(BankAccount sender, BankAccount receiver, double amount) {\n        System.out.println(\"Initiating transfer of $\" + amount);\n        if (sender.debit(amount)) {\n            receiver.credit(amount);\n            System.out.println(\"Transfer successful!\");\n            return true;\n        } else {\n            System.out.println(\"Transfer failed: Insufficient funds!\");\n            return false;\n        }\n    }\n}\n\npublic class CollaborationDemo {\n    public static void main(String[] args) {\n        BankAccount accA = new BankAccount(\"ACC-101\", 500.0);\n        BankAccount accB = new BankAccount(\"ACC-202\", 150.0);\n\n        TransferCoordinator service = new TransferCoordinator();\n        service.executeTransfer(accA, accB, 200.0);\n\n        System.out.println(accA.getStatement());\n        System.out.println(accB.getStatement());\n    }\n}",
+      "code": "class BankAccount {\n    private String accountId;\n    private double balance;\n\n    public BankAccount(String accountId, double balance) {\n        this.accountId = accountId;\n        this.balance = balance;\n    }\n\n    public boolean debit(double amount) {\n        if (amount > 0 && balance >= amount) {\n            balance -= amount;\n            return true;\n        }\n        return false;\n    }\n\n    public void credit(double amount) {\n        if (amount > 0) balance += amount;\n    }\n\n    public String getStatement() {\n        return accountId + \" | Balance: $\" + balance;\n    }\n}\n\nclass TransferCoordinator {\n    // Stateless orchestrator method collaborating with two BankAccount objects\n    public boolean executeTransfer(BankAccount sender, BankAccount receiver, double amount) {\n        System.out.println(\"Initiating transfer of $\" + amount);\n        if (sender.debit(amount)) {\n            receiver.credit(amount);\n            System.out.println(\"Transfer successful!\");\n            return true;\n        } else {\n            System.out.println(\"Transfer failed: Insufficient funds!\");\n            return false;\n        }\n    }\n}\n\npublic class CollaborationDemo {\n    public static void main(String[] args) {\n        BankAccount accA = new BankAccount(\"ACC-101\", 500.0);\n        BankAccount accB = new BankAccount(\"ACC-202\", 150.0);\n\n        TransferCoordinator service = new TransferCoordinator();\n        service.executeTransfer(accA, accB, 200.0);\n\n        System.out.println(accA.getStatement());\n        System.out.println(accB.getStatement());\n    }\n}",
+      "language": "java",
+      "explanation": "TransferCoordinator acts as an orchestrator, receiving two BankAccount objects as parameters, coordinating debit and credit without holding permanent state.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`BankAccount` models an account with debit and credit business logic."
+        },
+        {
+          "step": 2,
+          "description": "`TransferCoordinator` does not store accounts in member fields; it accepts them dynamically in `executeTransfer`."
+        },
+        {
+          "step": 3,
+          "description": "The coordinator guarantees the debit-credit sequence executes atomically."
+        },
+        {
+          "step": 4,
+          "description": "Balances reflect the completed transaction."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-cw2",
+      "type": "code_walkthrough",
+      "title": "Three-Object Fulfillment Pipeline",
+      "codeSnippet": "class InventoryService {\n    public boolean checkAndReserve(String itemCode) {\n        System.out.println(\"[Inventory] Item \" + itemCode + \" reserved.\");\n        return true;\n    }\n}\n\nclass PaymentGateway {\n    public boolean charge(String customerEmail, double amount) {\n        System.out.println(\"[Payment] Charged $\" + amount + \" to \" + customerEmail);\n        return true;\n    }\n}\n\nclass NotificationService {\n    public void sendReceipt(String email, String details) {\n        System.out.println(\"[Notification] Email sent to \" + email + \": \" + details);\n    }\n}\n\nclass CheckoutManager {\n    private InventoryService inventory;\n    private PaymentGateway payment;\n    private NotificationService notifier;\n\n    public CheckoutManager(InventoryService inv, PaymentGateway pay, NotificationService notif) {\n        this.inventory = inv;\n        this.payment = pay;\n        this.notifier = notif;\n    }\n\n    public void processOrder(String email, String itemCode, double amount) {\n        if (inventory.checkAndReserve(itemCode) && payment.charge(email, amount)) {\n            notifier.sendReceipt(email, \"Order confirmed for \" + itemCode);\n        }\n    }\n}\n\npublic class PipelineDemo {\n    public static void main(String[] args) {\n        CheckoutManager checkout = new CheckoutManager(\n            new InventoryService(), \n            new PaymentGateway(), \n            new NotificationService()\n        );\n        checkout.processOrder(\"buyer@domain.com\", \"SKU-LAPTOP-X\", 1299.00);\n    }\n}",
+      "code": "class InventoryService {\n    public boolean checkAndReserve(String itemCode) {\n        System.out.println(\"[Inventory] Item \" + itemCode + \" reserved.\");\n        return true;\n    }\n}\n\nclass PaymentGateway {\n    public boolean charge(String customerEmail, double amount) {\n        System.out.println(\"[Payment] Charged $\" + amount + \" to \" + customerEmail);\n        return true;\n    }\n}\n\nclass NotificationService {\n    public void sendReceipt(String email, String details) {\n        System.out.println(\"[Notification] Email sent to \" + email + \": \" + details);\n    }\n}\n\nclass CheckoutManager {\n    private InventoryService inventory;\n    private PaymentGateway payment;\n    private NotificationService notifier;\n\n    public CheckoutManager(InventoryService inv, PaymentGateway pay, NotificationService notif) {\n        this.inventory = inv;\n        this.payment = pay;\n        this.notifier = notif;\n    }\n\n    public void processOrder(String email, String itemCode, double amount) {\n        if (inventory.checkAndReserve(itemCode) && payment.charge(email, amount)) {\n            notifier.sendReceipt(email, \"Order confirmed for \" + itemCode);\n        }\n    }\n}\n\npublic class PipelineDemo {\n    public static void main(String[] args) {\n        CheckoutManager checkout = new CheckoutManager(\n            new InventoryService(), \n            new PaymentGateway(), \n            new NotificationService()\n        );\n        checkout.processOrder(\"buyer@domain.com\", \"SKU-LAPTOP-X\", 1299.00);\n    }\n}",
+      "language": "java",
+      "explanation": "CheckoutManager orchestrates three distinct collaborator services to complete a checkout transaction cleanly.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`InventoryService`, `PaymentGateway`, and `NotificationService` represent isolated single-responsibility services."
+        },
+        {
+          "step": 2,
+          "description": "`CheckoutManager` receives all three services via constructor dependency injection."
+        },
+        {
+          "step": 3,
+          "description": "`processOrder` choreographs the step-by-step business sequence."
+        },
+        {
+          "step": 4,
+          "description": "Each service remains completely decoupled from the other two."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-mcq",
+      "type": "mcq",
+      "title": "Object Collaboration Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the primary role of a Service Orchestrator object?",
+          "options": [
+            "To hold raw database rows permanently",
+            "To coordinate multi-step workflows and communication among collaborating domain objects",
+            "To replace all interfaces with classes",
+            "To manage JVM bytecode caching"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Service orchestrators coordinate business processes across collaborating domain entities.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "When an object is passed as a method argument to another object, what type of coupling is established?",
+          "options": [
+            "Tight compile-time inheritance coupling",
+            "Transient runtime dependency / uses-a coupling",
+            "Zero coupling",
+            "Permanent composition coupling"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Passing an object into a method creates a transient dependency for the duration of that method execution.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "What is the difference between a Domain Entity and a Service Object?",
+          "options": [
+            "Entities hold mutable business state and identity; Services contain stateless business orchestration logic",
+            "Entities are always abstract; Services are concrete",
+            "Services cannot have methods",
+            "Entities only exist in Python"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Entities represent stateful domain models (User, Account), while services contain business logic that orchestrates operations.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "Why should services avoid storing request-specific domain entities in instance fields?",
+          "options": [
+            "To ensure thread-safety and avoid race conditions across concurrent requests",
+            "Because Java restricts field declarations to 5 per class",
+            "To make garbage collection run every second",
+            "Because private fields cannot hold objects"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Keeping services stateless makes them inherently thread-safe across concurrent user requests.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "What design pattern decouples object creators from the collaborators they use?",
+          "options": [
+            "Dependency Injection",
+            "God Object Pattern",
+            "Spaghetti Code Pattern",
+            "Circular Reference Pattern"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Dependency Injection supplies collaborating dependencies from outside rather than having the class create them.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "In a well-designed collaboration, how do objects communicate?",
+          "options": [
+            "By directly accessing each other's public fields",
+            "By sending messages via public method calls",
+            "By writing to shared temporary files on disk",
+            "By modifying bytecode at runtime"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Objects collaborate by sending messages (invoking public methods) on each other.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "What happens if Object A calls Object B, and Object B calls Object A repeatedly inside the same transaction?",
+          "options": [
+            "High performance speedup",
+            "Tight circular coupling and potential stack overflow or deadlock",
+            "Automatic database indexing",
+            "Compilation failure"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Circular dependencies lead to fragile architectures, high coupling, and recursion/deadlock risks.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q8",
+          "question": "What is the benefit of collaborating through Interface contracts rather than concrete classes?",
+          "options": [
+            "Implementations can be swapped or mocked in unit tests without changing the caller",
+            "Interfaces run faster in bytecode",
+            "Interfaces consume zero heap memory",
+            "Interfaces allow multiple constructors"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Coding to interfaces allows swapping out implementations and injecting mock objects during testing.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Which principle states that an orchestrator should coordinate objects rather than doing all their work internally?",
+          "options": [
+            "Tell, Don't Ask",
+            "Never Use Loops",
+            "Global Variables Everywhere",
+            "Always Subclass Thread"
+          ],
+          "correctAnswer": 0,
+          "explanation": "'Tell, Don't Ask' encourages telling collaborating objects what to do rather than extracting their internal state.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "In the sequence: `OrderService` calls `PaymentGateway`, which calls `BankClient`. What is `PaymentGateway`?",
+          "options": [
+            "An intermediary collaborator / adapter",
+            "The root superclass",
+            "A circular reference",
+            "A garbage collector hook"
+          ],
+          "correctAnswer": 0,
+          "explanation": "PaymentGateway acts as an intermediary collaborator abstracting financial communications.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les7-interview",
+      "type": "interview_qa",
+      "title": "Object Collaboration Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the 'Tell, Don't Ask' principle and why is it crucial for object collaboration?",
+          "answer": "'Tell, Don't Ask' reminds developers that rather than asking an object for its data (using getters) and making decisions outside it, you should TELL the object what to do (e.g. `account.withdraw(50)` instead of `if (account.getBalance() > 50) account.setBalance(...)`). This preserves encapsulation and keeps domain logic inside the entity.",
+          "expectedAnswer": "'Tell, Don't Ask' reminds developers that rather than asking an object for its data (using getters) and making decisions outside it, you should TELL the object what to do (e.g. `account.withdraw(50)` instead of `if (account.getBalance() > 50) account.setBalance(...)`). This preserves encapsulation and keeps domain logic inside the entity.",
+          "keyTakeaway": "Delegate commands to objects rather than extracting their state to make decisions externally.",
+          "keyPoints": [
+            "Delegate commands to objects rather than extracting their state to make decisions externally."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you design stateless service objects that support thousands of concurrent threads?",
+          "answer": "Do not store mutable state in instance variables of the service. All request-specific state should be passed as method arguments or created as local variables on the thread stack. Instance fields should only hold immutable configuration or references to other stateless service collaborators.",
+          "expectedAnswer": "Do not store mutable state in instance variables of the service. All request-specific state should be passed as method arguments or created as local variables on the thread stack. Instance fields should only hold immutable configuration or references to other stateless service collaborators.",
+          "keyTakeaway": "Stateless services store configuration/dependencies in fields, and state on the method call stack.",
+          "keyPoints": [
+            "Stateless services store configuration/dependencies in fields, and state on the method call stack."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between Orchestration and Choreography in microservices/objects?",
+          "answer": "Orchestration relies on a central controller (like an OrderManager) that explicitly directs participants what methods to call. Choreography lets participants react autonomously to events published on a bus without a central manager.",
+          "expectedAnswer": "Orchestration relies on a central controller (like an OrderManager) that explicitly directs participants what methods to call. Choreography lets participants react autonomously to events published on a bus without a central manager.",
+          "keyTakeaway": "Orchestration = central conductor; Choreography = decentralized event-driven reactions.",
+          "keyPoints": [
+            "Orchestration = central conductor; Choreography = decentralized event-driven reactions."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is a 'Mediator' design pattern in object collaboration?",
+          "answer": "The Mediator pattern defines an object that encapsulates how a set of objects interact. Instead of objects referring to each other directly (creating a complex spiderweb), they all communicate through the Mediator, reducing coupling from O(N^2) to O(N).",
+          "expectedAnswer": "The Mediator pattern defines an object that encapsulates how a set of objects interact. Instead of objects referring to each other directly (creating a complex spiderweb), they all communicate through the Mediator, reducing coupling from O(N^2) to O(N).",
+          "keyTakeaway": "A Mediator centralizes complex interactions between disparate peer objects.",
+          "keyPoints": [
+            "A Mediator centralizes complex interactions between disparate peer objects."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do you prevent God Objects when orchestrating multiple collaborating classes?",
+          "answer": "Break down large coordinators into focused, domain-specific services following the Single Responsibility Principle. Use domain events, command handlers, and pipeline/chain patterns rather than letting one giant manager handle all logic.",
+          "expectedAnswer": "Break down large coordinators into focused, domain-specific services following the Single Responsibility Principle. Use domain events, command handlers, and pipeline/chain patterns rather than letting one giant manager handle all logic.",
+          "keyTakeaway": "Decompose large coordinators into smaller, focused single-responsibility services.",
+          "keyPoints": [
+            "Decompose large coordinators into smaller, focused single-responsibility services."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is Constructor Injection preferred over Field Injection for collaborating services?",
+          "answer": "Constructor injection ensures that an object cannot be instantiated in an incomplete or invalid state (fail-fast), guarantees dependencies can be marked `final` (immutable), and allows unit tests to easily pass mock objects without needing reflection.",
+          "expectedAnswer": "Constructor injection ensures that an object cannot be instantiated in an incomplete or invalid state (fail-fast), guarantees dependencies can be marked `final` (immutable), and allows unit tests to easily pass mock objects without needing reflection.",
+          "keyTakeaway": "Constructor injection guarantees immutability, complete initialization, and testability.",
+          "keyPoints": [
+            "Constructor injection guarantees immutability, complete initialization, and testability."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the 'Tell, Don't Ask' principle and why is it crucial for object collaboration?",
+          "answer": "'Tell, Don't Ask' reminds developers that rather than asking an object for its data (using getters) and making decisions outside it, you should TELL the object what to do (e.g. `account.withdraw(50)` instead of `if (account.getBalance() > 50) account.setBalance(...)`). This preserves encapsulation and keeps domain logic inside the entity.",
+          "expectedAnswer": "'Tell, Don't Ask' reminds developers that rather than asking an object for its data (using getters) and making decisions outside it, you should TELL the object what to do (e.g. `account.withdraw(50)` instead of `if (account.getBalance() > 50) account.setBalance(...)`). This preserves encapsulation and keeps domain logic inside the entity.",
+          "keyTakeaway": "Delegate commands to objects rather than extracting their state to make decisions externally.",
+          "keyPoints": [
+            "Delegate commands to objects rather than extracting their state to make decisions externally."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you design stateless service objects that support thousands of concurrent threads?",
+          "answer": "Do not store mutable state in instance variables of the service. All request-specific state should be passed as method arguments or created as local variables on the thread stack. Instance fields should only hold immutable configuration or references to other stateless service collaborators.",
+          "expectedAnswer": "Do not store mutable state in instance variables of the service. All request-specific state should be passed as method arguments or created as local variables on the thread stack. Instance fields should only hold immutable configuration or references to other stateless service collaborators.",
+          "keyTakeaway": "Stateless services store configuration/dependencies in fields, and state on the method call stack.",
+          "keyPoints": [
+            "Stateless services store configuration/dependencies in fields, and state on the method call stack."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between Orchestration and Choreography in microservices/objects?",
+          "answer": "Orchestration relies on a central controller (like an OrderManager) that explicitly directs participants what methods to call. Choreography lets participants react autonomously to events published on a bus without a central manager.",
+          "expectedAnswer": "Orchestration relies on a central controller (like an OrderManager) that explicitly directs participants what methods to call. Choreography lets participants react autonomously to events published on a bus without a central manager.",
+          "keyTakeaway": "Orchestration = central conductor; Choreography = decentralized event-driven reactions.",
+          "keyPoints": [
+            "Orchestration = central conductor; Choreography = decentralized event-driven reactions."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is a 'Mediator' design pattern in object collaboration?",
+          "answer": "The Mediator pattern defines an object that encapsulates how a set of objects interact. Instead of objects referring to each other directly (creating a complex spiderweb), they all communicate through the Mediator, reducing coupling from O(N^2) to O(N).",
+          "expectedAnswer": "The Mediator pattern defines an object that encapsulates how a set of objects interact. Instead of objects referring to each other directly (creating a complex spiderweb), they all communicate through the Mediator, reducing coupling from O(N^2) to O(N).",
+          "keyTakeaway": "A Mediator centralizes complex interactions between disparate peer objects.",
+          "keyPoints": [
+            "A Mediator centralizes complex interactions between disparate peer objects."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do you prevent God Objects when orchestrating multiple collaborating classes?",
+          "answer": "Break down large coordinators into focused, domain-specific services following the Single Responsibility Principle. Use domain events, command handlers, and pipeline/chain patterns rather than letting one giant manager handle all logic.",
+          "expectedAnswer": "Break down large coordinators into focused, domain-specific services following the Single Responsibility Principle. Use domain events, command handlers, and pipeline/chain patterns rather than letting one giant manager handle all logic.",
+          "keyTakeaway": "Decompose large coordinators into smaller, focused single-responsibility services.",
+          "keyPoints": [
+            "Decompose large coordinators into smaller, focused single-responsibility services."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is Constructor Injection preferred over Field Injection for collaborating services?",
+          "answer": "Constructor injection ensures that an object cannot be instantiated in an incomplete or invalid state (fail-fast), guarantees dependencies can be marked `final` (immutable), and allows unit tests to easily pass mock objects without needing reflection.",
+          "expectedAnswer": "Constructor injection ensures that an object cannot be instantiated in an incomplete or invalid state (fail-fast), guarantees dependencies can be marked `final` (immutable), and allows unit tests to easily pass mock objects without needing reflection.",
+          "keyTakeaway": "Constructor injection guarantees immutability, complete initialization, and testability.",
+          "keyPoints": [
+            "Constructor injection guarantees immutability, complete initialization, and testability."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les7-checklist",
+      "type": "self_evaluation",
+      "title": "Object Collaboration Architecture Checklist",
+      "items": [
+        "I can orchestrate workflows across collaborating domain entities.",
+        "I adhere to the 'Tell, Don't Ask' principle to respect encapsulation.",
+        "I keep service orchestrators stateless for thread-safety.",
+        "I pass transient entity objects into methods as arguments.",
+        "I inject long-lived service dependencies via constructor injection.",
+        "I mark injected service fields as private final.",
+        "I avoid circular dependencies between collaborating services.",
+        "I define interface boundaries between collaborating tiers.",
+        "I guard against God Object anti-patterns in workflow coordinators.",
+        "I can test collaborating objects in isolation using test mocks."
+      ],
+      "checklist": [
+        "I can orchestrate workflows across collaborating domain entities.",
+        "I adhere to the 'Tell, Don't Ask' principle to respect encapsulation.",
+        "I keep service orchestrators stateless for thread-safety.",
+        "I pass transient entity objects into methods as arguments.",
+        "I inject long-lived service dependencies via constructor injection.",
+        "I mark injected service fields as private final.",
+        "I avoid circular dependencies between collaborating services.",
+        "I define interface boundaries between collaborating tiers.",
+        "I guard against God Object anti-patterns in workflow coordinators.",
+        "I can test collaborating objects in isolation using test mocks."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les7-p1",
+      "lessonId": "java-oop-mod8-les7",
+      "orderIndex": 1,
+      "title": "Restaurant Order Ticket Collaboration",
+      "difficulty": "easy",
+      "problemStatement": "Complete the collaboration between `Chef` and `Waiter`. When `Waiter.serveCustomer` is called, the waiter requests the meal from the chef, and then delivers it. Complete `Waiter.serveCustomer` to produce the expected output.",
+      "starterCode": "class Chef {\n    private String name;\n    public Chef(String name) { this.name = name; }\n    public String cookDish(String orderName) {\n        return \"Chef \" + name + \" prepared fresh [\" + orderName + \"]\";\n    }\n}\n\nclass Waiter {\n    private String waiterName;\n    private Chef chef; // Collaborator\n\n    public Waiter(String waiterName, Chef chef) {\n        this.waiterName = waiterName;\n        this.chef = chef;\n    }\n\n    public void serveCustomer(String customerName, String dishName) {\n        // TODO: Call chef.cookDish(dishName)\n        // TODO: Print 'Waiter ' + waiterName + ' delivered: ' + dish + ' to ' + customerName\n    }\n}\n\npublic class RestaurantApp {\n    public static void main(String[] args) {\n        Chef chef = new Chef(\"Gordon\");\n        Waiter waiter = new Waiter(\"Oliver\", chef);\n        waiter.serveCustomer(\"Alice\", \"Pan-Seared Salmon\");\n    }\n}",
+      "initialCode": "class Chef {\n    private String name;\n    public Chef(String name) { this.name = name; }\n    public String cookDish(String orderName) {\n        return \"Chef \" + name + \" prepared fresh [\" + orderName + \"]\";\n    }\n}\n\nclass Waiter {\n    private String waiterName;\n    private Chef chef; // Collaborator\n\n    public Waiter(String waiterName, Chef chef) {\n        this.waiterName = waiterName;\n        this.chef = chef;\n    }\n\n    public void serveCustomer(String customerName, String dishName) {\n        // TODO: Call chef.cookDish(dishName)\n        // TODO: Print 'Waiter ' + waiterName + ' delivered: ' + dish + ' to ' + customerName\n    }\n}\n\npublic class RestaurantApp {\n    public static void main(String[] args) {\n        Chef chef = new Chef(\"Gordon\");\n        Waiter waiter = new Waiter(\"Oliver\", chef);\n        waiter.serveCustomer(\"Alice\", \"Pan-Seared Salmon\");\n    }\n}",
+      "solutionCode": "class Chef {\n    private String name;\n    public Chef(String name) { this.name = name; }\n    public String cookDish(String orderName) {\n        return \"Chef \" + name + \" prepared fresh [\" + orderName + \"]\";\n    }\n}\n\nclass Waiter {\n    private String waiterName;\n    private Chef chef; // Collaborator\n\n    public Waiter(String waiterName, Chef chef) {\n        this.waiterName = waiterName;\n        this.chef = chef;\n    }\n\n    public void serveCustomer(String customerName, String dishName) {\n        String dish = chef.cookDish(dishName);\n        System.out.println(\"Waiter \" + waiterName + \" delivered: \" + dish + \" to \" + customerName);\n    }\n}\n\npublic class RestaurantApp {\n    public static void main(String[] args) {\n        Chef chef = new Chef(\"Gordon\");\n        Waiter waiter = new Waiter(\"Oliver\", chef);\n        waiter.serveCustomer(\"Alice\", \"Pan-Seared Salmon\");\n    }\n}",
+      "expectedOutput": "Waiter Oliver delivered: Chef Gordon prepared fresh [Pan-Seared Salmon] to Alice",
+      "hints": [
+        "Call `chef.cookDish(dishName)` to get the cooked dish string.",
+        "Print the delivery message with waiterName, dish, and customerName."
+      ]
+    },
+    {
+      "id": "prob-les7-p2",
+      "lessonId": "java-oop-mod8-les7",
+      "orderIndex": 2,
+      "title": "Ride-Share Dispatch Collaboration",
+      "difficulty": "medium",
+      "problemStatement": "Build a ride-share collaboration system from scratch:\n1. Class `Driver`: holds `private String name` and `private boolean available = true`. Constructor initializes name. Method `public boolean isAvailable()` returns available. Method `public void assignRide()` sets available to false. Method `public String getName()` returns name.\n2. Class `Passenger`: holds `private String name` and `private String destination`. Constructor initializes both. Getters for both.\n3. Class `DispatchService`: has method `public boolean dispatch(Driver driver, Passenger passenger)`:\n   - If driver is available, calls `driver.assignRide()` and prints `'[Dispatch] Driver ' + driver.getName() + ' assigned to ' + passenger.getName() + ' heading to ' + passenger.getDestination()`, returning true.\n   - If driver is not available, prints `'[Dispatch] Driver ' + driver.getName() + ' is currently busy!'`, returning false.\n4. In `Main`, create driver 'Dave', passenger 'Carol' ('Airport'). Dispatch Dave to Carol. Then create passenger 'Dan' ('Downtown') and attempt to dispatch Dave to Dan again.",
+      "solutionCode": "class Driver {\n    private String name;\n    private boolean available = true;\n    public Driver(String name) {\n        this.name = name;\n    }\n    public boolean isAvailable() { return available; }\n    public void assignRide() { this.available = false; }\n    public String getName() { return name; }\n}\n\nclass Passenger {\n    private String name;\n    private String destination;\n    public Passenger(String name, String destination) {\n        this.name = name;\n        this.destination = destination;\n    }\n    public String getName() { return name; }\n    public String getDestination() { return destination; }\n}\n\nclass DispatchService {\n    public boolean dispatch(Driver driver, Passenger passenger) {\n        if (driver.isAvailable()) {\n            driver.assignRide();\n            System.out.println(\"[Dispatch] Driver \" + driver.getName() + \" assigned to \" + passenger.getName() + \" heading to \" + passenger.getDestination());\n            return true;\n        } else {\n            System.out.println(\"[Dispatch] Driver \" + driver.getName() + \" is currently busy!\");\n            return false;\n        }\n    }\n}\n\npublic class RideShareApp {\n    public static void main(String[] args) {\n        Driver driver = new Driver(\"Dave\");\n        Passenger p1 = new Passenger(\"Carol\", \"Airport\");\n        Passenger p2 = new Passenger(\"Dan\", \"Downtown\");\n        \n        DispatchService service = new DispatchService();\n        service.dispatch(driver, p1);\n        service.dispatch(driver, p2);\n    }\n}",
+      "expectedOutput": "[Dispatch] Driver Dave assigned to Carol heading to Airport\n[Dispatch] Driver Dave is currently busy!",
+      "hints": [
+        "DispatchService is a stateless orchestrator collaborating with Driver and Passenger.",
+        "The second dispatch fails because Dave's available flag was set to false."
+      ]
+    },
+    {
+      "id": "prob-les7-p3",
+      "lessonId": "java-oop-mod8-les7",
+      "orderIndex": 3,
+      "title": "Peer-to-Peer Wallet Transfer Coordinator",
+      "difficulty": "medium",
+      "problemStatement": "Build a P2P digital wallet collaboration system from scratch:\n1. Class `Wallet`: holds `private String owner` and `private double balance`. Constructor initializes both. Method `public boolean withdraw(double amt)`: if `amt > 0 && balance >= amt`, deducts amt and returns true, else returns false. Method `public void deposit(double amt)`: adds amt. Method `public String getBalanceReport()` returns owner + ': $' + balance.\n2. Class `P2PExchange`: method `public void sendMoney(Wallet from, Wallet to, double amt)`:\n   - Calls `from.withdraw(amt)`.\n   - If true, calls `to.deposit(amt)` and prints `'[P2P] Sent $' + amt + ' from ' + from.getBalanceReport().split(\":\")[0] + ' to ' + to.getBalanceReport().split(\":\")[0]`.\n   - If false, prints `'[P2P] Transfer failed: Insufficient balance'`.\n3. In `Main`, create Wallet A ('Sam', 100.0) and Wallet B ('Robin', 25.0). Call `sendMoney(A, B, 40.0)`. Call `sendMoney(A, B, 80.0)` (which fails). Print balance report for both.",
+      "solutionCode": "class Wallet {\n    private String owner;\n    private double balance;\n    public Wallet(String owner, double balance) {\n        this.owner = owner;\n        this.balance = balance;\n    }\n    public String getOwner() { return owner; }\n    public boolean withdraw(double amt) {\n        if (amt > 0 && balance >= amt) {\n            balance -= amt;\n            return true;\n        }\n        return false;\n    }\n    public void deposit(double amt) {\n        if (amt > 0) balance += amt;\n    }\n    public String getBalanceReport() {\n        return owner + \": $\" + balance;\n    }\n}\n\nclass P2PExchange {\n    public void sendMoney(Wallet from, Wallet to, double amt) {\n        if (from.withdraw(amt)) {\n            to.deposit(amt);\n            System.out.println(\"[P2P] Sent $\" + amt + \" from \" + from.getOwner() + \" to \" + to.getOwner());\n        } else {\n            System.out.println(\"[P2P] Transfer failed: Insufficient balance\");\n        }\n    }\n}\n\npublic class P2PApp {\n    public static void main(String[] args) {\n        Wallet wA = new Wallet(\"Sam\", 100.0);\n        Wallet wB = new Wallet(\"Robin\", 25.0);\n        \n        P2PExchange exchange = new P2PExchange();\n        exchange.sendMoney(wA, wB, 40.0);\n        exchange.sendMoney(wA, wB, 80.0);\n        \n        System.out.println(wA.getBalanceReport());\n        System.out.println(wB.getBalanceReport());\n    }\n}",
+      "expectedOutput": "[P2P] Sent $40.0 from Sam to Robin\n[P2P] Transfer failed: Insufficient balance\nSam: $60.0\nRobin: $65.0",
+      "hints": [
+        "P2PExchange coordinates withdrawal and deposit atomically.",
+        "Second transfer fails because Sam only has $60.0 remaining."
+      ]
+    },
+    {
+      "id": "prob-les7-p4",
+      "lessonId": "java-oop-mod8-les7",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Asking Instead of Telling (Encapsulation Leak)",
+      "difficulty": "medium",
+      "problemStatement": "The code below violates 'Tell, Don't Ask' by extracting a customer's internal credit limit, calculating interest externally, and resetting the balance from outside. Refactor `AccountManager` and `CreditCard` so that `CreditCard` performs the interest calculation and charges itself internally via `public void applyInterest(double ratePercent)`. `AccountManager` simply tells the card: `card.applyInterest(ratePercent)`.",
+      "starterCode": "class CreditCard {\n    private String cardNum;\n    private double balance;\n    public CreditCard(String cardNum, double balance) { this.cardNum = cardNum; this.balance = balance; }\n    \n    // BUG: Exposing internal state and raw setter encourages 'Ask, Don't Tell'\n    public double getBalance() { return balance; }\n    public void setBalance(double b) { this.balance = b; }\n    public String getCardNum() { return cardNum; }\n}\n\nclass AccountManager {\n    // BAD: Asking for balance, computing interest outside, setting balance back!\n    public void chargeMonthlyInterest(CreditCard card, double ratePercent) {\n        double current = card.getBalance();\n        double interest = current * (ratePercent / 100.0);\n        card.setBalance(current + interest);\n        System.out.println(\"Applied interest: $\" + interest + \" | New Balance: $\" + card.getBalance());\n    }\n}\n\npublic class TellDontAskBugApp {\n    public static void main(String[] args) {\n        CreditCard card = new CreditCard(\"4111-2222\", 1000.0);\n        AccountManager mgr = new AccountManager();\n        mgr.chargeMonthlyInterest(card, 2.5);\n    }\n}",
+      "initialCode": "class CreditCard {\n    private String cardNum;\n    private double balance;\n    public CreditCard(String cardNum, double balance) { this.cardNum = cardNum; this.balance = balance; }\n    \n    // BUG: Exposing internal state and raw setter encourages 'Ask, Don't Tell'\n    public double getBalance() { return balance; }\n    public void setBalance(double b) { this.balance = b; }\n    public String getCardNum() { return cardNum; }\n}\n\nclass AccountManager {\n    // BAD: Asking for balance, computing interest outside, setting balance back!\n    public void chargeMonthlyInterest(CreditCard card, double ratePercent) {\n        double current = card.getBalance();\n        double interest = current * (ratePercent / 100.0);\n        card.setBalance(current + interest);\n        System.out.println(\"Applied interest: $\" + interest + \" | New Balance: $\" + card.getBalance());\n    }\n}\n\npublic class TellDontAskBugApp {\n    public static void main(String[] args) {\n        CreditCard card = new CreditCard(\"4111-2222\", 1000.0);\n        AccountManager mgr = new AccountManager();\n        mgr.chargeMonthlyInterest(card, 2.5);\n    }\n}",
+      "solutionCode": "class CreditCard {\n    private String cardNum;\n    private double balance;\n    public CreditCard(String cardNum, double balance) { this.cardNum = cardNum; this.balance = balance; }\n    \n    public void applyInterest(double ratePercent) {\n        double interest = balance * (ratePercent / 100.0);\n        balance += interest;\n        System.out.println(\"Applied interest: $\" + interest + \" | New Balance: $\" + balance);\n    }\n    public double getBalance() { return balance; }\n}\n\nclass AccountManager {\n    public void chargeMonthlyInterest(CreditCard card, double ratePercent) {\n        card.applyInterest(ratePercent);\n    }\n}\n\npublic class TellDontAskBugApp {\n    public static void main(String[] args) {\n        CreditCard card = new CreditCard(\"4111-2222\", 1000.0);\n        AccountManager mgr = new AccountManager();\n        mgr.chargeMonthlyInterest(card, 2.5);\n    }\n}",
+      "expectedOutput": "Applied interest: $25.0 | New Balance: $1025.0",
+      "hints": [
+        "Move interest computation inside CreditCard.applyInterest.",
+        "AccountManager simply tells card to applyInterest(ratePercent)."
+      ]
+    },
+    {
+      "id": "prob-les7-p5",
+      "lessonId": "java-oop-mod8-les7",
+      "orderIndex": 5,
+      "title": "Multi-Service Cloud Deployment Pipeline Orchestrator",
+      "difficulty": "hard",
+      "problemStatement": "Build a cloud deployment pipeline coordinating three specialized services from scratch:\n1. Class `BuildArtifact`: holds `private String artifactName` and `private boolean compiled`. Constructor initializes artifactName. Method `public void compile()`: compiled = true; prints `'[Builder] Compiled artifact: ' + artifactName`. Method `public boolean isCompiled()` returns compiled. Method `public String getArtifactName()` returns artifactName.\n2. Class `SecurityScanner`: method `public boolean scan(BuildArtifact artifact)`: if artifact.isCompiled(), prints `'[SecScanner] Vulnerability scan PASSED for ' + artifact.getArtifactName()` and returns true; else returns false.\n3. Class `CloudDeployer`: method `public void deploy(BuildArtifact artifact, String clusterName)`: prints `'[Deployer] Released ' + artifact.getArtifactName() + ' to Kubernetes cluster: ' + clusterName`.\n4. Class `DeploymentPipeline`: holds `private SecurityScanner scanner` and `private CloudDeployer deployer` (injected via constructor).\n   - Method `public void runPipeline(BuildArtifact artifact, String cluster)`: calls `artifact.compile()`, then calls `scanner.scan(artifact)`. If scan succeeds, calls `deployer.deploy(artifact, cluster)`.\n5. In `Main`, create artifact 'AuthService-v2.jar'. Create scanner, deployer, and pipeline. Run pipeline to cluster 'us-east-prod'.",
+      "solutionCode": "class BuildArtifact {\n    private String artifactName;\n    private boolean compiled = false;\n    public BuildArtifact(String artifactName) {\n        this.artifactName = artifactName;\n    }\n    public void compile() {\n        this.compiled = true;\n        System.out.println(\"[Builder] Compiled artifact: \" + artifactName);\n    }\n    public boolean isCompiled() { return compiled; }\n    public String getArtifactName() { return artifactName; }\n}\n\nclass SecurityScanner {\n    public boolean scan(BuildArtifact artifact) {\n        if (artifact.isCompiled()) {\n            System.out.println(\"[SecScanner] Vulnerability scan PASSED for \" + artifact.getArtifactName());\n            return true;\n        }\n        return false;\n    }\n}\n\nclass CloudDeployer {\n    public void deploy(BuildArtifact artifact, String clusterName) {\n        System.out.println(\"[Deployer] Released \" + artifact.getArtifactName() + \" to Kubernetes cluster: \" + clusterName);\n    }\n}\n\nclass DeploymentPipeline {\n    private SecurityScanner scanner;\n    private CloudDeployer deployer;\n\n    public DeploymentPipeline(SecurityScanner scanner, CloudDeployer deployer) {\n        this.scanner = scanner;\n        this.deployer = deployer;\n    }\n\n    public void runPipeline(BuildArtifact artifact, String cluster) {\n        artifact.compile();\n        if (scanner.scan(artifact)) {\n            deployer.deploy(artifact, cluster);\n        }\n    }\n}\n\npublic class CloudApp {\n    public static void main(String[] args) {\n        BuildArtifact artifact = new BuildArtifact(\"AuthService-v2.jar\");\n        SecurityScanner scanner = new SecurityScanner();\n        CloudDeployer deployer = new CloudDeployer();\n        DeploymentPipeline pipeline = new DeploymentPipeline(scanner, deployer);\n        \n        pipeline.runPipeline(artifact, \"us-east-prod\");\n    }\n}",
+      "expectedOutput": "[Builder] Compiled artifact: AuthService-v2.jar\n[SecScanner] Vulnerability scan PASSED for AuthService-v2.jar\n[Deployer] Released AuthService-v2.jar to Kubernetes cluster: us-east-prod",
+      "hints": [
+        "DeploymentPipeline orchestrates the sequence: compile -> scan -> deploy.",
+        "Each collaborator has a dedicated responsibility."
+      ]
+    }
+  ]
+}

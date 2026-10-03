@@ -1,0 +1,514 @@
+{
+  "id": "java-oop-mod9-les2",
+  "slug": "to-string-method",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "toString()",
+  "summary": "Master overriding toString() in Java: replacing cryptic ClassName@HexHash with readable, structured, and informative text representations.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "the-object-class"
+  ],
+  "learningObjectives": [
+    "Explain why Object.toString() defaults to ClassName@HexHash and why it is inadequate for production logging",
+    "Override toString() to generate concise, informative, and human-readable diagnostics",
+    "Trace implicit string concatenation triggers (e.g., System.out.println(obj) and \"\" + obj)",
+    "Guard against sensitive data leaks (passwords, PII) in production toString() implementations"
+  ],
+  "expectedOutcomes": [
+    "You can craft production-quality toString() methods that simplify debugging and log analysis",
+    "You know how to redact credentials and prevent security vulnerabilities in string representations"
+  ],
+  "activities": [
+    {
+      "id": "act-les2-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Unlabeled Warehouse Crate vs The Shipping Label",
+      "concept": "Informative toString() Representation",
+      "realWorldMetaphor": {
+        "scenario": "Imagine walking into a warehouse filled with 10,000 plain brown cardboard boxes. Each box only has an obscure factory serial number printed in tiny font: `Crate#7f3d4a2`. You have no idea whether it contains fragile champagne glasses, motor oil, or fresh strawberries. You have to open the box to find out. Now imagine a warehouse where every box has a clear shipping label: `Crate{item='Champagne Glasses', qty=24, fragile=true}`.",
+        "mapping": "The plain box with serial number `Crate#7f3d4a2` is the default `Object.toString()`. The clear label with item details is a well-overridden `toString()` method.",
+        "takeaway": "Overriding `toString()` turns an obscure memory pointer into an instantly readable summary of the object's state."
+      }
+    },
+    {
+      "id": "act-les2-concept",
+      "type": "concept",
+      "title": "When and How toString() is Executed",
+      "content": "### Implicit toString() Invocations\n\nIn Java, `toString()` is invoked automatically in several ubiquitous contexts:\n1. **Print Streams**: `System.out.println(myObject);` internally invokes `String.valueOf(myObject)`, which calls `myObject.toString()`.\n2. **String Concatenation**: `\"User profile: \" + user;` triggers `user.toString()`.\n3. **Logging Frameworks**: Loggers (SLF4J, Log4j) call `toString()` when formatting log entries.\n4. **Debugger Tooltips**: Modern IDEs display `toString()` in debug variables inspection windows.\n\n### Recommended Format\nStandard Java conventions recommend formatting `toString()` like a record:\n`ClassName{field1=value1, field2=value2, ...}`\n\n### Security Caution: PII and Secrets\n> **Critical Rule**: Never include plaintext passwords, credit card CVVs, or unmasked social security numbers in `toString()`! Those logs will end up in centralized logging servers (Splunk, Datadog), causing catastrophic compliance breaches."
+    },
+    {
+      "id": "act-les2-cw1",
+      "type": "code_walkthrough",
+      "title": "Overriding toString() with Clean Formatting",
+      "codeSnippet": "class UserProfile {\n    private int userId;\n    private String username;\n    private String email;\n    private boolean active;\n\n    public UserProfile(int id, String name, String email, boolean active) {\n        this.userId = id;\n        this.username = name;\n        this.email = email;\n        this.active = active;\n    }\n\n    @Override\n    public String toString() {\n        return \"UserProfile{\" +\n                \"userId=\" + userId +\n                \", username='\" + username + '\\'' +\n                \", email='\" + email + '\\'' +\n                \", active=\" + active +\n                '}';\n    }\n}\n\npublic class ToStringDemo {\n    public static void main(String[] args) {\n        UserProfile user = new UserProfile(101, \"ada_lovelace\", \"ada@history.org\", true);\n        \n        // System.out.println implicitly calls user.toString()\n        System.out.println(user);\n    }\n}",
+      "code": "class UserProfile {\n    private int userId;\n    private String username;\n    private String email;\n    private boolean active;\n\n    public UserProfile(int id, String name, String email, boolean active) {\n        this.userId = id;\n        this.username = name;\n        this.email = email;\n        this.active = active;\n    }\n\n    @Override\n    public String toString() {\n        return \"UserProfile{\" +\n                \"userId=\" + userId +\n                \", username='\" + username + '\\'' +\n                \", email='\" + email + '\\'' +\n                \", active=\" + active +\n                '}';\n    }\n}\n\npublic class ToStringDemo {\n    public static void main(String[] args) {\n        UserProfile user = new UserProfile(101, \"ada_lovelace\", \"ada@history.org\", true);\n        \n        // System.out.println implicitly calls user.toString()\n        System.out.println(user);\n    }\n}",
+      "language": "java",
+      "explanation": "Overriding toString() formats all key attributes into a standard, readable string that is printed directly by println.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`UserProfile` defines four private fields representing user state."
+        },
+        {
+          "step": 2,
+          "description": "`@Override public String toString()` structures the output cleanly."
+        },
+        {
+          "step": 3,
+          "description": "`System.out.println(user)` invokes `String.valueOf(user)`, which triggers `toString()`."
+        },
+        {
+          "step": 4,
+          "description": "The console displays a clear summary instead of `UserProfile@7b14232`."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-cw2",
+      "type": "code_walkthrough",
+      "title": "Securing Sensitive Fields and Masking PII in toString()",
+      "codeSnippet": "class PaymentAccount {\n    private String accountId;\n    private String rawCardNumber;\n    private String cvv;\n\n    public PaymentAccount(String accountId, String rawCardNumber, String cvv) {\n        this.accountId = accountId;\n        this.rawCardNumber = rawCardNumber;\n        this.cvv = cvv;\n    }\n\n    private String maskCard(String card) {\n        if (card.length() < 4) return \"****\";\n        return \"****-\" + card.substring(card.length() - 4);\n    }\n\n    @Override\n    public String toString() {\n        return \"PaymentAccount{\" +\n                \"accountId='\" + accountId + '\\'' +\n                \", card='\" + maskCard(rawCardNumber) + '\\'' +\n                \", cvv='***'\" + // Redacted completely!\n                '}';\n    }\n}\n\npublic class SecurityToStringDemo {\n    public static void main(String[] args) {\n        PaymentAccount acc = new PaymentAccount(\"ACC-992\", \"4111222233334567\", \"123\");\n        System.out.println(acc);\n    }\n}",
+      "code": "class PaymentAccount {\n    private String accountId;\n    private String rawCardNumber;\n    private String cvv;\n\n    public PaymentAccount(String accountId, String rawCardNumber, String cvv) {\n        this.accountId = accountId;\n        this.rawCardNumber = rawCardNumber;\n        this.cvv = cvv;\n    }\n\n    private String maskCard(String card) {\n        if (card.length() < 4) return \"****\";\n        return \"****-\" + card.substring(card.length() - 4);\n    }\n\n    @Override\n    public String toString() {\n        return \"PaymentAccount{\" +\n                \"accountId='\" + accountId + '\\'' +\n                \", card='\" + maskCard(rawCardNumber) + '\\'' +\n                \", cvv='***'\" + // Redacted completely!\n                '}';\n    }\n}\n\npublic class SecurityToStringDemo {\n    public static void main(String[] args) {\n        PaymentAccount acc = new PaymentAccount(\"ACC-992\", \"4111222233334567\", \"123\");\n        System.out.println(acc);\n    }\n}",
+      "language": "java",
+      "explanation": "Masks the card number to only the last 4 digits and completely redacts the CVV, preventing security breaches in application logs.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`PaymentAccount` encapsulates sensitive customer financial details."
+        },
+        {
+          "step": 2,
+          "description": "`maskCard()` keeps only the last 4 digits and replaces the rest with asterisks."
+        },
+        {
+          "step": 3,
+          "description": "`cvv` is completely obscured as `'***'`."
+        },
+        {
+          "step": 4,
+          "description": "Even if this object is logged in production, compliance (PCI-DSS) is preserved."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-mcq",
+      "type": "mcq",
+      "title": "toString() Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the return type of the toString() method?",
+          "options": [
+            "void",
+            "String",
+            "char[]",
+            "Object"
+          ],
+          "correctAnswer": 1,
+          "explanation": "toString() returns java.lang.String.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What does System.out.println(obj) do when obj is null?",
+          "options": [
+            "Throws NullPointerException",
+            "Prints the string literal \"null\"",
+            "Prints nothing",
+            "Prints 0"
+          ],
+          "correctAnswer": 1,
+          "explanation": "String.valueOf(null) returns the literal string \"null\" without throwing NullPointerException.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "What happens when you write `String msg = \"Order: \" + order;`?",
+          "options": [
+            "Java converts order to int",
+            "The compiler calls order.toString() implicitly",
+            "It fails to compile",
+            "It creates an infinite loop"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The string concatenation operator '+' calls `String.valueOf(order)` which delegates to `order.toString()`.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "Why should password or token fields NEVER be included in toString()?",
+          "options": [
+            "It slows down string allocation",
+            "Logs containing toString() output will leak sensitive credentials to log aggregators and developers",
+            "Java forbids printing strings longer than 20 characters",
+            "It triggers compiler errors"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Logging credentials in toString() creates massive security vulnerabilities and violates regulatory standards.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "What is the access modifier of the overridden toString() method?",
+          "options": [
+            "public",
+            "protected",
+            "private",
+            "default package-private"
+          ],
+          "correctAnswer": 0,
+          "explanation": "In Object, toString() is declared public, so overriding it requires the `public` modifier (cannot reduce visibility).",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "In Java 14+ records, how is toString() handled?",
+          "options": [
+            "Records do not have a toString() method",
+            "The compiler automatically generates a canonical toString() printing all component fields",
+            "You must write it manually every time",
+            "It defaults to ClassName@HexHash"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Java records automatically synthesize a clean toString() printing all component names and values.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "What happens if two objects with bidirectional references call each other's toString()?",
+          "options": [
+            "StackOverflowError due to infinite recursion",
+            "OutOfMemoryError in heap",
+            "The program finishes twice as fast",
+            "The JVM prints null"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Circular toString() calls exhaust the thread call stack, throwing StackOverflowError.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "How can you print an array's contents instead of its cryptic default `[I@1540e19d`?",
+          "options": [
+            "array.toString()",
+            "java.util.Arrays.toString(array)",
+            "System.out.print(array)",
+            "array.printAll()"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays in Java do not override toString(). You must use Arrays.toString(arr) or Arrays.deepToString(arr).",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q9",
+          "question": "Should toString() perform heavy database queries or network requests?",
+          "options": [
+            "Yes, to show complete data",
+            "No! toString() should be fast, side-effect-free, and rely only on in-memory state",
+            "Only on Mondays",
+            "Only in multithreaded apps"
+          ],
+          "correctAnswer": 1,
+          "explanation": "toString() is called frequently by loggers and debuggers; it must be lightweight and side-effect-free.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "Can toString() return null?",
+          "options": [
+            "Yes, returning null is legal, but strongly discouraged as it causes confusion and potential NPEs in clients",
+            "No, the compiler rejects returning null from toString()",
+            "Only in abstract classes",
+            "Only if the class is final"
+          ],
+          "correctAnswer": 0,
+          "explanation": "While technically permissible by the compiler, returning null from toString() is a severe anti-pattern.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les2-interview",
+      "type": "interview_qa",
+      "title": "toString() Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is Joshua Bloch's advice in Effective Java regarding toString() (Item 12)?",
+          "answer": "Always override `toString()`. Provide a concise, human-readable representation that includes all informative fields. Whether or not you specify the format in the documentation, make your intentions clear, and provide programmatic access (getters) to all information contained in the string representation so callers don't have to parse it.",
+          "expectedAnswer": "Always override `toString()`. Provide a concise, human-readable representation that includes all informative fields. Whether or not you specify the format in the documentation, make your intentions clear, and provide programmatic access (getters) to all information contained in the string representation so callers don't have to parse it.",
+          "keyTakeaway": "Always override toString() and provide programmatic getters for all fields displayed.",
+          "keyPoints": [
+            "Always override toString() and provide programmatic getters for all fields displayed."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why shouldn't business logic rely on parsing the output of toString()?",
+          "answer": "The format of `toString()` is intended for human diagnostics, debugging, and logging. It is subject to change across releases. Relying on parsing its format introduces fragile, brittle code that easily breaks when formatting is tweaked.",
+          "expectedAnswer": "The format of `toString()` is intended for human diagnostics, debugging, and logging. It is subject to change across releases. Relying on parsing its format introduces fragile, brittle code that easily breaks when formatting is tweaked.",
+          "keyTakeaway": "toString() is for humans, not for automated parsing or business logic.",
+          "keyPoints": [
+            "toString() is for humans, not for automated parsing or business logic."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you handle cyclic references in toString() without causing StackOverflowError?",
+          "answer": "Identify the parent-child direction and exclude the back-reference from the child's `toString()`, or print only an identifier (e.g. `departmentId`) instead of calling the parent's full `toString()`.",
+          "expectedAnswer": "Identify the parent-child direction and exclude the back-reference from the child's `toString()`, or print only an identifier (e.g. `departmentId`) instead of calling the parent's full `toString()`.",
+          "keyTakeaway": "Break reference cycles in toString() by printing only an ID or omitting back-references.",
+          "keyPoints": [
+            "Break reference cycles in toString() by printing only an ID or omitting back-references."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between Arrays.toString() and Arrays.deepToString()?",
+          "answer": "`Arrays.toString()` formats single-dimensional arrays. If used on multidimensional arrays (e.g. `int[][]`), it prints cryptic hash codes for inner arrays. `Arrays.deepToString()` recursively traverses multidimensional arrays to format all nested dimensions.",
+          "expectedAnswer": "`Arrays.toString()` formats single-dimensional arrays. If used on multidimensional arrays (e.g. `int[][]`), it prints cryptic hash codes for inner arrays. `Arrays.deepToString()` recursively traverses multidimensional arrays to format all nested dimensions.",
+          "keyTakeaway": "Use Arrays.toString() for 1D arrays; use Arrays.deepToString() for multidimensional arrays.",
+          "keyPoints": [
+            "Use Arrays.toString() for 1D arrays; use Arrays.deepToString() for multidimensional arrays."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What are Lombok's `@ToString` and `@ToString.Exclude` annotations?",
+          "answer": "Lombok generates the `toString()` method at compile time. `@ToString.Exclude` allows developers to easily omit sensitive fields (like passwords or large nested collections) without writing manual boilerplate.",
+          "expectedAnswer": "Lombok generates the `toString()` method at compile time. `@ToString.Exclude` allows developers to easily omit sensitive fields (like passwords or large nested collections) without writing manual boilerplate.",
+          "keyTakeaway": "Lombok generates toString() and allows excluding sensitive fields via annotations.",
+          "keyPoints": [
+            "Lombok generates toString() and allows excluding sensitive fields via annotations."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does Java 14+ record's generated toString() format output?",
+          "answer": "Records automatically generate a string in the format: `RecordName[comp1=val1, comp2=val2]`, saving developers from writing manual formatting code.",
+          "expectedAnswer": "Records automatically generate a string in the format: `RecordName[comp1=val1, comp2=val2]`, saving developers from writing manual formatting code.",
+          "keyTakeaway": "Java records generate canonical RecordName[comp1=val1, ...] format automatically.",
+          "keyPoints": [
+            "Java records generate canonical RecordName[comp1=val1, ...] format automatically."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is Joshua Bloch's advice in Effective Java regarding toString() (Item 12)?",
+          "answer": "Always override `toString()`. Provide a concise, human-readable representation that includes all informative fields. Whether or not you specify the format in the documentation, make your intentions clear, and provide programmatic access (getters) to all information contained in the string representation so callers don't have to parse it.",
+          "expectedAnswer": "Always override `toString()`. Provide a concise, human-readable representation that includes all informative fields. Whether or not you specify the format in the documentation, make your intentions clear, and provide programmatic access (getters) to all information contained in the string representation so callers don't have to parse it.",
+          "keyTakeaway": "Always override toString() and provide programmatic getters for all fields displayed.",
+          "keyPoints": [
+            "Always override toString() and provide programmatic getters for all fields displayed."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why shouldn't business logic rely on parsing the output of toString()?",
+          "answer": "The format of `toString()` is intended for human diagnostics, debugging, and logging. It is subject to change across releases. Relying on parsing its format introduces fragile, brittle code that easily breaks when formatting is tweaked.",
+          "expectedAnswer": "The format of `toString()` is intended for human diagnostics, debugging, and logging. It is subject to change across releases. Relying on parsing its format introduces fragile, brittle code that easily breaks when formatting is tweaked.",
+          "keyTakeaway": "toString() is for humans, not for automated parsing or business logic.",
+          "keyPoints": [
+            "toString() is for humans, not for automated parsing or business logic."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you handle cyclic references in toString() without causing StackOverflowError?",
+          "answer": "Identify the parent-child direction and exclude the back-reference from the child's `toString()`, or print only an identifier (e.g. `departmentId`) instead of calling the parent's full `toString()`.",
+          "expectedAnswer": "Identify the parent-child direction and exclude the back-reference from the child's `toString()`, or print only an identifier (e.g. `departmentId`) instead of calling the parent's full `toString()`.",
+          "keyTakeaway": "Break reference cycles in toString() by printing only an ID or omitting back-references.",
+          "keyPoints": [
+            "Break reference cycles in toString() by printing only an ID or omitting back-references."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between Arrays.toString() and Arrays.deepToString()?",
+          "answer": "`Arrays.toString()` formats single-dimensional arrays. If used on multidimensional arrays (e.g. `int[][]`), it prints cryptic hash codes for inner arrays. `Arrays.deepToString()` recursively traverses multidimensional arrays to format all nested dimensions.",
+          "expectedAnswer": "`Arrays.toString()` formats single-dimensional arrays. If used on multidimensional arrays (e.g. `int[][]`), it prints cryptic hash codes for inner arrays. `Arrays.deepToString()` recursively traverses multidimensional arrays to format all nested dimensions.",
+          "keyTakeaway": "Use Arrays.toString() for 1D arrays; use Arrays.deepToString() for multidimensional arrays.",
+          "keyPoints": [
+            "Use Arrays.toString() for 1D arrays; use Arrays.deepToString() for multidimensional arrays."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What are Lombok's `@ToString` and `@ToString.Exclude` annotations?",
+          "answer": "Lombok generates the `toString()` method at compile time. `@ToString.Exclude` allows developers to easily omit sensitive fields (like passwords or large nested collections) without writing manual boilerplate.",
+          "expectedAnswer": "Lombok generates the `toString()` method at compile time. `@ToString.Exclude` allows developers to easily omit sensitive fields (like passwords or large nested collections) without writing manual boilerplate.",
+          "keyTakeaway": "Lombok generates toString() and allows excluding sensitive fields via annotations.",
+          "keyPoints": [
+            "Lombok generates toString() and allows excluding sensitive fields via annotations."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does Java 14+ record's generated toString() format output?",
+          "answer": "Records automatically generate a string in the format: `RecordName[comp1=val1, comp2=val2]`, saving developers from writing manual formatting code.",
+          "expectedAnswer": "Records automatically generate a string in the format: `RecordName[comp1=val1, comp2=val2]`, saving developers from writing manual formatting code.",
+          "keyTakeaway": "Java records generate canonical RecordName[comp1=val1, ...] format automatically.",
+          "keyPoints": [
+            "Java records generate canonical RecordName[comp1=val1, ...] format automatically."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les2-checklist",
+      "type": "self_evaluation",
+      "title": "toString() Architecture Checklist",
+      "items": [
+        "I always override toString() on domain and entity classes.",
+        "I ensure toString() is declared public with @Override.",
+        "I redact or mask sensitive fields (passwords, PII, keys) in toString().",
+        "I provide programmatic getters for all fields included in toString().",
+        "I prevent infinite recursion in bidirectional relationships.",
+        "I use Arrays.toString() when formatting array fields in toString().",
+        "I keep toString() side-effect-free and fast (no I/O or DB calls).",
+        "I never write business logic that parses the string returned by toString().",
+        "I understand how println and '+' operators implicitly trigger toString().",
+        "I understand how Java records synthesize toString() automatically."
+      ],
+      "checklist": [
+        "I always override toString() on domain and entity classes.",
+        "I ensure toString() is declared public with @Override.",
+        "I redact or mask sensitive fields (passwords, PII, keys) in toString().",
+        "I provide programmatic getters for all fields included in toString().",
+        "I prevent infinite recursion in bidirectional relationships.",
+        "I use Arrays.toString() when formatting array fields in toString().",
+        "I keep toString() side-effect-free and fast (no I/O or DB calls).",
+        "I never write business logic that parses the string returned by toString().",
+        "I understand how println and '+' operators implicitly trigger toString().",
+        "I understand how Java records synthesize toString() automatically."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les2-p1",
+      "lessonId": "java-oop-mod9-les2",
+      "orderIndex": 1,
+      "title": "Book Review toString() Implementation",
+      "difficulty": "easy",
+      "problemStatement": "Override `toString()` in `BookReview` so that it returns `'BookReview{bookTitle=\"' + bookTitle + '\", rating=' + rating + '/5, reviewer=\"' + reviewer + '\"}'`. Print the object using `System.out.println`.",
+      "starterCode": "class BookReview {\n    private String bookTitle;\n    private int rating;\n    private String reviewer;\n\n    public BookReview(String title, int rating, String reviewer) {\n        this.bookTitle = title;\n        this.rating = rating;\n        this.reviewer = reviewer;\n    }\n\n    // TODO: Override toString()\n}\n\npublic class ReviewApp {\n    public static void main(String[] args) {\n        BookReview rev = new BookReview(\"Effective Java\", 5, \"Joshua Bloch Fan\");\n        System.out.println(rev);\n    }\n}",
+      "initialCode": "class BookReview {\n    private String bookTitle;\n    private int rating;\n    private String reviewer;\n\n    public BookReview(String title, int rating, String reviewer) {\n        this.bookTitle = title;\n        this.rating = rating;\n        this.reviewer = reviewer;\n    }\n\n    // TODO: Override toString()\n}\n\npublic class ReviewApp {\n    public static void main(String[] args) {\n        BookReview rev = new BookReview(\"Effective Java\", 5, \"Joshua Bloch Fan\");\n        System.out.println(rev);\n    }\n}",
+      "solutionCode": "class BookReview {\n    private String bookTitle;\n    private int rating;\n    private String reviewer;\n\n    public BookReview(String title, int rating, String reviewer) {\n        this.bookTitle = title;\n        this.rating = rating;\n        this.reviewer = reviewer;\n    }\n\n    @Override\n    public String toString() {\n        return \"BookReview{bookTitle=\\\"\" + bookTitle + \"\\\", rating=\" + rating + \"/5, reviewer=\\\"\" + reviewer + \"\\\"}\";\n    }\n}\n\npublic class ReviewApp {\n    public static void main(String[] args) {\n        BookReview rev = new BookReview(\"Effective Java\", 5, \"Joshua Bloch Fan\");\n        System.out.println(rev);\n    }\n}",
+      "expectedOutput": "BookReview{bookTitle=\"Effective Java\", rating=5/5, reviewer=\"Joshua Bloch Fan\"}",
+      "hints": [
+        "Declare `@Override public String toString()`.",
+        "Match the exact quote characters and structure."
+      ]
+    },
+    {
+      "id": "prob-les2-p2",
+      "lessonId": "java-oop-mod9-les2",
+      "orderIndex": 2,
+      "title": "Redacted User Security Profile",
+      "difficulty": "medium",
+      "problemStatement": "Build a secure user profile class from scratch:\n1. Class `SecureUser`: holds `private String username`, `private String email`, `private String passwordHash`, `private String ssn`.\n   - Constructor initializes all four.\n   - Override `toString()`:\n     - Shows `username` and `email`.\n     - Obscures `passwordHash` as `'[REDACTED]'`.\n     - Masks `ssn` to show only the last 4 digits: `'***-**-' + ssn.substring(ssn.length() - 4)`.\n     - Format: `'SecureUser{username=\"' + username + '\", email=\"' + email + '\", ssn=\"' + maskedSsn + '\", pass=\"[REDACTED]\"}'`.\n2. In `Main`, create user with username 'alice_w', email 'alice@cyber.gov', hash 'e99a18c428cb38d5', ssn '123-45-6789'. Print the object.",
+      "solutionCode": "class SecureUser {\n    private String username;\n    private String email;\n    private String passwordHash;\n    private String ssn;\n\n    public SecureUser(String username, String email, String passwordHash, String ssn) {\n        this.username = username;\n        this.email = email;\n        this.passwordHash = passwordHash;\n        this.ssn = ssn;\n    }\n\n    @Override\n    public String toString() {\n        String maskedSsn = \"***-**-\" + ssn.substring(ssn.length() - 4);\n        return \"SecureUser{username=\\\"\" + username + \"\\\", email=\\\"\" + email + \"\\\", ssn=\\\"\" + maskedSsn + \"\\\", pass=\\\"[REDACTED]\\\"}\";\n    }\n}\n\npublic class SecureApp {\n    public static void main(String[] args) {\n        SecureUser user = new SecureUser(\"alice_w\", \"alice@cyber.gov\", \"e99a18c428cb38d5\", \"123-45-6789\");\n        System.out.println(user);\n    }\n}",
+      "expectedOutput": "SecureUser{username=\"alice_w\", email=\"alice@cyber.gov\", ssn=\"***-**-6789\", pass=\"[REDACTED]\"}",
+      "hints": [
+        "Use ssn.substring(ssn.length() - 4) to extract the last 4 characters.",
+        "Ensure pass is completely replaced with \"[REDACTED]\"."
+      ]
+    },
+    {
+      "id": "prob-les2-p3",
+      "lessonId": "java-oop-mod9-les2",
+      "orderIndex": 3,
+      "title": "Nested Composite Order toString()",
+      "difficulty": "medium",
+      "problemStatement": "Build a nested composite order model with clean toString() formatting from scratch:\n1. Class `LineItem`: holds `private String itemSku` and `private int qty`. Constructor initializes both. Method `public String toString()` returns `'LineItem(sku=' + itemSku + ', qty=' + qty + ')'`.\n2. Class `PurchaseOrder`: holds `private String orderNum` and `private java.util.List<LineItem> items = new java.util.ArrayList<>()`.\n   - Constructor initializes orderNum.\n   - Method `public void addItem(String sku, int qty)` adds new LineItem.\n   - Method `public String toString()` returns `'PurchaseOrder[num=' + orderNum + ', items=' + items + ']'` (Note: Java's ArrayList.toString() calls each LineItem.toString() automatically!).\n3. In `Main`, create purchase order 'PO-770'. Add 2 'WIDGET-A' and 5 'BOLT-B'. Print the order.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass LineItem {\n    private String itemSku;\n    private int qty;\n    public LineItem(String itemSku, int qty) {\n        this.itemSku = itemSku;\n        this.qty = qty;\n    }\n    @Override\n    public String toString() {\n        return \"LineItem(sku=\" + itemSku + \", qty=\" + qty + \")\";\n    }\n}\n\nclass PurchaseOrder {\n    private String orderNum;\n    private List<LineItem> items = new ArrayList<>();\n    public PurchaseOrder(String orderNum) {\n        this.orderNum = orderNum;\n    }\n    public void addItem(String sku, int qty) {\n        items.add(new LineItem(sku, qty));\n    }\n    @Override\n    public String toString() {\n        return \"PurchaseOrder[num=\" + orderNum + \", items=\" + items + \"]\";\n    }\n}\n\npublic class PurchaseApp {\n    public static void main(String[] args) {\n        PurchaseOrder order = new PurchaseOrder(\"PO-770\");\n        order.addItem(\"WIDGET-A\", 2);\n        order.addItem(\"BOLT-B\", 5);\n        System.out.println(order);\n    }\n}",
+      "expectedOutput": "PurchaseOrder[num=PO-770, items=[LineItem(sku=WIDGET-A, qty=2), LineItem(sku=BOLT-B, qty=5)]]",
+      "hints": [
+        "items inside PurchaseOrder.toString() delegates to ArrayList.toString(), which invokes LineItem.toString() for every item."
+      ]
+    },
+    {
+      "id": "prob-les2-p4",
+      "lessonId": "java-oop-mod9-les2",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Cryptic Array Output in toString()",
+      "difficulty": "medium",
+      "problemStatement": "A developer wrote a `MeasurementLog` class containing an array of integers `int[] readings`. But in `toString()`, they wrote `\"readings=\" + readings`, resulting in output like `readings=[I@1540e19d` instead of the actual numbers! Fix `toString()` by using `java.util.Arrays.toString(readings)`.",
+      "starterCode": "import java.util.Arrays;\n\nclass MeasurementLog {\n    private String sensorId;\n    private int[] readings;\n\n    public MeasurementLog(String sensorId, int[] readings) {\n        this.sensorId = sensorId;\n        this.readings = readings;\n    }\n\n    @Override\n    public String toString() {\n        // BUG: readings is an array, so + readings prints [I@hex!\n        return \"MeasurementLog{id='\" + sensorId + \"', readings=\" + readings + \"}\";\n    }\n}\n\npublic class ArrayToStringBugApp {\n    public static void main(String[] args) {\n        MeasurementLog log = new MeasurementLog(\"TEMP-01\", new int[]{22, 24, 21, 25});\n        System.out.println(log);\n    }\n}",
+      "initialCode": "import java.util.Arrays;\n\nclass MeasurementLog {\n    private String sensorId;\n    private int[] readings;\n\n    public MeasurementLog(String sensorId, int[] readings) {\n        this.sensorId = sensorId;\n        this.readings = readings;\n    }\n\n    @Override\n    public String toString() {\n        // BUG: readings is an array, so + readings prints [I@hex!\n        return \"MeasurementLog{id='\" + sensorId + \"', readings=\" + readings + \"}\";\n    }\n}\n\npublic class ArrayToStringBugApp {\n    public static void main(String[] args) {\n        MeasurementLog log = new MeasurementLog(\"TEMP-01\", new int[]{22, 24, 21, 25});\n        System.out.println(log);\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\nclass MeasurementLog {\n    private String sensorId;\n    private int[] readings;\n\n    public MeasurementLog(String sensorId, int[] readings) {\n        this.sensorId = sensorId;\n        this.readings = readings;\n    }\n\n    @Override\n    public String toString() {\n        return \"MeasurementLog{id='\" + sensorId + \"', readings=\" + Arrays.toString(readings) + \"}\";\n    }\n}\n\npublic class ArrayToStringBugApp {\n    public static void main(String[] args) {\n        MeasurementLog log = new MeasurementLog(\"TEMP-01\", new int[]{22, 24, 21, 25});\n        System.out.println(log);\n    }\n}",
+      "expectedOutput": "MeasurementLog{id='TEMP-01', readings=[22, 24, 21, 25]}",
+      "hints": [
+        "Replace `+ readings +` with `+ Arrays.toString(readings) +`."
+      ]
+    },
+    {
+      "id": "prob-les2-p5",
+      "lessonId": "java-oop-mod9-les2",
+      "orderIndex": 5,
+      "title": "Multi-Format Report Generator toString() Architecture",
+      "difficulty": "hard",
+      "problemStatement": "Build a telemetry packet that supports both a standard `toString()` summary and a custom formatted JSON export from scratch:\n1. Class `TelemetryPacket`: \n   - Holds `private String deviceId`, `private double temperatureC`, `private double batteryVolts`, `private boolean alertActive`.\n   - Constructor initializes all four.\n   - Standard `toString()` returns: `'TelemetryPacket[id=\"' + deviceId + '\", temp=' + temperatureC + 'C, batt=' + batteryVolts + 'V, alert=' + alertActive + ']'`.\n   - Method `public String toJson()` returns formatted JSON string: `'{\"deviceId\": \"' + deviceId + '\", \"temperature\": ' + temperatureC + ', \"battery\": ' + batteryVolts + ', \"alert\": ' + alertActive + '}'`.\n2. In `Main`, create a packet with device 'SAT-09', temp -15.4, battery 3.82, alert false.\n3. Print `packet.toString()` (standard summary).\n4. Print `packet.toJson()` (machine-readable JSON format).",
+      "solutionCode": "class TelemetryPacket {\n    private String deviceId;\n    private double temperatureC;\n    private double batteryVolts;\n    private boolean alertActive;\n\n    public TelemetryPacket(String deviceId, double temp, double volts, boolean alert) {\n        this.deviceId = deviceId;\n        this.temperatureC = temp;\n        this.batteryVolts = volts;\n        this.alertActive = alert;\n    }\n\n    @Override\n    public String toString() {\n        return \"TelemetryPacket[id=\\\"\" + deviceId + \"\\\", temp=\" + temperatureC + \"C, batt=\" + batteryVolts + \"V, alert=\" + alertActive + \"]\";\n    }\n\n    public String toJson() {\n        return \"{\\\"deviceId\\\": \\\"\" + deviceId + \"\\\", \\\"temperature\\\": \" + temperatureC + \", \\\"battery\\\": \" + batteryVolts + \", \\\"alert\\\": \" + alertActive + \"}\";\n    }\n}\n\npublic class TelemetryApp {\n    public static void main(String[] args) {\n        TelemetryPacket packet = new TelemetryPacket(\"SAT-09\", -15.4, 3.82, false);\n        System.out.println(packet);\n        System.out.println(packet.toJson());\n    }\n}",
+      "expectedOutput": "TelemetryPacket[id=\"SAT-09\", temp=-15.4C, batt=3.82V, alert=false]\n{\"deviceId\": \"SAT-09\", \"temperature\": -15.4, \"battery\": 3.82, \"alert\": false}",
+      "hints": [
+        "toString() provides a human-readable diagnosis.",
+        "toJson() provides structured machine-readable JSON."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod9-les8",
+  "slug": "common-equality-bugs",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "Common Equality Bugs",
+  "summary": "Catalog, debug, and prevent the most treacherous equality bugs in Java: null dereferences, accidental overloads, inheritance asymmetry, and float comparisons.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "equals-hashcode-contract"
+  ],
+  "learningObjectives": [
+    "Recognize the top 5 equality anti-patterns in enterprise Java codebases",
+    "Prevent NullPointerExceptions in equals() when fields contain null values",
+    "Eliminate inheritance asymmetry bugs using exact class matching (getClass() vs instanceof)",
+    "Compare floating-point NaN and -0.0 fields accurately using Double.compare"
+  ],
+  "expectedOutcomes": [
+    "You can audit any equals() implementation and immediately pinpoint edge-case vulnerabilities",
+    "You write robust, crash-proof equality logic that handles nulls, inheritance, and floats safely"
+  ],
+  "activities": [
+    {
+      "id": "act-les8-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Airport Security Checkpoint Checklist",
+      "concept": "Robust Equality Verification",
+      "realWorldMetaphor": {
+        "scenario": "At airport border control, an officer has a strict checklist: (1) Is the passport physically present? (If missing, reject immediately—don't try to open a non-existent booklet!). (2) Is this document actually a passport, or a library card? (Check document type!). (3) Compare name, photo, and birthdate. If the officer tried to inspect a passenger who didn't exist or compared a dog license to a human passport, the system would collapse in chaos.",
+        "mapping": "In software, failing to check for null causes a `NullPointerException` (inspecting a missing passport). Failing to verify exact type causes a `ClassCastException` (treating a library card as a passport).",
+        "takeaway": "A defensive equals() method checks preconditions (identity, nullity, type) before attempting to read field values."
+      }
+    },
+    {
+      "id": "act-les8-concept",
+      "type": "concept",
+      "title": "The Top 5 Treacherous Equality Anti-Patterns",
+      "content": "### 1. The Raw Field Dereference Bug (Null Danger)\n```java\n// BUG: If this.name is null, this throws NullPointerException!\nreturn this.name.equals(other.name);\n// FIX: Use Objects.equals\nreturn Objects.equals(this.name, other.name);\n```\n\n### 2. The Accidental Overload Bug\n```java\n// BUG: Does NOT override Object.equals!\npublic boolean equals(User other) { ... }\n// FIX: Always use Object and @Override\n@Override public boolean equals(Object other) { ... }\n```\n\n### 3. The Inheritance Asymmetry Bug\n```java\n// In Parent class Point:\nif (obj instanceof Point) ... // Returns true for ColorPoint!\n// In Subclass ColorPoint:\nif (obj instanceof ColorPoint) ... // Returns false for Point!\n// SYMMETRY VIOLATED: p.equals(cp) is TRUE, but cp.equals(p) is FALSE!\n// FIX: Use getClass() != obj.getClass()\n```\n\n### 4. Floating Point '==' Comparison Bug\n`double a = Double.NaN; double b = Double.NaN;` -> `a == b` is **FALSE**!\nAlways use `Double.compare(a, b) == 0`.\n\n### 5. Array Field Shallow Equals Bug\nCalling `this.data.equals(other.data)` on an array compares memory addresses. Always use `Arrays.equals(this.data, other.data)`."
+    },
+    {
+      "id": "act-les8-cw1",
+      "type": "code_walkthrough",
+      "title": "Inheritance Asymmetry Breakdown: Point and ColorPoint",
+      "codeSnippet": "class Point {\n    protected int x, y;\n    public Point(int x, int y) { this.x = x; this.y = y; }\n\n    // Using instanceof allows subclasses to match\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (!(obj instanceof Point)) return false; // Pitfall!\n        Point other = (Point) obj;\n        return this.x == other.x && this.y == other.y;\n    }\n}\n\nclass ColorPoint extends Point {\n    private String color;\n    public ColorPoint(int x, int y, String color) {\n        super(x, y);\n        this.color = color;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (!(obj instanceof ColorPoint)) return false;\n        ColorPoint other = (ColorPoint) obj;\n        return super.equals(obj) && this.color.equals(other.color);\n    }\n}\n\npublic class AsymmetryDemo {\n    public static void main(String[] args) {\n        Point p = new Point(1, 2);\n        ColorPoint cp = new ColorPoint(1, 2, \"RED\");\n\n        System.out.println(\"p.equals(cp):  \" + p.equals(cp));  // true! (Point ignores color)\n        System.out.println(\"cp.equals(p):  \" + cp.equals(p));  // false! (ColorPoint requires ColorPoint)\n        System.out.println(\"SYMMETRY VIOLATED: \" + (p.equals(cp) != cp.equals(p)));\n    }\n}",
+      "code": "class Point {\n    protected int x, y;\n    public Point(int x, int y) { this.x = x; this.y = y; }\n\n    // Using instanceof allows subclasses to match\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (!(obj instanceof Point)) return false; // Pitfall!\n        Point other = (Point) obj;\n        return this.x == other.x && this.y == other.y;\n    }\n}\n\nclass ColorPoint extends Point {\n    private String color;\n    public ColorPoint(int x, int y, String color) {\n        super(x, y);\n        this.color = color;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (!(obj instanceof ColorPoint)) return false;\n        ColorPoint other = (ColorPoint) obj;\n        return super.equals(obj) && this.color.equals(other.color);\n    }\n}\n\npublic class AsymmetryDemo {\n    public static void main(String[] args) {\n        Point p = new Point(1, 2);\n        ColorPoint cp = new ColorPoint(1, 2, \"RED\");\n\n        System.out.println(\"p.equals(cp):  \" + p.equals(cp));  // true! (Point ignores color)\n        System.out.println(\"cp.equals(p):  \" + cp.equals(p));  // false! (ColorPoint requires ColorPoint)\n        System.out.println(\"SYMMETRY VIOLATED: \" + (p.equals(cp) != cp.equals(p)));\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates why instanceof in instantiable class hierarchies breaks the mathematical symmetry contract. Using getClass() != obj.getClass() fixes this permanently.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`p.equals(cp)` checks `cp instanceof Point`, which is `true`, and compares coordinates (matches)."
+        },
+        {
+          "step": 2,
+          "description": "`cp.equals(p)` checks `p instanceof ColorPoint`, which is `false`, returning `false`."
+        },
+        {
+          "step": 3,
+          "description": "Symmetry requires `p.equals(cp) == cp.equals(p)`. The contract is shattered."
+        },
+        {
+          "step": 4,
+          "description": "Using `getClass() != obj.getClass()` in Point makes `p.equals(cp)` return false, preserving symmetry."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-cw2",
+      "type": "code_walkthrough",
+      "title": "Hardening Against Null Fields with Objects.equals()",
+      "codeSnippet": "import java.util.Objects;\n\nclass UserProfile {\n    private String username; // May be null\n    private String email;    // May be null\n\n    public UserProfile(String username, String email) {\n        this.username = username;\n        this.email = email;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        UserProfile other = (UserProfile) obj;\n        \n        // Completely safe even if username or email is null\n        return Objects.equals(this.username, other.username) &&\n               Objects.equals(this.email, other.email);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(username, email);\n    }\n}\n\npublic class HardenedEqualsDemo {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(null, \"test@corp.com\");\n        UserProfile u2 = new UserProfile(null, \"test@corp.com\");\n        UserProfile u3 = new UserProfile(\"admin\", null);\n\n        System.out.println(\"u1.equals(u2): \" + u1.equals(u2)); // true! No NPE\n        System.out.println(\"u1.equals(u3): \" + u1.equals(u3)); // false! No NPE\n        System.out.println(\"u1.equals(null): \" + u1.equals(null)); // false! No NPE\n    }\n}",
+      "code": "import java.util.Objects;\n\nclass UserProfile {\n    private String username; // May be null\n    private String email;    // May be null\n\n    public UserProfile(String username, String email) {\n        this.username = username;\n        this.email = email;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        UserProfile other = (UserProfile) obj;\n        \n        // Completely safe even if username or email is null\n        return Objects.equals(this.username, other.username) &&\n               Objects.equals(this.email, other.email);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(username, email);\n    }\n}\n\npublic class HardenedEqualsDemo {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(null, \"test@corp.com\");\n        UserProfile u2 = new UserProfile(null, \"test@corp.com\");\n        UserProfile u3 = new UserProfile(\"admin\", null);\n\n        System.out.println(\"u1.equals(u2): \" + u1.equals(u2)); // true! No NPE\n        System.out.println(\"u1.equals(u3): \" + u1.equals(u3)); // false! No NPE\n        System.out.println(\"u1.equals(null): \" + u1.equals(null)); // false! No NPE\n    }\n}",
+      "language": "java",
+      "explanation": "Objects.equals gracefully handles combinations of null and non-null values without crashing.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`UserProfile` instances can have null fields."
+        },
+        {
+          "step": 2,
+          "description": "`Objects.equals(null, null)` evaluates to `true`."
+        },
+        {
+          "step": 3,
+          "description": "`Objects.equals(null, \"test@corp.com\")` evaluates to `false` without throwing NPE."
+        },
+        {
+          "step": 4,
+          "description": "All edge cases are handled cleanly and safely."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-mcq",
+      "type": "mcq",
+      "title": "Common Equality Bugs Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What happens if a field is null and you execute `this.field.equals(other.field)`?",
+          "options": [
+            "Evaluates to false",
+            "Throws a NullPointerException",
+            "Evaluates to true",
+            "Returns null"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Invoking .equals() directly on a null reference throws a NullPointerException at runtime.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What is the simplest way to compare two object references for equality while protecting against nulls?",
+          "options": [
+            "Objects.equals(a, b)",
+            "a == b",
+            "a.toString().equals(b.toString())",
+            "String.valueOf(a) == String.valueOf(b)"
+          ],
+          "correctAnswer": 0,
+          "explanation": "java.util.Objects.equals(a, b) safely checks identity and handles nulls before calling equals.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q3",
+          "question": "Why does using `instanceof` in an instantiable parent class often violate the Symmetry contract?",
+          "options": [
+            "Because a parent instance can match the subclass type in parent.equals(child), but child.equals(parent) rejects the parent",
+            "Because instanceof is slower than reflection",
+            "Because the compiler forbids instanceof in equals",
+            "Because instanceof only works on interfaces"
+          ],
+          "correctAnswer": 0,
+          "explanation": "If a subclass adds state, parent.equals(child) will ignore the state and return true, while child.equals(parent) will return false.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "How should double and float primitive fields be compared in equals()?",
+          "options": [
+            "Double.compare(d1, d2) == 0",
+            "d1 == d2",
+            "Math.round(d1) == Math.round(d2)",
+            "d1 - d2 == 0"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Double.compare handles NaN == NaN (true) and -0.0 vs +0.0 (distinguished) correctly.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "What subtle bug occurs when comparing array fields with `this.arr.equals(other.arr)`?",
+          "options": [
+            "It compares the memory address of the arrays instead of their contents",
+            "It throws an ArrayStoreException",
+            "It only compares the first element",
+            "It sorts the array"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Arrays inherit Object.equals directly and do NOT override it to compare elements. Use Arrays.equals() instead.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "What happens if you write `public boolean equals(MyType obj)` without the `@Override` annotation?",
+          "options": [
+            "You accidentally create an overload; methods that expect equals(Object) will never call your method",
+            "The compiler automatically fixes the signature",
+            "It overrides Object.equals anyway",
+            "It causes a JVM crash"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Without @Override, you create an overload that is completely ignored by collections like ArrayList.contains().",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "What does Joshua Bloch recommend if you want to extend a class and add a value component while preserving equals?",
+          "answer": "Favor composition over inheritance: make the parent class a private field of the new class rather than extending it.",
+          "options": [
+            "Favor composition over inheritance: make the parent class a field of the new class",
+            "Make all fields static",
+            "Use reflection to alter superclass fields",
+            "Disable equals in the parent"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Composition allows adding new fields without breaking Liskov substitution or equals contract symmetry.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "What should `anyNonNullObject.equals(null)` return according to the Object contract?",
+          "options": [
+            "false",
+            "true",
+            "throw NullPointerException",
+            "throw IllegalArgumentException"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The non-nullity rule requires returning false when compared to null, never throwing an exception.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Why is `if (obj == null || getClass() != obj.getClass()) return false;` safer than `!(obj instanceof Foo)` for concrete classes?",
+          "options": [
+            "It guarantees both objects belong to the exact same runtime class, eliminating subclass asymmetry",
+            "It avoids throwing ClassCastException",
+            "It uses fewer CPU instructions",
+            "It allows null objects"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Comparing getClass() ensures that only instances of the exact same concrete class can be considered equal.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "Can `getClass()` check throw a NullPointerException in `if (obj == null || getClass() != obj.getClass())`?",
+          "options": [
+            "No, because short-circuit evaluation (`obj == null ||`) halts before `obj.getClass()` is evaluated if obj is null",
+            "Yes, if obj is null",
+            "Only on multithreaded systems",
+            "Only in Java 11"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The short-circuit OR operator `||` guarantees that if `obj == null`, the second operand is never evaluated.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les8-interview",
+      "type": "interview_qa",
+      "title": "Common Equality Bugs Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the 'Point and ColorPoint' problem and why is it so famous in OOP literature?",
+          "answer": "It is Joshua Bloch's fundamental proof that it is impossible to extend an instantiable class and add a value field while preserving the equals contract (symmetry and transitivity). If you check `instanceof Point`, `point.equals(colorPoint)` returns true while `colorPoint.equals(point)` returns false (symmetry broken). If you try to fix symmetry by ignoring color when comparing ColorPoint with Point, transitivity is broken: RedPoint(1,2) equals Point(1,2), and Point(1,2) equals BluePoint(1,2), but RedPoint does NOT equal BluePoint!",
+          "expectedAnswer": "It is Joshua Bloch's fundamental proof that it is impossible to extend an instantiable class and add a value field while preserving the equals contract (symmetry and transitivity). If you check `instanceof Point`, `point.equals(colorPoint)` returns true while `colorPoint.equals(point)` returns false (symmetry broken). If you try to fix symmetry by ignoring color when comparing ColorPoint with Point, transitivity is broken: RedPoint(1,2) equals Point(1,2), and Point(1,2) equals BluePoint(1,2), but RedPoint does NOT equal BluePoint!",
+          "keyTakeaway": "Adding value fields via subclassing inherently breaks symmetry or transitivity. Use composition instead.",
+          "keyPoints": [
+            "Adding value fields via subclassing inherently breaks symmetry or transitivity. Use composition instead."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "When IS `instanceof` acceptable in an equals() method?",
+          "answer": "`instanceof` is acceptable and preferred when implementing equals() for a standard **Interface** (e.g. `java.util.Set`, `java.util.List`, `java.util.Map`). `Set.equals()` specifies that ANY implementation of Set with the same elements is equal, allowing `HashSet` and `TreeSet` to be logically equal.",
+          "expectedAnswer": "`instanceof` is acceptable and preferred when implementing equals() for a standard **Interface** (e.g. `java.util.Set`, `java.util.List`, `java.util.Map`). `Set.equals()` specifies that ANY implementation of Set with the same elements is equal, allowing `HashSet` and `TreeSet` to be logically equal.",
+          "keyTakeaway": "instanceof is appropriate for interface contracts where cross-implementation equality is explicitly defined.",
+          "keyPoints": [
+            "instanceof is appropriate for interface contracts where cross-implementation equality is explicitly defined."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you test that an equals() method satisfies the 5 contract properties in unit tests?",
+          "answer": "Use testing libraries like `EqualsVerifier` (`EqualsVerifier.forClass(MyClass.class).verify()`). It automatically tests reflexivity, symmetry, transitivity, consistency, non-nullity, hash code alignment, and inheritance edge cases.",
+          "expectedAnswer": "Use testing libraries like `EqualsVerifier` (`EqualsVerifier.forClass(MyClass.class).verify()`). It automatically tests reflexivity, symmetry, transitivity, consistency, non-nullity, hash code alignment, and inheritance edge cases.",
+          "keyTakeaway": "Use EqualsVerifier to automate testing of all mathematical equals/hashCode contract rules.",
+          "keyPoints": [
+            "Use EqualsVerifier to automate testing of all mathematical equals/hashCode contract rules."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why should you never write `new URL(\"http://...\").equals(...)` in latency-sensitive code?",
+          "answer": "Java's `java.net.URL.equals()` method performs a blocking DNS lookup to resolve the host IP address! If the network is down or slow, calling `.equals()` on a URL will freeze your thread for several seconds. Always use `java.net.URI` instead, which compares strings without DNS lookups.",
+          "expectedAnswer": "Java's `java.net.URL.equals()` method performs a blocking DNS lookup to resolve the host IP address! If the network is down or slow, calling `.equals()` on a URL will freeze your thread for several seconds. Always use `java.net.URI` instead, which compares strings without DNS lookups.",
+          "keyTakeaway": "java.net.URL.equals performs a blocking DNS lookup; use java.net.URI instead.",
+          "keyPoints": [
+            "java.net.URL.equals performs a blocking DNS lookup; use java.net.URI instead."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does `BigDecimal.equals()` differ from `BigDecimal.compareTo()`?",
+          "answer": "`BigDecimal.equals()` checks value AND scale: `new BigDecimal(\"2.0\").equals(new BigDecimal(\"2.00\"))` returns `false` (scales differ)! In contrast, `compareTo()` compares mathematical numerical values: `new BigDecimal(\"2.0\").compareTo(new BigDecimal(\"2.00\")) == 0` is `true`.",
+          "expectedAnswer": "`BigDecimal.equals()` checks value AND scale: `new BigDecimal(\"2.0\").equals(new BigDecimal(\"2.00\"))` returns `false` (scales differ)! In contrast, `compareTo()` compares mathematical numerical values: `new BigDecimal(\"2.0\").compareTo(new BigDecimal(\"2.00\")) == 0` is `true`.",
+          "keyTakeaway": "BigDecimal.equals considers scale; BigDecimal.compareTo considers only numerical value.",
+          "keyPoints": [
+            "BigDecimal.equals considers scale; BigDecimal.compareTo considers only numerical value."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the danger of writing equals() using reflection (e.g. `EqualsBuilder.reflectionEquals`)?",
+          "answer": "Reflection-based equals has significant performance overhead (10-50x slower), breaks encapsulation by accessing private fields directly, and can fail under modern Java modularity (Java 9+ strong encapsulation) unless packages are opened.",
+          "expectedAnswer": "Reflection-based equals has significant performance overhead (10-50x slower), breaks encapsulation by accessing private fields directly, and can fail under modern Java modularity (Java 9+ strong encapsulation) unless packages are opened.",
+          "keyTakeaway": "Reflection-based equals is slow, fragile, and breaches module boundaries.",
+          "keyPoints": [
+            "Reflection-based equals is slow, fragile, and breaches module boundaries."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the 'Point and ColorPoint' problem and why is it so famous in OOP literature?",
+          "answer": "It is Joshua Bloch's fundamental proof that it is impossible to extend an instantiable class and add a value field while preserving the equals contract (symmetry and transitivity). If you check `instanceof Point`, `point.equals(colorPoint)` returns true while `colorPoint.equals(point)` returns false (symmetry broken). If you try to fix symmetry by ignoring color when comparing ColorPoint with Point, transitivity is broken: RedPoint(1,2) equals Point(1,2), and Point(1,2) equals BluePoint(1,2), but RedPoint does NOT equal BluePoint!",
+          "expectedAnswer": "It is Joshua Bloch's fundamental proof that it is impossible to extend an instantiable class and add a value field while preserving the equals contract (symmetry and transitivity). If you check `instanceof Point`, `point.equals(colorPoint)` returns true while `colorPoint.equals(point)` returns false (symmetry broken). If you try to fix symmetry by ignoring color when comparing ColorPoint with Point, transitivity is broken: RedPoint(1,2) equals Point(1,2), and Point(1,2) equals BluePoint(1,2), but RedPoint does NOT equal BluePoint!",
+          "keyTakeaway": "Adding value fields via subclassing inherently breaks symmetry or transitivity. Use composition instead.",
+          "keyPoints": [
+            "Adding value fields via subclassing inherently breaks symmetry or transitivity. Use composition instead."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "When IS `instanceof` acceptable in an equals() method?",
+          "answer": "`instanceof` is acceptable and preferred when implementing equals() for a standard **Interface** (e.g. `java.util.Set`, `java.util.List`, `java.util.Map`). `Set.equals()` specifies that ANY implementation of Set with the same elements is equal, allowing `HashSet` and `TreeSet` to be logically equal.",
+          "expectedAnswer": "`instanceof` is acceptable and preferred when implementing equals() for a standard **Interface** (e.g. `java.util.Set`, `java.util.List`, `java.util.Map`). `Set.equals()` specifies that ANY implementation of Set with the same elements is equal, allowing `HashSet` and `TreeSet` to be logically equal.",
+          "keyTakeaway": "instanceof is appropriate for interface contracts where cross-implementation equality is explicitly defined.",
+          "keyPoints": [
+            "instanceof is appropriate for interface contracts where cross-implementation equality is explicitly defined."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you test that an equals() method satisfies the 5 contract properties in unit tests?",
+          "answer": "Use testing libraries like `EqualsVerifier` (`EqualsVerifier.forClass(MyClass.class).verify()`). It automatically tests reflexivity, symmetry, transitivity, consistency, non-nullity, hash code alignment, and inheritance edge cases.",
+          "expectedAnswer": "Use testing libraries like `EqualsVerifier` (`EqualsVerifier.forClass(MyClass.class).verify()`). It automatically tests reflexivity, symmetry, transitivity, consistency, non-nullity, hash code alignment, and inheritance edge cases.",
+          "keyTakeaway": "Use EqualsVerifier to automate testing of all mathematical equals/hashCode contract rules.",
+          "keyPoints": [
+            "Use EqualsVerifier to automate testing of all mathematical equals/hashCode contract rules."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why should you never write `new URL(\"http://...\").equals(...)` in latency-sensitive code?",
+          "answer": "Java's `java.net.URL.equals()` method performs a blocking DNS lookup to resolve the host IP address! If the network is down or slow, calling `.equals()` on a URL will freeze your thread for several seconds. Always use `java.net.URI` instead, which compares strings without DNS lookups.",
+          "expectedAnswer": "Java's `java.net.URL.equals()` method performs a blocking DNS lookup to resolve the host IP address! If the network is down or slow, calling `.equals()` on a URL will freeze your thread for several seconds. Always use `java.net.URI` instead, which compares strings without DNS lookups.",
+          "keyTakeaway": "java.net.URL.equals performs a blocking DNS lookup; use java.net.URI instead.",
+          "keyPoints": [
+            "java.net.URL.equals performs a blocking DNS lookup; use java.net.URI instead."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does `BigDecimal.equals()` differ from `BigDecimal.compareTo()`?",
+          "answer": "`BigDecimal.equals()` checks value AND scale: `new BigDecimal(\"2.0\").equals(new BigDecimal(\"2.00\"))` returns `false` (scales differ)! In contrast, `compareTo()` compares mathematical numerical values: `new BigDecimal(\"2.0\").compareTo(new BigDecimal(\"2.00\")) == 0` is `true`.",
+          "expectedAnswer": "`BigDecimal.equals()` checks value AND scale: `new BigDecimal(\"2.0\").equals(new BigDecimal(\"2.00\"))` returns `false` (scales differ)! In contrast, `compareTo()` compares mathematical numerical values: `new BigDecimal(\"2.0\").compareTo(new BigDecimal(\"2.00\")) == 0` is `true`.",
+          "keyTakeaway": "BigDecimal.equals considers scale; BigDecimal.compareTo considers only numerical value.",
+          "keyPoints": [
+            "BigDecimal.equals considers scale; BigDecimal.compareTo considers only numerical value."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the danger of writing equals() using reflection (e.g. `EqualsBuilder.reflectionEquals`)?",
+          "answer": "Reflection-based equals has significant performance overhead (10-50x slower), breaks encapsulation by accessing private fields directly, and can fail under modern Java modularity (Java 9+ strong encapsulation) unless packages are opened.",
+          "expectedAnswer": "Reflection-based equals has significant performance overhead (10-50x slower), breaks encapsulation by accessing private fields directly, and can fail under modern Java modularity (Java 9+ strong encapsulation) unless packages are opened.",
+          "keyTakeaway": "Reflection-based equals is slow, fragile, and breaches module boundaries.",
+          "keyPoints": [
+            "Reflection-based equals is slow, fragile, and breaches module boundaries."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les8-checklist",
+      "type": "self_evaluation",
+      "title": "Common Equality Bugs Checklist",
+      "items": [
+        "I use Objects.equals(f1, f2) to prevent NullPointerExceptions on null fields.",
+        "I always use parameter type Object and annotate with @Override.",
+        "I use getClass() != obj.getClass() on concrete classes to prevent inheritance asymmetry.",
+        "I use Double.compare and Float.compare for floating-point fields.",
+        "I use Arrays.equals() or Arrays.deepEquals() for array fields.",
+        "I ensure x.equals(null) returns false without throwing an exception.",
+        "I avoid subclassing instantiable classes when adding state (I use composition).",
+        "I know why java.net.URL.equals is dangerous (blocking DNS resolution).",
+        "I know why BigDecimal.equals checks scale while compareTo checks value.",
+        "I use automated tools like EqualsVerifier in unit test suites."
+      ],
+      "checklist": [
+        "I use Objects.equals(f1, f2) to prevent NullPointerExceptions on null fields.",
+        "I always use parameter type Object and annotate with @Override.",
+        "I use getClass() != obj.getClass() on concrete classes to prevent inheritance asymmetry.",
+        "I use Double.compare and Float.compare for floating-point fields.",
+        "I use Arrays.equals() or Arrays.deepEquals() for array fields.",
+        "I ensure x.equals(null) returns false without throwing an exception.",
+        "I avoid subclassing instantiable classes when adding state (I use composition).",
+        "I know why java.net.URL.equals is dangerous (blocking DNS resolution).",
+        "I know why BigDecimal.equals checks scale while compareTo checks value.",
+        "I use automated tools like EqualsVerifier in unit test suites."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les8-p1",
+      "lessonId": "java-oop-mod9-les8",
+      "orderIndex": 1,
+      "title": "Null-Safe User Profile Equality",
+      "difficulty": "easy",
+      "problemStatement": "Fix the `UserProfile` class so it does not throw `NullPointerException` when `nickname` is null. Use `java.util.Objects.equals` to compare `userId` and `nickname` safely.",
+      "starterCode": "import java.util.Objects;\n\nclass UserProfile {\n    private int userId;\n    private String nickname; // Can be null!\n\n    public UserProfile(int id, String nick) {\n        this.userId = id;\n        this.nickname = nick;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        UserProfile other = (UserProfile) obj;\n        // BUG: Throws NPE if nickname is null!\n        return userId == other.userId && nickname.equals(other.nickname);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(userId, nickname);\n    }\n}\n\npublic class NullEqualsBugApp {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(10, null);\n        UserProfile u2 = new UserProfile(10, null);\n        System.out.println(\"Equal: \" + u1.equals(u2));\n    }\n}",
+      "initialCode": "import java.util.Objects;\n\nclass UserProfile {\n    private int userId;\n    private String nickname; // Can be null!\n\n    public UserProfile(int id, String nick) {\n        this.userId = id;\n        this.nickname = nick;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        UserProfile other = (UserProfile) obj;\n        // BUG: Throws NPE if nickname is null!\n        return userId == other.userId && nickname.equals(other.nickname);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(userId, nickname);\n    }\n}\n\npublic class NullEqualsBugApp {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(10, null);\n        UserProfile u2 = new UserProfile(10, null);\n        System.out.println(\"Equal: \" + u1.equals(u2));\n    }\n}",
+      "solutionCode": "import java.util.Objects;\n\nclass UserProfile {\n    private int userId;\n    private String nickname;\n\n    public UserProfile(int id, String nick) {\n        this.userId = id;\n        this.nickname = nick;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        UserProfile other = (UserProfile) obj;\n        return userId == other.userId && Objects.equals(nickname, other.nickname);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(userId, nickname);\n    }\n}\n\npublic class NullEqualsBugApp {\n    public static void main(String[] args) {\n        UserProfile u1 = new UserProfile(10, null);\n        UserProfile u2 = new UserProfile(10, null);\n        System.out.println(\"Equal: \" + u1.equals(u2));\n    }\n}",
+      "expectedOutput": "Equal: true",
+      "hints": [
+        "Replace `nickname.equals(other.nickname)` with `Objects.equals(nickname, other.nickname)`."
+      ]
+    },
+    {
+      "id": "prob-les8-p2",
+      "lessonId": "java-oop-mod9-les8",
+      "orderIndex": 2,
+      "title": "Fixing Symmetry Violation in Subclass Hierarchy",
+      "difficulty": "medium",
+      "problemStatement": "Fix the asymmetry bug between `BaseToken` and `ExpiringToken` from scratch:\n1. Class `BaseToken`: holds `protected String tokenId`. Constructor initializes it.\n   - Implement `equals(Object obj)` using exact class matching: `if (obj == null || getClass() != obj.getClass()) return false;`.\n   - Two BaseTokens are equal if their tokenId matches.\n   - Implement `hashCode()` using `Objects.hash(tokenId)`.\n2. Class `ExpiringToken` extending `BaseToken`: holds `private long expiryTimestamp`.\n   - Constructor initializes tokenId and expiryTimestamp.\n   - Implement `equals(Object obj)` using exact class matching (`getClass() != obj.getClass()`), comparing tokenId and expiryTimestamp.\n   - Implement `hashCode()` using `Objects.hash(tokenId, expiryTimestamp)`.\n3. In `Main`, create base = BaseToken(\"T100\") and expiring = ExpiringToken(\"T100\", 5000L).\n4. Verify that symmetry is preserved: print `base.equals(expiring)` (false) and `expiring.equals(base)` (false).",
+      "solutionCode": "import java.util.Objects;\n\nclass BaseToken {\n    protected String tokenId;\n    public BaseToken(String tokenId) {\n        this.tokenId = tokenId;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        BaseToken other = (BaseToken) obj;\n        return Objects.equals(tokenId, other.tokenId);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(tokenId);\n    }\n}\n\nclass ExpiringToken extends BaseToken {\n    private long expiryTimestamp;\n    public ExpiringToken(String tokenId, long expiry) {\n        super(tokenId);\n        this.expiryTimestamp = expiry;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        ExpiringToken other = (ExpiringToken) obj;\n        return Objects.equals(tokenId, other.tokenId) && expiryTimestamp == other.expiryTimestamp;\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(tokenId, expiryTimestamp);\n    }\n}\n\npublic class SymmetryApp {\n    public static void main(String[] args) {\n        BaseToken base = new BaseToken(\"T100\");\n        ExpiringToken expiring = new ExpiringToken(\"T100\", 5000L);\n        \n        System.out.println(\"base.equals(expiring): \" + base.equals(expiring));\n        System.out.println(\"expiring.equals(base): \" + expiring.equals(base));\n    }\n}",
+      "expectedOutput": "base.equals(expiring): false\nexpiring.equals(base): false",
+      "hints": [
+        "By using getClass() != obj.getClass(), base sees expiring.getClass() is ExpiringToken, so it returns false.",
+        "Symmetry is preserved (both return false)."
+      ]
+    },
+    {
+      "id": "prob-les8-p3",
+      "lessonId": "java-oop-mod9-les8",
+      "orderIndex": 3,
+      "title": "Robust Floating-Point NaN and Zero Equality",
+      "difficulty": "medium",
+      "problemStatement": "Build a financial rate class handling floating-point edge cases from scratch:\n1. Class `InterestRate`: holds `private double annualPercentageRate`.\n   - Constructor initializes it.\n   - Override `equals(Object obj)`: use `Double.compare(this.annualPercentageRate, other.annualPercentageRate) == 0`.\n   - Override `hashCode()`: return `Double.hashCode(annualPercentageRate)`.\n2. In `Main`, test:\n   - Create r1 with `Double.NaN` and r2 with `Double.NaN`.\n   - Print `'NaN rates equal: ' + r1.equals(r2)` (true, Double.compare treats NaN == NaN as true!).\n   - Create r3 with `0.0` and r4 with `-0.0`.\n   - Print `'Positive vs Negative zero equal: ' + r3.equals(r4)` (false, Double.compare distinguishes -0.0 from +0.0!).",
+      "solutionCode": "class InterestRate {\n    private double annualPercentageRate;\n    public InterestRate(double rate) {\n        this.annualPercentageRate = rate;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        InterestRate other = (InterestRate) obj;\n        return Double.compare(this.annualPercentageRate, other.annualPercentageRate) == 0;\n    }\n    @Override\n    public int hashCode() {\n        return Double.hashCode(annualPercentageRate);\n    }\n}\n\npublic class FloatEqualityApp {\n    public static void main(String[] args) {\n        InterestRate r1 = new InterestRate(Double.NaN);\n        InterestRate r2 = new InterestRate(Double.NaN);\n        System.out.println(\"NaN rates equal: \" + r1.equals(r2));\n        \n        InterestRate r3 = new InterestRate(0.0);\n        InterestRate r4 = new InterestRate(-0.0);\n        System.out.println(\"Positive vs Negative zero equal: \" + r3.equals(r4));\n    }\n}",
+      "expectedOutput": "NaN rates equal: true\nPositive vs Negative zero equal: false",
+      "hints": [
+        "Double.compare(NaN, NaN) returns 0 (equal).",
+        "Double.compare(0.0, -0.0) returns 1 (distinguishable zero signs)."
+      ]
+    },
+    {
+      "id": "prob-les8-p4",
+      "lessonId": "java-oop-mod9-les8",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Accidental Parameter Overload with Specific Class",
+      "difficulty": "medium",
+      "problemStatement": "A developer wrote `public boolean equals(CustomerKey other)` instead of `public boolean equals(Object obj)`. Fix the class to properly override `Object.equals(Object)`, add `@Override`, and follow the 4-step recipe.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass CustomerKey {\n    private int tenantId;\n    private String customerCode;\n\n    public CustomerKey(int tenantId, String code) {\n        this.tenantId = tenantId;\n        this.customerCode = code;\n    }\n\n    // BUG: Parameter is CustomerKey instead of Object! Accidental overload!\n    public boolean equals(CustomerKey other) {\n        if (other == null) return false;\n        return tenantId == other.tenantId && Objects.equals(customerCode, other.customerCode);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(tenantId, customerCode);\n    }\n}\n\npublic class OverloadBugApp {\n    public static void main(String[] args) {\n        Set<CustomerKey> keys = new HashSet<>();\n        keys.add(new CustomerKey(1, \"CUST-A\"));\n        \n        CustomerKey query = new CustomerKey(1, \"CUST-A\");\n        System.out.println(\"Query in set: \" + keys.contains(query));\n    }\n}",
+      "initialCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass CustomerKey {\n    private int tenantId;\n    private String customerCode;\n\n    public CustomerKey(int tenantId, String code) {\n        this.tenantId = tenantId;\n        this.customerCode = code;\n    }\n\n    // BUG: Parameter is CustomerKey instead of Object! Accidental overload!\n    public boolean equals(CustomerKey other) {\n        if (other == null) return false;\n        return tenantId == other.tenantId && Objects.equals(customerCode, other.customerCode);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(tenantId, customerCode);\n    }\n}\n\npublic class OverloadBugApp {\n    public static void main(String[] args) {\n        Set<CustomerKey> keys = new HashSet<>();\n        keys.add(new CustomerKey(1, \"CUST-A\"));\n        \n        CustomerKey query = new CustomerKey(1, \"CUST-A\");\n        System.out.println(\"Query in set: \" + keys.contains(query));\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass CustomerKey {\n    private int tenantId;\n    private String customerCode;\n\n    public CustomerKey(int tenantId, String code) {\n        this.tenantId = tenantId;\n        this.customerCode = code;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        CustomerKey other = (CustomerKey) obj;\n        return tenantId == other.tenantId && Objects.equals(customerCode, other.customerCode);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(tenantId, customerCode);\n    }\n}\n\npublic class OverloadBugApp {\n    public static void main(String[] args) {\n        Set<CustomerKey> keys = new HashSet<>();\n        keys.add(new CustomerKey(1, \"CUST-A\"));\n        \n        CustomerKey query = new CustomerKey(1, \"CUST-A\");\n        System.out.println(\"Query in set: \" + keys.contains(query));\n    }\n}",
+      "expectedOutput": "Query in set: true",
+      "hints": [
+        "Change `equals(CustomerKey other)` to `equals(Object obj)`.",
+        "Add `@Override` annotation."
+      ]
+    },
+    {
+      "id": "prob-les8-p5",
+      "lessonId": "java-oop-mod9-les8",
+      "orderIndex": 5,
+      "title": "Comprehensive Defense-in-Depth Entity Equality Auditor",
+      "difficulty": "hard",
+      "problemStatement": "Build an entity class incorporating every single defensive equality practice from scratch:\n1. Class `AuditRecord`: \n   - Fields: `private final String recordId`, `private final double transactionAmount`, `private final String[] tags` (can be null), `private final String metadata` (can be null).\n   - Constructor initializes all four.\n   - Implement `equals(Object obj)` adhering to all rules:\n     - Check identity (`this == obj`).\n     - Check `obj == null || getClass() != obj.getClass()`.\n     - Compare `recordId` using `Objects.equals`.\n     - Compare `transactionAmount` using `Double.compare`.\n     - Compare `tags` array using `java.util.Arrays.equals`.\n     - Compare `metadata` using `Objects.equals`.\n   - Implement `hashCode()`:\n     - Use `Objects.hash(recordId, transactionAmount, Arrays.hashCode(tags), metadata)`.\n2. In `Main`, test:\n   - r1 = AuditRecord(\"REC-1\", 150.0, new String[]{\"finance\", \"q4\"}, null)\n   - r2 = AuditRecord(\"REC-1\", 150.0, new String[]{\"finance\", \"q4\"}, null)\n   - r3 = AuditRecord(\"REC-1\", 150.0, new String[]{\"audit\"}, null)\n3. Verify:\n   - Print `r1.equals(r2)` (true)\n   - Print `r1.equals(r3)` (false, different tags array)\n   - Print `r1.equals(null)` (false)\n   - Print `r1.hashCode() == r2.hashCode()` (true)",
+      "solutionCode": "import java.util.Arrays;\nimport java.util.Objects;\n\nclass AuditRecord {\n    private final String recordId;\n    private final double transactionAmount;\n    private final String[] tags;\n    private final String metadata;\n\n    public AuditRecord(String id, double amt, String[] tags, String meta) {\n        this.recordId = id;\n        this.transactionAmount = amt;\n        this.tags = tags;\n        this.metadata = meta;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        AuditRecord other = (AuditRecord) obj;\n        return Objects.equals(recordId, other.recordId) &&\n               Double.compare(transactionAmount, other.transactionAmount) == 0 &&\n               Arrays.equals(tags, other.tags) &&\n               Objects.equals(metadata, other.metadata);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(recordId, transactionAmount, Arrays.hashCode(tags), metadata);\n    }\n}\n\npublic class AuditApp {\n    public static void main(String[] args) {\n        AuditRecord r1 = new AuditRecord(\"REC-1\", 150.0, new String[]{\"finance\", \"q4\"}, null);\n        AuditRecord r2 = new AuditRecord(\"REC-1\", 150.0, new String[]{\"finance\", \"q4\"}, null);\n        AuditRecord r3 = new AuditRecord(\"REC-1\", 150.0, new String[]{\"audit\"}, null);\n        \n        System.out.println(r1.equals(r2));\n        System.out.println(r1.equals(r3));\n        System.out.println(r1.equals(null));\n        System.out.println(r1.hashCode() == r2.hashCode());\n    }\n}",
+      "expectedOutput": "true\nfalse\nfalse\ntrue",
+      "hints": [
+        "Arrays.equals handles null arrays gracefully.",
+        "Arrays.hashCode(tags) properly incorporates array content into hashCode."
+      ]
+    }
+  ]
+}

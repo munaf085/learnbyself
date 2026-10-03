@@ -1,0 +1,515 @@
+{
+  "id": "java-oop-mod8-les3",
+  "slug": "association",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Association",
+  "summary": "Understand the most general OOP relationship where independent objects interact, communicating through unidirectional and bidirectional links.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "objects-inside-objects"
+  ],
+  "learningObjectives": [
+    "Define Association as a loose 'uses-a' or 'knows-about' structural connection between independent objects",
+    "Differentiate Unidirectional Association from Bidirectional Association",
+    "Manage bidirectional association consistency without creating infinite recursion bugs",
+    "Model 1-to-1, 1-to-many, and many-to-many association cardinalities in Java collections"
+  ],
+  "expectedOutcomes": [
+    "You can model independent collaborating objects using clean association links",
+    "You can maintain bidirectional consistency and prevent StackOverflow errors in mutual references"
+  ],
+  "activities": [
+    {
+      "id": "act-les3-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: Doctor and Patient",
+      "concept": "Association and Independence",
+      "realWorldMetaphor": {
+        "scenario": "Consider Dr. Sarah and her patient Marcus. Dr. Sarah treats Marcus on Tuesday. Marcus consults Dr. Sarah. They know each other and interact professionally.",
+        "mapping": "If Dr. Sarah retires or moves to another hospital, Marcus does not cease to exist. If Marcus moves to another city, Dr. Sarah continues practicing medicine. Neither owns the lifecycle of the other. They are independent entities joined by a loose 'Association'.",
+        "takeaway": "Association describes peers that interact. Both objects have completely independent lifecycles."
+      }
+    },
+    {
+      "id": "act-les3-concept",
+      "type": "concept",
+      "title": "Mechanics and Cardinality of Association",
+      "content": "### What is Association?\n\n**Association** is the umbrella term for any structural relationship where objects know about each other and communicate via method calls. Neither object owns or controls the lifecycle of the other.\n\n### Directionality\n1. **Unidirectional**: Object A holds a reference to Object B, but B knows nothing about A.\n   - *Example*: A `Student` knows their `Locker`, but the `Locker` has no reference to the `Student`.\n2. **Bidirectional**: Object A holds a reference to Object B, and B holds a reference back to A.\n   - *Example*: A `Doctor` has a list of `Patient`s, and each `Patient` has a reference to their primary `Doctor`.\n\n### The Danger of Bidirectional Association\nBidirectional links require careful synchronization. If `patient.setDoctor(doc)` is called, you must also call `doc.addPatient(patient)` to prevent inconsistent state.\n> **Warning**: When printing or serializing bidirectional objects, mutual references will cause infinite recursion (`StackOverflowError`) unless you break the cycle!"
+    },
+    {
+      "id": "act-les3-cw1",
+      "type": "code_walkthrough",
+      "title": "Unidirectional vs Bidirectional Association",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Patient {\n    private String name;\n    public Patient(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Doctor {\n    private String name;\n    private String specialty;\n    // 1-to-Many Unidirectional Association\n    private List<Patient> patients = new ArrayList<>();\n\n    public Doctor(String name, String specialty) {\n        this.name = name;\n        this.specialty = specialty;\n    }\n\n    public void admitPatient(Patient p) {\n        patients.add(p);\n    }\n\n    public void conductRounds() {\n        System.out.println(\"Dr. \" + name + \" (\" + specialty + \") visiting patients:\");\n        for (Patient p : patients) {\n            System.out.println(\" - Checking chart for: \" + p.getName());\n        }\n    }\n}\n\npublic class AssociationDemo {\n    public static void main(String[] args) {\n        Patient p1 = new Patient(\"Marcus\");\n        Patient p2 = new Patient(\"Elena\");\n        \n        Doctor doc = new Doctor(\"Sarah Stone\", \"Cardiology\");\n        doc.admitPatient(p1);\n        doc.admitPatient(p2);\n        \n        doc.conductRounds();\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Patient {\n    private String name;\n    public Patient(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Doctor {\n    private String name;\n    private String specialty;\n    // 1-to-Many Unidirectional Association\n    private List<Patient> patients = new ArrayList<>();\n\n    public Doctor(String name, String specialty) {\n        this.name = name;\n        this.specialty = specialty;\n    }\n\n    public void admitPatient(Patient p) {\n        patients.add(p);\n    }\n\n    public void conductRounds() {\n        System.out.println(\"Dr. \" + name + \" (\" + specialty + \") visiting patients:\");\n        for (Patient p : patients) {\n            System.out.println(\" - Checking chart for: \" + p.getName());\n        }\n    }\n}\n\npublic class AssociationDemo {\n    public static void main(String[] args) {\n        Patient p1 = new Patient(\"Marcus\");\n        Patient p2 = new Patient(\"Elena\");\n        \n        Doctor doc = new Doctor(\"Sarah Stone\", \"Cardiology\");\n        doc.admitPatient(p1);\n        doc.admitPatient(p2);\n        \n        doc.conductRounds();\n    }\n}",
+      "language": "java",
+      "explanation": "Doctor and Patient exist independently. Doctor associates with Patient through a collection of references.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Patient` is instantiated independently with its own lifecycle."
+        },
+        {
+          "step": 2,
+          "description": "`Doctor` manages a `List<Patient>` modeling a 1-to-many association."
+        },
+        {
+          "step": 3,
+          "description": "`admitPatient` establishes the association link."
+        },
+        {
+          "step": 4,
+          "description": "`conductRounds` traverses the associated patient references."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-cw2",
+      "type": "code_walkthrough",
+      "title": "Maintaining Bidirectional Link Integrity Safely",
+      "codeSnippet": "class Passport {\n    private String passportNumber;\n    private Person owner; // Back-reference\n\n    public Passport(String passportNumber) {\n        this.passportNumber = passportNumber;\n    }\n\n    public String getPassportNumber() { return passportNumber; }\n    public Person getOwner() { return owner; }\n    void setOwnerInternal(Person p) { this.owner = p; }\n}\n\nclass Person {\n    private String name;\n    private Passport passport;\n\n    public Person(String name) { this.name = name; }\n    public String getName() { return name; }\n    public Passport getPassport() { return passport; }\n\n    // Synchronized bidirectional assignment\n    public void assignPassport(Passport p) {\n        this.passport = p;\n        if (p != null) {\n            p.setOwnerInternal(this);\n        }\n    }\n}\n\npublic class BidirectionalDemo {\n    public static void main(String[] args) {\n        Person citizen = new Person(\"John Doe\");\n        Passport doc = new Passport(\"US-887410\");\n        \n        citizen.assignPassport(doc);\n        System.out.println(citizen.getName() + \" holds: \" + citizen.getPassport().getPassportNumber());\n        System.out.println(\"Passport \" + doc.getPassportNumber() + \" belongs to: \" + doc.getOwner().getName());\n    }\n}",
+      "code": "class Passport {\n    private String passportNumber;\n    private Person owner; // Back-reference\n\n    public Passport(String passportNumber) {\n        this.passportNumber = passportNumber;\n    }\n\n    public String getPassportNumber() { return passportNumber; }\n    public Person getOwner() { return owner; }\n    void setOwnerInternal(Person p) { this.owner = p; }\n}\n\nclass Person {\n    private String name;\n    private Passport passport;\n\n    public Person(String name) { this.name = name; }\n    public String getName() { return name; }\n    public Passport getPassport() { return passport; }\n\n    // Synchronized bidirectional assignment\n    public void assignPassport(Passport p) {\n        this.passport = p;\n        if (p != null) {\n            p.setOwnerInternal(this);\n        }\n    }\n}\n\npublic class BidirectionalDemo {\n    public static void main(String[] args) {\n        Person citizen = new Person(\"John Doe\");\n        Passport doc = new Passport(\"US-887410\");\n        \n        citizen.assignPassport(doc);\n        System.out.println(citizen.getName() + \" holds: \" + citizen.getPassport().getPassportNumber());\n        System.out.println(\"Passport \" + doc.getPassportNumber() + \" belongs to: \" + doc.getOwner().getName());\n    }\n}",
+      "language": "java",
+      "explanation": "assignPassport sets both sides of the association simultaneously. Package-private setOwnerInternal avoids public misuse.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Passport` holds an `owner` back-reference, initialized to null."
+        },
+        {
+          "step": 2,
+          "description": "`Person.assignPassport` coordinates both links: `this.passport = p` and `p.setOwnerInternal(this)`."
+        },
+        {
+          "step": 3,
+          "description": "Package-private `setOwnerInternal` prevents external code from breaking link symmetry."
+        },
+        {
+          "step": 4,
+          "description": "Both objects can now cleanly navigate to each other without inconsistency."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-mcq",
+      "type": "mcq",
+      "title": "Association Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the defining lifecycle characteristic of an Association relationship?",
+          "options": [
+            "The contained object dies when the container dies",
+            "Both objects have completely independent lifecycles",
+            "Objects must be instantiated in the same method",
+            "One object must extend the other"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In an Association, both collaborating objects exist independently and neither owns the other's lifecycle.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What is a Unidirectional Association?",
+          "options": [
+            "Both objects have mutual references to each other",
+            "Only one object knows about and references the other",
+            "Objects can only communicate via static methods",
+            "A relationship that exists for only one millisecond"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Unidirectional means Object A stores a reference to Object B, but B does not store a reference to A.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "What serious runtime error often occurs when printing bidirectional objects with reciprocal toString() calls?",
+          "options": [
+            "OutOfMemoryError in Metaspace",
+            "StackOverflowError due to infinite recursion",
+            "ClassCastException",
+            "SecurityException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "If A's toString calls B's toString, which in turn calls A's toString, the call stack overflows with a StackOverflowError.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "Which data structure is most commonly used in Java to model a 1-to-Many association?",
+          "options": [
+            "java.util.List or java.util.Set",
+            "java.lang.Thread",
+            "java.lang.StringBuilder",
+            "int[] only"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Collections like List<T> or Set<T> model 1-to-many associations by holding references to multiple associated items.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "In UML class diagrams, how is an association typically drawn?",
+          "options": [
+            "A solid line between two classes, optionally with an open arrow showing navigability",
+            "A solid line with a filled black diamond",
+            "A dashed line with an open triangle",
+            "A dotted circle"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Association is represented by a solid line, with an open arrowhead indicating unidirectional navigation if specified.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "Why is keeping associations unidirectional preferred whenever possible?",
+          "options": [
+            "It reduces memory to zero",
+            "It reduces coupling, simplifies synchronization, and eliminates recursive cycle bugs",
+            "Java cannot compile bidirectional references",
+            "Unidirectional code is interpreted faster"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Unidirectional associations keep coupling one-way, avoiding circular dependencies and state synchronization bugs.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "What is an association class?",
+          "options": [
+            "A class that extends java.lang.Class",
+            "A class that models attributes of the association itself (e.g. Enrollment between Student and Course)",
+            "A class containing only static methods",
+            "An inner anonymous class"
+          ],
+          "correctAnswer": 1,
+          "explanation": "An association class (like Enrollment) holds data belonging to the relationship itself (e.g. grade, enrollmentDate).",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q8",
+          "question": "If Driver references Car and Car references Driver, what type of association is this?",
+          "options": [
+            "Unidirectional",
+            "Bidirectional",
+            "Inheritance",
+            "Polymorphic"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Mutual references make the relationship bidirectional.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q9",
+          "question": "How should a helper method synchronize a bidirectional link?",
+          "options": [
+            "By setting both the forward pointer and the reverse back-pointer in a single coordinated operation",
+            "By launching a background thread",
+            "By copying the entire database",
+            "By deleting one of the objects"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Synchronizing both references in a single coordinated method guarantees both sides stay in lockstep.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "Does passing an object as a method argument constitute an association?",
+          "options": [
+            "Yes, it is a transient dependency / use-relationship (sometimes called dependency association)",
+            "No, only static variables count",
+            "Only if it is stored in a final field",
+            "Only if the method returns an int"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Passing an object into a method represents a dependency ('uses-a') association.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les3-interview",
+      "type": "interview_qa",
+      "title": "Association Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the difference between Association, Aggregation, and Composition?",
+          "answer": "Association is the broadest term: any structural link between independent objects. Aggregation is a specialized 'weak' association representing a whole-part relationship where parts survive without the whole. Composition is a 'strong' whole-part relationship where the whole strictly manages the lifecycle of the parts.",
+          "expectedAnswer": "Association is the broadest term: any structural link between independent objects. Aggregation is a specialized 'weak' association representing a whole-part relationship where parts survive without the whole. Composition is a 'strong' whole-part relationship where the whole strictly manages the lifecycle of the parts.",
+          "keyTakeaway": "Association is generic link; Aggregation is independent part-whole; Composition is lifecycle-bound part-whole.",
+          "keyPoints": [
+            "Association is generic link; Aggregation is independent part-whole; Composition is lifecycle-bound part-whole."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you model a Many-to-Many association cleanly in Java?",
+          "answer": "A Many-to-Many association (e.g. Student and Course) is best modeled either with mutual collection fields (`List<Course>` in Student and `List<Student>` in Course), or even better, via an explicit association entity (`Enrollment`) containing references to both plus association metadata.",
+          "expectedAnswer": "A Many-to-Many association (e.g. Student and Course) is best modeled either with mutual collection fields (`List<Course>` in Student and `List<Student>` in Course), or even better, via an explicit association entity (`Enrollment`) containing references to both plus association metadata.",
+          "keyTakeaway": "Use an association class (join entity) when the relationship itself has state or complex lifecycle.",
+          "keyPoints": [
+            "Use an association class (join entity) when the relationship itself has state or complex lifecycle."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you prevent circular dependency and infinite recursion in bidirectional associations?",
+          "answer": "1. Never have reciprocal `toString()`, `hashCode()`, or `equals()` calls that recurse into the back-reference. 2. Use Jackson `@JsonBackReference` or `@JsonManagedReference` when serializing to JSON. 3. Prefer unidirectional associations unless bidirectional navigation is strictly required.",
+          "expectedAnswer": "1. Never have reciprocal `toString()`, `hashCode()`, or `equals()` calls that recurse into the back-reference. 2. Use Jackson `@JsonBackReference` or `@JsonManagedReference` when serializing to JSON. 3. Prefer unidirectional associations unless bidirectional navigation is strictly required.",
+          "keyTakeaway": "Exclude the back-reference from recursive methods and serialization.",
+          "keyPoints": [
+            "Exclude the back-reference from recursive methods and serialization."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between a Dependency ('uses-a') and an Association ('has-a')?",
+          "answer": "An association is structural: an object holds a reference field to another object across method invocations. A dependency is transient: an object receives another object as a method parameter or instantiates it locally inside a method just for the duration of that call.",
+          "expectedAnswer": "An association is structural: an object holds a reference field to another object across method invocations. A dependency is transient: an object receives another object as a method parameter or instantiates it locally inside a method just for the duration of that call.",
+          "keyTakeaway": "Association persists as an instance field; dependency exists temporarily during a method call.",
+          "keyPoints": [
+            "Association persists as an instance field; dependency exists temporarily during a method call."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does JPA / Hibernate handle bidirectional entity associations?",
+          "answer": "JPA uses the `mappedBy` attribute on the inverse side of the relationship to declare the 'owning side'. The owning side is responsible for updating the foreign key in the database table.",
+          "expectedAnswer": "JPA uses the `mappedBy` attribute on the inverse side of the relationship to declare the 'owning side'. The owning side is responsible for updating the foreign key in the database table.",
+          "keyTakeaway": "In JPA, the owning side manages the foreign key column; mappedBy marks the inverse side.",
+          "keyPoints": [
+            "In JPA, the owning side manages the foreign key column; mappedBy marks the inverse side."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is high coupling in associations considered a code smell?",
+          "answer": "When too many classes are associated with each other, changes to one class ripple across the entire system. It also makes isolated unit testing difficult because instantiating one class requires instantiating dozens of associated peers.",
+          "expectedAnswer": "When too many classes are associated with each other, changes to one class ripple across the entire system. It also makes isolated unit testing difficult because instantiating one class requires instantiating dozens of associated peers.",
+          "keyTakeaway": "Keep associations minimal, focused, and decoupled via interfaces to maintain testability.",
+          "keyPoints": [
+            "Keep associations minimal, focused, and decoupled via interfaces to maintain testability."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the difference between Association, Aggregation, and Composition?",
+          "answer": "Association is the broadest term: any structural link between independent objects. Aggregation is a specialized 'weak' association representing a whole-part relationship where parts survive without the whole. Composition is a 'strong' whole-part relationship where the whole strictly manages the lifecycle of the parts.",
+          "expectedAnswer": "Association is the broadest term: any structural link between independent objects. Aggregation is a specialized 'weak' association representing a whole-part relationship where parts survive without the whole. Composition is a 'strong' whole-part relationship where the whole strictly manages the lifecycle of the parts.",
+          "keyTakeaway": "Association is generic link; Aggregation is independent part-whole; Composition is lifecycle-bound part-whole.",
+          "keyPoints": [
+            "Association is generic link; Aggregation is independent part-whole; Composition is lifecycle-bound part-whole."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you model a Many-to-Many association cleanly in Java?",
+          "answer": "A Many-to-Many association (e.g. Student and Course) is best modeled either with mutual collection fields (`List<Course>` in Student and `List<Student>` in Course), or even better, via an explicit association entity (`Enrollment`) containing references to both plus association metadata.",
+          "expectedAnswer": "A Many-to-Many association (e.g. Student and Course) is best modeled either with mutual collection fields (`List<Course>` in Student and `List<Student>` in Course), or even better, via an explicit association entity (`Enrollment`) containing references to both plus association metadata.",
+          "keyTakeaway": "Use an association class (join entity) when the relationship itself has state or complex lifecycle.",
+          "keyPoints": [
+            "Use an association class (join entity) when the relationship itself has state or complex lifecycle."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you prevent circular dependency and infinite recursion in bidirectional associations?",
+          "answer": "1. Never have reciprocal `toString()`, `hashCode()`, or `equals()` calls that recurse into the back-reference. 2. Use Jackson `@JsonBackReference` or `@JsonManagedReference` when serializing to JSON. 3. Prefer unidirectional associations unless bidirectional navigation is strictly required.",
+          "expectedAnswer": "1. Never have reciprocal `toString()`, `hashCode()`, or `equals()` calls that recurse into the back-reference. 2. Use Jackson `@JsonBackReference` or `@JsonManagedReference` when serializing to JSON. 3. Prefer unidirectional associations unless bidirectional navigation is strictly required.",
+          "keyTakeaway": "Exclude the back-reference from recursive methods and serialization.",
+          "keyPoints": [
+            "Exclude the back-reference from recursive methods and serialization."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between a Dependency ('uses-a') and an Association ('has-a')?",
+          "answer": "An association is structural: an object holds a reference field to another object across method invocations. A dependency is transient: an object receives another object as a method parameter or instantiates it locally inside a method just for the duration of that call.",
+          "expectedAnswer": "An association is structural: an object holds a reference field to another object across method invocations. A dependency is transient: an object receives another object as a method parameter or instantiates it locally inside a method just for the duration of that call.",
+          "keyTakeaway": "Association persists as an instance field; dependency exists temporarily during a method call.",
+          "keyPoints": [
+            "Association persists as an instance field; dependency exists temporarily during a method call."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does JPA / Hibernate handle bidirectional entity associations?",
+          "answer": "JPA uses the `mappedBy` attribute on the inverse side of the relationship to declare the 'owning side'. The owning side is responsible for updating the foreign key in the database table.",
+          "expectedAnswer": "JPA uses the `mappedBy` attribute on the inverse side of the relationship to declare the 'owning side'. The owning side is responsible for updating the foreign key in the database table.",
+          "keyTakeaway": "In JPA, the owning side manages the foreign key column; mappedBy marks the inverse side.",
+          "keyPoints": [
+            "In JPA, the owning side manages the foreign key column; mappedBy marks the inverse side."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is high coupling in associations considered a code smell?",
+          "answer": "When too many classes are associated with each other, changes to one class ripple across the entire system. It also makes isolated unit testing difficult because instantiating one class requires instantiating dozens of associated peers.",
+          "expectedAnswer": "When too many classes are associated with each other, changes to one class ripple across the entire system. It also makes isolated unit testing difficult because instantiating one class requires instantiating dozens of associated peers.",
+          "keyTakeaway": "Keep associations minimal, focused, and decoupled via interfaces to maintain testability.",
+          "keyPoints": [
+            "Keep associations minimal, focused, and decoupled via interfaces to maintain testability."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les3-checklist",
+      "type": "self_evaluation",
+      "title": "Association Architecture Checklist",
+      "items": [
+        "I understand that associated objects have independent lifecycles.",
+        "I prefer unidirectional associations over bidirectional associations to minimize coupling.",
+        "I protect bidirectional relationships with coordinated setter methods.",
+        "I exclude back-references from toString() and hashCode() to avoid StackOverflowError.",
+        "I model 1-to-many associations using standard Java Collections (List, Set).",
+        "I use an association class when a relationship holds its own domain attributes.",
+        "I distinguish transient parameter dependencies from structural field associations.",
+        "I encapsulate association collections and return unmodifiable views if appropriate.",
+        "I recognize association representations in UML class diagrams.",
+        "I know how ORMs like JPA assign ownership to bidirectional relationships."
+      ],
+      "checklist": [
+        "I understand that associated objects have independent lifecycles.",
+        "I prefer unidirectional associations over bidirectional associations to minimize coupling.",
+        "I protect bidirectional relationships with coordinated setter methods.",
+        "I exclude back-references from toString() and hashCode() to avoid StackOverflowError.",
+        "I model 1-to-many associations using standard Java Collections (List, Set).",
+        "I use an association class when a relationship holds its own domain attributes.",
+        "I distinguish transient parameter dependencies from structural field associations.",
+        "I encapsulate association collections and return unmodifiable views if appropriate.",
+        "I recognize association representations in UML class diagrams.",
+        "I know how ORMs like JPA assign ownership to bidirectional relationships."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les3-p1",
+      "lessonId": "java-oop-mod8-les3",
+      "orderIndex": 1,
+      "title": "Bank Customer and Savings Account Association",
+      "difficulty": "easy",
+      "problemStatement": "Complete the 1-to-many association between `Customer` and `Account`. Complete `Customer.addAccount` and `Customer.listAccounts` so it prints each account's details as specified.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Account {\n    private String accountId;\n    private double balance;\n    public Account(String accountId, double balance) {\n        this.accountId = accountId;\n        this.balance = balance;\n    }\n    public String getSummary() {\n        return accountId + \" ($ \" + balance + \")\";\n    }\n}\n\nclass Customer {\n    private String name;\n    private List<Account> accounts = new ArrayList<>();\n    \n    public Customer(String name) {\n        this.name = name;\n    }\n    \n    public void addAccount(Account a) {\n        // TODO: add account to accounts list\n    }\n    \n    public void listAccounts() {\n        System.out.println(\"Customer: \" + name);\n        // TODO: Loop through accounts and print ' - Account: ' + account summary\n    }\n}\n\npublic class CustomerApp {\n    public static void main(String[] args) {\n        Customer cust = new Customer(\"Sarah Connor\");\n        cust.addAccount(new Account(\"CHK-110\", 1250.0));\n        cust.addAccount(new Account(\"SAV-220\", 5400.0));\n        cust.listAccounts();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Account {\n    private String accountId;\n    private double balance;\n    public Account(String accountId, double balance) {\n        this.accountId = accountId;\n        this.balance = balance;\n    }\n    public String getSummary() {\n        return accountId + \" ($ \" + balance + \")\";\n    }\n}\n\nclass Customer {\n    private String name;\n    private List<Account> accounts = new ArrayList<>();\n    \n    public Customer(String name) {\n        this.name = name;\n    }\n    \n    public void addAccount(Account a) {\n        // TODO: add account to accounts list\n    }\n    \n    public void listAccounts() {\n        System.out.println(\"Customer: \" + name);\n        // TODO: Loop through accounts and print ' - Account: ' + account summary\n    }\n}\n\npublic class CustomerApp {\n    public static void main(String[] args) {\n        Customer cust = new Customer(\"Sarah Connor\");\n        cust.addAccount(new Account(\"CHK-110\", 1250.0));\n        cust.addAccount(new Account(\"SAV-220\", 5400.0));\n        cust.listAccounts();\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Account {\n    private String accountId;\n    private double balance;\n    public Account(String accountId, double balance) {\n        this.accountId = accountId;\n        this.balance = balance;\n    }\n    public String getSummary() {\n        return accountId + \" ($ \" + balance + \")\";\n    }\n}\n\nclass Customer {\n    private String name;\n    private List<Account> accounts = new ArrayList<>();\n    \n    public Customer(String name) {\n        this.name = name;\n    }\n    \n    public void addAccount(Account a) {\n        accounts.add(a);\n    }\n    \n    public void listAccounts() {\n        System.out.println(\"Customer: \" + name);\n        for (Account a : accounts) {\n            System.out.println(\" - Account: \" + a.getSummary());\n        }\n    }\n}\n\npublic class CustomerApp {\n    public static void main(String[] args) {\n        Customer cust = new Customer(\"Sarah Connor\");\n        cust.addAccount(new Account(\"CHK-110\", 1250.0));\n        cust.addAccount(new Account(\"SAV-220\", 5400.0));\n        cust.listAccounts();\n    }\n}",
+      "expectedOutput": "Customer: Sarah Connor\n - Account: CHK-110 ($ 1250.0)\n - Account: SAV-220 ($ 5400.0)",
+      "hints": [
+        "Call `accounts.add(a)` in `addAccount`.",
+        "Iterate over `accounts` using an enhanced for-loop in `listAccounts`."
+      ]
+    },
+    {
+      "id": "prob-les3-p2",
+      "lessonId": "java-oop-mod8-les3",
+      "orderIndex": 2,
+      "title": "Safe Bidirectional Teacher and Classroom Link",
+      "difficulty": "medium",
+      "problemStatement": "Build a safe 1-to-1 bidirectional association between `Teacher` and `Classroom` from scratch:\n1. Class `Classroom`: has `private String roomNumber` and `private Teacher teacher`. Constructor initializes roomNumber. Getters for both. Package-private `void setTeacherInternal(Teacher t)` assigns teacher.\n2. Class `Teacher`: has `private String teacherName` and `private Classroom assignedRoom`. Constructor initializes teacherName. Getters for both.\n   - Method `public void assignClassroom(Classroom room)`: assigns `this.assignedRoom = room;` and if `room != null`, calls `room.setTeacherInternal(this)`.\n3. In `Main`, create `Teacher t = new Teacher(\"Prof. Davis\")`, `Classroom r = new Classroom(\"Room-302\")`.\n4. Call `t.assignClassroom(r)`.\n5. Print: `'Teacher ' + t.getTeacherName() + ' is in ' + t.getAssignedRoom().getRoomNumber()` and `'Classroom ' + r.getRoomNumber() + ' is taught by ' + r.getTeacher().getTeacherName()`.",
+      "solutionCode": "class Classroom {\n    private String roomNumber;\n    private Teacher teacher;\n    public Classroom(String roomNumber) {\n        this.roomNumber = roomNumber;\n    }\n    public String getRoomNumber() { return roomNumber; }\n    public Teacher getTeacher() { return teacher; }\n    void setTeacherInternal(Teacher t) { this.teacher = t; }\n}\n\nclass Teacher {\n    private String teacherName;\n    private Classroom assignedRoom;\n    public Teacher(String teacherName) {\n        this.teacherName = teacherName;\n    }\n    public String getTeacherName() { return teacherName; }\n    public Classroom getAssignedRoom() { return assignedRoom; }\n    public void assignClassroom(Classroom room) {\n        this.assignedRoom = room;\n        if (room != null) {\n            room.setTeacherInternal(this);\n        }\n    }\n}\n\npublic class SchoolApp {\n    public static void main(String[] args) {\n        Teacher t = new Teacher(\"Prof. Davis\");\n        Classroom r = new Classroom(\"Room-302\");\n        t.assignClassroom(r);\n        System.out.println(\"Teacher \" + t.getTeacherName() + \" is in \" + t.getAssignedRoom().getRoomNumber());\n        System.out.println(\"Classroom \" + r.getRoomNumber() + \" is taught by \" + r.getTeacher().getTeacherName());\n    }\n}",
+      "expectedOutput": "Teacher Prof. Davis is in Room-302\nClassroom Room-302 is taught by Prof. Davis",
+      "hints": [
+        "Teacher.assignClassroom binds both references simultaneously.",
+        "Use setTeacherInternal to avoid infinite recursion."
+      ]
+    },
+    {
+      "id": "prob-les3-p3",
+      "lessonId": "java-oop-mod8-les3",
+      "orderIndex": 3,
+      "title": "Hospital Medical Staff On-Call Registry",
+      "difficulty": "medium",
+      "problemStatement": "Build a hospital shift scheduling association from scratch:\n1. Class `Doctor`: holds `private String doctorId` and `private String specialty`. Constructor initializes both. Method `public String getInfo()` returns `'Dr. ID: ' + doctorId + ' [' + specialty + ']'`.\n2. Class `ShiftSchedule`: holds `private String shiftDate` and `private java.util.List<Doctor> onCallDoctors = new java.util.ArrayList<>()`.\n   - Constructor initializes shiftDate.\n   - Method `public void assignDoctor(Doctor doc)` adds doc to the list.\n   - Method `public void printRoster()` prints `'=== Shift: ' + shiftDate + ' ==='` followed by each doctor on call indented with `' * ' + doc.getInfo()`.\n3. In `Main`, create shift for '2026-10-15', assign Dr. 101 (Trauma) and Dr. 102 (Neurology), then call `printRoster()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Doctor {\n    private String doctorId;\n    private String specialty;\n    public Doctor(String doctorId, String specialty) {\n        this.doctorId = doctorId;\n        this.specialty = specialty;\n    }\n    public String getInfo() {\n        return \"Dr. ID: \" + doctorId + \" [\" + specialty + \"]\";\n    }\n}\n\nclass ShiftSchedule {\n    private String shiftDate;\n    private List<Doctor> onCallDoctors = new ArrayList<>();\n    public ShiftSchedule(String shiftDate) {\n        this.shiftDate = shiftDate;\n    }\n    public void assignDoctor(Doctor doc) {\n        onCallDoctors.add(doc);\n    }\n    public void printRoster() {\n        System.out.println(\"=== Shift: \" + shiftDate + \" ===\");\n        for (Doctor doc : onCallDoctors) {\n            System.out.println(\" * \" + doc.getInfo());\n        }\n    }\n}\n\npublic class HospitalApp {\n    public static void main(String[] args) {\n        ShiftSchedule shift = new ShiftSchedule(\"2026-10-15\");\n        shift.assignDoctor(new Doctor(\"DOC-101\", \"Trauma\"));\n        shift.assignDoctor(new Doctor(\"DOC-102\", \"Neurology\"));\n        shift.printRoster();\n    }\n}",
+      "expectedOutput": "=== Shift: 2026-10-15 ===\n * Dr. ID: DOC-101 [Trauma]\n * Dr. ID: DOC-102 [Neurology]",
+      "hints": [
+        "Doctor and ShiftSchedule have independent lifecycles.",
+        "ShiftSchedule uses List<Doctor> to store associated doctors."
+      ]
+    },
+    {
+      "id": "prob-les3-p4",
+      "lessonId": "java-oop-mod8-les3",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Infinite Recursion StackOverflow in toString()",
+      "difficulty": "medium",
+      "problemStatement": "The following program crashes with `StackOverflowError` because `Employee.toString()` calls `Department.toString()`, which in turn calls `Employee.toString()`. Fix the bug by eliminating the circular call in `Department.toString()`: print just the department name and employee count instead of the whole employee object graph.",
+      "starterCode": "class Employee {\n    private String name;\n    private Department department;\n    public Employee(String name, Department department) {\n        this.name = name;\n        this.department = department;\n    }\n    public String getName() { return name; }\n    @Override\n    public String toString() {\n        return \"Employee{name='\" + name + \"', dept=\" + department + \"}\";\n    }\n}\n\nclass Department {\n    private String deptName;\n    private Employee lead;\n    public Department(String deptName) { this.deptName = deptName; }\n    public void setLead(Employee lead) { this.lead = lead; }\n    \n    // BUG: Recursive toString call triggers StackOverflowError!\n    @Override\n    public String toString() {\n        return \"Department{deptName='\" + deptName + \"', lead=\" + lead + \"}\";\n    }\n}\n\npublic class RecursionBugApp {\n    public static void main(String[] args) {\n        Department dept = new Department(\"Engineering\");\n        Employee emp = new Employee(\"Grace Hopper\", dept);\n        dept.setLead(emp);\n        System.out.println(emp);\n    }\n}",
+      "initialCode": "class Employee {\n    private String name;\n    private Department department;\n    public Employee(String name, Department department) {\n        this.name = name;\n        this.department = department;\n    }\n    public String getName() { return name; }\n    @Override\n    public String toString() {\n        return \"Employee{name='\" + name + \"', dept=\" + department + \"}\";\n    }\n}\n\nclass Department {\n    private String deptName;\n    private Employee lead;\n    public Department(String deptName) { this.deptName = deptName; }\n    public void setLead(Employee lead) { this.lead = lead; }\n    \n    // BUG: Recursive toString call triggers StackOverflowError!\n    @Override\n    public String toString() {\n        return \"Department{deptName='\" + deptName + \"', lead=\" + lead + \"}\";\n    }\n}\n\npublic class RecursionBugApp {\n    public static void main(String[] args) {\n        Department dept = new Department(\"Engineering\");\n        Employee emp = new Employee(\"Grace Hopper\", dept);\n        dept.setLead(emp);\n        System.out.println(emp);\n    }\n}",
+      "solutionCode": "class Employee {\n    private String name;\n    private Department department;\n    public Employee(String name, Department department) {\n        this.name = name;\n        this.department = department;\n    }\n    public String getName() { return name; }\n    @Override\n    public String toString() {\n        return \"Employee{name='\" + name + \"', dept=\" + department + \"}\";\n    }\n}\n\nclass Department {\n    private String deptName;\n    private Employee lead;\n    public Department(String deptName) { this.deptName = deptName; }\n    public void setLead(Employee lead) { this.lead = lead; }\n    \n    @Override\n    public String toString() {\n        return \"Department{deptName='\" + deptName + \"'}\";\n    }\n}\n\npublic class RecursionBugApp {\n    public static void main(String[] args) {\n        Department dept = new Department(\"Engineering\");\n        Employee emp = new Employee(\"Grace Hopper\", dept);\n        dept.setLead(emp);\n        System.out.println(emp);\n    }\n}",
+      "expectedOutput": "Employee{name='Grace Hopper', dept=Department{deptName='Engineering'}}",
+      "hints": [
+        "Remove lead from Department.toString() to break the infinite mutual recursion cycle."
+      ]
+    },
+    {
+      "id": "prob-les3-p5",
+      "lessonId": "java-oop-mod8-les3",
+      "orderIndex": 5,
+      "title": "Many-to-Many University Course Enrollment Entity",
+      "difficulty": "hard",
+      "problemStatement": "Implement a clean Many-to-Many association using an explicit Association Class (`Enrollment`) from scratch:\n1. Class `Student`: holds `private String studentId` and `private String name`. Getters for both.\n2. Class `Course`: holds `private String courseCode` and `private String title`. Getters for both.\n3. Association Class `Enrollment`:\n   - Holds `private Student student`, `private Course course`, and `private String grade`.\n   - Constructor accepts `Student student, Course course, String grade`.\n   - Method `public void printRecord()`: prints `'[Enrollment] ' + student.getName() + ' enrolled in ' + course.getCourseCode() + ' (' + course.getTitle() + ') -> Grade: ' + grade`.\n4. In `Main`, create student 'Alice' (ID S01), two courses 'CS101' ('Intro to CS') and 'CS102' ('Data Structures'). Create two enrollments: Alice in CS101 with grade 'A', and Alice in CS102 with grade 'A-'. Call `printRecord()` on both enrollments.",
+      "solutionCode": "class Student {\n    private String studentId;\n    private String name;\n    public Student(String studentId, String name) {\n        this.studentId = studentId;\n        this.name = name;\n    }\n    public String getStudentId() { return studentId; }\n    public String getName() { return name; }\n}\n\nclass Course {\n    private String courseCode;\n    private String title;\n    public Course(String courseCode, String title) {\n        this.courseCode = courseCode;\n        this.title = title;\n    }\n    public String getCourseCode() { return courseCode; }\n    public String getTitle() { return title; }\n}\n\nclass Enrollment {\n    private Student student;\n    private Course course;\n    private String grade;\n\n    public Enrollment(Student student, Course course, String grade) {\n        this.student = student;\n        this.course = course;\n        this.grade = grade;\n    }\n\n    public void printRecord() {\n        System.out.println(\"[Enrollment] \" + student.getName() + \" enrolled in \" + course.getCourseCode() + \" (\" + course.getTitle() + \") -> Grade: \" + grade);\n    }\n}\n\npublic class UniversityApp {\n    public static void main(String[] args) {\n        Student alice = new Student(\"S01\", \"Alice\");\n        Course cs101 = new Course(\"CS101\", \"Intro to CS\");\n        Course cs102 = new Course(\"CS102\", \"Data Structures\");\n        \n        Enrollment e1 = new Enrollment(alice, cs101, \"A\");\n        Enrollment e2 = new Enrollment(alice, cs102, \"A-\");\n        \n        e1.printRecord();\n        e2.printRecord();\n    }\n}",
+      "expectedOutput": "[Enrollment] Alice enrolled in CS101 (Intro to CS) -> Grade: A\n[Enrollment] Alice enrolled in CS102 (Data Structures) -> Grade: A-",
+      "hints": [
+        "Enrollment models the association itself, encapsulating the relationship attribute 'grade'.",
+        "Neither Student nor Course owns each other; Enrollment associates them."
+      ]
+    }
+  ]
+}

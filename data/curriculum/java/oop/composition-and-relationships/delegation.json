@@ -1,0 +1,514 @@
+{
+  "id": "java-oop-mod8-les8",
+  "slug": "delegation",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Delegation",
+  "summary": "Master the Delegation Pattern: forwarding operations to internal helper objects to achieve code reuse without inheritance.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "composition-vs-inheritance"
+  ],
+  "learningObjectives": [
+    "Define Delegation as a design pattern where an object handles a request by passing it to another object",
+    "Differentiate direct inheritance from delegated composition",
+    "Implement forwarding methods in wrapper and proxy classes",
+    "Utilize delegation to achieve dynamic runtime policy switches"
+  ],
+  "expectedOutcomes": [
+    "You can implement forwarding wrapper methods cleanly and efficiently",
+    "You can replace complex multi-inheritance designs with clean delegation hierarchies"
+  ],
+  "activities": [
+    {
+      "id": "act-les8-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The CEO and the Executive Assistant",
+      "concept": "Delegation in Practice",
+      "realWorldMetaphor": {
+        "scenario": "A client calls the CEO to schedule a high-level briefing. The CEO does not personally log into Google Calendar, check timezones, or send calendar invitations. The CEO replies, 'My office will set that up,' and forwards the scheduling task to their Executive Assistant. To the external client, the CEO handled the request.",
+        "mapping": "The `CEO` is the delegator. The `ExecutiveAssistant` is the delegatee (helper object). The CEO presents a clean interface to the outside world, while delegating the gritty labor to the specialized assistant.",
+        "takeaway": "Delegation allows an outer object to satisfy requests by passing the actual execution to an internal specialist."
+      }
+    },
+    {
+      "id": "act-les8-concept",
+      "type": "concept",
+      "title": "The Mechanics of the Delegation Pattern",
+      "content": "### What is Delegation?\n\n**Delegation** is an object-oriented pattern where an object receives a method call from a client and immediately forwards (delegates) that call to an underlying helper object:\n```java\nclass Printer {\n    private RealPrinter delegate = new RealPrinter();\n    \n    public void print(String doc) {\n        delegate.print(doc); // Delegation!\n    }\n}\n```\n\n### Why Use Delegation Instead of Inheritance?\n1. **Encapsulation**: The client only knows about `Printer`. The existence of `RealPrinter` is completely hidden.\n2. **Dynamic Behavior**: The delegate can be replaced at runtime (e.g. switching from `LocalPrinter` to `NetworkPrinter`).\n3. **Multiple Delegation**: Java forbids multiple class inheritance (`class A extends B, C` is illegal). However, a class can delegate to 10 different helper objects seamlessly!"
+    },
+    {
+      "id": "act-les8-cw1",
+      "type": "code_walkthrough",
+      "title": "Delegation Pattern: Replacing Multi-Inheritance",
+      "codeSnippet": "class SpellChecker {\n    public void check(String text) {\n        System.out.println(\"[SpellChecker] Verifying spelling for: \\\"\" + text + \"\\\"\");\n    }\n}\n\nclass WordCounter {\n    public int countWords(String text) {\n        return text.split(\"\\\\s+\").length;\n    }\n}\n\n// TextEditor delegates to two specialized helper objects without multiple inheritance\nclass TextEditor {\n    private SpellChecker spellChecker = new SpellChecker();\n    private WordCounter wordCounter = new WordCounter();\n\n    public void analyzeDocument(String text) {\n        System.out.println(\"Analyzing document...\");\n        spellChecker.check(text); // Delegated call 1\n        int count = wordCounter.countWords(text); // Delegated call 2\n        System.out.println(\"Word count: \" + count);\n    }\n}\n\npublic class DelegationDemo {\n    public static void main(String[] args) {\n        TextEditor editor = new TextEditor();\n        editor.analyzeDocument(\"Polymorphism and Composition in Java\");\n    }\n}",
+      "code": "class SpellChecker {\n    public void check(String text) {\n        System.out.println(\"[SpellChecker] Verifying spelling for: \\\"\" + text + \"\\\"\");\n    }\n}\n\nclass WordCounter {\n    public int countWords(String text) {\n        return text.split(\"\\\\s+\").length;\n    }\n}\n\n// TextEditor delegates to two specialized helper objects without multiple inheritance\nclass TextEditor {\n    private SpellChecker spellChecker = new SpellChecker();\n    private WordCounter wordCounter = new WordCounter();\n\n    public void analyzeDocument(String text) {\n        System.out.println(\"Analyzing document...\");\n        spellChecker.check(text); // Delegated call 1\n        int count = wordCounter.countWords(text); // Delegated call 2\n        System.out.println(\"Word count: \" + count);\n    }\n}\n\npublic class DelegationDemo {\n    public static void main(String[] args) {\n        TextEditor editor = new TextEditor();\n        editor.analyzeDocument(\"Polymorphism and Composition in Java\");\n    }\n}",
+      "language": "java",
+      "explanation": "TextEditor acts as a clean facade that delegates tasks to SpellChecker and WordCounter, achieving multiple behavior reuse without inheritance.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SpellChecker` and `WordCounter` are distinct helper classes with isolated responsibilities."
+        },
+        {
+          "step": 2,
+          "description": "`TextEditor` composes both helpers as private fields."
+        },
+        {
+          "step": 3,
+          "description": "`analyzeDocument` delegates specific subtasks to each respective helper."
+        },
+        {
+          "step": 4,
+          "description": "Clients get a unified API without dealing with multiple inheritance complexities."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-cw2",
+      "type": "code_walkthrough",
+      "title": "Runtime Strategy Switching via Delegation",
+      "codeSnippet": "interface CompressionAlgorithm {\n    void compress(String filename);\n}\n\nclass ZipCompression implements CompressionAlgorithm {\n    public void compress(String filename) {\n        System.out.println(\"[ZIP] Compressing \" + filename + \" using Deflate algorithm.\");\n    }\n}\n\nclass GzipCompression implements CompressionAlgorithm {\n    public void compress(String filename) {\n        System.out.println(\"[GZIP] Compressing \" + filename + \" using LZ77 algorithm.\");\n    }\n}\n\nclass Archiver {\n    private CompressionAlgorithm compressor; // Delegate interface\n\n    public Archiver(CompressionAlgorithm compressor) {\n        this.compressor = compressor;\n    }\n\n    public void setAlgorithm(CompressionAlgorithm newAlgorithm) {\n        this.compressor = newAlgorithm;\n    }\n\n    // Forwarding method\n    public void archive(String filename) {\n        compressor.compress(filename);\n    }\n}\n\npublic class StrategyDelegationDemo {\n    public static void main(String[] args) {\n        Archiver archiver = new Archiver(new ZipCompression());\n        archiver.archive(\"dataset.csv\");\n\n        // Swapping the delegate dynamically at runtime\n        archiver.setAlgorithm(new GzipCompression());\n        archiver.archive(\"server_logs.txt\");\n    }\n}",
+      "code": "interface CompressionAlgorithm {\n    void compress(String filename);\n}\n\nclass ZipCompression implements CompressionAlgorithm {\n    public void compress(String filename) {\n        System.out.println(\"[ZIP] Compressing \" + filename + \" using Deflate algorithm.\");\n    }\n}\n\nclass GzipCompression implements CompressionAlgorithm {\n    public void compress(String filename) {\n        System.out.println(\"[GZIP] Compressing \" + filename + \" using LZ77 algorithm.\");\n    }\n}\n\nclass Archiver {\n    private CompressionAlgorithm compressor; // Delegate interface\n\n    public Archiver(CompressionAlgorithm compressor) {\n        this.compressor = compressor;\n    }\n\n    public void setAlgorithm(CompressionAlgorithm newAlgorithm) {\n        this.compressor = newAlgorithm;\n    }\n\n    // Forwarding method\n    public void archive(String filename) {\n        compressor.compress(filename);\n    }\n}\n\npublic class StrategyDelegationDemo {\n    public static void main(String[] args) {\n        Archiver archiver = new Archiver(new ZipCompression());\n        archiver.archive(\"dataset.csv\");\n\n        // Swapping the delegate dynamically at runtime\n        archiver.setAlgorithm(new GzipCompression());\n        archiver.archive(\"server_logs.txt\");\n    }\n}",
+      "language": "java",
+      "explanation": "Archiver delegates compression to a swappable CompressionAlgorithm. Switching delegates alters behavior without modifying Archiver.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`CompressionAlgorithm` interface specifies the compression operation."
+        },
+        {
+          "step": 2,
+          "description": "`Archiver` forwards `archive()` calls to `compressor.compress()`."
+        },
+        {
+          "step": 3,
+          "description": "`setAlgorithm` enables dynamically changing the delegate strategy at runtime."
+        },
+        {
+          "step": 4,
+          "description": "The exact same archiver instance switches algorithms seamlessly."
+        }
+      ]
+    },
+    {
+      "id": "act-les8-mcq",
+      "type": "mcq",
+      "title": "Delegation Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the core definition of Delegation in OOP?",
+          "options": [
+            "A subclass overriding a superclass method",
+            "An object passing the responsibility for an operation to a secondary helper object",
+            "Deleting unused variables from memory",
+            "Declaring all variables static"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Delegation is handing off the responsibility of handling a request to another collaborator object.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "How does Delegation circumvent Java's single inheritance limitation?",
+          "options": [
+            "It doesn't; Java allows multiple inheritance",
+            "A class can contain references to and delegate to multiple distinct helper objects",
+            "By using native C++ pointers",
+            "By overloading bytecode"
+          ],
+          "correctAnswer": 1,
+          "explanation": "While Java prevents extending multiple classes, a class can hold any number of helper delegates and forward calls to them.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "What is a 'Forwarding Method'?",
+          "options": [
+            "A method that only calls a method with the same name on an internal delegate object",
+            "A method that navigates forward in an array",
+            "A constructor that calls super()",
+            "A method that returns a future"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A forwarding method forwards its invocation directly to a helper object's method.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "Which design pattern is a pure expression of Delegation where algorithms are swappable at runtime?",
+          "options": [
+            "Strategy Pattern",
+            "Singleton Pattern",
+            "Factory Method Pattern",
+            "Observer Pattern"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The Strategy Pattern relies on delegation to execute interchangeable algorithms behind an interface.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "What is the main syntactic difference between Delegation and Inheritance?",
+          "options": [
+            "Inheritance uses 'extends'; Delegation uses an instance variable and method calls",
+            "Delegation requires abstract classes",
+            "Inheritance cannot use interfaces",
+            "Delegation is only possible in Python"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Inheritance uses 'extends', whereas delegation uses an internal field reference and calls methods on it.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "What is a potential disadvantage of relying extensively on delegation?",
+          "options": [
+            "It causes JVM memory leaks",
+            "Writing numerous forwarding methods can introduce boilerplate code",
+            "It breaks encapsulation",
+            "It makes unit testing impossible"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The primary disadvantage of delegation is the boilerplate needed to write forwarding methods.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "In the Proxy Pattern, what role does delegation play?",
+          "options": [
+            "The Proxy delegates real work to the underlying target object while adding access control or caching",
+            "The Proxy destroys the delegate",
+            "The Proxy extends Object only",
+            "The Proxy replaces the JVM"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A Proxy intercepts calls, performs checks or caching, and delegates the core work to the target object.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "Why is delegation safer than inheritance for third-party libraries?",
+          "options": [
+            "Because changes to the library's internal method calls won't unexpectedly alter your class's dispatch logic",
+            "Because it makes the jar file smaller",
+            "Because it automatically updates dependencies",
+            "Because it requires no imports"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Delegation shields your code from superclass internal churn and unexpected side effects.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Can the delegate helper object be modified or swapped after the delegator is instantiated?",
+          "options": [
+            "No, delegates must be final",
+            "Yes, through a setter method or configuration hook",
+            "Only during garbage collection",
+            "Only if the class is public"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Providing a setter allows hot-swapping the delegate at runtime, which is impossible with inheritance.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "What keyword is often used to describe delegation: 'Inheritance is what you are; Delegation is...'?",
+          "options": [
+            "What you compile",
+            "What you do / What you have someone else do for you",
+            "What you extend",
+            "What you allocate"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Inheritance defines what an object IS; Delegation defines what an object DOES by passing tasks to helpers.",
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-les8-interview",
+      "type": "interview_qa",
+      "title": "Delegation Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How does Delegation empower the Strategy and State design patterns?",
+          "answer": "Both the Strategy and State patterns use delegation at their core. The context class holds a reference to a Strategy or State interface. When a request arrives, the context delegates execution to the current strategy/state object. Swapping the delegate object changes the algorithm or system state dynamically at runtime.",
+          "expectedAnswer": "Both the Strategy and State patterns use delegation at their core. The context class holds a reference to a Strategy or State interface. When a request arrives, the context delegates execution to the current strategy/state object. Swapping the delegate object changes the algorithm or system state dynamically at runtime.",
+          "keyTakeaway": "Strategy and State patterns are structural applications of the Delegation pattern.",
+          "keyPoints": [
+            "Strategy and State patterns are structural applications of the Delegation pattern."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How does Lombok or modern IDEs mitigate delegation boilerplate in Java?",
+          "answer": "Modern IDEs provide 'Generate Delegate Methods' shortcuts. In libraries like Lombok, `@Delegate` automatically generates all forwarding methods for a field at compile time, eliminating manual boilerplate while maintaining composition safety.",
+          "expectedAnswer": "Modern IDEs provide 'Generate Delegate Methods' shortcuts. In libraries like Lombok, `@Delegate` automatically generates all forwarding methods for a field at compile time, eliminating manual boilerplate while maintaining composition safety.",
+          "keyTakeaway": "IDE generators and annotations can automatically produce delegation boilerplate.",
+          "keyPoints": [
+            "IDE generators and annotations can automatically produce delegation boilerplate."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between Delegation and Forwarding?",
+          "answer": "In strict object theory, true 'delegation' passes the original `this` pointer (the delegator) to the helper, so callbacks can find the outer object. 'Forwarding' simply calls the helper method without passing `this`. In everyday Java practice, the two terms are used interchangeably.",
+          "expectedAnswer": "In strict object theory, true 'delegation' passes the original `this` pointer (the delegator) to the helper, so callbacks can find the outer object. 'Forwarding' simply calls the helper method without passing `this`. In everyday Java practice, the two terms are used interchangeably.",
+          "keyTakeaway": "True delegation passes delegator context; forwarding merely calls the helper method.",
+          "keyPoints": [
+            "True delegation passes delegator context; forwarding merely calls the helper method."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How does Delegation support the Single Responsibility Principle?",
+          "answer": "Instead of bloating a class with disparate responsibilities (e.g. logging, caching, validation, calculation), the class delegates each auxiliary responsibility to specialized, single-purpose helper classes.",
+          "expectedAnswer": "Instead of bloating a class with disparate responsibilities (e.g. logging, caching, validation, calculation), the class delegates each auxiliary responsibility to specialized, single-purpose helper classes.",
+          "keyTakeaway": "Delegation prevents God Classes by distributing work to cohesive helper components.",
+          "keyPoints": [
+            "Delegation prevents God Classes by distributing work to cohesive helper components."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Can delegation be used for security / authorization checks?",
+          "answer": "Yes! In a SecureProxy, the proxy intercepts a method call, verifies user permissions/roles, and if authorized, delegates the invocation to the real business service.",
+          "expectedAnswer": "Yes! In a SecureProxy, the proxy intercepts a method call, verifies user permissions/roles, and if authorized, delegates the invocation to the real business service.",
+          "keyTakeaway": "Security proxies wrap and delegate to services after verifying credentials.",
+          "keyPoints": [
+            "Security proxies wrap and delegate to services after verifying credentials."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is delegation favored in Kotlin, and does Java have a native equivalent?",
+          "answer": "Kotlin has first-class language support for delegation via the `by` keyword (`class Window by realWindow`). Java does not have native syntax, requiring explicit forwarding methods or dynamic proxies via `java.lang.reflect.Proxy`.",
+          "expectedAnswer": "Kotlin has first-class language support for delegation via the `by` keyword (`class Window by realWindow`). Java does not have native syntax, requiring explicit forwarding methods or dynamic proxies via `java.lang.reflect.Proxy`.",
+          "keyTakeaway": "Kotlin supports delegation natively via 'by'; Java uses explicit forwarding or dynamic proxies.",
+          "keyPoints": [
+            "Kotlin supports delegation natively via 'by'; Java uses explicit forwarding or dynamic proxies."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How does Delegation empower the Strategy and State design patterns?",
+          "answer": "Both the Strategy and State patterns use delegation at their core. The context class holds a reference to a Strategy or State interface. When a request arrives, the context delegates execution to the current strategy/state object. Swapping the delegate object changes the algorithm or system state dynamically at runtime.",
+          "expectedAnswer": "Both the Strategy and State patterns use delegation at their core. The context class holds a reference to a Strategy or State interface. When a request arrives, the context delegates execution to the current strategy/state object. Swapping the delegate object changes the algorithm or system state dynamically at runtime.",
+          "keyTakeaway": "Strategy and State patterns are structural applications of the Delegation pattern.",
+          "keyPoints": [
+            "Strategy and State patterns are structural applications of the Delegation pattern."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How does Lombok or modern IDEs mitigate delegation boilerplate in Java?",
+          "answer": "Modern IDEs provide 'Generate Delegate Methods' shortcuts. In libraries like Lombok, `@Delegate` automatically generates all forwarding methods for a field at compile time, eliminating manual boilerplate while maintaining composition safety.",
+          "expectedAnswer": "Modern IDEs provide 'Generate Delegate Methods' shortcuts. In libraries like Lombok, `@Delegate` automatically generates all forwarding methods for a field at compile time, eliminating manual boilerplate while maintaining composition safety.",
+          "keyTakeaway": "IDE generators and annotations can automatically produce delegation boilerplate.",
+          "keyPoints": [
+            "IDE generators and annotations can automatically produce delegation boilerplate."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the difference between Delegation and Forwarding?",
+          "answer": "In strict object theory, true 'delegation' passes the original `this` pointer (the delegator) to the helper, so callbacks can find the outer object. 'Forwarding' simply calls the helper method without passing `this`. In everyday Java practice, the two terms are used interchangeably.",
+          "expectedAnswer": "In strict object theory, true 'delegation' passes the original `this` pointer (the delegator) to the helper, so callbacks can find the outer object. 'Forwarding' simply calls the helper method without passing `this`. In everyday Java practice, the two terms are used interchangeably.",
+          "keyTakeaway": "True delegation passes delegator context; forwarding merely calls the helper method.",
+          "keyPoints": [
+            "True delegation passes delegator context; forwarding merely calls the helper method."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How does Delegation support the Single Responsibility Principle?",
+          "answer": "Instead of bloating a class with disparate responsibilities (e.g. logging, caching, validation, calculation), the class delegates each auxiliary responsibility to specialized, single-purpose helper classes.",
+          "expectedAnswer": "Instead of bloating a class with disparate responsibilities (e.g. logging, caching, validation, calculation), the class delegates each auxiliary responsibility to specialized, single-purpose helper classes.",
+          "keyTakeaway": "Delegation prevents God Classes by distributing work to cohesive helper components.",
+          "keyPoints": [
+            "Delegation prevents God Classes by distributing work to cohesive helper components."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Can delegation be used for security / authorization checks?",
+          "answer": "Yes! In a SecureProxy, the proxy intercepts a method call, verifies user permissions/roles, and if authorized, delegates the invocation to the real business service.",
+          "expectedAnswer": "Yes! In a SecureProxy, the proxy intercepts a method call, verifies user permissions/roles, and if authorized, delegates the invocation to the real business service.",
+          "keyTakeaway": "Security proxies wrap and delegate to services after verifying credentials.",
+          "keyPoints": [
+            "Security proxies wrap and delegate to services after verifying credentials."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is delegation favored in Kotlin, and does Java have a native equivalent?",
+          "answer": "Kotlin has first-class language support for delegation via the `by` keyword (`class Window by realWindow`). Java does not have native syntax, requiring explicit forwarding methods or dynamic proxies via `java.lang.reflect.Proxy`.",
+          "expectedAnswer": "Kotlin has first-class language support for delegation via the `by` keyword (`class Window by realWindow`). Java does not have native syntax, requiring explicit forwarding methods or dynamic proxies via `java.lang.reflect.Proxy`.",
+          "keyTakeaway": "Kotlin supports delegation natively via 'by'; Java uses explicit forwarding or dynamic proxies.",
+          "keyPoints": [
+            "Kotlin supports delegation natively via 'by'; Java uses explicit forwarding or dynamic proxies."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les8-checklist",
+      "type": "self_evaluation",
+      "title": "Delegation Architecture Checklist",
+      "items": [
+        "I understand the Delegation Pattern as forwarding calls to an internal helper.",
+        "I use delegation to avoid the pitfalls of multiple inheritance in Java.",
+        "I declare delegate references using interfaces for runtime flexibility.",
+        "I can implement dynamic runtime policy switches by swapping delegates.",
+        "I know how the Strategy, State, and Proxy patterns utilize delegation.",
+        "I use IDE code generation to reduce delegation boilerplate.",
+        "I distinguish between true delegation (context passing) and simple forwarding.",
+        "I keep delegates encapsulated as private member fields.",
+        "I understand how delegation upholds the Single Responsibility Principle.",
+        "I prefer delegation over inheritance for code reuse from external libraries."
+      ],
+      "checklist": [
+        "I understand the Delegation Pattern as forwarding calls to an internal helper.",
+        "I use delegation to avoid the pitfalls of multiple inheritance in Java.",
+        "I declare delegate references using interfaces for runtime flexibility.",
+        "I can implement dynamic runtime policy switches by swapping delegates.",
+        "I know how the Strategy, State, and Proxy patterns utilize delegation.",
+        "I use IDE code generation to reduce delegation boilerplate.",
+        "I distinguish between true delegation (context passing) and simple forwarding.",
+        "I keep delegates encapsulated as private member fields.",
+        "I understand how delegation upholds the Single Responsibility Principle.",
+        "I prefer delegation over inheritance for code reuse from external libraries."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les8-p1",
+      "lessonId": "java-oop-mod8-les8",
+      "orderIndex": 1,
+      "title": "Printer Delegation to Heavy Hardware Driver",
+      "difficulty": "easy",
+      "problemStatement": "Complete the delegation between `OfficePrinter` and `RawHardwareDriver`. `OfficePrinter` should delegate the actual hardware printing to `RawHardwareDriver` inside `printDocument`. Complete the forwarding method to produce the expected output.",
+      "starterCode": "class RawHardwareDriver {\n    public void sendToSpooler(String content) {\n        System.out.println(\"[Hardware Driver] Transmitting raster data: \" + content);\n    }\n}\n\nclass OfficePrinter {\n    private String model;\n    private RawHardwareDriver driver = new RawHardwareDriver(); // Delegate\n\n    public OfficePrinter(String model) {\n        this.model = model;\n    }\n\n    public void printDocument(String text) {\n        System.out.println(\"OfficePrinter [\" + model + \"] ready.\");\n        // TODO: Delegate to driver.sendToSpooler\n    }\n}\n\npublic class PrinterApp {\n    public static void main(String[] args) {\n        OfficePrinter printer = new OfficePrinter(\"LaserJet-4000\");\n        printer.printDocument(\"Quarterly_Report.pdf\");\n    }\n}",
+      "initialCode": "class RawHardwareDriver {\n    public void sendToSpooler(String content) {\n        System.out.println(\"[Hardware Driver] Transmitting raster data: \" + content);\n    }\n}\n\nclass OfficePrinter {\n    private String model;\n    private RawHardwareDriver driver = new RawHardwareDriver(); // Delegate\n\n    public OfficePrinter(String model) {\n        this.model = model;\n    }\n\n    public void printDocument(String text) {\n        System.out.println(\"OfficePrinter [\" + model + \"] ready.\");\n        // TODO: Delegate to driver.sendToSpooler\n    }\n}\n\npublic class PrinterApp {\n    public static void main(String[] args) {\n        OfficePrinter printer = new OfficePrinter(\"LaserJet-4000\");\n        printer.printDocument(\"Quarterly_Report.pdf\");\n    }\n}",
+      "solutionCode": "class RawHardwareDriver {\n    public void sendToSpooler(String content) {\n        System.out.println(\"[Hardware Driver] Transmitting raster data: \" + content);\n    }\n}\n\nclass OfficePrinter {\n    private String model;\n    private RawHardwareDriver driver = new RawHardwareDriver(); // Delegate\n\n    public OfficePrinter(String model) {\n        this.model = model;\n    }\n\n    public void printDocument(String text) {\n        System.out.println(\"OfficePrinter [\" + model + \"] ready.\");\n        driver.sendToSpooler(text);\n    }\n}\n\npublic class PrinterApp {\n    public static void main(String[] args) {\n        OfficePrinter printer = new OfficePrinter(\"LaserJet-4000\");\n        printer.printDocument(\"Quarterly_Report.pdf\");\n    }\n}",
+      "expectedOutput": "OfficePrinter [LaserJet-4000] ready.\n[Hardware Driver] Transmitting raster data: Quarterly_Report.pdf",
+      "hints": [
+        "Call `driver.sendToSpooler(text);` inside `printDocument`."
+      ]
+    },
+    {
+      "id": "prob-les8-p2",
+      "lessonId": "java-oop-mod8-les8",
+      "orderIndex": 2,
+      "title": "Swappable Sorting Strategy Delegation",
+      "difficulty": "medium",
+      "problemStatement": "Build a swappable sorting strategy via delegation from scratch:\n1. Interface `SortStrategy`: `void sort(int[] arr)`.\n2. Class `BubbleSort` implementing `SortStrategy`: sorts array in ascending order using bubble sort, and prints `'[BubbleSort] Completed in O(N^2)'`.\n3. Class `QuickSort` implementing `SortStrategy`: sorts array in ascending order (you may use `java.util.Arrays.sort(arr)`), and prints `'[QuickSort] Completed in O(N log N)'`.\n4. Class `DatasetManager`: holds `private SortStrategy strategy`. Constructor accepts SortStrategy. Method `public void setStrategy(SortStrategy s)` updates strategy. Method `public void sortDataset(int[] arr)` delegates to `strategy.sort(arr)`.\n5. In `Main`, create an array `new int[]{5, 2, 8, 1}`. Create `DatasetManager` with `BubbleSort`. Call `sortDataset(arr)`. Switch strategy to `QuickSort` with array `new int[]{9, 3, 7}`, call `sortDataset`.",
+      "solutionCode": "import java.util.Arrays;\n\ninterface SortStrategy {\n    void sort(int[] arr);\n}\n\nclass BubbleSort implements SortStrategy {\n    @Override\n    public void sort(int[] arr) {\n        int n = arr.length;\n        for (int i = 0; i < n - 1; i++) {\n            for (int j = 0; j < n - i - 1; j++) {\n                if (arr[j] > arr[j + 1]) {\n                    int temp = arr[j];\n                    arr[j] = arr[j + 1];\n                    arr[j + 1] = temp;\n                }\n            }\n        }\n        System.out.println(\"[BubbleSort] Completed in O(N^2)\");\n    }\n}\n\nclass QuickSort implements SortStrategy {\n    @Override\n    public void sort(int[] arr) {\n        Arrays.sort(arr);\n        System.out.println(\"[QuickSort] Completed in O(N log N)\");\n    }\n}\n\nclass DatasetManager {\n    private SortStrategy strategy;\n    public DatasetManager(SortStrategy strategy) {\n        this.strategy = strategy;\n    }\n    public void setStrategy(SortStrategy strategy) {\n        this.strategy = strategy;\n    }\n    public void sortDataset(int[] arr) {\n        strategy.sort(arr);\n    }\n}\n\npublic class SortApp {\n    public static void main(String[] args) {\n        int[] d1 = {5, 2, 8, 1};\n        DatasetManager dm = new DatasetManager(new BubbleSort());\n        dm.sortDataset(d1);\n        \n        int[] d2 = {9, 3, 7};\n        dm.setStrategy(new QuickSort());\n        dm.sortDataset(d2);\n    }\n}",
+      "expectedOutput": "[BubbleSort] Completed in O(N^2)\n[QuickSort] Completed in O(N log N)",
+      "hints": [
+        "DatasetManager delegates sortDataset directly to strategy.sort(arr).",
+        "setStrategy changes the delegate at runtime."
+      ]
+    },
+    {
+      "id": "prob-les8-p3",
+      "lessonId": "java-oop-mod8-les8",
+      "orderIndex": 3,
+      "title": "Access Control Security Proxy via Delegation",
+      "difficulty": "medium",
+      "problemStatement": "Build a secure proxy delegator from scratch:\n1. Interface `DatabaseReader`: `String readSecret(String userRole)`.\n2. Class `RealDatabaseReader` implementing `DatabaseReader`: `readSecret(String userRole)` returns `'[SECRET_DATA: 42-ALPHA-OMEGA]'`.\n3. Class `SecurityProxyReader` implementing `DatabaseReader`: holds `private DatabaseReader realReader = new RealDatabaseReader()`.\n   - In `readSecret(String userRole)`: if `\"ADMIN\".equalsIgnoreCase(userRole)`, delegates to `realReader.readSecret(userRole)`. Else returns `'[ACCESS DENIED: Insufficient permissions for role ' + userRole + ']'`.\n4. In `Main`, create a `SecurityProxyReader`. Test with 'GUEST' and print result. Test with 'ADMIN' and print result.",
+      "solutionCode": "interface DatabaseReader {\n    String readSecret(String userRole);\n}\n\nclass RealDatabaseReader implements DatabaseReader {\n    @Override\n    public String readSecret(String userRole) {\n        return \"[SECRET_DATA: 42-ALPHA-OMEGA]\";\n    }\n}\n\nclass SecurityProxyReader implements DatabaseReader {\n    private DatabaseReader realReader = new RealDatabaseReader();\n\n    @Override\n    public String readSecret(String userRole) {\n        if (\"ADMIN\".equalsIgnoreCase(userRole)) {\n            return realReader.readSecret(userRole);\n        }\n        return \"[ACCESS DENIED: Insufficient permissions for role \" + userRole + \"]\";\n    }\n}\n\npublic class ProxyApp {\n    public static void main(String[] args) {\n        DatabaseReader reader = new SecurityProxyReader();\n        System.out.println(reader.readSecret(\"GUEST\"));\n        System.out.println(reader.readSecret(\"ADMIN\"));\n    }\n}",
+      "expectedOutput": "[ACCESS DENIED: Insufficient permissions for role GUEST]\n[SECRET_DATA: 42-ALPHA-OMEGA]",
+      "hints": [
+        "SecurityProxyReader checks role before delegating to realReader.",
+        "If role is not ADMIN, it blocks delegation and returns the access denied message."
+      ]
+    },
+    {
+      "id": "prob-les8-p4",
+      "lessonId": "java-oop-mod8-les8",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Broken Forwarding Method Signature Mismatch",
+      "difficulty": "medium",
+      "problemStatement": "The code below fails to compile because the forwarding method in `AppCache` does not return the value computed by its delegate `MemoryStore`, resulting in missing return types and lost data. Fix `AppCache.retrieve` to return the `String` produced by `store.get(key)`.",
+      "starterCode": "class MemoryStore {\n    private java.util.Map<String, String> map = new java.util.HashMap<>();\n    public void put(String k, String v) { map.put(k, v); }\n    public String get(String k) { return map.get(k); }\n}\n\nclass AppCache {\n    private MemoryStore store = new MemoryStore();\n    \n    public void save(String key, String value) {\n        store.put(key, value);\n    }\n    \n    // BUG: Missing return statement, return type is void instead of String!\n    public void retrieve(String key) {\n        store.get(key);\n    }\n}\n\npublic class CacheBugApp {\n    public static void main(String[] args) {\n        AppCache cache = new AppCache();\n        cache.save(\"token\", \"JWT_98765\");\n        String token = cache.retrieve(\"token\");\n        System.out.println(\"Cached token: \" + token);\n    }\n}",
+      "initialCode": "class MemoryStore {\n    private java.util.Map<String, String> map = new java.util.HashMap<>();\n    public void put(String k, String v) { map.put(k, v); }\n    public String get(String k) { return map.get(k); }\n}\n\nclass AppCache {\n    private MemoryStore store = new MemoryStore();\n    \n    public void save(String key, String value) {\n        store.put(key, value);\n    }\n    \n    // BUG: Missing return statement, return type is void instead of String!\n    public void retrieve(String key) {\n        store.get(key);\n    }\n}\n\npublic class CacheBugApp {\n    public static void main(String[] args) {\n        AppCache cache = new AppCache();\n        cache.save(\"token\", \"JWT_98765\");\n        String token = cache.retrieve(\"token\");\n        System.out.println(\"Cached token: \" + token);\n    }\n}",
+      "solutionCode": "class MemoryStore {\n    private java.util.Map<String, String> map = new java.util.HashMap<>();\n    public void put(String k, String v) { map.put(k, v); }\n    public String get(String k) { return map.get(k); }\n}\n\nclass AppCache {\n    private MemoryStore store = new MemoryStore();\n    \n    public void save(String key, String value) {\n        store.put(key, value);\n    }\n    \n    public String retrieve(String key) {\n        return store.get(key);\n    }\n}\n\npublic class CacheBugApp {\n    public static void main(String[] args) {\n        AppCache cache = new AppCache();\n        cache.save(\"token\", \"JWT_98765\");\n        String token = cache.retrieve(\"token\");\n        System.out.println(\"Cached token: \" + token);\n    }\n}",
+      "expectedOutput": "Cached token: JWT_98765",
+      "hints": [
+        "Change return type of retrieve to String and return store.get(key)."
+      ]
+    },
+    {
+      "id": "prob-les8-p5",
+      "lessonId": "java-oop-mod8-les8",
+      "orderIndex": 5,
+      "title": "Multi-Delegate Smart Home Hub",
+      "difficulty": "hard",
+      "problemStatement": "Build a Smart Home Hub delegating to three independent subsystems from scratch:\n1. Class `LightingController`: method `public void setLights(String scene)` prints `'[Lights] Setting scene to: ' + scene`.\n2. Class `HvacController`: method `public void setTemperature(double tempC)` prints `'[HVAC] Target temp set to: ' + tempC + 'C'`.\n3. Class `SecurityController`: method `public void setArmed(boolean armed)` prints `'[Security] System armed: ' + armed`.\n4. Class `SmartHomeHub`: holds private instances of all three controllers (LightingController, HvacController, SecurityController).\n   - Method `public void activateNightMode()`: delegates `setLights(\"Dim warm\")`, delegates `setTemperature(19.5)`, and delegates `setArmed(true)`.\n   - Method `public void activateAwayMode()`: delegates `setLights(\"Off\")`, delegates `setTemperature(16.0)`, and delegates `setArmed(true)`.\n5. In `Main`, create `SmartHomeHub hub = new SmartHomeHub()`. Call `hub.activateNightMode()`. Then call `hub.activateAwayMode()`.",
+      "solutionCode": "class LightingController {\n    public void setLights(String scene) {\n        System.out.println(\"[Lights] Setting scene to: \" + scene);\n    }\n}\n\nclass HvacController {\n    public void setTemperature(double tempC) {\n        System.out.println(\"[HVAC] Target temp set to: \" + tempC + \"C\");\n    }\n}\n\nclass SecurityController {\n    public void setArmed(boolean armed) {\n        System.out.println(\"[Security] System armed: \" + armed);\n    }\n}\n\nclass SmartHomeHub {\n    private LightingController lighting = new LightingController();\n    private HvacController hvac = new HvacController();\n    private SecurityController security = new SecurityController();\n\n    public void activateNightMode() {\n        System.out.println(\"=== Activating Night Mode ===\");\n        lighting.setLights(\"Dim warm\");\n        hvac.setTemperature(19.5);\n        security.setArmed(true);\n    }\n\n    public void activateAwayMode() {\n        System.out.println(\"=== Activating Away Mode ===\");\n        lighting.setLights(\"Off\");\n        hvac.setTemperature(16.0);\n        security.setArmed(true);\n    }\n}\n\npublic class HubApp {\n    public static void main(String[] args) {\n        SmartHomeHub hub = new SmartHomeHub();\n        hub.activateNightMode();\n        hub.activateAwayMode();\n    }\n}",
+      "expectedOutput": "=== Activating Night Mode ===\n[Lights] Setting scene to: Dim warm\n[HVAC] Target temp set to: 19.5C\n[Security] System armed: true\n=== Activating Away Mode ===\n[Lights] Setting scene to: Off\n[HVAC] Target temp set to: 16.0C\n[Security] System armed: true",
+      "hints": [
+        "SmartHomeHub composes all three helper controllers.",
+        "Each hub mode coordinates delegation across the 3 subsystems."
+      ]
+    }
+  ]
+}

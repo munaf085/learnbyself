@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod8-les4",
+  "slug": "aggregation",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Aggregation",
+  "summary": "Master weak 'has-a' aggregation where parts belong to a whole but survive independently if the whole is destroyed.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "association"
+  ],
+  "learningObjectives": [
+    "Define Aggregation as a specialized whole-part relationship with independent lifecycles",
+    "Identify real-world aggregation examples (Department & Teachers, Playlist & Songs)",
+    "Implement aggregation in Java using constructor injection of externally created objects",
+    "Contrast aggregation with composition regarding garbage collection and lifecycle management"
+  ],
+  "expectedOutcomes": [
+    "You can model whole-part systems where the child objects outlive the parent container",
+    "You can choose aggregation when parts need to be shared across multiple containers"
+  ],
+  "activities": [
+    {
+      "id": "act-les4-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The University Department and Professors",
+      "concept": "Aggregation (Weak Has-A)",
+      "realWorldMetaphor": {
+        "scenario": "Consider the Computer Science Department at a university and Professor Turing who teaches there. The Department HAS professors. However, if budget cuts shut down the Department, Professor Turing does not vanish from existence! She simply transfers to the Mathematics Department or writes research papers independently.",
+        "mapping": "In OOP, `Department` aggregates `Teacher` objects. The `Department` holds references to teachers created elsewhere. If the `Department` object is deleted or garbage-collected, the `Teacher` objects continue living in memory because they were created externally.",
+        "takeaway": "In aggregation, the whole HAS parts, but the parts have an independent existence and lifecycle."
+      }
+    },
+    {
+      "id": "act-les4-concept",
+      "type": "concept",
+      "title": "Characteristics and Code Structure of Aggregation",
+      "content": "### What is Aggregation?\n\n**Aggregation** is a specialized form of Association representing a **whole-part** relationship, often described as **weak Has-A**:\n- **Whole-Part Concept**: The container represents a 'whole', and the items represent 'parts'.\n- **Independent Lifecycle**: The parts are created outside the whole and passed into it (usually via constructor injection or setter methods).\n- **Survival**: If the whole object is garbage collected, the part objects remain valid and accessible elsewhere in the system.\n\n### UML Representation\nIn UML class diagrams, aggregation is depicted as a **hollow (clear) diamond** attached to the container (the whole) with a line leading to the parts.\n\n### Code Signature of Aggregation\n```java\nclass Department {\n    private List<Teacher> teachers;\n    // Notice: Teachers are NOT instantiated with 'new' inside Department!\n    // They are injected from the outside:\n    public Department(List<Teacher> teachers) {\n        this.teachers = teachers;\n    }\n}\n```"
+    },
+    {
+      "id": "act-les4-cw1",
+      "type": "code_walkthrough",
+      "title": "Music Playlist Aggregating Independent Songs",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Song {\n    private String title;\n    private String artist;\n\n    public Song(String title, String artist) {\n        this.title = title;\n        this.artist = artist;\n    }\n\n    public String getInfo() { return title + \" by \" + artist; }\n}\n\nclass Playlist {\n    private String name;\n    private List<Song> songs = new ArrayList<>(); // Weak Has-A\n\n    public Playlist(String name) {\n        this.name = name;\n    }\n\n    // Injected externally: Playlist does not own Song creation or lifecycle\n    public void addSong(Song song) {\n        this.songs.add(song);\n    }\n\n    public void playAll() {\n        System.out.println(\"Playing Playlist: \" + name);\n        for (Song s : songs) {\n            System.out.println(\" >> Now Playing: \" + s.getInfo());\n        }\n    }\n}\n\npublic class AggregationDemo {\n    public static void main(String[] args) {\n        Song s1 = new Song(\"Bohemian Rhapsody\", \"Queen\");\n        Song s2 = new Song(\"Hotel California\", \"Eagles\");\n\n        Playlist rockClassics = new Playlist(\"Classic Rock\");\n        rockClassics.addSong(s1);\n        rockClassics.addSong(s2);\n\n        Playlist roadTrip = new Playlist(\"Road Trip Vibes\");\n        roadTrip.addSong(s1); // The same Song object is aggregated in another playlist!\n\n        rockClassics.playAll();\n        // If rockClassics is set to null, s1 and s2 still exist in roadTrip!\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Song {\n    private String title;\n    private String artist;\n\n    public Song(String title, String artist) {\n        this.title = title;\n        this.artist = artist;\n    }\n\n    public String getInfo() { return title + \" by \" + artist; }\n}\n\nclass Playlist {\n    private String name;\n    private List<Song> songs = new ArrayList<>(); // Weak Has-A\n\n    public Playlist(String name) {\n        this.name = name;\n    }\n\n    // Injected externally: Playlist does not own Song creation or lifecycle\n    public void addSong(Song song) {\n        this.songs.add(song);\n    }\n\n    public void playAll() {\n        System.out.println(\"Playing Playlist: \" + name);\n        for (Song s : songs) {\n            System.out.println(\" >> Now Playing: \" + s.getInfo());\n        }\n    }\n}\n\npublic class AggregationDemo {\n    public static void main(String[] args) {\n        Song s1 = new Song(\"Bohemian Rhapsody\", \"Queen\");\n        Song s2 = new Song(\"Hotel California\", \"Eagles\");\n\n        Playlist rockClassics = new Playlist(\"Classic Rock\");\n        rockClassics.addSong(s1);\n        rockClassics.addSong(s2);\n\n        Playlist roadTrip = new Playlist(\"Road Trip Vibes\");\n        roadTrip.addSong(s1); // The same Song object is aggregated in another playlist!\n\n        rockClassics.playAll();\n        // If rockClassics is set to null, s1 and s2 still exist in roadTrip!\n    }\n}",
+      "language": "java",
+      "explanation": "Song instances exist independently of Playlist. Multiple playlists can aggregate the exact same Song instance simultaneously.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Song` objects are instantiated independently in `main`."
+        },
+        {
+          "step": 2,
+          "description": "`rockClassics` aggregates `s1` and `s2` via `addSong`."
+        },
+        {
+          "step": 3,
+          "description": "`roadTrip` also aggregates `s1`, proving shared existence across containers."
+        },
+        {
+          "step": 4,
+          "description": "Destroying one playlist leaves the songs intact for other playlists."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-cw2",
+      "type": "code_walkthrough",
+      "title": "Sports League and Players Aggregation",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Athlete {\n    private String name;\n    private String position;\n\n    public Athlete(String name, String position) {\n        this.name = name;\n        this.position = position;\n    }\n\n    public String getDossier() { return name + \" (\" + position + \")\"; }\n}\n\nclass Team {\n    private String teamName;\n    private List<Athlete> roster; // Aggregation\n\n    public Team(String teamName, List<Athlete> initialRoster) {\n        this.teamName = teamName;\n        // Aggregating pre-existing athlete objects\n        this.roster = new ArrayList<>(initialRoster);\n    }\n\n    public void displayRoster() {\n        System.out.println(\"Team: \" + teamName);\n        for (Athlete a : roster) {\n            System.out.println(\" - \" + a.getDossier());\n        }\n    }\n}\n\npublic class TeamDemo {\n    public static void main(String[] args) {\n        Athlete p1 = new Athlete(\"LeBron James\", \"Forward\");\n        Athlete p2 = new Athlete(\"Stephen Curry\", \"Guard\");\n\n        List<Athlete> allStars = new ArrayList<>();\n        allStars.add(p1);\n        allStars.add(p2);\n\n        Team usaTeam = new Team(\"Team USA\", allStars);\n        usaTeam.displayRoster();\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Athlete {\n    private String name;\n    private String position;\n\n    public Athlete(String name, String position) {\n        this.name = name;\n        this.position = position;\n    }\n\n    public String getDossier() { return name + \" (\" + position + \")\"; }\n}\n\nclass Team {\n    private String teamName;\n    private List<Athlete> roster; // Aggregation\n\n    public Team(String teamName, List<Athlete> initialRoster) {\n        this.teamName = teamName;\n        // Aggregating pre-existing athlete objects\n        this.roster = new ArrayList<>(initialRoster);\n    }\n\n    public void displayRoster() {\n        System.out.println(\"Team: \" + teamName);\n        for (Athlete a : roster) {\n            System.out.println(\" - \" + a.getDossier());\n        }\n    }\n}\n\npublic class TeamDemo {\n    public static void main(String[] args) {\n        Athlete p1 = new Athlete(\"LeBron James\", \"Forward\");\n        Athlete p2 = new Athlete(\"Stephen Curry\", \"Guard\");\n\n        List<Athlete> allStars = new ArrayList<>();\n        allStars.add(p1);\n        allStars.add(p2);\n\n        Team usaTeam = new Team(\"Team USA\", allStars);\n        usaTeam.displayRoster();\n    }\n}",
+      "language": "java",
+      "explanation": "Athletes are created prior to Team construction and passed into Team. Athletes can change teams or play for national teams.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Athlete` objects are created independently on the heap."
+        },
+        {
+          "step": 2,
+          "description": "`Team` constructor receives the external list of athletes."
+        },
+        {
+          "step": 3,
+          "description": "`Team` shallow-copies the collection into its internal roster."
+        },
+        {
+          "step": 4,
+          "description": "The athletes outlive any single season or team disbandment."
+        }
+      ]
+    },
+    {
+      "id": "act-les4-mcq",
+      "type": "mcq",
+      "title": "Aggregation Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What happens to the aggregated 'parts' when the 'whole' is garbage collected?",
+          "options": [
+            "They are automatically deleted as well",
+            "They continue to exist if references to them are held elsewhere",
+            "The JVM throws a BrokenAggregationException",
+            "They are moved into Metaspace"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In aggregation, parts have independent lifecycles. They are not destroyed when the containing whole is destroyed.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "How is aggregation depicted in UML class diagrams?",
+          "options": [
+            "A solid black filled diamond on the whole",
+            "A hollow (clear) diamond on the whole",
+            "A dotted arrow",
+            "A double-headed green arrow"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Aggregation is represented by a hollow (unfilled) diamond at the container class end.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "Which of the following is the most classic textbook example of Aggregation?",
+          "options": [
+            "Human and Heart",
+            "Building and Rooms",
+            "Department and Teachers",
+            "Car and Engine block casting"
+          ],
+          "correctAnswer": 2,
+          "explanation": "A Teacher can exist without a Department (and can move between departments), making it aggregation.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q4",
+          "question": "How are aggregated objects typically supplied to the container in Java?",
+          "options": [
+            "Instantiated directly using 'new' inside the private fields",
+            "Passed into the container via constructor or setter (Dependency Injection)",
+            "Cloned via native bytecode",
+            "Defined as static final constants"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In aggregation, components are created externally and injected into the container via constructors or setter methods.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "Can an aggregated object belong to more than one container at the same time?",
+          "options": [
+            "Yes, because it is an independent object referenced by multiple containers",
+            "No, Java memory model restricts an object to one container",
+            "Only if it is a primitive type",
+            "Only if both containers are in the same package"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Multiple containers can hold reference pointers to the same aggregated instance simultaneously (e.g. Song in multiple Playlists).",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "Why is aggregation called 'Weak Has-A'?",
+          "options": [
+            "Because it runs slower than inheritance",
+            "Because there is no strong ownership of the part's lifecycle by the whole",
+            "Because it uses weak references (java.lang.ref.WeakReference)",
+            "Because the code is prone to syntax errors"
+          ],
+          "correctAnswer": 1,
+          "explanation": "It is 'weak' because the whole does not own or terminate the lifecycle of the part.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "If a Library closes down, what happens to the Books in an aggregation model?",
+          "options": [
+            "The books can be donated, moved to another library, or read individually",
+            "The books must be destroyed",
+            "The books turn into null",
+            "The JVM crashes"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Because Books are aggregated, they exist independently of whether the Library entity is active or destroyed.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "Which access pattern preserves the integrity of an aggregated list inside a container?",
+          "options": [
+            "Return the raw mutable List directly from getter",
+            "Return Collections.unmodifiableList(...) from getter",
+            "Make the List public",
+            "Delete the List after viewing"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Returning Collections.unmodifiableList(...) prevents external callers from modifying the container's internal list.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q9",
+          "question": "What distinguishes Aggregation from simple Association?",
+          "options": [
+            "Aggregation implies a whole-part relationship, whereas simple association is a generic peer relationship",
+            "Aggregation uses extends, association does not",
+            "Association uses interfaces only",
+            "They are identical in every way"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Aggregation specifically implies a container-containee (whole-part) concept, while association can be any generic relationship.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "In Java code, what is the key syntactic difference between Aggregation and Composition?",
+          "options": [
+            "Aggregation uses 'new Component()' inside the container; Composition takes Component as parameter",
+            "Aggregation receives Component from outside; Composition creates Component internally using 'new'",
+            "Aggregation requires the final keyword",
+            "Composition requires the static keyword"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Aggregation accepts externally instantiated components; Composition instantiates its components internally to bind their lifecycles.",
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-les4-interview",
+      "type": "interview_qa",
+      "title": "Aggregation Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you distinguish Aggregation from Composition in a system design interview?",
+          "answer": "Ask: 'If the container object is deleted, should the child objects still exist?' If yes, it is Aggregation (e.g. a Company and its Employees—if the company goes bankrupt, employees still exist). If no, it is Composition (e.g. an Order and its OrderItems—deleting an order destroys its line items).",
+          "expectedAnswer": "Ask: 'If the container object is deleted, should the child objects still exist?' If yes, it is Aggregation (e.g. a Company and its Employees—if the company goes bankrupt, employees still exist). If no, it is Composition (e.g. an Order and its OrderItems—deleting an order destroys its line items).",
+          "keyTakeaway": "Test of lifecycle dependency: survival of parts = Aggregation; destruction of parts = Composition.",
+          "keyPoints": [
+            "Test of lifecycle dependency: survival of parts = Aggregation; destruction of parts = Composition."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How does Aggregation facilitate testing and mocking?",
+          "answer": "Because aggregated dependencies are injected from outside (via constructor or setter), unit tests can easily inject mock implementations (e.g. Mockito mocks) instead of real production objects, enabling fast, isolated tests.",
+          "expectedAnswer": "Because aggregated dependencies are injected from outside (via constructor or setter), unit tests can easily inject mock implementations (e.g. Mockito mocks) instead of real production objects, enabling fast, isolated tests.",
+          "keyTakeaway": "Aggregation directly aligns with Dependency Injection, making classes inherently testable.",
+          "keyPoints": [
+            "Aggregation directly aligns with Dependency Injection, making classes inherently testable."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can an object participate in both Aggregation and Composition at the same time in different contexts?",
+          "answer": "Yes! An `Engine` is aggregated by a `MechanicWorkshop` (which services many engines that come and go), but composed by a `Car` (which owns and manages that specific engine's lifecycle). Context determines the relationship.",
+          "expectedAnswer": "Yes! An `Engine` is aggregated by a `MechanicWorkshop` (which services many engines that come and go), but composed by a `Car` (which owns and manages that specific engine's lifecycle). Context determines the relationship.",
+          "keyTakeaway": "Relationships are defined by context and domain architecture, not fixed to a class in isolation.",
+          "keyPoints": [
+            "Relationships are defined by context and domain architecture, not fixed to a class in isolation."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the UML distinction between Aggregation and Composition?",
+          "answer": "Aggregation is drawn with a hollow white diamond on the container class. Composition is drawn with a solid black filled diamond on the container class.",
+          "expectedAnswer": "Aggregation is drawn with a hollow white diamond on the container class. Composition is drawn with a solid black filled diamond on the container class.",
+          "keyTakeaway": "Hollow diamond = Aggregation (weak). Filled diamond = Composition (strong).",
+          "keyPoints": [
+            "Hollow diamond = Aggregation (weak). Filled diamond = Composition (strong)."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why should you return an unmodifiable view when exposing aggregated collections?",
+          "answer": "If you return `this.teachers` directly, external callers can call `.clear()` or add invalid elements, violating encapsulation. Returning `Collections.unmodifiableList(teachers)` protects the container's internal integrity while allowing read access.",
+          "expectedAnswer": "If you return `this.teachers` directly, external callers can call `.clear()` or add invalid elements, violating encapsulation. Returning `Collections.unmodifiableList(teachers)` protects the container's internal integrity while allowing read access.",
+          "keyTakeaway": "Always return unmodifiable views or defensive copies of internal collections.",
+          "keyPoints": [
+            "Always return unmodifiable views or defensive copies of internal collections."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does garbage collection behave when an aggregated container is dereferenced?",
+          "answer": "When the container is dereferenced, its internal reference pointer to the parts is cleared. If external references to the parts still exist (like in a caller or another container), the parts remain safely in the JVM heap.",
+          "expectedAnswer": "When the container is dereferenced, its internal reference pointer to the parts is cleared. If external references to the parts still exist (like in a caller or another container), the parts remain safely in the JVM heap.",
+          "keyTakeaway": "JVM garbage collection preserves any object reachable from living root references.",
+          "keyPoints": [
+            "JVM garbage collection preserves any object reachable from living root references."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you distinguish Aggregation from Composition in a system design interview?",
+          "answer": "Ask: 'If the container object is deleted, should the child objects still exist?' If yes, it is Aggregation (e.g. a Company and its Employees—if the company goes bankrupt, employees still exist). If no, it is Composition (e.g. an Order and its OrderItems—deleting an order destroys its line items).",
+          "expectedAnswer": "Ask: 'If the container object is deleted, should the child objects still exist?' If yes, it is Aggregation (e.g. a Company and its Employees—if the company goes bankrupt, employees still exist). If no, it is Composition (e.g. an Order and its OrderItems—deleting an order destroys its line items).",
+          "keyTakeaway": "Test of lifecycle dependency: survival of parts = Aggregation; destruction of parts = Composition.",
+          "keyPoints": [
+            "Test of lifecycle dependency: survival of parts = Aggregation; destruction of parts = Composition."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How does Aggregation facilitate testing and mocking?",
+          "answer": "Because aggregated dependencies are injected from outside (via constructor or setter), unit tests can easily inject mock implementations (e.g. Mockito mocks) instead of real production objects, enabling fast, isolated tests.",
+          "expectedAnswer": "Because aggregated dependencies are injected from outside (via constructor or setter), unit tests can easily inject mock implementations (e.g. Mockito mocks) instead of real production objects, enabling fast, isolated tests.",
+          "keyTakeaway": "Aggregation directly aligns with Dependency Injection, making classes inherently testable.",
+          "keyPoints": [
+            "Aggregation directly aligns with Dependency Injection, making classes inherently testable."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can an object participate in both Aggregation and Composition at the same time in different contexts?",
+          "answer": "Yes! An `Engine` is aggregated by a `MechanicWorkshop` (which services many engines that come and go), but composed by a `Car` (which owns and manages that specific engine's lifecycle). Context determines the relationship.",
+          "expectedAnswer": "Yes! An `Engine` is aggregated by a `MechanicWorkshop` (which services many engines that come and go), but composed by a `Car` (which owns and manages that specific engine's lifecycle). Context determines the relationship.",
+          "keyTakeaway": "Relationships are defined by context and domain architecture, not fixed to a class in isolation.",
+          "keyPoints": [
+            "Relationships are defined by context and domain architecture, not fixed to a class in isolation."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the UML distinction between Aggregation and Composition?",
+          "answer": "Aggregation is drawn with a hollow white diamond on the container class. Composition is drawn with a solid black filled diamond on the container class.",
+          "expectedAnswer": "Aggregation is drawn with a hollow white diamond on the container class. Composition is drawn with a solid black filled diamond on the container class.",
+          "keyTakeaway": "Hollow diamond = Aggregation (weak). Filled diamond = Composition (strong).",
+          "keyPoints": [
+            "Hollow diamond = Aggregation (weak). Filled diamond = Composition (strong)."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why should you return an unmodifiable view when exposing aggregated collections?",
+          "answer": "If you return `this.teachers` directly, external callers can call `.clear()` or add invalid elements, violating encapsulation. Returning `Collections.unmodifiableList(teachers)` protects the container's internal integrity while allowing read access.",
+          "expectedAnswer": "If you return `this.teachers` directly, external callers can call `.clear()` or add invalid elements, violating encapsulation. Returning `Collections.unmodifiableList(teachers)` protects the container's internal integrity while allowing read access.",
+          "keyTakeaway": "Always return unmodifiable views or defensive copies of internal collections.",
+          "keyPoints": [
+            "Always return unmodifiable views or defensive copies of internal collections."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does garbage collection behave when an aggregated container is dereferenced?",
+          "answer": "When the container is dereferenced, its internal reference pointer to the parts is cleared. If external references to the parts still exist (like in a caller or another container), the parts remain safely in the JVM heap.",
+          "expectedAnswer": "When the container is dereferenced, its internal reference pointer to the parts is cleared. If external references to the parts still exist (like in a caller or another container), the parts remain safely in the JVM heap.",
+          "keyTakeaway": "JVM garbage collection preserves any object reachable from living root references.",
+          "keyPoints": [
+            "JVM garbage collection preserves any object reachable from living root references."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les4-checklist",
+      "type": "self_evaluation",
+      "title": "Aggregation Architecture Checklist",
+      "items": [
+        "I understand Aggregation as a whole-part relationship where parts survive the whole.",
+        "I inject aggregated dependencies via constructors or setters rather than instantiating them internally.",
+        "I identify hollow diamond notation in UML class diagrams as Aggregation.",
+        "I allow parts to be shared across multiple containers when appropriate.",
+        "I return unmodifiable collection views to protect aggregated internal lists.",
+        "I leverage aggregation to enable mock injection during unit tests.",
+        "I verify that deleting the container does not delete the aggregated parts.",
+        "I distinguish between weak Has-A (aggregation) and strong Has-A (composition).",
+        "I know that domain context dictates whether a relationship is aggregation or composition.",
+        "I write safe accessor methods that don't leak mutable collection references."
+      ],
+      "checklist": [
+        "I understand Aggregation as a whole-part relationship where parts survive the whole.",
+        "I inject aggregated dependencies via constructors or setters rather than instantiating them internally.",
+        "I identify hollow diamond notation in UML class diagrams as Aggregation.",
+        "I allow parts to be shared across multiple containers when appropriate.",
+        "I return unmodifiable collection views to protect aggregated internal lists.",
+        "I leverage aggregation to enable mock injection during unit tests.",
+        "I verify that deleting the container does not delete the aggregated parts.",
+        "I distinguish between weak Has-A (aggregation) and strong Has-A (composition).",
+        "I know that domain context dictates whether a relationship is aggregation or composition.",
+        "I write safe accessor methods that don't leak mutable collection references."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les4-p1",
+      "lessonId": "java-oop-mod8-les4",
+      "orderIndex": 1,
+      "title": "Department and Professor Aggregation",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `Department` class to aggregate `Professor` objects. The professors are created externally and passed into the department. Complete `Department.addProfessor` and `Department.printDirectory` to output each professor's name and specialty.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Professor {\n    private String name;\n    private String specialty;\n    public Professor(String name, String specialty) {\n        this.name = name;\n        this.specialty = specialty;\n    }\n    public String getDetails() { return name + \" [\" + specialty + \"]\"; }\n}\n\nclass Department {\n    private String deptName;\n    private List<Professor> faculty = new ArrayList<>();\n    \n    public Department(String deptName) {\n        this.deptName = deptName;\n    }\n    \n    public void addProfessor(Professor p) {\n        // TODO: Add professor to faculty list\n    }\n    \n    public void printDirectory() {\n        System.out.println(\"Faculty Directory: \" + deptName);\n        // TODO: Print each professor formatted as ' * ' + details\n    }\n}\n\npublic class DeptApp {\n    public static void main(String[] args) {\n        Professor p1 = new Professor(\"Dr. Alan Turing\", \"Computation\");\n        Professor p2 = new Professor(\"Dr. Ada Lovelace\", \"Algorithms\");\n        \n        Department cs = new Department(\"Computer Science\");\n        cs.addProfessor(p1);\n        cs.addProfessor(p2);\n        cs.printDirectory();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Professor {\n    private String name;\n    private String specialty;\n    public Professor(String name, String specialty) {\n        this.name = name;\n        this.specialty = specialty;\n    }\n    public String getDetails() { return name + \" [\" + specialty + \"]\"; }\n}\n\nclass Department {\n    private String deptName;\n    private List<Professor> faculty = new ArrayList<>();\n    \n    public Department(String deptName) {\n        this.deptName = deptName;\n    }\n    \n    public void addProfessor(Professor p) {\n        // TODO: Add professor to faculty list\n    }\n    \n    public void printDirectory() {\n        System.out.println(\"Faculty Directory: \" + deptName);\n        // TODO: Print each professor formatted as ' * ' + details\n    }\n}\n\npublic class DeptApp {\n    public static void main(String[] args) {\n        Professor p1 = new Professor(\"Dr. Alan Turing\", \"Computation\");\n        Professor p2 = new Professor(\"Dr. Ada Lovelace\", \"Algorithms\");\n        \n        Department cs = new Department(\"Computer Science\");\n        cs.addProfessor(p1);\n        cs.addProfessor(p2);\n        cs.printDirectory();\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Professor {\n    private String name;\n    private String specialty;\n    public Professor(String name, String specialty) {\n        this.name = name;\n        this.specialty = specialty;\n    }\n    public String getDetails() { return name + \" [\" + specialty + \"]\"; }\n}\n\nclass Department {\n    private String deptName;\n    private List<Professor> faculty = new ArrayList<>();\n    \n    public Department(String deptName) {\n        this.deptName = deptName;\n    }\n    \n    public void addProfessor(Professor p) {\n        faculty.add(p);\n    }\n    \n    public void printDirectory() {\n        System.out.println(\"Faculty Directory: \" + deptName);\n        for (Professor p : faculty) {\n            System.out.println(\" * \" + p.getDetails());\n        }\n    }\n}\n\npublic class DeptApp {\n    public static void main(String[] args) {\n        Professor p1 = new Professor(\"Dr. Alan Turing\", \"Computation\");\n        Professor p2 = new Professor(\"Dr. Ada Lovelace\", \"Algorithms\");\n        \n        Department cs = new Department(\"Computer Science\");\n        cs.addProfessor(p1);\n        cs.addProfessor(p2);\n        cs.printDirectory();\n    }\n}",
+      "expectedOutput": "Faculty Directory: Computer Science\n * Dr. Alan Turing [Computation]\n * Dr. Ada Lovelace [Algorithms]",
+      "hints": [
+        "In `addProfessor`, call `faculty.add(p)`.",
+        "In `printDirectory`, iterate through `faculty` printing `' * ' + p.getDetails()`."
+      ]
+    },
+    {
+      "id": "prob-les4-p2",
+      "lessonId": "java-oop-mod8-les4",
+      "orderIndex": 2,
+      "title": "Music Playlist Multi-Container Sharing",
+      "difficulty": "medium",
+      "problemStatement": "Demonstrate that aggregated objects can belong to multiple containers simultaneously from scratch:\n1. Class `Track`: holds `private String isrc` and `private String title`. Constructor initializes both. Method `public String getDisplay()` returns title + ' (' + isrc + ')'.\n2. Class `MusicPlaylist`: holds `private String name` and `private java.util.List<Track> tracks = new java.util.ArrayList<>()`.\n   - Constructor initializes name.\n   - Method `public void addTrack(Track t)` adds track.\n   - Method `public void showTracklist()` prints `'=== Playlist: ' + name + ' ==='` then each track as `' - ' + t.getDisplay()`.\n3. In `Main`, create Track t1 ('US-100', 'Midnight City') and Track t2 ('US-200', 'Starlight').\n4. Create Playlist 'Favorites' with t1 and t2. Create Playlist 'Night Drive' with t1 only.\n5. Call `showTracklist()` on both playlists.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Track {\n    private String isrc;\n    private String title;\n    public Track(String isrc, String title) {\n        this.isrc = isrc;\n        this.title = title;\n    }\n    public String getDisplay() {\n        return title + \" (\" + isrc + \")\";\n    }\n}\n\nclass MusicPlaylist {\n    private String name;\n    private List<Track> tracks = new ArrayList<>();\n    public MusicPlaylist(String name) {\n        this.name = name;\n    }\n    public void addTrack(Track t) {\n        tracks.add(t);\n    }\n    public void showTracklist() {\n        System.out.println(\"=== Playlist: \" + name + \" ===\");\n        for (Track t : tracks) {\n            System.out.println(\" - \" + t.getDisplay());\n        }\n    }\n}\n\npublic class PlaylistApp {\n    public static void main(String[] args) {\n        Track t1 = new Track(\"US-100\", \"Midnight City\");\n        Track t2 = new Track(\"US-200\", \"Starlight\");\n        \n        MusicPlaylist favs = new MusicPlaylist(\"Favorites\");\n        favs.addTrack(t1);\n        favs.addTrack(t2);\n        \n        MusicPlaylist night = new MusicPlaylist(\"Night Drive\");\n        night.addTrack(t1);\n        \n        favs.showTracklist();\n        night.showTracklist();\n    }\n}",
+      "expectedOutput": "=== Playlist: Favorites ===\n - Midnight City (US-100)\n - Starlight (US-200)\n=== Playlist: Night Drive ===\n - Midnight City (US-100)",
+      "hints": [
+        "Notice t1 is added to both favs and night.",
+        "Track instances outlive either playlist."
+      ]
+    },
+    {
+      "id": "prob-les4-p3",
+      "lessonId": "java-oop-mod8-les4",
+      "orderIndex": 3,
+      "title": "Software Project Team Aggregating Engineers",
+      "difficulty": "medium",
+      "problemStatement": "Build a software project aggregation model from scratch:\n1. Class `SoftwareEngineer`: holds `private String name` and `private String role`. Constructor initializes both. Method `public String getBadge()` returns name + ' [' + role + ']'.\n2. Class `EngineeringTeam`: holds `private String projectCodename` and `private java.util.List<SoftwareEngineer> members = new java.util.ArrayList<>()`.\n   - Constructor initializes projectCodename.\n   - Method `public void recruit(SoftwareEngineer eng)` adds to members.\n   - Method `public void disbandTeam()`: prints `'Disbanding team for project: ' + projectCodename`. Clears `members`. Prints `'Team cleared. Engineers remain active in company pool.'`.\n   - Method `public int getMemberCount()` returns members.size().\n3. In `Main`, create Engineer 'Linus' ('Architect') and Engineer 'Ken' ('Systems'). Create team 'Project Apollo'. Recruit both. Print member count (2). Call `disbandTeam()`. Print Linus's badge to confirm he still exists.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SoftwareEngineer {\n    private String name;\n    private String role;\n    public SoftwareEngineer(String name, String role) {\n        this.name = name;\n        this.role = role;\n    }\n    public String getBadge() {\n        return name + \" [\" + role + \"]\";\n    }\n}\n\nclass EngineeringTeam {\n    private String projectCodename;\n    private List<SoftwareEngineer> members = new ArrayList<>();\n    public EngineeringTeam(String projectCodename) {\n        this.projectCodename = projectCodename;\n    }\n    public void recruit(SoftwareEngineer eng) {\n        members.add(eng);\n    }\n    public void disbandTeam() {\n        System.out.println(\"Disbanding team for project: \" + projectCodename);\n        members.clear();\n        System.out.println(\"Team cleared. Engineers remain active in company pool.\");\n    }\n    public int getMemberCount() {\n        return members.size();\n    }\n}\n\npublic class TeamApp {\n    public static void main(String[] args) {\n        SoftwareEngineer e1 = new SoftwareEngineer(\"Linus\", \"Architect\");\n        SoftwareEngineer e2 = new SoftwareEngineer(\"Ken\", \"Systems\");\n        \n        EngineeringTeam team = new EngineeringTeam(\"Project Apollo\");\n        team.recruit(e1);\n        team.recruit(e2);\n        \n        System.out.println(\"Active members: \" + team.getMemberCount());\n        team.disbandTeam();\n        System.out.println(\"Survivor: \" + e1.getBadge());\n    }\n}",
+      "expectedOutput": "Active members: 2\nDisbanding team for project: Project Apollo\nTeam cleared. Engineers remain active in company pool.\nSurvivor: Linus [Architect]",
+      "hints": [
+        "Even after team.disbandTeam() clears the list, e1 remains intact in main.",
+        "This demonstrates weak aggregation lifecycle independence."
+      ]
+    },
+    {
+      "id": "prob-les4-p4",
+      "lessonId": "java-oop-mod8-les4",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Leaking Mutable Aggregated List",
+      "difficulty": "medium",
+      "problemStatement": "The following `ArtGallery` class accidentally returns its internal mutable list of `Painting`s. An external rogue function clears the list from the outside, destroying the gallery's internal records! Fix `ArtGallery.getPaintings()` to return an unmodifiable view using `java.util.Collections.unmodifiableList(paintings)` so the gallery cannot be tampered with from outside.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Painting {\n    private String title;\n    public Painting(String title) { this.title = title; }\n    public String getTitle() { return title; }\n}\n\nclass ArtGallery {\n    private String galleryName;\n    private List<Painting> paintings = new ArrayList<>();\n\n    public ArtGallery(String galleryName) { this.galleryName = galleryName; }\n    public void exhibit(Painting p) { paintings.add(p); }\n    \n    // BUG: Returns direct reference to mutable list!\n    public List<Painting> getPaintings() {\n        return paintings;\n    }\n    \n    public int count() { return paintings.size(); }\n}\n\npublic class GalleryBugApp {\n    public static void main(String[] args) {\n        ArtGallery gallery = new ArtGallery(\"The Louvre\");\n        gallery.exhibit(new Painting(\"Mona Lisa\"));\n        \n        // Rogue client attempting mutation\n        try {\n            gallery.getPaintings().add(new Painting(\"Forgery\"));\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Gallery protected: Modification rejected!\");\n        }\n        System.out.println(\"Exhibits count: \" + gallery.count());\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Painting {\n    private String title;\n    public Painting(String title) { this.title = title; }\n    public String getTitle() { return title; }\n}\n\nclass ArtGallery {\n    private String galleryName;\n    private List<Painting> paintings = new ArrayList<>();\n\n    public ArtGallery(String galleryName) { this.galleryName = galleryName; }\n    public void exhibit(Painting p) { paintings.add(p); }\n    \n    // BUG: Returns direct reference to mutable list!\n    public List<Painting> getPaintings() {\n        return paintings;\n    }\n    \n    public int count() { return paintings.size(); }\n}\n\npublic class GalleryBugApp {\n    public static void main(String[] args) {\n        ArtGallery gallery = new ArtGallery(\"The Louvre\");\n        gallery.exhibit(new Painting(\"Mona Lisa\"));\n        \n        // Rogue client attempting mutation\n        try {\n            gallery.getPaintings().add(new Painting(\"Forgery\"));\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Gallery protected: Modification rejected!\");\n        }\n        System.out.println(\"Exhibits count: \" + gallery.count());\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.List;\n\nclass Painting {\n    private String title;\n    public Painting(String title) { this.title = title; }\n    public String getTitle() { return title; }\n}\n\nclass ArtGallery {\n    private String galleryName;\n    private List<Painting> paintings = new ArrayList<>();\n\n    public ArtGallery(String galleryName) { this.galleryName = galleryName; }\n    public void exhibit(Painting p) { paintings.add(p); }\n    \n    public List<Painting> getPaintings() {\n        return Collections.unmodifiableList(paintings);\n    }\n    \n    public int count() { return paintings.size(); }\n}\n\npublic class GalleryBugApp {\n    public static void main(String[] args) {\n        ArtGallery gallery = new ArtGallery(\"The Louvre\");\n        gallery.exhibit(new Painting(\"Mona Lisa\"));\n        \n        try {\n            gallery.getPaintings().add(new Painting(\"Forgery\"));\n        } catch (UnsupportedOperationException e) {\n            System.out.println(\"Gallery protected: Modification rejected!\");\n        }\n        System.out.println(\"Exhibits count: \" + gallery.count());\n    }\n}",
+      "expectedOutput": "Gallery protected: Modification rejected!\nExhibits count: 1",
+      "hints": [
+        "Change getPaintings to return `Collections.unmodifiableList(paintings)`.",
+        "This throws UnsupportedOperationException when add is attempted."
+      ]
+    },
+    {
+      "id": "prob-les4-p5",
+      "lessonId": "java-oop-mod8-les4",
+      "orderIndex": 5,
+      "title": "Air Traffic Control Fleet Airspace Aggregation",
+      "difficulty": "hard",
+      "problemStatement": "Build an Air Traffic Control (ATC) radar sector aggregating aircraft from scratch:\n1. Class `CommercialAircraft`: holds `private String callsign`, `private int altitudeFt`, and `private int speedKnots`. Constructor initializes all three. Method `public String getRadarBlip()` returns `'[' + callsign + '] Alt: ' + altitudeFt + 'ft, Spd: ' + speedKnots + 'kts'`.\n2. Class `RadarSector`: holds `private String sectorId` and `private java.util.List<CommercialAircraft> trackedAircraft = new java.util.ArrayList<>()`.\n   - Constructor initializes sectorId.\n   - Method `public void handoffIn(CommercialAircraft ac)` adds aircraft.\n   - Method `public void handoffOut(CommercialAircraft ac)` removes aircraft.\n   - Method `public void scanSector()` prints `'=== Radar Sweep Sector: ' + sectorId + ' ==='`. If empty, prints `'Sector Clear'`. Otherwise prints each blip indented with `' > ' + blip`.\n3. In `Main`, create aircraft UA101 (32000ft, 450kts) and DL404 (28000ft, 420kts). Create Sector 'SECTOR-ZNY'. Handoff both in. Run `scanSector()`. Handoff UA101 out. Run `scanSector()` again to observe DL404 remaining.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass CommercialAircraft {\n    private String callsign;\n    private int altitudeFt;\n    private int speedKnots;\n\n    public CommercialAircraft(String callsign, int altitudeFt, int speedKnots) {\n        this.callsign = callsign;\n        this.altitudeFt = altitudeFt;\n        this.speedKnots = speedKnots;\n    }\n\n    public String getRadarBlip() {\n        return \"[\" + callsign + \"] Alt: \" + altitudeFt + \"ft, Spd: \" + speedKnots + \"kts\";\n    }\n}\n\nclass RadarSector {\n    private String sectorId;\n    private List<CommercialAircraft> trackedAircraft = new ArrayList<>();\n\n    public RadarSector(String sectorId) {\n        this.sectorId = sectorId;\n    }\n\n    public void handoffIn(CommercialAircraft ac) {\n        trackedAircraft.add(ac);\n    }\n\n    public void handoffOut(CommercialAircraft ac) {\n        trackedAircraft.remove(ac);\n    }\n\n    public void scanSector() {\n        System.out.println(\"=== Radar Sweep Sector: \" + sectorId + \" ===\");\n        if (trackedAircraft.isEmpty()) {\n            System.out.println(\"Sector Clear\");\n        } else {\n            for (CommercialAircraft ac : trackedAircraft) {\n                System.out.println(\" > \" + ac.getRadarBlip());\n            }\n        }\n    }\n}\n\npublic class AtcApp {\n    public static void main(String[] args) {\n        CommercialAircraft ua = new CommercialAircraft(\"UA101\", 32000, 450);\n        CommercialAircraft dl = new CommercialAircraft(\"DL404\", 28000, 420);\n        \n        RadarSector sector = new RadarSector(\"SECTOR-ZNY\");\n        sector.handoffIn(ua);\n        sector.handoffIn(dl);\n        sector.scanSector();\n        \n        sector.handoffOut(ua);\n        sector.scanSector();\n    }\n}",
+      "expectedOutput": "=== Radar Sweep Sector: SECTOR-ZNY ===\n > [UA101] Alt: 32000ft, Spd: 450kts\n > [DL404] Alt: 28000ft, Spd: 420kts\n=== Radar Sweep Sector: SECTOR-ZNY ===\n > [DL404] Alt: 28000ft, Spd: 420kts",
+      "hints": [
+        "Aircraft are created in main and enter/exit sectors seamlessly.",
+        "Removing UA101 from trackedAircraft leaves DL404 intact."
+      ]
+    }
+  ]
+}

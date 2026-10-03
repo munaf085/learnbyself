@@ -1,0 +1,517 @@
+{
+  "id": "java-oop-mod9-les1",
+  "slug": "the-object-class",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "The Object Class",
+  "summary": "Explore java.lang.Object, the cosmic superclass of every class in Java, and understand its 11 foundational methods.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "what-is-inheritance",
+    "the-extends-keyword"
+  ],
+  "learningObjectives": [
+    "Explain how the JVM enforces java.lang.Object as the ultimate ancestor of every class",
+    "Survey the 11 foundational methods defined in java.lang.Object and their responsibilities",
+    "Apply implicit inheritance rules (class Foo automatically extends Object)",
+    "Use Object as the ultimate polymorphic reference type in generic APIs"
+  ],
+  "expectedOutcomes": [
+    "You can trace the class hierarchy of any Java class back to its root in java.lang.Object",
+    "You know which methods are overridable (toString, equals, hashCode) vs final (getClass, wait, notify)"
+  ],
+  "activities": [
+    {
+      "id": "act-les1-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Single Common Biological Ancestor",
+      "concept": "The Cosmic Superclass",
+      "realWorldMetaphor": {
+        "scenario": "In evolutionary biology, all living terrestrial organisms—from towering redwood trees to blue whales to microscopic yeast—trace their lineage back billions of years to LUCA (the Last Universal Common Ancestor). Because of this shared origin, all living cells use the exact same genetic code (DNA/RNA) and ATP for energy.",
+        "mapping": "In Java, `java.lang.Object` is LUCA. Even if you write `class Mystery {}`, the Java compiler silently rewrites it to `class Mystery extends Object`. Because of this universal ancestor, every single reference in the entire JVM shares core behaviors: checking identity, hashing, converting to string, and thread synchronization.",
+        "takeaway": "Every class is an Object. The methods declared on Object define what it fundamentally means to exist as a Java reference type."
+      }
+    },
+    {
+      "id": "act-les1-concept",
+      "type": "concept",
+      "title": "The 11 Methods of java.lang.Object",
+      "content": "### The Universal Class Hierarchy\n\nIn Java, `Object` is the root of the class hierarchy. Every class has `Object` as a superclass, directly or indirectly. Even arrays inherit from `Object`!\n\n### The 11 Core Methods\n| Method | Purpose | Overridable? |\n|---|---|---|\n| `String toString()` | String representation of the object | YES |\n| `boolean equals(Object obj)` | Logical equality comparison | YES |\n| `int hashCode()` | Integer hash code for hash tables | YES |\n| `Class<?> getClass()` | Returns runtime Class token | NO (final) |\n| `protected Object clone()` | Creates a field-by-field copy | YES (requires Cloneable) |\n| `protected void finalize()` | Garbage collection hook (Deprecated in Java 9, removed in modern Java) | YES (Deprecated) |\n| `void wait()`, `wait(long)`, `wait(long, int)` | Thread coordination (releases monitor lock) | NO (final) |\n| `void notify()`, `notifyAll()` | Wakes up waiting threads on monitor | NO (final) |\n\n### Universal Polymorphism\nAn `Object` reference variable can hold a reference to ANY instance:\n```java\nObject obj1 = new String(\"Hello\");\nObject obj2 = Integer.valueOf(42); // Autoboxed\nObject obj3 = new int[]{1, 2, 3};\n```"
+    },
+    {
+      "id": "act-les1-cw1",
+      "type": "code_walkthrough",
+      "title": "Tracing the Implicit Object Ancestry and getClass()",
+      "codeSnippet": "class Gizmo {\n    // No 'extends' specified, so compiler inserts: extends java.lang.Object\n}\n\npublic class ObjectAncestryDemo {\n    public static void main(String[] args) {\n        Gizmo g = new Gizmo();\n        \n        // 1. Inherited getClass()\n        System.out.println(\"Runtime Class: \" + g.getClass().getName());\n        \n        // 2. Superclass of Gizmo\n        System.out.println(\"Superclass: \" + g.getClass().getSuperclass().getName());\n        \n        // 3. Superclass of Object is null (end of line!)\n        System.out.println(\"Superclass of Object: \" + Object.class.getSuperclass());\n        \n        // 4. Object as universal container\n        Object[] diverseArray = new Object[] {\"Text\", 100, g};\n        System.out.println(\"Array elements stored: \" + diverseArray.length);\n    }\n}",
+      "code": "class Gizmo {\n    // No 'extends' specified, so compiler inserts: extends java.lang.Object\n}\n\npublic class ObjectAncestryDemo {\n    public static void main(String[] args) {\n        Gizmo g = new Gizmo();\n        \n        // 1. Inherited getClass()\n        System.out.println(\"Runtime Class: \" + g.getClass().getName());\n        \n        // 2. Superclass of Gizmo\n        System.out.println(\"Superclass: \" + g.getClass().getSuperclass().getName());\n        \n        // 3. Superclass of Object is null (end of line!)\n        System.out.println(\"Superclass of Object: \" + Object.class.getSuperclass());\n        \n        // 4. Object as universal container\n        Object[] diverseArray = new Object[] {\"Text\", 100, g};\n        System.out.println(\"Array elements stored: \" + diverseArray.length);\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates reflection verifying that Gizmo's superclass is java.lang.Object, and that Object.class.getSuperclass() is null.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Gizmo` does not explicitly extend anything, so it implicitly extends `java.lang.Object`."
+        },
+        {
+          "step": 2,
+          "description": "`g.getClass().getSuperclass()` returns `java.lang.Object`."
+        },
+        {
+          "step": 3,
+          "description": "`Object.class.getSuperclass()` returns `null`, confirming Object is the top of the tree."
+        },
+        {
+          "step": 4,
+          "description": "`Object[]` can hold strings, autoboxed primitives, and custom class instances."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-cw2",
+      "type": "code_walkthrough",
+      "title": "Default Object Behavior: Default toString and Identity Hash",
+      "codeSnippet": "class Sensor {\n    private int sensorId;\n    public Sensor(int id) { this.sensorId = id; }\n}\n\npublic class DefaultObjectDemo {\n    public static void main(String[] args) {\n        Sensor s1 = new Sensor(42);\n        \n        // Default Object.toString() output: ClassName@HexHashCode\n        String defaultStr = s1.toString();\n        System.out.println(\"Default toString: \" + defaultStr);\n        \n        // Hash code in hex matches the tail of default toString\n        String hexHash = Integer.toHexString(s1.hashCode());\n        System.out.println(\"Hex HashCode:    \" + hexHash);\n        \n        boolean matches = defaultStr.endsWith(hexHash);\n        System.out.println(\"String ends with hex hash: \" + matches);\n    }\n}",
+      "code": "class Sensor {\n    private int sensorId;\n    public Sensor(int id) { this.sensorId = id; }\n}\n\npublic class DefaultObjectDemo {\n    public static void main(String[] args) {\n        Sensor s1 = new Sensor(42);\n        \n        // Default Object.toString() output: ClassName@HexHashCode\n        String defaultStr = s1.toString();\n        System.out.println(\"Default toString: \" + defaultStr);\n        \n        // Hash code in hex matches the tail of default toString\n        String hexHash = Integer.toHexString(s1.hashCode());\n        System.out.println(\"Hex HashCode:    \" + hexHash);\n        \n        boolean matches = defaultStr.endsWith(hexHash);\n        System.out.println(\"String ends with hex hash: \" + matches);\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates how Object's default toString() implementation is constructed: getClass().getName() + '@' + Integer.toHexString(hashCode()).",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Sensor` does not override `toString()`, so it inherits `Object.toString()`."
+        },
+        {
+          "step": 2,
+          "description": "`Object.toString()` returns `Sensor@<hex>`."
+        },
+        {
+          "step": 3,
+          "description": "`Integer.toHexString(s1.hashCode())` computes the exact hexadecimal hash."
+        },
+        {
+          "step": 4,
+          "description": "The boolean check confirms that default `toString()` directly embeds the hash."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-mcq",
+      "type": "mcq",
+      "title": "The Object Class Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the ultimate root class of all classes in Java?",
+          "options": [
+            "java.lang.Class",
+            "java.lang.Object",
+            "java.lang.System",
+            "java.lang.Root"
+          ],
+          "correctAnswer": 1,
+          "explanation": "java.lang.Object is the universal root class of every reference type in Java.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What does Object.class.getSuperclass() return?",
+          "options": [
+            "java.lang.Class",
+            "null",
+            "java.lang.Object",
+            "Compiler error"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Object is the root of the hierarchy; it has no superclass, so getSuperclass() returns null.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "How many methods are defined directly in java.lang.Object?",
+          "options": [
+            "5",
+            "8",
+            "11",
+            "20"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Object declares exactly 11 methods (toString, equals, hashCode, getClass, clone, finalize, wait (3 overloads), notify, notifyAll).",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q4",
+          "question": "Which of the following Object methods is declared 'final' and CANNOT be overridden by any subclass?",
+          "options": [
+            "toString()",
+            "equals(Object obj)",
+            "hashCode()",
+            "getClass()"
+          ],
+          "correctAnswer": 3,
+          "explanation": "getClass(), wait(), notify(), and notifyAll() are final and cannot be overridden.",
+          "correctOptionIndex": 3
+        },
+        {
+          "id": "q5",
+          "question": "If a class does not declare an 'extends' clause, what does the compiler automatically insert?",
+          "options": [
+            "extends java.lang.Object",
+            "implements Serializable",
+            "extends java.lang.Class",
+            "Nothing, it remains rootless"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The Java compiler automatically synthesizes 'extends java.lang.Object' for any class without an explicit superclass.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "Do primitive types (int, double, boolean) inherit from java.lang.Object?",
+          "options": [
+            "Yes, all types in Java inherit from Object",
+            "No, primitive types are not objects, but their wrapper classes (Integer, Double) inherit from Object",
+            "Only when autoboxing is disabled",
+            "Only double inherits from Object"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Primitive types are values, not objects. Their corresponding wrapper classes (java.lang.Integer, etc.) inherit from Object.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "What is the default implementation of Object.toString()?",
+          "options": [
+            "An empty string",
+            "The JSON representation of all fields",
+            "getClass().getName() + '@' + Integer.toHexString(hashCode())",
+            "The memory address in hex"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Object.toString() returns the class name followed by '@' and the unsigned hexadecimal representation of the object's hash code.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q8",
+          "question": "Do arrays in Java inherit from java.lang.Object?",
+          "options": [
+            "No, arrays are special JVM primitives",
+            "Yes, all Java arrays (even int[]) are objects and inherit directly from java.lang.Object",
+            "Only Object[] inherits from Object",
+            "Only 2D arrays inherit from Object"
+          ],
+          "correctAnswer": 1,
+          "explanation": "All array types in Java are direct reference subtypes of java.lang.Object and implement Cloneable and Serializable.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q9",
+          "question": "Why is 'finalize()' deprecated and condemned in modern Java?",
+          "options": [
+            "It causes compilation errors in Java 8",
+            "It is inherently unpredictable, dangerous, causes performance bottlenecks, and can resurrect dead objects",
+            "Because C++ does not have it",
+            "Because it uses too many syllables"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Finalizers are non-deterministic, cause major GC pauses, and have security issues. Modern Java uses AutoCloseable and Cleaners instead.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "What is the default behavior of Object.equals(Object other)?",
+          "options": [
+            "Compares all field values for equality",
+            "Checks reference identity using the '==' operator (this == other)",
+            "Computes a SHA-256 hash",
+            "Returns false always"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The default equals() implementation in java.lang.Object simply performs identity comparison (this == other).",
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-les1-interview",
+      "type": "interview_qa",
+      "title": "The Object Class Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why did Java's creators design a single root class hierarchy (java.lang.Object) unlike C++?",
+          "answer": "A single root class hierarchy guarantees that every reference type shares a universal set of operations: hashing, string conversion, equality comparison, and concurrency locks. It also enabled early Java collections (prior to generics) to store any object via `Object` references.",
+          "expectedAnswer": "A single root class hierarchy guarantees that every reference type shares a universal set of operations: hashing, string conversion, equality comparison, and concurrency locks. It also enabled early Java collections (prior to generics) to store any object via `Object` references.",
+          "keyTakeaway": "A universal root guarantees standard behavioral primitives across every object in the JVM.",
+          "keyPoints": [
+            "A universal root guarantees standard behavioral primitives across every object in the JVM."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Which methods in java.lang.Object are final, and why did the designers make them final?",
+          "answer": "`getClass()`, `wait()`, `notify()`, and `notifyAll()` are final. `getClass()` is final to preserve type safety in reflection and runtime dispatch. The thread coordination methods (`wait`, `notify`) are final because they map directly to intrinsic JVM monitor locks that cannot be tampered with.",
+          "expectedAnswer": "`getClass()`, `wait()`, `notify()`, and `notifyAll()` are final. `getClass()` is final to preserve type safety in reflection and runtime dispatch. The thread coordination methods (`wait`, `notify`) are final because they map directly to intrinsic JVM monitor locks that cannot be tampered with.",
+          "keyTakeaway": "Monitor locks and runtime type identification must remain tamper-proof.",
+          "keyPoints": [
+            "Monitor locks and runtime type identification must remain tamper-proof."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Why is `clone()` in java.lang.Object protected rather than public?",
+          "answer": "Object.clone() performs a native field-by-field shallow copy, which can violate encapsulation or copy sensitive pointers. It is protected to force subclasses to deliberately opt-in by implementing the `Cloneable` marker interface and overriding `clone()` as public.",
+          "expectedAnswer": "Object.clone() performs a native field-by-field shallow copy, which can violate encapsulation or copy sensitive pointers. It is protected to force subclasses to deliberately opt-in by implementing the `Cloneable` marker interface and overriding `clone()` as public.",
+          "keyTakeaway": "clone() is protected so classes must explicitly opt-in to allowing external duplication.",
+          "keyPoints": [
+            "clone() is protected so classes must explicitly opt-in to allowing external duplication."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What happens if you invoke `clone()` on an object that does not implement `Cloneable`?",
+          "answer": "The JVM throws a `CloneNotSupportedException` at runtime.",
+          "expectedAnswer": "The JVM throws a `CloneNotSupportedException` at runtime.",
+          "keyTakeaway": "Cloneable is a marker interface; omitting it triggers CloneNotSupportedException.",
+          "keyPoints": [
+            "Cloneable is a marker interface; omitting it triggers CloneNotSupportedException."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do Generics (`List<T>`) relate to `java.lang.Object` at runtime?",
+          "answer": "Due to type erasure, generic type parameters without upper bounds are erased to `java.lang.Object` in compiled bytecode. For example, `List<T>` compiles down to internal `Object[]` storage with automatic casting at call sites.",
+          "expectedAnswer": "Due to type erasure, generic type parameters without upper bounds are erased to `java.lang.Object` in compiled bytecode. For example, `List<T>` compiles down to internal `Object[]` storage with automatic casting at call sites.",
+          "keyTakeaway": "Type erasure erases unbounded generics to java.lang.Object in bytecode.",
+          "keyPoints": [
+            "Type erasure erases unbounded generics to java.lang.Object in bytecode."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the modern replacement for `Object.finalize()`?",
+          "answer": "The standard modern replacement is `java.lang.AutoCloseable` paired with try-with-resources for deterministic cleanup, or `java.lang.ref.Cleaner` for asynchronous phantom reference cleanup.",
+          "expectedAnswer": "The standard modern replacement is `java.lang.AutoCloseable` paired with try-with-resources for deterministic cleanup, or `java.lang.ref.Cleaner` for asynchronous phantom reference cleanup.",
+          "keyTakeaway": "Use AutoCloseable / try-with-resources or java.lang.ref.Cleaner instead of finalize().",
+          "keyPoints": [
+            "Use AutoCloseable / try-with-resources or java.lang.ref.Cleaner instead of finalize()."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why did Java's creators design a single root class hierarchy (java.lang.Object) unlike C++?",
+          "answer": "A single root class hierarchy guarantees that every reference type shares a universal set of operations: hashing, string conversion, equality comparison, and concurrency locks. It also enabled early Java collections (prior to generics) to store any object via `Object` references.",
+          "expectedAnswer": "A single root class hierarchy guarantees that every reference type shares a universal set of operations: hashing, string conversion, equality comparison, and concurrency locks. It also enabled early Java collections (prior to generics) to store any object via `Object` references.",
+          "keyTakeaway": "A universal root guarantees standard behavioral primitives across every object in the JVM.",
+          "keyPoints": [
+            "A universal root guarantees standard behavioral primitives across every object in the JVM."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Which methods in java.lang.Object are final, and why did the designers make them final?",
+          "answer": "`getClass()`, `wait()`, `notify()`, and `notifyAll()` are final. `getClass()` is final to preserve type safety in reflection and runtime dispatch. The thread coordination methods (`wait`, `notify`) are final because they map directly to intrinsic JVM monitor locks that cannot be tampered with.",
+          "expectedAnswer": "`getClass()`, `wait()`, `notify()`, and `notifyAll()` are final. `getClass()` is final to preserve type safety in reflection and runtime dispatch. The thread coordination methods (`wait`, `notify`) are final because they map directly to intrinsic JVM monitor locks that cannot be tampered with.",
+          "keyTakeaway": "Monitor locks and runtime type identification must remain tamper-proof.",
+          "keyPoints": [
+            "Monitor locks and runtime type identification must remain tamper-proof."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Why is `clone()` in java.lang.Object protected rather than public?",
+          "answer": "Object.clone() performs a native field-by-field shallow copy, which can violate encapsulation or copy sensitive pointers. It is protected to force subclasses to deliberately opt-in by implementing the `Cloneable` marker interface and overriding `clone()` as public.",
+          "expectedAnswer": "Object.clone() performs a native field-by-field shallow copy, which can violate encapsulation or copy sensitive pointers. It is protected to force subclasses to deliberately opt-in by implementing the `Cloneable` marker interface and overriding `clone()` as public.",
+          "keyTakeaway": "clone() is protected so classes must explicitly opt-in to allowing external duplication.",
+          "keyPoints": [
+            "clone() is protected so classes must explicitly opt-in to allowing external duplication."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What happens if you invoke `clone()` on an object that does not implement `Cloneable`?",
+          "answer": "The JVM throws a `CloneNotSupportedException` at runtime.",
+          "expectedAnswer": "The JVM throws a `CloneNotSupportedException` at runtime.",
+          "keyTakeaway": "Cloneable is a marker interface; omitting it triggers CloneNotSupportedException.",
+          "keyPoints": [
+            "Cloneable is a marker interface; omitting it triggers CloneNotSupportedException."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do Generics (`List<T>`) relate to `java.lang.Object` at runtime?",
+          "answer": "Due to type erasure, generic type parameters without upper bounds are erased to `java.lang.Object` in compiled bytecode. For example, `List<T>` compiles down to internal `Object[]` storage with automatic casting at call sites.",
+          "expectedAnswer": "Due to type erasure, generic type parameters without upper bounds are erased to `java.lang.Object` in compiled bytecode. For example, `List<T>` compiles down to internal `Object[]` storage with automatic casting at call sites.",
+          "keyTakeaway": "Type erasure erases unbounded generics to java.lang.Object in bytecode.",
+          "keyPoints": [
+            "Type erasure erases unbounded generics to java.lang.Object in bytecode."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the modern replacement for `Object.finalize()`?",
+          "answer": "The standard modern replacement is `java.lang.AutoCloseable` paired with try-with-resources for deterministic cleanup, or `java.lang.ref.Cleaner` for asynchronous phantom reference cleanup.",
+          "expectedAnswer": "The standard modern replacement is `java.lang.AutoCloseable` paired with try-with-resources for deterministic cleanup, or `java.lang.ref.Cleaner` for asynchronous phantom reference cleanup.",
+          "keyTakeaway": "Use AutoCloseable / try-with-resources or java.lang.ref.Cleaner instead of finalize().",
+          "keyPoints": [
+            "Use AutoCloseable / try-with-resources or java.lang.ref.Cleaner instead of finalize()."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les1-checklist",
+      "type": "self_evaluation",
+      "title": "The Object Class Checklist",
+      "items": [
+        "I know that java.lang.Object is the root ancestor of every class in Java.",
+        "I can list the 11 foundational methods declared in java.lang.Object.",
+        "I understand that Java arrays inherit directly from Object.",
+        "I know which methods are final (getClass, wait, notify) vs overridable.",
+        "I know the default implementation of toString() is ClassName@HexHash.",
+        "I know the default implementation of equals() is identity comparison (==).",
+        "I know why finalize() is deprecated and what to use instead (AutoCloseable).",
+        "I know that Object.class.getSuperclass() returns null.",
+        "I understand how type erasure erases unbounded generics to Object.",
+        "I can inspect runtime class tokens via Object.getClass()."
+      ],
+      "checklist": [
+        "I know that java.lang.Object is the root ancestor of every class in Java.",
+        "I can list the 11 foundational methods declared in java.lang.Object.",
+        "I understand that Java arrays inherit directly from Object.",
+        "I know which methods are final (getClass, wait, notify) vs overridable.",
+        "I know the default implementation of toString() is ClassName@HexHash.",
+        "I know the default implementation of equals() is identity comparison (==).",
+        "I know why finalize() is deprecated and what to use instead (AutoCloseable).",
+        "I know that Object.class.getSuperclass() returns null.",
+        "I understand how type erasure erases unbounded generics to Object.",
+        "I can inspect runtime class tokens via Object.getClass()."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les1-p1",
+      "lessonId": "java-oop-mod9-les1",
+      "orderIndex": 1,
+      "title": "Universal Object Container and Class Inspector",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `UniversalInspector.inspect` method below. The method accepts an `Object` argument, prints `'Item class: ' + item.getClass().getSimpleName()`, and prints `'String representation: ' + item.toString()`. Complete the method so it works polymorphically for any object.",
+      "starterCode": "class Device {\n    private String model = \"Model-X\";\n    @Override\n    public String toString() { return \"Device: \" + model; }\n}\n\nclass UniversalInspector {\n    public static void inspect(Object item) {\n        // TODO: Print 'Item class: ' + item.getClass().getSimpleName()\n        // TODO: Print 'String representation: ' + item.toString()\n    }\n}\n\npublic class InspectorApp {\n    public static void main(String[] args) {\n        UniversalInspector.inspect(\"Hello World\");\n        UniversalInspector.inspect(new Device());\n    }\n}",
+      "initialCode": "class Device {\n    private String model = \"Model-X\";\n    @Override\n    public String toString() { return \"Device: \" + model; }\n}\n\nclass UniversalInspector {\n    public static void inspect(Object item) {\n        // TODO: Print 'Item class: ' + item.getClass().getSimpleName()\n        // TODO: Print 'String representation: ' + item.toString()\n    }\n}\n\npublic class InspectorApp {\n    public static void main(String[] args) {\n        UniversalInspector.inspect(\"Hello World\");\n        UniversalInspector.inspect(new Device());\n    }\n}",
+      "solutionCode": "class Device {\n    private String model = \"Model-X\";\n    @Override\n    public String toString() { return \"Device: \" + model; }\n}\n\nclass UniversalInspector {\n    public static void inspect(Object item) {\n        System.out.println(\"Item class: \" + item.getClass().getSimpleName());\n        System.out.println(\"String representation: \" + item.toString());\n    }\n}\n\npublic class InspectorApp {\n    public static void main(String[] args) {\n        UniversalInspector.inspect(\"Hello World\");\n        UniversalInspector.inspect(new Device());\n    }\n}",
+      "expectedOutput": "Item class: String\nString representation: Hello World\nItem class: Device\nString representation: Device: Model-X",
+      "hints": [
+        "Use `item.getClass().getSimpleName()` to get the unqualified class name.",
+        "Use `item.toString()` to obtain the string representation."
+      ]
+    },
+    {
+      "id": "prob-les1-p2",
+      "lessonId": "java-oop-mod9-les1",
+      "orderIndex": 2,
+      "title": "Type-Safe Dynamic Class Hierarchy Walker",
+      "difficulty": "medium",
+      "problemStatement": "Build a recursive class hierarchy walker from scratch:\n1. Class `HierarchyWalker`: method `public static void printAncestry(Class<?> clazz)`:\n   - Starts at `clazz`.\n   - In a loop, while `clazz != null`, prints `' -> ' + clazz.getName()`.\n   - Advances `clazz = clazz.getSuperclass()`.\n2. Create a hierarchy: class `Alpha`, class `Beta extends Alpha`, class `Gamma extends Beta`.\n3. In `Main`, call `HierarchyWalker.printAncestry(Gamma.class)` to trace the lineage all the way to `java.lang.Object`.",
+      "solutionCode": "class Alpha {}\nclass Beta extends Alpha {}\nclass Gamma extends Beta {}\n\nclass HierarchyWalker {\n    public static void printAncestry(Class<?> clazz) {\n        Class<?> current = clazz;\n        while (current != null) {\n            System.out.println(\" -> \" + current.getName());\n            current = current.getSuperclass();\n        }\n    }\n}\n\npublic class AncestryApp {\n    public static void main(String[] args) {\n        HierarchyWalker.printAncestry(Gamma.class);\n    }\n}",
+      "expectedOutput": " -> Gamma\n -> Beta\n -> Alpha\n -> java.lang.Object",
+      "hints": [
+        "In the loop, current advances via current.getSuperclass().",
+        "When current reaches java.lang.Object, its superclass is null, terminating the loop."
+      ]
+    },
+    {
+      "id": "prob-les1-p3",
+      "lessonId": "java-oop-mod9-les1",
+      "orderIndex": 3,
+      "title": "Generic Heterogeneous Object Cache",
+      "difficulty": "medium",
+      "problemStatement": "Build a heterogeneous key-value cache backed by `java.util.Map<String, Object>` from scratch:\n1. Class `AnyCache`: holds `private java.util.Map<String, Object> storage = new java.util.HashMap<>()`.\n   - Method `public void put(String key, Object value)` stores the key and value.\n   - Method `public Object get(String key)` returns the stored object or null.\n   - Generic method `public <T> T getAs(String key, Class<T> expectedType)`: retrieves object for key, casts it using `expectedType.cast(obj)`, and returns it. If key not found, returns null.\n2. In `Main`, create `AnyCache cache = new AnyCache()`.\n   - Store key 'max_connections' with integer 50.\n   - Store key 'server_name' with string 'Prod-Cluster-01'.\n   - Retrieve both using `getAs` and print `'[Cache] ' + key + ' = ' + value`.",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\n\nclass AnyCache {\n    private Map<String, Object> storage = new HashMap<>();\n\n    public void put(String key, Object value) {\n        storage.put(key, value);\n    }\n\n    public Object get(String key) {\n        return storage.get(key);\n    }\n\n    public <T> T getAs(String key, Class<T> expectedType) {\n        Object obj = storage.get(key);\n        if (obj == null) return null;\n        return expectedType.cast(obj);\n    }\n}\n\npublic class CacheApp {\n    public static void main(String[] args) {\n        AnyCache cache = new AnyCache();\n        cache.put(\"max_connections\", 50);\n        cache.put(\"server_name\", \"Prod-Cluster-01\");\n        \n        Integer conns = cache.getAs(\"max_connections\", Integer.class);\n        String name = cache.getAs(\"server_name\", String.class);\n        \n        System.out.println(\"[Cache] max_connections = \" + conns);\n        System.out.println(\"[Cache] server_name = \" + name);\n    }\n}",
+      "expectedOutput": "[Cache] max_connections = 50\n[Cache] server_name = Prod-Cluster-01",
+      "hints": [
+        "Use `expectedType.cast(obj)` for type-safe dynamic casting.",
+        "AnyCache holds any object since all reference types extend Object."
+      ]
+    },
+    {
+      "id": "prob-les1-p4",
+      "lessonId": "java-oop-mod9-les1",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Illegal Override of final getClass()",
+      "difficulty": "medium",
+      "problemStatement": "A developer tried to override `getClass()` in a `SecurityToken` class to disguise its real class type. However, Java marks `getClass()` as `final` in `java.lang.Object`, resulting in a compilation error! Fix the class by replacing the illegal `getClass()` override with a custom method `public String getTokenType()` that returns `'DisguisedToken'`.",
+      "starterCode": "class SecurityToken {\n    private String secret = \"TOP_SECRET\";\n    \n    // BUG: Cannot override final method getClass() from java.lang.Object!\n    @Override\n    public Class<?> getClass() {\n        return String.class;\n    }\n    \n    public String getSecret() { return secret; }\n}\n\npublic class GetClassBugApp {\n    public static void main(String[] args) {\n        SecurityToken token = new SecurityToken();\n        System.out.println(\"Token type: \" + token.getTokenType());\n    }\n}",
+      "initialCode": "class SecurityToken {\n    private String secret = \"TOP_SECRET\";\n    \n    // BUG: Cannot override final method getClass() from java.lang.Object!\n    @Override\n    public Class<?> getClass() {\n        return String.class;\n    }\n    \n    public String getSecret() { return secret; }\n}\n\npublic class GetClassBugApp {\n    public static void main(String[] args) {\n        SecurityToken token = new SecurityToken();\n        System.out.println(\"Token type: \" + token.getTokenType());\n    }\n}",
+      "solutionCode": "class SecurityToken {\n    private String secret = \"TOP_SECRET\";\n    \n    public String getTokenType() {\n        return \"DisguisedToken\";\n    }\n    \n    public String getSecret() { return secret; }\n}\n\npublic class GetClassBugApp {\n    public static void main(String[] args) {\n        SecurityToken token = new SecurityToken();\n        System.out.println(\"Token type: \" + token.getTokenType());\n    }\n}",
+      "expectedOutput": "Token type: DisguisedToken",
+      "hints": [
+        "Remove the @Override public Class<?> getClass() method.",
+        "Add public String getTokenType() returning \"DisguisedToken\"."
+      ]
+    },
+    {
+      "id": "prob-les1-p5",
+      "lessonId": "java-oop-mod9-les1",
+      "orderIndex": 5,
+      "title": "Type-Dispatching Event Bus with Universal Object Payloads",
+      "difficulty": "hard",
+      "problemStatement": "Build an event bus handling arbitrary `Object` payloads from scratch:\n1. Interface `EventListener`: `void onEvent(String topic, Object payload)`.\n2. Class `SimpleEventBus`: holds `private java.util.Map<String, java.util.List<EventListener>> listeners = new java.util.HashMap<>()`.\n   - Method `public void subscribe(String topic, EventListener listener)` adds listener to that topic.\n   - Method `public void publish(String topic, Object payload)`: dispatches payload to all listeners subscribed to topic.\n3. In `Main`, create an event bus.\n   - Subscribe a listener that inspects payload: if payload is a `String`, prints `'[Text Event on ' + topic + '] ' + payload`. If payload is an `Integer`, prints `'[Numeric Metric on ' + topic + '] Value: ' + payload`.\n   - Publish to topic 'system.alert' with String 'CPU Temperature High'.\n   - Publish to topic 'system.metric' with Integer 95.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\ninterface EventListener {\n    void onEvent(String topic, Object payload);\n}\n\nclass SimpleEventBus {\n    private Map<String, List<EventListener>> listeners = new HashMap<>();\n\n    public void subscribe(String topic, EventListener listener) {\n        listeners.computeIfAbsent(topic, k -> new ArrayList<>()).add(listener);\n    }\n\n    public void publish(String topic, Object payload) {\n        List<EventListener> list = listeners.get(topic);\n        if (list != null) {\n            for (EventListener l : list) {\n                l.onEvent(topic, payload);\n            }\n        }\n    }\n}\n\npublic class EventBusApp {\n    public static void main(String[] args) {\n        SimpleEventBus bus = new SimpleEventBus();\n        \n        EventListener handler = (topic, payload) -> {\n            if (payload instanceof String) {\n                System.out.println(\"[Text Event on \" + topic + \"] \" + payload);\n            } else if (payload instanceof Integer) {\n                System.out.println(\"[Numeric Metric on \" + topic + \"] Value: \" + payload);\n            }\n        };\n        \n        bus.subscribe(\"system.alert\", handler);\n        bus.subscribe(\"system.metric\", handler);\n        \n        bus.publish(\"system.alert\", \"CPU Temperature High\");\n        bus.publish(\"system.metric\", 95);\n    }\n}",
+      "expectedOutput": "[Text Event on system.alert] CPU Temperature High\n[Numeric Metric on system.metric] Value: 95",
+      "hints": [
+        "Use pattern matching with instanceof to inspect arbitrary Object payloads.",
+        "SimpleEventBus stores EventListener list by topic in a Map."
+      ]
+    }
+  ]
+}

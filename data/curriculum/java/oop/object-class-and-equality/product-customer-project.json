@@ -1,0 +1,524 @@
+{
+  "id": "java-oop-mod9-les9",
+  "slug": "product-customer-project",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "Mini Project: Product & Customer Objects",
+  "summary": "Synthesize all Module 9 concepts into an enterprise Product and Customer domain model with production-grade toString, equals, and hashCode implementations.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 35,
+  "prerequisites": [
+    "the-object-class",
+    "to-string-method",
+    "double-equals-and-references",
+    "equals-method",
+    "identity-vs-logical-equality",
+    "hashcode-method",
+    "equals-hashcode-contract",
+    "common-equality-bugs"
+  ],
+  "learningObjectives": [
+    "Design production-grade Customer and Product entities adhering to the full equals/hashCode contract",
+    "Protect sensitive customer credentials using masked toString() representations",
+    "Manage entity sets and deduplication inside high-performance hash collections",
+    "Test and verify reflexivity, symmetry, transitivity, and hash alignment in complex domains"
+  ],
+  "expectedOutcomes": [
+    "You have built complete, production-grade Customer and Product classes ready for real enterprise systems",
+    "You can defend your equals, hashCode, and toString design decisions in senior software engineering interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-les9-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Global Passport and Barcode Scanning System",
+      "concept": "Enterprise Identity and Value Contracts",
+      "realWorldMetaphor": {
+        "scenario": "When you cross an international border, immigration does not care about your shirt color or hairstyle. They scan your biometric passport number. Your passport number is your immutable identity. At the same time, at the airport duty-free store, a laser scans the UPC barcode of a perfume bottle. Thousands of identical bottles share that exact UPC. The store cash register groups them by UPC.",
+        "mapping": "Customer is like the traveler: defined by a unique `customerId` regardless of address changes. Product is like the merchandise: defined by a canonical `sku` or barcode. Both require rock-solid `equals()`, `hashCode()`, and secure `toString()` methods.",
+        "takeaway": "Enterprise software achieves reliability by cementing identity and equality contracts into its core business entities."
+      }
+    },
+    {
+      "id": "act-les9-concept",
+      "type": "concept",
+      "title": "Enterprise Entity Architecture Specifications",
+      "content": "### Production Architecture Specifications\n\n1. **Value Object: `Money`**:\n   - Fields: `private final double amount`, `private final String currency`.\n   - Immutable value semantics: equality compares both amount (via `Double.compare`) and currency.\n   - Clean `toString()`: e.g., `\"$149.99 USD\"`.\n\n2. **Entity: `Product`**:\n   - Fields: `private final String sku`, `private String title`, `private Money price`, `private String category`.\n   - Identity: `sku` is the unique business key. Two Products with the same `sku` are logically equal.\n   - Full `toString()` displaying sku, title, and price.\n\n3. **Entity: `Customer`**:\n   - Fields: `private final String customerId`, `private String fullName`, `private String email`, `private String taxId` (PII!).\n   - Identity: `customerId` is the unique business key.\n   - Secure `toString()`: masks `taxId` to `***-**-XXXX` and redacts sensitive data.\n\n4. **Service: `ECommerceRegistry`**:\n   - Manages a `Set<Customer>` and `Map<Product, Integer>` (inventory levels) ensuring contract compliance."
+    },
+    {
+      "id": "act-les9-cw1",
+      "type": "code_walkthrough",
+      "title": "Implementing Production-Grade Product and Money Entities",
+      "codeSnippet": "import java.util.Objects;\n\nfinal class Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = Objects.requireNonNull(currency, \"currency cannot be null\");\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Money other = (Money) obj;\n        return Double.compare(this.amount, other.amount) == 0 &&\n               Objects.equals(this.currency, other.currency);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(amount, currency);\n    }\n\n    @Override\n    public String toString() {\n        return String.format(\"%.2f %s\", amount, currency);\n    }\n}\n\nclass Product {\n    private final String sku;\n    private String title;\n    private Money price;\n\n    public Product(String sku, String title, Money price) {\n        this.sku = Objects.requireNonNull(sku, \"sku cannot be null\");\n        this.title = title;\n        this.price = price;\n    }\n\n    // Business key equality: Product equality is governed strictly by unique SKU\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Product other = (Product) obj;\n        return Objects.equals(this.sku, other.sku);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n\n    @Override\n    public String toString() {\n        return \"Product[sku='\" + sku + \"', title='\" + title + \"', price=\" + price + \"]\";\n    }\n}\n\npublic class ProductDemo {\n    public static void main(String[] args) {\n        Product p1 = new Product(\"SKU-4K-MONITOR\", \"UltraSharp 27\", new Money(399.99, \"USD\"));\n        Product p2 = new Product(\"SKU-4K-MONITOR\", \"UltraSharp 27 (Promo)\", new Money(349.99, \"USD\"));\n        \n        System.out.println(p1);\n        System.out.println(\"Products equal by SKU: \" + p1.equals(p2));\n        System.out.println(\"Hashes match: \" + (p1.hashCode() == p2.hashCode()));\n    }\n}",
+      "code": "import java.util.Objects;\n\nfinal class Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = Objects.requireNonNull(currency, \"currency cannot be null\");\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Money other = (Money) obj;\n        return Double.compare(this.amount, other.amount) == 0 &&\n               Objects.equals(this.currency, other.currency);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(amount, currency);\n    }\n\n    @Override\n    public String toString() {\n        return String.format(\"%.2f %s\", amount, currency);\n    }\n}\n\nclass Product {\n    private final String sku;\n    private String title;\n    private Money price;\n\n    public Product(String sku, String title, Money price) {\n        this.sku = Objects.requireNonNull(sku, \"sku cannot be null\");\n        this.title = title;\n        this.price = price;\n    }\n\n    // Business key equality: Product equality is governed strictly by unique SKU\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Product other = (Product) obj;\n        return Objects.equals(this.sku, other.sku);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n\n    @Override\n    public String toString() {\n        return \"Product[sku='\" + sku + \"', title='\" + title + \"', price=\" + price + \"]\";\n    }\n}\n\npublic class ProductDemo {\n    public static void main(String[] args) {\n        Product p1 = new Product(\"SKU-4K-MONITOR\", \"UltraSharp 27\", new Money(399.99, \"USD\"));\n        Product p2 = new Product(\"SKU-4K-MONITOR\", \"UltraSharp 27 (Promo)\", new Money(349.99, \"USD\"));\n        \n        System.out.println(p1);\n        System.out.println(\"Products equal by SKU: \" + p1.equals(p2));\n        System.out.println(\"Hashes match: \" + (p1.hashCode() == p2.hashCode()));\n    }\n}",
+      "language": "java",
+      "explanation": "Money is an immutable Value Object comparing all fields. Product is a Business Entity whose equality is governed strictly by unique SKU.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Money` is declared `final` and encapsulates immutable currency math."
+        },
+        {
+          "step": 2,
+          "description": "`Product` uses business key equality (`sku`), making products with identical SKUs equal even if promo titles differ."
+        },
+        {
+          "step": 3,
+          "description": "Both classes override `equals` and `hashCode` in lockstep."
+        },
+        {
+          "step": 4,
+          "description": "`toString()` produces clean, readable logging output."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-cw2",
+      "type": "code_walkthrough",
+      "title": "Securing Customer Entity and Collection Deduplication",
+      "codeSnippet": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass Customer {\n    private final String customerId;\n    private String fullName;\n    private String email;\n    private String taxId; // PII: must be masked in toString!\n\n    public Customer(String id, String name, String email, String taxId) {\n        this.customerId = Objects.requireNonNull(id, \"customerId cannot be null\");\n        this.fullName = name;\n        this.email = email;\n        this.taxId = taxId;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Customer other = (Customer) obj;\n        return Objects.equals(this.customerId, other.customerId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(customerId);\n    }\n\n    private String maskTaxId(String raw) {\n        if (raw == null || raw.length() < 4) return \"***-**-****\";\n        return \"***-**-\" + raw.substring(raw.length() - 4);\n    }\n\n    @Override\n    public String toString() {\n        return \"Customer[id='\" + customerId + \"', name='\" + fullName + \"', email='\" + email + \"', taxId='\" + maskTaxId(taxId) + \"']\";\n    }\n}\n\npublic class CustomerRegistryDemo {\n    public static void main(String[] args) {\n        Set<Customer> registry = new HashSet<>();\n        Customer c1 = new Customer(\"CUST-001\", \"Katherine Johnson\", \"kj@nasa.gov\", \"123-45-6789\");\n        Customer c2 = new Customer(\"CUST-001\", \"Katherine G. Johnson\", \"kjohnson@nasa.gov\", \"123-45-6789\");\n        \n        registry.add(c1);\n        boolean addedDup = registry.add(c2); // Rejected as duplicate!\n        \n        System.out.println(\"Duplicate added: \" + addedDup); // false\n        System.out.println(\"Registry size: \" + registry.size()); // 1\n        System.out.println(c1);\n    }\n}",
+      "code": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass Customer {\n    private final String customerId;\n    private String fullName;\n    private String email;\n    private String taxId; // PII: must be masked in toString!\n\n    public Customer(String id, String name, String email, String taxId) {\n        this.customerId = Objects.requireNonNull(id, \"customerId cannot be null\");\n        this.fullName = name;\n        this.email = email;\n        this.taxId = taxId;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Customer other = (Customer) obj;\n        return Objects.equals(this.customerId, other.customerId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(customerId);\n    }\n\n    private String maskTaxId(String raw) {\n        if (raw == null || raw.length() < 4) return \"***-**-****\";\n        return \"***-**-\" + raw.substring(raw.length() - 4);\n    }\n\n    @Override\n    public String toString() {\n        return \"Customer[id='\" + customerId + \"', name='\" + fullName + \"', email='\" + email + \"', taxId='\" + maskTaxId(taxId) + \"']\";\n    }\n}\n\npublic class CustomerRegistryDemo {\n    public static void main(String[] args) {\n        Set<Customer> registry = new HashSet<>();\n        Customer c1 = new Customer(\"CUST-001\", \"Katherine Johnson\", \"kj@nasa.gov\", \"123-45-6789\");\n        Customer c2 = new Customer(\"CUST-001\", \"Katherine G. Johnson\", \"kjohnson@nasa.gov\", \"123-45-6789\");\n        \n        registry.add(c1);\n        boolean addedDup = registry.add(c2); // Rejected as duplicate!\n        \n        System.out.println(\"Duplicate added: \" + addedDup); // false\n        System.out.println(\"Registry size: \" + registry.size()); // 1\n        System.out.println(c1);\n    }\n}",
+      "language": "java",
+      "explanation": "Customer enforces unique identification via customerId. The HashSet automatically deduplicates entries based on equals and hashCode.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Customer` bases equality exclusively on `customerId`."
+        },
+        {
+          "step": 2,
+          "description": "`maskTaxId` redacts the social security / tax identifier in logs."
+        },
+        {
+          "step": 3,
+          "description": "`registry.add(c2)` checks hash and `equals()`, recognizing that `CUST-001` already exists."
+        },
+        {
+          "step": 4,
+          "description": "The duplicate is rejected, preserving data integrity."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-mcq",
+      "type": "mcq",
+      "title": "Product & Customer Mini Project Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Why is it best practice to make entity ID fields (like customerId, sku) private final?",
+          "options": [
+            "To ensure identity immutability, preventing objects from becoming lost in hash tables",
+            "Because final fields cannot be read by getters",
+            "To enable garbage collection",
+            "Because the compiler forbids non-final fields in entities"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Making ID fields final ensures identity cannot mutate, protecting hash collection integrity.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q2",
+          "question": "What is 'Business Key Equality'?",
+          "options": [
+            "Comparing objects based on natural immutable domain identifiers (like SKU, ISBN, SSN) rather than all mutable fields",
+            "Comparing objects based on their financial cost",
+            "Using passwords to compare objects",
+            "Equality defined by external investors"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Business key equality bases equals() and hashCode() on immutable natural domain keys.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q3",
+          "question": "In the Customer class, why was taxId masked in toString()?",
+          "options": [
+            "Compliance regulations (PCI-DSS, GDPR, HIPAA) mandate protecting sensitive PII from application logs",
+            "To save characters in string buffers",
+            "Because numbers cannot be printed in toString()",
+            "To prevent stack overflow"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Masking sensitive fields in toString() prevents PII leaks into log files and monitoring dashboards.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "If Customer A and Customer B have matching customerId 'C100', but different email addresses, what does customerSet.add(B) do?",
+          "options": [
+            "Replaces A with B",
+            "Rejects B and returns false, maintaining size 1",
+            "Adds B as a second element",
+            "Throws a DuplicateEntityException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Set.add() rejects duplicates and returns false when an equal element is already present.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "Why should Money be modeled as a Value Object instead of a primitive double?",
+          "options": [
+            "Money requires pairing numerical value with currency to prevent currency mismatch errors ($50 != €50)",
+            "Double cannot store decimal points",
+            "Java prohibits double in financial apps",
+            "Primitive double runs too fast"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A Money value object encapsulates both amount and currency, preventing accidental arithmetic between different currencies.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "When storing Products as keys in a `HashMap<Product, Integer>` (inventory map), what is essential?",
+          "options": [
+            "Product's equals() and hashCode() must be consistent and based on immutable fields like SKU",
+            "The map must have capacity 100",
+            "Product must implement Cloneable",
+            "The price must be an integer"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Keys in a HashMap must uphold the equals/hashCode contract and should be immutable.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "What does Objects.requireNonNull(param, message) do in a constructor?",
+          "options": [
+            "Fails fast by throwing NullPointerException immediately if the mandatory parameter is null",
+            "Replaces null with an empty string",
+            "Logs a warning",
+            "Returns null"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Objects.requireNonNull enforces non-null invariants during object construction.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "Why is `getClass() != obj.getClass()` preferred over `instanceof` for Product and Customer entities?",
+          "options": [
+            "It prevents subclasses (like SpecialProduct or CorporateCustomer) from breaking symmetry",
+            "It avoids writing casts",
+            "It allows null values",
+            "It makes methods private"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Exact class matching guarantees symmetry and prevents subtle subtyping equality bugs.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "What happens if a developer creates a HashMap with Product keys, and then mutates product.setSku(\"NEW-SKU\")?",
+          "options": [
+            "The product becomes unreachable in the map (hash code changed, wrong bucket)",
+            "The map automatically updates",
+            "An exception is thrown",
+            "The JVM terminates"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Mutating a key field corrupts hash table bucket placement, rendering the entry unfindable.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "What architectural pattern replaces boilerplate equals/hashCode/toString in modern Java for immutable data carriers?",
+          "options": [
+            "Java 14+ Records (`record Product(...) {}`)",
+            "Static helper classes",
+            "Native C++ libraries",
+            "ThreadLocal buffers"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Java Records automatically synthesize compliant equals(), hashCode(), and toString() methods.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les9-interview",
+      "type": "interview_qa",
+      "title": "Product & Customer Mini Project Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you choose which fields to include in equals() and hashCode() for JPA / Hibernate entities?",
+          "answer": "In JPA, database-generated primary keys (`@Id @GeneratedValue`) are `null` before an entity is persisted! If you base `equals()` on `id`, two new unpersisted entities both have `null` id and may collide or violate set semantics. Best practice: (1) Use an immutable natural business key (e.g. `UUID`, `email`, `sku`), OR (2) If no natural key exists, retain default Object identity equality.",
+          "expectedAnswer": "In JPA, database-generated primary keys (`@Id @GeneratedValue`) are `null` before an entity is persisted! If you base `equals()` on `id`, two new unpersisted entities both have `null` id and may collide or violate set semantics. Best practice: (1) Use an immutable natural business key (e.g. `UUID`, `email`, `sku`), OR (2) If no natural key exists, retain default Object identity equality.",
+          "keyTakeaway": "Never base equals/hashCode on database-generated surrogate IDs that are null before persistence.",
+          "keyPoints": [
+            "Never base equals/hashCode on database-generated surrogate IDs that are null before persistence."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why is the Money Pattern considered superior to primitive double or BigDecimal alone?",
+          "answer": "The Money pattern encapsulates amount and currency together as an immutable Value Object. It prevents developers from adding USD to EUR without conversion, provides currency-aware rounding, and guarantees domain-level validation and equality semantics.",
+          "expectedAnswer": "The Money pattern encapsulates amount and currency together as an immutable Value Object. It prevents developers from adding USD to EUR without conversion, provides currency-aware rounding, and guarantees domain-level validation and equality semantics.",
+          "keyTakeaway": "The Money pattern couples amount with currency, eliminating currency-mismatch bugs.",
+          "keyPoints": [
+            "The Money pattern couples amount with currency, eliminating currency-mismatch bugs."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you audit a production codebase for PII leaks in toString()?",
+          "answer": "1. Use static analysis rules (SonarQube, Checkstyle) or custom ArchUnit tests to verify sensitive fields (annotated with `@Sensitive` or `@Encrypted`) are excluded from `toString()`. 2. Use Lombok `@ToString(exclude = {\"password\", \"ssn\"})`. 3. Write unit tests that assert `entity.toString()` does not contain raw mock PII strings.",
+          "expectedAnswer": "1. Use static analysis rules (SonarQube, Checkstyle) or custom ArchUnit tests to verify sensitive fields (annotated with `@Sensitive` or `@Encrypted`) are excluded from `toString()`. 2. Use Lombok `@ToString(exclude = {\"password\", \"ssn\"})`. 3. Write unit tests that assert `entity.toString()` does not contain raw mock PII strings.",
+          "keyTakeaway": "Use ArchUnit, custom annotations, and unit tests to ensure PII is masked in toString().",
+          "keyPoints": [
+            "Use ArchUnit, custom annotations, and unit tests to ensure PII is masked in toString()."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between Natural Key Equality and Surrogate Key Equality?",
+          "answer": "A Natural Key is an immutable business attribute that uniquely identifies an entity in the real world (e.g. SSN, VIN, SKU). A Surrogate Key is a database-internal auto-incremented integer. Natural key equality works across all lifecycle phases (in-memory, transit, persisted).",
+          "expectedAnswer": "A Natural Key is an immutable business attribute that uniquely identifies an entity in the real world (e.g. SSN, VIN, SKU). A Surrogate Key is a database-internal auto-incremented integer. Natural key equality works across all lifecycle phases (in-memory, transit, persisted).",
+          "keyTakeaway": "Natural keys provide consistent equality across in-memory and persisted states.",
+          "keyPoints": [
+            "Natural keys provide consistent equality across in-memory and persisted states."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How would you migrate a legacy JavaBean entity to a Java 16+ Record?",
+          "answer": "Declare `public record Product(String sku, String title, Money price) {}`. Add compact constructor validation: `Objects.requireNonNull(sku)`. The compiler replaces 50 lines of boilerplate getters, constructors, equals, hashCode, and toString with 3 lines of bulletproof bytecode.",
+          "expectedAnswer": "Declare `public record Product(String sku, String title, Money price) {}`. Add compact constructor validation: `Objects.requireNonNull(sku)`. The compiler replaces 50 lines of boilerplate getters, constructors, equals, hashCode, and toString with 3 lines of bulletproof bytecode.",
+          "keyTakeaway": "Java records condense entity boilerplate into safe, immutable, contract-compliant declarations.",
+          "keyPoints": [
+            "Java records condense entity boilerplate into safe, immutable, contract-compliant declarations."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How do you defend against hash collision Denial-of-Service attacks in public REST endpoints?",
+          "answer": "Java 8's HashMap treeifies collision buckets into Red-Black trees (limiting lookup to O(log N) rather than O(N)). In addition, web frameworks enforce payload limits on incoming JSON arrays and maps to prevent unbounded memory allocation.",
+          "expectedAnswer": "Java 8's HashMap treeifies collision buckets into Red-Black trees (limiting lookup to O(log N) rather than O(N)). In addition, web frameworks enforce payload limits on incoming JSON arrays and maps to prevent unbounded memory allocation.",
+          "keyTakeaway": "HashMap treeification and request size limits neutralize HashDOS vulnerabilities.",
+          "keyPoints": [
+            "HashMap treeification and request size limits neutralize HashDOS vulnerabilities."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you choose which fields to include in equals() and hashCode() for JPA / Hibernate entities?",
+          "answer": "In JPA, database-generated primary keys (`@Id @GeneratedValue`) are `null` before an entity is persisted! If you base `equals()` on `id`, two new unpersisted entities both have `null` id and may collide or violate set semantics. Best practice: (1) Use an immutable natural business key (e.g. `UUID`, `email`, `sku`), OR (2) If no natural key exists, retain default Object identity equality.",
+          "expectedAnswer": "In JPA, database-generated primary keys (`@Id @GeneratedValue`) are `null` before an entity is persisted! If you base `equals()` on `id`, two new unpersisted entities both have `null` id and may collide or violate set semantics. Best practice: (1) Use an immutable natural business key (e.g. `UUID`, `email`, `sku`), OR (2) If no natural key exists, retain default Object identity equality.",
+          "keyTakeaway": "Never base equals/hashCode on database-generated surrogate IDs that are null before persistence.",
+          "keyPoints": [
+            "Never base equals/hashCode on database-generated surrogate IDs that are null before persistence."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why is the Money Pattern considered superior to primitive double or BigDecimal alone?",
+          "answer": "The Money pattern encapsulates amount and currency together as an immutable Value Object. It prevents developers from adding USD to EUR without conversion, provides currency-aware rounding, and guarantees domain-level validation and equality semantics.",
+          "expectedAnswer": "The Money pattern encapsulates amount and currency together as an immutable Value Object. It prevents developers from adding USD to EUR without conversion, provides currency-aware rounding, and guarantees domain-level validation and equality semantics.",
+          "keyTakeaway": "The Money pattern couples amount with currency, eliminating currency-mismatch bugs.",
+          "keyPoints": [
+            "The Money pattern couples amount with currency, eliminating currency-mismatch bugs."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you audit a production codebase for PII leaks in toString()?",
+          "answer": "1. Use static analysis rules (SonarQube, Checkstyle) or custom ArchUnit tests to verify sensitive fields (annotated with `@Sensitive` or `@Encrypted`) are excluded from `toString()`. 2. Use Lombok `@ToString(exclude = {\"password\", \"ssn\"})`. 3. Write unit tests that assert `entity.toString()` does not contain raw mock PII strings.",
+          "expectedAnswer": "1. Use static analysis rules (SonarQube, Checkstyle) or custom ArchUnit tests to verify sensitive fields (annotated with `@Sensitive` or `@Encrypted`) are excluded from `toString()`. 2. Use Lombok `@ToString(exclude = {\"password\", \"ssn\"})`. 3. Write unit tests that assert `entity.toString()` does not contain raw mock PII strings.",
+          "keyTakeaway": "Use ArchUnit, custom annotations, and unit tests to ensure PII is masked in toString().",
+          "keyPoints": [
+            "Use ArchUnit, custom annotations, and unit tests to ensure PII is masked in toString()."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between Natural Key Equality and Surrogate Key Equality?",
+          "answer": "A Natural Key is an immutable business attribute that uniquely identifies an entity in the real world (e.g. SSN, VIN, SKU). A Surrogate Key is a database-internal auto-incremented integer. Natural key equality works across all lifecycle phases (in-memory, transit, persisted).",
+          "expectedAnswer": "A Natural Key is an immutable business attribute that uniquely identifies an entity in the real world (e.g. SSN, VIN, SKU). A Surrogate Key is a database-internal auto-incremented integer. Natural key equality works across all lifecycle phases (in-memory, transit, persisted).",
+          "keyTakeaway": "Natural keys provide consistent equality across in-memory and persisted states.",
+          "keyPoints": [
+            "Natural keys provide consistent equality across in-memory and persisted states."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How would you migrate a legacy JavaBean entity to a Java 16+ Record?",
+          "answer": "Declare `public record Product(String sku, String title, Money price) {}`. Add compact constructor validation: `Objects.requireNonNull(sku)`. The compiler replaces 50 lines of boilerplate getters, constructors, equals, hashCode, and toString with 3 lines of bulletproof bytecode.",
+          "expectedAnswer": "Declare `public record Product(String sku, String title, Money price) {}`. Add compact constructor validation: `Objects.requireNonNull(sku)`. The compiler replaces 50 lines of boilerplate getters, constructors, equals, hashCode, and toString with 3 lines of bulletproof bytecode.",
+          "keyTakeaway": "Java records condense entity boilerplate into safe, immutable, contract-compliant declarations.",
+          "keyPoints": [
+            "Java records condense entity boilerplate into safe, immutable, contract-compliant declarations."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How do you defend against hash collision Denial-of-Service attacks in public REST endpoints?",
+          "answer": "Java 8's HashMap treeifies collision buckets into Red-Black trees (limiting lookup to O(log N) rather than O(N)). In addition, web frameworks enforce payload limits on incoming JSON arrays and maps to prevent unbounded memory allocation.",
+          "expectedAnswer": "Java 8's HashMap treeifies collision buckets into Red-Black trees (limiting lookup to O(log N) rather than O(N)). In addition, web frameworks enforce payload limits on incoming JSON arrays and maps to prevent unbounded memory allocation.",
+          "keyTakeaway": "HashMap treeification and request size limits neutralize HashDOS vulnerabilities.",
+          "keyPoints": [
+            "HashMap treeification and request size limits neutralize HashDOS vulnerabilities."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les9-checklist",
+      "type": "self_evaluation",
+      "title": "Product & Customer Mini Project Checklist",
+      "items": [
+        "I base entity equals() and hashCode() on immutable natural business keys (sku, id).",
+        "I implement Money as an immutable Value Object with currency-aware equality.",
+        "I mask sensitive PII (taxId, ssn) in toString() output.",
+        "I enforce constructor fail-fast validation using Objects.requireNonNull.",
+        "I use getClass() != obj.getClass() to prevent subclass asymmetry.",
+        "I test collection deduplication in HashSet and HashMap.",
+        "I ensure equality and hashCode examine the exact same set of significant fields.",
+        "I keep key fields final to prevent post-insertion hash corruption.",
+        "I understand the difference between Value Objects and Business Entities.",
+        "I can articulate and defend my equality architecture in senior technical interviews."
+      ],
+      "checklist": [
+        "I base entity equals() and hashCode() on immutable natural business keys (sku, id).",
+        "I implement Money as an immutable Value Object with currency-aware equality.",
+        "I mask sensitive PII (taxId, ssn) in toString() output.",
+        "I enforce constructor fail-fast validation using Objects.requireNonNull.",
+        "I use getClass() != obj.getClass() to prevent subclass asymmetry.",
+        "I test collection deduplication in HashSet and HashMap.",
+        "I ensure equality and hashCode examine the exact same set of significant fields.",
+        "I keep key fields final to prevent post-insertion hash corruption.",
+        "I understand the difference between Value Objects and Business Entities.",
+        "I can articulate and defend my equality architecture in senior technical interviews."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les9-p1",
+      "lessonId": "java-oop-mod9-les9",
+      "orderIndex": 1,
+      "title": "Immutable Currency Money Value Object",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `Money` value object. Implement `equals` (comparing amount and currency), `hashCode`, and `toString()` returning `String.format(\"%.2f %s\", amount, currency)`. Produce the expected output.",
+      "starterCode": "import java.util.Objects;\n\nclass Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = currency;\n    }\n\n    // TODO: Override equals(Object obj)\n    \n    // TODO: Override hashCode()\n    \n    // TODO: Override toString() returning String.format(\"%.2f %s\", amount, currency)\n}\n\npublic class MoneyApp {\n    public static void main(String[] args) {\n        Money m1 = new Money(49.99, \"USD\");\n        Money m2 = new Money(49.99, \"USD\");\n        \n        System.out.println(m1);\n        System.out.println(\"m1.equals(m2): \" + m1.equals(m2));\n    }\n}",
+      "initialCode": "import java.util.Objects;\n\nclass Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = currency;\n    }\n\n    // TODO: Override equals(Object obj)\n    \n    // TODO: Override hashCode()\n    \n    // TODO: Override toString() returning String.format(\"%.2f %s\", amount, currency)\n}\n\npublic class MoneyApp {\n    public static void main(String[] args) {\n        Money m1 = new Money(49.99, \"USD\");\n        Money m2 = new Money(49.99, \"USD\");\n        \n        System.out.println(m1);\n        System.out.println(\"m1.equals(m2): \" + m1.equals(m2));\n    }\n}",
+      "solutionCode": "import java.util.Objects;\n\nclass Money {\n    private final double amount;\n    private final String currency;\n\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = currency;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Money other = (Money) obj;\n        return Double.compare(this.amount, other.amount) == 0 &&\n               Objects.equals(this.currency, other.currency);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(amount, currency);\n    }\n\n    @Override\n    public String toString() {\n        return String.format(\"%.2f %s\", amount, currency);\n    }\n}\n\npublic class MoneyApp {\n    public static void main(String[] args) {\n        Money m1 = new Money(49.99, \"USD\");\n        Money m2 = new Money(49.99, \"USD\");\n        \n        System.out.println(m1);\n        System.out.println(\"m1.equals(m2): \" + m1.equals(m2));\n    }\n}",
+      "expectedOutput": "49.99 USD\nm1.equals(m2): true",
+      "hints": [
+        "Compare amount using Double.compare(this.amount, other.amount) == 0.",
+        "Compare currency using Objects.equals.",
+        "Return `String.format(\"%.2f %s\", amount, currency)` from toString()."
+      ]
+    },
+    {
+      "id": "prob-les9-p2",
+      "lessonId": "java-oop-mod9-les9",
+      "orderIndex": 2,
+      "title": "Product Catalog Deduplication and Inventory Tracker",
+      "difficulty": "medium",
+      "problemStatement": "Build a product inventory management tracker using HashMap from scratch:\n1. Class `Product`: holds `private final String sku` and `private String name`.\n   - Constructor initializes both.\n   - Override `equals(Object o)`: equal if and only if `sku` matches.\n   - Override `hashCode()`: returns `Objects.hash(sku)`.\n   - Method `public String getSku()` returns sku.\n2. Class `InventoryStock`: holds `private java.util.Map<Product, Integer> stockMap = new java.util.HashMap<>()`.\n   - Method `public void restock(Product p, int qty)`: adds qty to existing count (defaulting to 0 if not present).\n   - Method `public int getQuantity(Product p)`: returns count (or 0 if not found).\n3. In `Main`, create p1 = Product(\"SKU-100\", \"Gaming Mouse\") and p2 = Product(\"SKU-100\", \"Gaming Mouse (V2)\").\n4. Restock p1 with 10 units. Then restock p2 with 5 units (Notice p1 and p2 have matching SKU, so they update the same inventory slot!).\n5. Print `'Total stock for SKU-100: ' + stock.getQuantity(p1)` (should be 15!).",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Objects;\n\nclass Product {\n    private final String sku;\n    private String name;\n    public Product(String sku, String name) {\n        this.sku = sku;\n        this.name = name;\n    }\n    public String getSku() { return sku; }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Product other = (Product) obj;\n        return Objects.equals(sku, other.sku);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n}\n\nclass InventoryStock {\n    private Map<Product, Integer> stockMap = new HashMap<>();\n    public void restock(Product p, int qty) {\n        stockMap.put(p, stockMap.getOrDefault(p, 0) + qty);\n    }\n    public int getQuantity(Product p) {\n        return stockMap.getOrDefault(p, 0);\n    }\n}\n\npublic class InventoryApp {\n    public static void main(String[] args) {\n        InventoryStock stock = new InventoryStock();\n        Product p1 = new Product(\"SKU-100\", \"Gaming Mouse\");\n        Product p2 = new Product(\"SKU-100\", \"Gaming Mouse (V2)\");\n        \n        stock.restock(p1, 10);\n        stock.restock(p2, 5);\n        \n        System.out.println(\"Total stock for SKU-100: \" + stock.getQuantity(p1));\n    }\n}",
+      "expectedOutput": "Total stock for SKU-100: 15",
+      "hints": [
+        "Product equality is based solely on sku.",
+        "stockMap.getOrDefault(p, 0) + qty accumulates stock under the same SKU."
+      ]
+    },
+    {
+      "id": "prob-les9-p3",
+      "lessonId": "java-oop-mod9-les9",
+      "orderIndex": 3,
+      "title": "Secure Customer Entity with Masked SSN",
+      "difficulty": "medium",
+      "problemStatement": "Build a secure customer entity with masked string formatting from scratch:\n1. Class `Customer`: holds `private final String customerId`, `private String name`, and `private String ssn`.\n   - Constructor initializes all three.\n   - Override `equals(Object o)`: equal if `customerId` matches.\n   - Override `hashCode()`: returns `Objects.hash(customerId)`.\n   - Override `toString()`: returns `'Customer[id=\"' + customerId + '\", name=\"' + name + '\", ssn=\"***-**-' + ssn.substring(ssn.length() - 4) + '\"]'`.\n2. In `Main`, create Customer c1 ('CUST-99', 'Grace Hopper', '000-11-2222').\n3. Create Customer c2 ('CUST-99', 'Grace H.', '000-11-2222').\n4. Print `c1.toString()`.\n5. Print `'c1.equals(c2): ' + c1.equals(c2)`.\n6. Print `'c1.hashCode() == c2.hashCode(): ' + (c1.hashCode() == c2.hashCode())`.",
+      "solutionCode": "import java.util.Objects;\n\nclass Customer {\n    private final String customerId;\n    private String name;\n    private String ssn;\n\n    public Customer(String customerId, String name, String ssn) {\n        this.customerId = customerId;\n        this.name = name;\n        this.ssn = ssn;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Customer other = (Customer) obj;\n        return Objects.equals(customerId, other.customerId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(customerId);\n    }\n\n    @Override\n    public String toString() {\n        return \"Customer[id=\\\"\" + customerId + \"\\\", name=\\\"\" + name + \"\\\", ssn=\\\"***-**-\" + ssn.substring(ssn.length() - 4) + \"\\\"]\";\n    }\n}\n\npublic class CustomerApp {\n    public static void main(String[] args) {\n        Customer c1 = new Customer(\"CUST-99\", \"Grace Hopper\", \"000-11-2222\");\n        Customer c2 = new Customer(\"CUST-99\", \"Grace H.\", \"000-11-2222\");\n        \n        System.out.println(c1);\n        System.out.println(\"c1.equals(c2): \" + c1.equals(c2));\n        System.out.println(\"c1.hashCode() == c2.hashCode(): \" + (c1.hashCode() == c2.hashCode()));\n    }\n}",
+      "expectedOutput": "Customer[id=\"CUST-99\", name=\"Grace Hopper\", ssn=\"***-**-2222\"]\nc1.equals(c2): true\nc1.hashCode() == c2.hashCode(): true",
+      "hints": [
+        "Mask the SSN to show only the last 4 digits in toString().",
+        "customerId governs equals and hashCode."
+      ]
+    },
+    {
+      "id": "prob-les9-p4",
+      "lessonId": "java-oop-mod9-les9",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Hash Code Mutability Hazard in Customer Loyalty Point Ledger",
+      "difficulty": "medium",
+      "problemStatement": "A developer included `loyaltyPoints` in `LoyaltyMember.hashCode()`. When points are updated, the member's hash code changes, making the member unfindable in `membersSet`! Fix `LoyaltyMember` by making `memberId` the ONLY field in `equals()` and `hashCode()`, so updating `loyaltyPoints` does not corrupt collection lookups.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass LoyaltyMember {\n    private String memberId;\n    private int loyaltyPoints; // Mutable field!\n\n    public LoyaltyMember(String id, int points) {\n        this.memberId = id;\n        this.loyaltyPoints = points;\n    }\n\n    public void addPoints(int pts) { this.loyaltyPoints += pts; }\n\n    // BUG: Including mutable loyaltyPoints in equals & hashCode!\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        LoyaltyMember other = (LoyaltyMember) obj;\n        return loyaltyPoints == other.loyaltyPoints && Objects.equals(memberId, other.memberId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(memberId, loyaltyPoints);\n    }\n}\n\npublic class MutableHashBugApp {\n    public static void main(String[] args) {\n        Set<LoyaltyMember> set = new HashSet<>();\n        LoyaltyMember member = new LoyaltyMember(\"MEM-77\", 100);\n        set.add(member);\n        \n        // Mutating points\n        member.addPoints(50);\n        \n        // BUG: Fails because member.hashCode() changed!\n        System.out.println(\"Member in set: \" + set.contains(member));\n    }\n}",
+      "initialCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass LoyaltyMember {\n    private String memberId;\n    private int loyaltyPoints; // Mutable field!\n\n    public LoyaltyMember(String id, int points) {\n        this.memberId = id;\n        this.loyaltyPoints = points;\n    }\n\n    public void addPoints(int pts) { this.loyaltyPoints += pts; }\n\n    // BUG: Including mutable loyaltyPoints in equals & hashCode!\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        LoyaltyMember other = (LoyaltyMember) obj;\n        return loyaltyPoints == other.loyaltyPoints && Objects.equals(memberId, other.memberId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(memberId, loyaltyPoints);\n    }\n}\n\npublic class MutableHashBugApp {\n    public static void main(String[] args) {\n        Set<LoyaltyMember> set = new HashSet<>();\n        LoyaltyMember member = new LoyaltyMember(\"MEM-77\", 100);\n        set.add(member);\n        \n        // Mutating points\n        member.addPoints(50);\n        \n        // BUG: Fails because member.hashCode() changed!\n        System.out.println(\"Member in set: \" + set.contains(member));\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass LoyaltyMember {\n    private String memberId;\n    private int loyaltyPoints;\n\n    public LoyaltyMember(String id, int points) {\n        this.memberId = id;\n        this.loyaltyPoints = points;\n    }\n\n    public void addPoints(int pts) { this.loyaltyPoints += pts; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        LoyaltyMember other = (LoyaltyMember) obj;\n        return Objects.equals(memberId, other.memberId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(memberId);\n    }\n}\n\npublic class MutableHashBugApp {\n    public static void main(String[] args) {\n        Set<LoyaltyMember> set = new HashSet<>();\n        LoyaltyMember member = new LoyaltyMember(\"MEM-77\", 100);\n        set.add(member);\n        \n        member.addPoints(50);\n        \n        System.out.println(\"Member in set: \" + set.contains(member));\n    }\n}",
+      "expectedOutput": "Member in set: true",
+      "hints": [
+        "Remove loyaltyPoints from equals() and hashCode().",
+        "Base identity solely on immutable memberId."
+      ]
+    },
+    {
+      "id": "prob-les9-p5",
+      "lessonId": "java-oop-mod9-les9",
+      "orderIndex": 5,
+      "title": "Complete E-Commerce Storefront Registry System",
+      "difficulty": "hard",
+      "problemStatement": "Build a complete enterprise e-commerce customer and product registry from scratch:\n1. Class `Money`: holds `private final double amount`, `private final String currency`. Implements full `equals`, `hashCode`, and `toString()` returning `String.format(\"%.2f %s\", amount, currency)`.\n2. Class `Product`: holds `private final String sku`, `private String title`, `private Money price`.\n   - Constructor initializes all three.\n   - `equals` and `hashCode` based solely on `sku`.\n   - `toString()` returns `'Product[sku=\"' + sku + '\", title=\"' + title + '\", price=' + price + ']'`.\n3. Class `Customer`: holds `private final String customerId`, `private String name`, `private String ssn`.\n   - Constructor initializes all three.\n   - `equals` and `hashCode` based solely on `customerId`.\n   - `toString()` masks ssn to `'***-**-' + ssn.substring(ssn.length() - 4)`: format `'Customer[id=\"' + customerId + '\", name=\"' + name + '\", ssn=\"' + maskedSsn + '\"]'`.\n4. Class `StoreRegistry`:\n   - Holds `private java.util.Set<Customer> customers = new java.util.HashSet<>()`.\n   - Holds `private java.util.Map<Product, Integer> stock = new java.util.HashMap<>()`.\n   - Method `public boolean addCustomer(Customer c)` adds customer.\n   - Method `public void addStock(Product p, int qty)` adds stock.\n   - Method `public void printStoreReport()` prints `'=== Store Directory ==='`. Prints `'Customers: ' + customers.size()`. Prints `'Products in catalog: ' + stock.size()`. Prints each product line as `' - ' + product + ' | In Stock: ' + qty`.\n5. In `Main`:\n   - Create Money m1 = new Money(99.00, \"USD\").\n   - Create Product p1 = Product(\"SKU-1\", \"Keyboard\", m1).\n   - Create Customer c1 = Customer(\"C-1\", \"Alice\", \"111-22-3333\").\n   - Create Customer c2 = Customer(\"C-1\", \"Alice Duplicate\", \"111-22-3333\").\n   - Create StoreRegistry, add both customers (c2 duplicate rejected), add 20 units of p1.\n   - Call `printStoreReport()`.",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.Map;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass Money {\n    private final double amount;\n    private final String currency;\n    public Money(double amount, String currency) {\n        this.amount = amount;\n        this.currency = currency;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Money other = (Money) obj;\n        return Double.compare(this.amount, other.amount) == 0 && Objects.equals(this.currency, other.currency);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(amount, currency);\n    }\n    @Override\n    public String toString() {\n        return String.format(\"%.2f %s\", amount, currency);\n    }\n}\n\nclass Product {\n    private final String sku;\n    private String title;\n    private Money price;\n    public Product(String sku, String title, Money price) {\n        this.sku = sku;\n        this.title = title;\n        this.price = price;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Product other = (Product) obj;\n        return Objects.equals(sku, other.sku);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n    @Override\n    public String toString() {\n        return \"Product[sku=\\\"\" + sku + \"\\\", title=\\\"\" + title + \"\\\", price=\" + price + \"]\";\n    }\n}\n\nclass Customer {\n    private final String customerId;\n    private String name;\n    private String ssn;\n    public Customer(String id, String name, String ssn) {\n        this.customerId = id;\n        this.name = name;\n        this.ssn = ssn;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Customer other = (Customer) obj;\n        return Objects.equals(customerId, other.customerId);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(customerId);\n    }\n    @Override\n    public String toString() {\n        String masked = \"***-**-\" + ssn.substring(ssn.length() - 4);\n        return \"Customer[id=\\\"\" + customerId + \"\\\", name=\\\"\" + name + \"\\\", ssn=\\\"\" + masked + \"\\\"]\";\n    }\n}\n\nclass StoreRegistry {\n    private Set<Customer> customers = new HashSet<>();\n    private Map<Product, Integer> stock = new HashMap<>();\n\n    public boolean addCustomer(Customer c) {\n        return customers.add(c);\n    }\n    public void addStock(Product p, int qty) {\n        stock.put(p, stock.getOrDefault(p, 0) + qty);\n    }\n    public void printStoreReport() {\n        System.out.println(\"=== Store Directory ===\");\n        System.out.println(\"Customers: \" + customers.size());\n        System.out.println(\"Products in catalog: \" + stock.size());\n        for (Map.Entry<Product, Integer> entry : stock.entrySet()) {\n            System.out.println(\" - \" + entry.getKey() + \" | In Stock: \" + entry.getValue());\n        }\n    }\n}\n\npublic class StoreApp {\n    public static void main(String[] args) {\n        Money m1 = new Money(99.00, \"USD\");\n        Product p1 = new Product(\"SKU-1\", \"Keyboard\", m1);\n        \n        Customer c1 = new Customer(\"C-1\", \"Alice\", \"111-22-3333\");\n        Customer c2 = new Customer(\"C-1\", \"Alice Duplicate\", \"111-22-3333\");\n        \n        StoreRegistry store = new StoreRegistry();\n        store.addCustomer(c1);\n        store.addCustomer(c2); // Rejected duplicate\n        store.addStock(p1, 20);\n        \n        store.printStoreReport();\n    }\n}",
+      "expectedOutput": "=== Store Directory ===\nCustomers: 1\nProducts in catalog: 1\n - Product[sku=\"SKU-1\", title=\"Keyboard\", price=99.00 USD] | In Stock: 20",
+      "hints": [
+        "Customer c2 is rejected by HashSet because its customerId matches c1.",
+        "Product p1 is stored in the HashMap and printed in the report."
+      ]
+    }
+  ]
+}

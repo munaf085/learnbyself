@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod8-les2",
+  "slug": "objects-inside-objects",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Objects Inside Objects",
+  "summary": "Learn how Java classes nest references to other custom objects as member fields, navigating pointer chains and preventing NullPointerExceptions.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "has-a-vs-is-a"
+  ],
+  "learningObjectives": [
+    "Store references to custom user-defined classes as member fields of another class",
+    "Trace multi-hop reference dot-navigation (e.g., student.getAddress().getCity()) in heap memory",
+    "Defend against NullPointerException when accessing nested object properties",
+    "Implement deep vs shallow constructors and defensive copy patterns"
+  ],
+  "expectedOutcomes": [
+    "You can construct multi-tiered object graphs combining primitive and reference member fields",
+    "You can confidently trace nested heap allocations and avoid null-reference pitfalls"
+  ],
+  "activities": [
+    {
+      "id": "act-les2-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: Russian Matryoshka Nesting Dolls & Wallets",
+      "concept": "Object Graphs and Reference Containment",
+      "realWorldMetaphor": {
+        "scenario": "Think about your wallet. The wallet itself is a leather object. Inside the wallet is a credit card object. Inside the credit card object is an embedded security chip object. Inside the security chip is encrypted account data.",
+        "mapping": "In Java, an outer object (`Person`) does not literally store the entire inner object's bytes inside its own memory slot. It holds a 64-bit reference address (pointer) pointing to the `Wallet` object on the heap, which in turn points to the `CreditCard` object, which points to the `Chip` object.",
+        "takeaway": "Objects inside objects are connected via reference links. Each link in the chain can be independently inspected, swapped, or null-checked."
+      }
+    },
+    {
+      "id": "act-les2-concept",
+      "type": "concept",
+      "title": "Memory Layout of Nested Object References",
+      "content": "### References in Heap Memory\n\nWhen a class contains a reference to another custom class, Java allocates both objects independently in Heap memory:\n```java\nclass Address {\n    String street;\n    String city;\n}\n\nclass User {\n    String name;\n    Address address; // Reference pointer to Address in heap\n}\n```\nIn memory:\n- `user` reference on the Stack points to the `User` object in the Heap.\n- Inside the `User` object, `address` is a reference pointer pointing to an entirely separate `Address` object in the Heap.\n\n### The Dot-Chain Danger: NullPointerException\nWhen you traverse nested objects:\n```java\nString city = user.getAddress().getCity();\n```\nIf `user.getAddress()` is `null`, attempting to call `.getCity()` throws a catastrophic `NullPointerException` (NPE). Always ensure initialization:\n1. Initialize in constructor: `this.address = Objects.requireNonNull(address, \"Address cannot be null\");`\n2. Or provide safe accessor methods that check for null."
+    },
+    {
+      "id": "act-les2-cw1",
+      "type": "code_walkthrough",
+      "title": "Multi-Level Object Composition: Student, Address, and Contact",
+      "codeSnippet": "class ContactInfo {\n    private String email;\n    private String phone;\n\n    public ContactInfo(String email, String phone) {\n        this.email = email;\n        this.phone = phone;\n    }\n\n    public String getFormatted() {\n        return email + \" | \" + phone;\n    }\n}\n\nclass Address {\n    private String city;\n    private String country;\n\n    public Address(String city, String country) {\n        this.city = city;\n        this.country = country;\n    }\n\n    public String getLocation() {\n        return city + \", \" + country;\n    }\n}\n\nclass Student {\n    private String name;\n    private Address address;         // Nested object 1\n    private ContactInfo contactInfo; // Nested object 2\n\n    public Student(String name, Address address, ContactInfo contactInfo) {\n        this.name = name;\n        this.address = address;\n        this.contactInfo = contactInfo;\n    }\n\n    public void printDossier() {\n        System.out.println(\"Student: \" + name);\n        System.out.println(\"Location: \" + address.getLocation());\n        System.out.println(\"Contact:  \" + contactInfo.getFormatted());\n    }\n}\n\npublic class NestedDemo {\n    public static void main(String[] args) {\n        Address addr = new Address(\"Boston\", \"USA\");\n        ContactInfo contact = new ContactInfo(\"alice@univ.edu\", \"555-0199\");\n        Student student = new Student(\"Alice Smith\", addr, contact);\n        student.printDossier();\n    }\n}",
+      "code": "class ContactInfo {\n    private String email;\n    private String phone;\n\n    public ContactInfo(String email, String phone) {\n        this.email = email;\n        this.phone = phone;\n    }\n\n    public String getFormatted() {\n        return email + \" | \" + phone;\n    }\n}\n\nclass Address {\n    private String city;\n    private String country;\n\n    public Address(String city, String country) {\n        this.city = city;\n        this.country = country;\n    }\n\n    public String getLocation() {\n        return city + \", \" + country;\n    }\n}\n\nclass Student {\n    private String name;\n    private Address address;         // Nested object 1\n    private ContactInfo contactInfo; // Nested object 2\n\n    public Student(String name, Address address, ContactInfo contactInfo) {\n        this.name = name;\n        this.address = address;\n        this.contactInfo = contactInfo;\n    }\n\n    public void printDossier() {\n        System.out.println(\"Student: \" + name);\n        System.out.println(\"Location: \" + address.getLocation());\n        System.out.println(\"Contact:  \" + contactInfo.getFormatted());\n    }\n}\n\npublic class NestedDemo {\n    public static void main(String[] args) {\n        Address addr = new Address(\"Boston\", \"USA\");\n        ContactInfo contact = new ContactInfo(\"alice@univ.edu\", \"555-0199\");\n        Student student = new Student(\"Alice Smith\", addr, contact);\n        student.printDossier();\n    }\n}",
+      "language": "java",
+      "explanation": "Student cleanly composes Address and ContactInfo. Each class has a single responsibility and is independently testable.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Address` and `ContactInfo` are defined as standalone domain entities."
+        },
+        {
+          "step": 2,
+          "description": "`Student` declares fields referencing instances of both classes."
+        },
+        {
+          "step": 3,
+          "description": "In `printDossier()`, `Student` delegates formatting directly to the nested objects."
+        },
+        {
+          "step": 4,
+          "description": "`main` instantiates components and wires them together cleanly."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-cw2",
+      "type": "code_walkthrough",
+      "title": "Null-Safe Navigation and Cascading Inspection",
+      "codeSnippet": "class Dimensions {\n    private double length, width, height;\n    public Dimensions(double l, double w, double h) {\n        this.length = l; this.width = w; this.height = h;\n    }\n    public double getVolume() { return length * width * height; }\n}\n\nclass Box {\n    private String label;\n    private Dimensions dimensions; // Can be null if unknown\n\n    public Box(String label, Dimensions dimensions) {\n        this.label = label;\n        this.dimensions = dimensions;\n    }\n\n    public void printVolumeReport() {\n        if (dimensions != null) {\n            System.out.println(\"Box [\" + label + \"] Volume: \" + dimensions.getVolume() + \" cm3\");\n        } else {\n            System.out.println(\"Box [\" + label + \"] Volume: UNKNOWN (Dimensions unmeasured)\");\n        }\n    }\n}\n\npublic class NullSafeDemo {\n    public static void main(String[] args) {\n        Box b1 = new Box(\"Shipping-A\", new Dimensions(10, 20, 30));\n        Box b2 = new Box(\"Shipping-B\", null);\n        \n        b1.printVolumeReport();\n        b2.printVolumeReport();\n    }\n}",
+      "code": "class Dimensions {\n    private double length, width, height;\n    public Dimensions(double l, double w, double h) {\n        this.length = l; this.width = w; this.height = h;\n    }\n    public double getVolume() { return length * width * height; }\n}\n\nclass Box {\n    private String label;\n    private Dimensions dimensions; // Can be null if unknown\n\n    public Box(String label, Dimensions dimensions) {\n        this.label = label;\n        this.dimensions = dimensions;\n    }\n\n    public void printVolumeReport() {\n        if (dimensions != null) {\n            System.out.println(\"Box [\" + label + \"] Volume: \" + dimensions.getVolume() + \" cm3\");\n        } else {\n            System.out.println(\"Box [\" + label + \"] Volume: UNKNOWN (Dimensions unmeasured)\");\n        }\n    }\n}\n\npublic class NullSafeDemo {\n    public static void main(String[] args) {\n        Box b1 = new Box(\"Shipping-A\", new Dimensions(10, 20, 30));\n        Box b2 = new Box(\"Shipping-B\", null);\n        \n        b1.printVolumeReport();\n        b2.printVolumeReport();\n    }\n}",
+      "language": "java",
+      "explanation": "Guarding against null nested objects avoids sudden runtime crashes when properties are optional or not yet populated.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Dimensions` encapsulates geometric measurements."
+        },
+        {
+          "step": 2,
+          "description": "`Box` allows `dimensions` to be passed as null for unmeasured boxes."
+        },
+        {
+          "step": 3,
+          "description": "`printVolumeReport()` uses an explicit `if (dimensions != null)` guard."
+        },
+        {
+          "step": 4,
+          "description": "Both measured and unmeasured boxes execute safely without NullPointerException."
+        }
+      ]
+    },
+    {
+      "id": "act-les2-mcq",
+      "type": "mcq",
+      "title": "Objects Inside Objects Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "When an object of class A has an instance field of class B, what does A physically hold?",
+          "options": [
+            "A complete byte-for-byte copy of B inside A's memory block",
+            "A reference pointer to B's memory location in the heap",
+            "A copy of B's class file",
+            "A static method pointer"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In Java, object fields hold reference pointers (addresses) pointing to objects allocated on the heap.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What happens if you evaluate 'person.getAccount().getBalance()' when person.getAccount() returns null?",
+          "options": [
+            "It evaluates to 0.0 automatically",
+            "It returns null",
+            "A NullPointerException is thrown at runtime",
+            "It causes a compile-time error"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Calling any method on a null reference throws a java.lang.NullPointerException at runtime.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q3",
+          "question": "How can two different Person objects share the exact same Address object?",
+          "options": [
+            "By both having their address fields point to the same heap memory address",
+            "Java does not permit sharing objects",
+            "By making Address an interface",
+            "By declaring Address static"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Multiple reference variables can point to the exact same object in heap memory.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "What is the recommended visibility modifier for nested object reference fields in a well-encapsulated class?",
+          "options": [
+            "public",
+            "protected",
+            "private",
+            "default package-private"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Instance fields should be private to protect internal state and enforce encapsulation.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q5",
+          "question": "What is a 'deep copy' when cloning an object containing nested objects?",
+          "options": [
+            "Copying only the memory reference addresses",
+            "Recursively creating brand-new duplicate instances of all nested objects",
+            "Converting the object to a String",
+            "Deleting the original object"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A deep copy creates new instances of nested objects so modifications to the copy do not alter the original.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q6",
+          "question": "Given: `car.getEngine().getTurbo().boost()`. What software design principle discourages very long chains of getters?",
+          "options": [
+            "Law of Demeter (Principle of Least Knowledge)",
+            "Liskov Substitution Principle",
+            "Open/Closed Principle",
+            "Interface Segregation Principle"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The Law of Demeter states that a module should not know about the innards of the objects it manipulates.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "If you don't initialize a custom object field in a class, what is its default value?",
+          "options": [
+            "0",
+            "false",
+            "empty object",
+            "null"
+          ],
+          "correctAnswer": 3,
+          "explanation": "All uninitialized object reference fields in Java default to `null`.",
+          "correctOptionIndex": 3
+        },
+        {
+          "id": "q8",
+          "question": "How should a class validate that a mandatory nested dependency was passed to its constructor?",
+          "options": [
+            "Objects.requireNonNull(nestedObject, 'message')",
+            "try { nestedObject.hashCode(); } catch()",
+            "Check if nestedObject == 0",
+            "System.gc()"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Objects.requireNonNull(...) is the idiomatic, standard Java way to fail fast if a mandatory collaborator is null.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Can an object hold a reference to an object of the same class (e.g. `Node next`)?",
+          "options": [
+            "No, Java forbids recursive types",
+            "Yes, this is the foundational pattern for linked lists and tree structures",
+            "Only if the class is abstract",
+            "Only in Java 21+"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Self-referencing structures like `class Node { Node next; }` are fundamental to data structures like linked lists.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "What is the primary benefit of decomposing a large God-Class into smaller nested classes?",
+          "options": [
+            "Single Responsibility Principle, high cohesion, and reusable components",
+            "Smaller JVM heap footprint",
+            "Faster classloading only",
+            "Eliminating all constructor chaining"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Decomposition promotes the Single Responsibility Principle and creates clean, reusable, focused components.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les2-interview",
+      "type": "interview_qa",
+      "title": "Objects Inside Objects Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the Law of Demeter (Principle of Least Knowledge) and how does it relate to nested objects?",
+          "answer": "The Law of Demeter states that a method should only call methods on: (1) its own fields, (2) objects passed as parameters, (3) objects created locally, or (4) global singletons. It warns against long getter chains like `order.getCustomer().getAddress().getZipCode()`. Instead, `order` should delegate: `order.getDeliveryZipCode()`.",
+          "expectedAnswer": "The Law of Demeter states that a method should only call methods on: (1) its own fields, (2) objects passed as parameters, (3) objects created locally, or (4) global singletons. It warns against long getter chains like `order.getCustomer().getAddress().getZipCode()`. Instead, `order` should delegate: `order.getDeliveryZipCode()`.",
+          "keyTakeaway": "Talk only to your immediate friends; don't talk to strangers through long getter chains.",
+          "keyPoints": [
+            "Talk only to your immediate friends; don't talk to strangers through long getter chains."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the difference between a shallow copy and a deep copy of an object graph?",
+          "answer": "A shallow copy creates a new outer object, but copies reference pointers to existing nested objects (sharing them). A deep copy recursively instantiates brand-new copies of all nested objects, guaranteeing complete independence from the original.",
+          "expectedAnswer": "A shallow copy creates a new outer object, but copies reference pointers to existing nested objects (sharing them). A deep copy recursively instantiates brand-new copies of all nested objects, guaranteeing complete independence from the original.",
+          "keyTakeaway": "Shallow copy shares nested references; deep copy clones the entire object graph.",
+          "keyPoints": [
+            "Shallow copy shares nested references; deep copy clones the entire object graph."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you protect immutable outer classes that contain mutable nested objects?",
+          "answer": "You must employ defensive copying: (1) In the constructor, clone or copy the mutable parameter before assigning it to the field, and (2) In getter methods, return a fresh copy or an unmodifiable view rather than the original internal reference.",
+          "expectedAnswer": "You must employ defensive copying: (1) In the constructor, clone or copy the mutable parameter before assigning it to the field, and (2) In getter methods, return a fresh copy or an unmodifiable view rather than the original internal reference.",
+          "keyTakeaway": "Defensive copying in constructor and getters prevents callers from mutating private inner state.",
+          "keyPoints": [
+            "Defensive copying in constructor and getters prevents callers from mutating private inner state."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why is composing small classes better than one giant class with 30 primitive fields?",
+          "answer": "Grouping related fields into value objects (e.g. `Address`, `Money`, `GeoPoint`) improves cohesion, ensures validation logic lives in one place, eliminates code duplication, and makes methods much easier to read and maintain.",
+          "expectedAnswer": "Grouping related fields into value objects (e.g. `Address`, `Money`, `GeoPoint`) improves cohesion, ensures validation logic lives in one place, eliminates code duplication, and makes methods much easier to read and maintain.",
+          "keyTakeaway": "Domain-driven value objects turn primitive obsession into expressive, validated components.",
+          "keyPoints": [
+            "Domain-driven value objects turn primitive obsession into expressive, validated components."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does garbage collection handle nested objects when the outer object is discarded?",
+          "answer": "When the outer object becomes unreachable, the reference pointers to nested objects are also released. If no other living roots point to those nested objects, they too become eligible for garbage collection automatically.",
+          "expectedAnswer": "When the outer object becomes unreachable, the reference pointers to nested objects are also released. If no other living roots point to those nested objects, they too become eligible for garbage collection automatically.",
+          "keyTakeaway": "GC traverses the reachability graph; unreferenced nested objects are reclaimed.",
+          "keyPoints": [
+            "GC traverses the reachability graph; unreferenced nested objects are reclaimed."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What are the performance implications of deep object nesting in the JVM?",
+          "answer": "Deep nesting introduces memory overhead due to 16-byte object headers for each sub-object and reference pointer indirection, which can reduce CPU cache locality compared to contiguous flat data structures.",
+          "expectedAnswer": "Deep nesting introduces memory overhead due to 16-byte object headers for each sub-object and reference pointer indirection, which can reduce CPU cache locality compared to contiguous flat data structures.",
+          "keyTakeaway": "Every object has header overhead and pointer indirection, though the clean architecture usually outweighs minor overhead.",
+          "keyPoints": [
+            "Every object has header overhead and pointer indirection, though the clean architecture usually outweighs minor overhead."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the Law of Demeter (Principle of Least Knowledge) and how does it relate to nested objects?",
+          "answer": "The Law of Demeter states that a method should only call methods on: (1) its own fields, (2) objects passed as parameters, (3) objects created locally, or (4) global singletons. It warns against long getter chains like `order.getCustomer().getAddress().getZipCode()`. Instead, `order` should delegate: `order.getDeliveryZipCode()`.",
+          "expectedAnswer": "The Law of Demeter states that a method should only call methods on: (1) its own fields, (2) objects passed as parameters, (3) objects created locally, or (4) global singletons. It warns against long getter chains like `order.getCustomer().getAddress().getZipCode()`. Instead, `order` should delegate: `order.getDeliveryZipCode()`.",
+          "keyTakeaway": "Talk only to your immediate friends; don't talk to strangers through long getter chains.",
+          "keyPoints": [
+            "Talk only to your immediate friends; don't talk to strangers through long getter chains."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the difference between a shallow copy and a deep copy of an object graph?",
+          "answer": "A shallow copy creates a new outer object, but copies reference pointers to existing nested objects (sharing them). A deep copy recursively instantiates brand-new copies of all nested objects, guaranteeing complete independence from the original.",
+          "expectedAnswer": "A shallow copy creates a new outer object, but copies reference pointers to existing nested objects (sharing them). A deep copy recursively instantiates brand-new copies of all nested objects, guaranteeing complete independence from the original.",
+          "keyTakeaway": "Shallow copy shares nested references; deep copy clones the entire object graph.",
+          "keyPoints": [
+            "Shallow copy shares nested references; deep copy clones the entire object graph."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How do you protect immutable outer classes that contain mutable nested objects?",
+          "answer": "You must employ defensive copying: (1) In the constructor, clone or copy the mutable parameter before assigning it to the field, and (2) In getter methods, return a fresh copy or an unmodifiable view rather than the original internal reference.",
+          "expectedAnswer": "You must employ defensive copying: (1) In the constructor, clone or copy the mutable parameter before assigning it to the field, and (2) In getter methods, return a fresh copy or an unmodifiable view rather than the original internal reference.",
+          "keyTakeaway": "Defensive copying in constructor and getters prevents callers from mutating private inner state.",
+          "keyPoints": [
+            "Defensive copying in constructor and getters prevents callers from mutating private inner state."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Why is composing small classes better than one giant class with 30 primitive fields?",
+          "answer": "Grouping related fields into value objects (e.g. `Address`, `Money`, `GeoPoint`) improves cohesion, ensures validation logic lives in one place, eliminates code duplication, and makes methods much easier to read and maintain.",
+          "expectedAnswer": "Grouping related fields into value objects (e.g. `Address`, `Money`, `GeoPoint`) improves cohesion, ensures validation logic lives in one place, eliminates code duplication, and makes methods much easier to read and maintain.",
+          "keyTakeaway": "Domain-driven value objects turn primitive obsession into expressive, validated components.",
+          "keyPoints": [
+            "Domain-driven value objects turn primitive obsession into expressive, validated components."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does garbage collection handle nested objects when the outer object is discarded?",
+          "answer": "When the outer object becomes unreachable, the reference pointers to nested objects are also released. If no other living roots point to those nested objects, they too become eligible for garbage collection automatically.",
+          "expectedAnswer": "When the outer object becomes unreachable, the reference pointers to nested objects are also released. If no other living roots point to those nested objects, they too become eligible for garbage collection automatically.",
+          "keyTakeaway": "GC traverses the reachability graph; unreferenced nested objects are reclaimed.",
+          "keyPoints": [
+            "GC traverses the reachability graph; unreferenced nested objects are reclaimed."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What are the performance implications of deep object nesting in the JVM?",
+          "answer": "Deep nesting introduces memory overhead due to 16-byte object headers for each sub-object and reference pointer indirection, which can reduce CPU cache locality compared to contiguous flat data structures.",
+          "expectedAnswer": "Deep nesting introduces memory overhead due to 16-byte object headers for each sub-object and reference pointer indirection, which can reduce CPU cache locality compared to contiguous flat data structures.",
+          "keyTakeaway": "Every object has header overhead and pointer indirection, though the clean architecture usually outweighs minor overhead.",
+          "keyPoints": [
+            "Every object has header overhead and pointer indirection, though the clean architecture usually outweighs minor overhead."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les2-checklist",
+      "type": "self_evaluation",
+      "title": "Nested Objects Architecture Checklist",
+      "items": [
+        "I understand that Java fields store reference pointers to heap objects.",
+        "I keep nested object reference fields private to safeguard encapsulation.",
+        "I fail-fast in constructors using Objects.requireNonNull for mandatory collaborators.",
+        "I write null guards before traversing multi-hop reference chains.",
+        "I observe the Law of Demeter to avoid long train-wreck getter chains.",
+        "I provide delegate methods on the container rather than exposing raw inner objects.",
+        "I understand the difference between shallow copying and deep copying.",
+        "I use defensive copying when accepting or returning mutable nested objects.",
+        "I group related primitive fields into meaningful Value Objects.",
+        "I understand how the garbage collector handles cascading object reachability."
+      ],
+      "checklist": [
+        "I understand that Java fields store reference pointers to heap objects.",
+        "I keep nested object reference fields private to safeguard encapsulation.",
+        "I fail-fast in constructors using Objects.requireNonNull for mandatory collaborators.",
+        "I write null guards before traversing multi-hop reference chains.",
+        "I observe the Law of Demeter to avoid long train-wreck getter chains.",
+        "I provide delegate methods on the container rather than exposing raw inner objects.",
+        "I understand the difference between shallow copying and deep copying.",
+        "I use defensive copying when accepting or returning mutable nested objects.",
+        "I group related primitive fields into meaningful Value Objects.",
+        "I understand how the garbage collector handles cascading object reachability."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les2-p1",
+      "lessonId": "java-oop-mod8-les2",
+      "orderIndex": 1,
+      "title": "Employee Profile with Nested Address",
+      "difficulty": "easy",
+      "problemStatement": "Complete the `Address` and `Employee` classes below. `Address` contains `street` and `zipCode`. `Employee` contains `name`, `empId`, and an `Address`. Implement `getProfileSummary()` on `Employee` to return `'[EMP-101] John Doe, Residing at: 123 Main St, 94105'`.",
+      "starterCode": "class Address {\n    private String street;\n    private String zipCode;\n    \n    public Address(String street, String zipCode) {\n        this.street = street;\n        this.zipCode = zipCode;\n    }\n    \n    public String getFullAddress() {\n        return street + \", \" + zipCode;\n    }\n}\n\nclass Employee {\n    private String empId;\n    private String name;\n    private Address address;\n    \n    public Employee(String empId, String name, Address address) {\n        this.empId = empId;\n        this.name = name;\n        // TODO: assign address\n    }\n    \n    public String getProfileSummary() {\n        // TODO: Return '[EMP-' + empId + '] ' + name + ', Residing at: ' + address full address\n        return null;\n    }\n}\n\npublic class EmployeeApp {\n    public static void main(String[] args) {\n        Address addr = new Address(\"123 Main St\", \"94105\");\n        Employee emp = new Employee(\"101\", \"John Doe\", addr);\n        System.out.println(emp.getProfileSummary());\n    }\n}",
+      "initialCode": "class Address {\n    private String street;\n    private String zipCode;\n    \n    public Address(String street, String zipCode) {\n        this.street = street;\n        this.zipCode = zipCode;\n    }\n    \n    public String getFullAddress() {\n        return street + \", \" + zipCode;\n    }\n}\n\nclass Employee {\n    private String empId;\n    private String name;\n    private Address address;\n    \n    public Employee(String empId, String name, Address address) {\n        this.empId = empId;\n        this.name = name;\n        // TODO: assign address\n    }\n    \n    public String getProfileSummary() {\n        // TODO: Return '[EMP-' + empId + '] ' + name + ', Residing at: ' + address full address\n        return null;\n    }\n}\n\npublic class EmployeeApp {\n    public static void main(String[] args) {\n        Address addr = new Address(\"123 Main St\", \"94105\");\n        Employee emp = new Employee(\"101\", \"John Doe\", addr);\n        System.out.println(emp.getProfileSummary());\n    }\n}",
+      "solutionCode": "class Address {\n    private String street;\n    private String zipCode;\n    \n    public Address(String street, String zipCode) {\n        this.street = street;\n        this.zipCode = zipCode;\n    }\n    \n    public String getFullAddress() {\n        return street + \", \" + zipCode;\n    }\n}\n\nclass Employee {\n    private String empId;\n    private String name;\n    private Address address;\n    \n    public Employee(String empId, String name, Address address) {\n        this.empId = empId;\n        this.name = name;\n        this.address = address;\n    }\n    \n    public String getProfileSummary() {\n        return \"[EMP-\" + empId + \"] \" + name + \", Residing at: \" + address.getFullAddress();\n    }\n}\n\npublic class EmployeeApp {\n    public static void main(String[] args) {\n        Address addr = new Address(\"123 Main St\", \"94105\");\n        Employee emp = new Employee(\"101\", \"John Doe\", addr);\n        System.out.println(emp.getProfileSummary());\n    }\n}",
+      "expectedOutput": "[EMP-101] John Doe, Residing at: 123 Main St, 94105",
+      "hints": [
+        "Assign `this.address = address;` in Employee constructor.",
+        "Call `address.getFullAddress()` inside `getProfileSummary()`."
+      ]
+    },
+    {
+      "id": "prob-les2-p2",
+      "lessonId": "java-oop-mod8-les2",
+      "orderIndex": 2,
+      "title": "Three-Tier Vehicle Telemetry System",
+      "difficulty": "medium",
+      "problemStatement": "Build a 3-tier nested telemetry system from scratch:\n1. Class `GpsCoordinate`: holds `private double lat, lon`. Constructor accepts `double lat, double lon`. Method `public String toFormattedString()` returns `'Lat: ' + lat + ', Lon: ' + lon`.\n2. Class `TelemetryUnit`: holds `private int speedKmh` and `private GpsCoordinate coordinate`. Constructor accepts `int speedKmh, GpsCoordinate coordinate`. Method `public void logTelemetry()` prints `'[Telemetry] Speed: ' + speedKmh + ' km/h | Position: (' + coordinate.toFormattedString() + ')'`.\n3. Class `FleetTruck`: holds `private String truckId` and `private TelemetryUnit telemetry`. Constructor accepts `String truckId, TelemetryUnit telemetry`. Method `public void pingServer()` prints `'[Truck ' + truckId + '] Broadcasting packet...'` and calls `telemetry.logTelemetry()`.\n4. In `Main`, create GPS coordinate (40.7128, -74.0060), telemetry unit with 85 km/h, and truck 'TRK-900'. Call `pingServer()`.",
+      "solutionCode": "class GpsCoordinate {\n    private double lat, lon;\n    public GpsCoordinate(double lat, double lon) {\n        this.lat = lat;\n        this.lon = lon;\n    }\n    public String toFormattedString() {\n        return \"Lat: \" + lat + \", Lon: \" + lon;\n    }\n}\n\nclass TelemetryUnit {\n    private int speedKmh;\n    private GpsCoordinate coordinate;\n    public TelemetryUnit(int speedKmh, GpsCoordinate coordinate) {\n        this.speedKmh = speedKmh;\n        this.coordinate = coordinate;\n    }\n    public void logTelemetry() {\n        System.out.println(\"[Telemetry] Speed: \" + speedKmh + \" km/h | Position: (\" + coordinate.toFormattedString() + \")\");\n    }\n}\n\nclass FleetTruck {\n    private String truckId;\n    private TelemetryUnit telemetry;\n    public FleetTruck(String truckId, TelemetryUnit telemetry) {\n        this.truckId = truckId;\n        this.telemetry = telemetry;\n    }\n    public void pingServer() {\n        System.out.println(\"[Truck \" + truckId + \"] Broadcasting packet...\");\n        telemetry.logTelemetry();\n    }\n}\n\npublic class TelemetryApp {\n    public static void main(String[] args) {\n        GpsCoordinate gps = new GpsCoordinate(40.7128, -74.0060);\n        TelemetryUnit unit = new TelemetryUnit(85, gps);\n        FleetTruck truck = new FleetTruck(\"TRK-900\", unit);\n        truck.pingServer();\n    }\n}",
+      "expectedOutput": "[Truck TRK-900] Broadcasting packet...\n[Telemetry] Speed: 85 km/h | Position: (Lat: 40.7128, Lon: -74.006)\n",
+      "hints": [
+        "Construct GpsCoordinate first, pass it into TelemetryUnit, then pass TelemetryUnit into FleetTruck.",
+        "FleetTruck delegates logging to TelemetryUnit, which delegates position formatting to GpsCoordinate."
+      ]
+    },
+    {
+      "id": "prob-les2-p3",
+      "lessonId": "java-oop-mod8-les2",
+      "orderIndex": 3,
+      "title": "Null-Safe Bank Profile Inspector",
+      "difficulty": "medium",
+      "problemStatement": "Build a null-safe banking inspector from scratch:\n1. Class `CreditScore`: holds `private int score`. Constructor accepts int. Method `public int getScore()` returns score.\n2. Class `CustomerProfile`: holds `private String fullName` and `private CreditScore creditScore` (which may be null!). Constructor accepts `String fullName, CreditScore creditScore`.\n   - Method `public void printRiskAssessment()`:\n     - If `creditScore != null` and `creditScore.getScore() >= 700`, print `'Customer [' + fullName + ']: Low Risk (Score: ' + creditScore.getScore() + ')'`.\n     - If `creditScore != null` and `creditScore.getScore() < 700`, print `'Customer [' + fullName + ']: High Risk (Score: ' + creditScore.getScore() + ')'`.\n     - If `creditScore == null`, print `'Customer [' + fullName + ']: Risk Unknown (No Credit File)'`.\n3. In `Main`, test with: (1) Alice with score 740, (2) Bob with score 620, (3) Charlie with null credit score. Call `printRiskAssessment()` on each.",
+      "solutionCode": "class CreditScore {\n    private int score;\n    public CreditScore(int score) {\n        this.score = score;\n    }\n    public int getScore() {\n        return score;\n    }\n}\n\nclass CustomerProfile {\n    private String fullName;\n    private CreditScore creditScore;\n    public CustomerProfile(String fullName, CreditScore creditScore) {\n        this.fullName = fullName;\n        this.creditScore = creditScore;\n    }\n    public void printRiskAssessment() {\n        if (creditScore == null) {\n            System.out.println(\"Customer [\" + fullName + \"]: Risk Unknown (No Credit File)\");\n        } else if (creditScore.getScore() >= 700) {\n            System.out.println(\"Customer [\" + fullName + \"]: Low Risk (Score: \" + creditScore.getScore() + \")\");\n        } else {\n            System.out.println(\"Customer [\" + fullName + \"]: High Risk (Score: \" + creditScore.getScore() + \")\");\n        }\n    }\n}\n\npublic class CreditApp {\n    public static void main(String[] args) {\n        CustomerProfile c1 = new CustomerProfile(\"Alice\", new CreditScore(740));\n        CustomerProfile c2 = new CustomerProfile(\"Bob\", new CreditScore(620));\n        CustomerProfile c3 = new CustomerProfile(\"Charlie\", null);\n        \n        c1.printRiskAssessment();\n        c2.printRiskAssessment();\n        c3.printRiskAssessment();\n    }\n}",
+      "expectedOutput": "Customer [Alice]: Low Risk (Score: 740)\nCustomer [Bob]: High Risk (Score: 620)\nCustomer [Charlie]: Risk Unknown (No Credit File)",
+      "hints": [
+        "Always check if creditScore is null before invoking creditScore.getScore().",
+        "Handle all 3 branch conditions accurately."
+      ]
+    },
+    {
+      "id": "prob-les2-p4",
+      "lessonId": "java-oop-mod8-les2",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Cascading NullPointerException in Order Receipt",
+      "difficulty": "medium",
+      "problemStatement": "The code below crashes with a `NullPointerException` because the order was created with a null `ShippingAddress`, yet `printInvoice()` unconditionally dereferences it without checking. Fix `printInvoice()` to check if `address` is null. If null, print `'Ship To: Digital Delivery / Pickup'`. Otherwise print `'Ship To: ' + address.getFormatted()`.",
+      "starterCode": "class ShippingAddress {\n    private String street;\n    private String city;\n    public ShippingAddress(String street, String city) { this.street = street; this.city = city; }\n    public String getFormatted() { return street + \", \" + city; }\n}\n\nclass OrderInvoice {\n    private String orderId;\n    private double total;\n    private ShippingAddress address; // Can be null for digital orders!\n\n    public OrderInvoice(String orderId, double total, ShippingAddress address) {\n        this.orderId = orderId;\n        this.total = total;\n        this.address = address;\n    }\n\n    public void printInvoice() {\n        System.out.println(\"Order: \" + orderId + \" | Total: $\" + total);\n        // BUG: Throws NPE if address is null!\n        System.out.println(\"Ship To: \" + address.getFormatted());\n    }\n}\n\npublic class InvoiceBugApp {\n    public static void main(String[] args) {\n        OrderInvoice digitalOrder = new OrderInvoice(\"ORD-DIGITAL-99\", 29.99, null);\n        digitalOrder.printInvoice();\n    }\n}",
+      "initialCode": "class ShippingAddress {\n    private String street;\n    private String city;\n    public ShippingAddress(String street, String city) { this.street = street; this.city = city; }\n    public String getFormatted() { return street + \", \" + city; }\n}\n\nclass OrderInvoice {\n    private String orderId;\n    private double total;\n    private ShippingAddress address; // Can be null for digital orders!\n\n    public OrderInvoice(String orderId, double total, ShippingAddress address) {\n        this.orderId = orderId;\n        this.total = total;\n        this.address = address;\n    }\n\n    public void printInvoice() {\n        System.out.println(\"Order: \" + orderId + \" | Total: $\" + total);\n        // BUG: Throws NPE if address is null!\n        System.out.println(\"Ship To: \" + address.getFormatted());\n    }\n}\n\npublic class InvoiceBugApp {\n    public static void main(String[] args) {\n        OrderInvoice digitalOrder = new OrderInvoice(\"ORD-DIGITAL-99\", 29.99, null);\n        digitalOrder.printInvoice();\n    }\n}",
+      "solutionCode": "class ShippingAddress {\n    private String street;\n    private String city;\n    public ShippingAddress(String street, String city) { this.street = street; this.city = city; }\n    public String getFormatted() { return street + \", \" + city; }\n}\n\nclass OrderInvoice {\n    private String orderId;\n    private double total;\n    private ShippingAddress address; // Can be null for digital orders!\n\n    public OrderInvoice(String orderId, double total, ShippingAddress address) {\n        this.orderId = orderId;\n        this.total = total;\n        this.address = address;\n    }\n\n    public void printInvoice() {\n        System.out.println(\"Order: \" + orderId + \" | Total: $\" + total);\n        if (address != null) {\n            System.out.println(\"Ship To: \" + address.getFormatted());\n        } else {\n            System.out.println(\"Ship To: Digital Delivery / Pickup\");\n        }\n    }\n}\n\npublic class InvoiceBugApp {\n    public static void main(String[] args) {\n        OrderInvoice digitalOrder = new OrderInvoice(\"ORD-DIGITAL-99\", 29.99, null);\n        digitalOrder.printInvoice();\n    }\n}",
+      "expectedOutput": "Order: ORD-DIGITAL-99 | Total: $29.99\nShip To: Digital Delivery / Pickup",
+      "hints": [
+        "Wrap the address print statement with `if (address != null)`.",
+        "Provide the fallback `Digital Delivery / Pickup` when address is null."
+      ]
+    },
+    {
+      "id": "prob-les2-p5",
+      "lessonId": "java-oop-mod8-les2",
+      "orderIndex": 5,
+      "title": "Audio Workstation Hardware Rack Builder",
+      "difficulty": "hard",
+      "problemStatement": "Design a digital audio workstation (DAW) audio hardware chain from scratch:\n1. Class `AudioPreamp`: holds `private String brand` and `private double gainDb`. Constructor initializes both. Method `public String getPreampSpecs()` returns brand + ' (' + gainDb + 'dB gain)'.\n2. Class `AudioInterface`: holds `private String model`, `private int sampleRateKhz`, and `private AudioPreamp preamp`. Constructor initializes all three. Method `public void describeInterface()` prints `'[Interface] ' + model + ' @ ' + sampleRateKhz + 'kHz with Preamp: ' + preamp.getPreampSpecs()`.\n3. Class `StudioDesk`: holds `private String studioName` and `private AudioInterface audioInterface`. Constructor initializes both.\n   - Method `public void powerUpStudio()` prints `'=== Studio: ' + studioName + ' Online ==='` and calls `audioInterface.describeInterface()`.\n4. In `Main`, create a preamp ('Focusrite Scarlett Pre', 56.0), an audio interface ('Clarett+ 2Pre', 192, preamp), and studio ('Abbey Sound', audioInterface). Call `powerUpStudio()`.",
+      "solutionCode": "class AudioPreamp {\n    private String brand;\n    private double gainDb;\n    public AudioPreamp(String brand, double gainDb) {\n        this.brand = brand;\n        this.gainDb = gainDb;\n    }\n    public String getPreampSpecs() {\n        return brand + \" (\" + gainDb + \"dB gain)\";\n    }\n}\n\nclass AudioInterface {\n    private String model;\n    private int sampleRateKhz;\n    private AudioPreamp preamp;\n    public AudioInterface(String model, int sampleRateKhz, AudioPreamp preamp) {\n        this.model = model;\n        this.sampleRateKhz = sampleRateKhz;\n        this.preamp = preamp;\n    }\n    public void describeInterface() {\n        System.out.println(\"[Interface] \" + model + \" @ \" + sampleRateKhz + \"kHz with Preamp: \" + preamp.getPreampSpecs());\n    }\n}\n\nclass StudioDesk {\n    private String studioName;\n    private AudioInterface audioInterface;\n    public StudioDesk(String studioName, AudioInterface audioInterface) {\n        this.studioName = studioName;\n        this.audioInterface = audioInterface;\n    }\n    public void powerUpStudio() {\n        System.out.println(\"=== Studio: \" + studioName + \" Online ===\");\n        audioInterface.describeInterface();\n    }\n}\n\npublic class AudioApp {\n    public static void main(String[] args) {\n        AudioPreamp preamp = new AudioPreamp(\"Focusrite Scarlett Pre\", 56.0);\n        AudioInterface iface = new AudioInterface(\"Clarett+ 2Pre\", 192, preamp);\n        StudioDesk desk = new StudioDesk(\"Abbey Sound\", iface);\n        desk.powerUpStudio();\n    }\n}",
+      "expectedOutput": "=== Studio: Abbey Sound Online ===\n[Interface] Clarett+ 2Pre @ 192kHz with Preamp: Focusrite Scarlett Pre (56.0dB gain)",
+      "hints": [
+        "Follow the 3-tier object graph: StudioDesk -> AudioInterface -> AudioPreamp.",
+        "Verify exact output punctuation and formatting."
+      ]
+    }
+  ]
+}

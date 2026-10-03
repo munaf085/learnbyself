@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod9-les3",
+  "slug": "double-equals-and-references",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "== and References",
+  "summary": "Master the == operator in Java: understanding memory address comparison, primitive vs reference semantics, and string/integer pooling traps.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "to-string-method"
+  ],
+  "learningObjectives": [
+    "Explain why the == operator compares memory addresses (reference identity) for reference types",
+    "Contrast primitive value comparison (==) with reference pointer comparison",
+    "Identify JVM optimization illusions: the String Constant Pool and Integer Cache (-128 to 127)",
+    "Predict and diagnose subtle bugs caused by using == on objects instead of .equals()"
+  ],
+  "expectedOutcomes": [
+    "You will never mistakenly compare object content using == in production code",
+    "You can explain why Integer a = 100; Integer b = 100; a == b is true, but 200 == 200 is false"
+  ],
+  "activities": [
+    {
+      "id": "act-les3-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: Twin Houses on Different Streets",
+      "concept": "Memory Address vs Content Equivalence",
+      "realWorldMetaphor": {
+        "scenario": "Imagine two identical suburban houses built from the exact same architectural blueprint. Both have 3 bedrooms, white picket fences, and identical oak front doors. One house is located at 100 Oak St; the other is at 200 Maple Ave. If you ask: 'Do these houses have the same layout?' The answer is YES. If you ask: 'Are these two houses the exact same address?' The answer is NO. A fire at 100 Oak St does not affect 200 Maple Ave.",
+        "mapping": "Comparing memory addresses (`house1 == house2`) checks if two reference pointers point to the exact same physical plot in heap memory. Comparing contents (`house1.equals(house2)`) checks if the houses have matching rooms and paint colors.",
+        "takeaway": "`==` checks whether two variables point to the same memory slot. It does NOT check whether two distinct objects hold identical values."
+      }
+    },
+    {
+      "id": "act-les3-concept",
+      "type": "concept",
+      "title": "Memory Mechanics of the == Operator",
+      "content": "### What Does `==` Compare?\n\nIn Java, the behavior of `==` is simple and uniform:\n1. **For Primitives** (`int`, `double`, `boolean`, `char`): `==` compares the raw binary values directly (`5 == 5` is `true`).\n2. **For Reference Types** (any class, array, interface): `==` compares the **memory addresses** stored on the stack. It returns `true` if and only if both variables point to the **exact same object** in heap memory.\n\n### The Dangerous Illusions: String Pool & Integer Cache\nJava introduces caching optimizations that fool junior developers into thinking `==` compares values:\n\n1. **The String Constant Pool**:\n```java\nString s1 = \"hello\";\nString s2 = \"hello\";\nSystem.out.println(s1 == s2); // true! Both point to the same pooled literal in Heap!\n\nString s3 = new String(\"hello\");\nSystem.out.println(s1 == s3); // false! new String forces an independent heap allocation!\n```\n\n2. **The Integer Cache (-128 to 127)**:\n```java\nInteger a = 127; Integer b = 127;\nSystem.out.println(a == b); // true! JVM caches Integer objects between -128 and 127\n\nInteger c = 128; Integer d = 128;\nSystem.out.println(c == d); // false! New objects allocated outside the cache range!\n```\n> **Golden Rule**: NEVER use `==` to compare object values. Always use `.equals()`!"
+    },
+    {
+      "id": "act-les3-cw1",
+      "type": "code_walkthrough",
+      "title": "Demonstrating Distinct Heap Allocations with Identical Data",
+      "codeSnippet": "class KeyCard {\n    private int code;\n    public KeyCard(int code) { this.code = code; }\n}\n\npublic class DoubleEqualsDemo {\n    public static void main(String[] args) {\n        // Two separate new allocations in heap\n        KeyCard card1 = new KeyCard(9901);\n        KeyCard card2 = new KeyCard(9901);\n        \n        // An alias pointing to card1\n        KeyCard card3 = card1;\n\n        System.out.println(\"card1 == card2: \" + (card1 == card2)); // false! Different addresses\n        System.out.println(\"card1 == card3: \" + (card1 == card3)); // true! Same address alias\n    }\n}",
+      "code": "class KeyCard {\n    private int code;\n    public KeyCard(int code) { this.code = code; }\n}\n\npublic class DoubleEqualsDemo {\n    public static void main(String[] args) {\n        // Two separate new allocations in heap\n        KeyCard card1 = new KeyCard(9901);\n        KeyCard card2 = new KeyCard(9901);\n        \n        // An alias pointing to card1\n        KeyCard card3 = card1;\n\n        System.out.println(\"card1 == card2: \" + (card1 == card2)); // false! Different addresses\n        System.out.println(\"card1 == card3: \" + (card1 == card3)); // true! Same address alias\n    }\n}",
+      "language": "java",
+      "explanation": "card1 and card2 contain identical code fields, but exist at distinct heap memory addresses, so card1 == card2 evaluates to false.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`new KeyCard(9901)` allocates an object at heap address A and assigns to `card1`."
+        },
+        {
+          "step": 2,
+          "description": "A second `new KeyCard(9901)` allocates at heap address B and assigns to `card2`."
+        },
+        {
+          "step": 3,
+          "description": "`card1 == card2` compares address A with address B, returning `false`."
+        },
+        {
+          "step": 4,
+          "description": "`KeyCard card3 = card1` copies pointer address A, so `card1 == card3` returns `true`."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-cw2",
+      "type": "code_walkthrough",
+      "title": "The Famous Integer Cache Pitfall (-128 to 127)",
+      "codeSnippet": "public class IntegerCacheDemo {\n    public static void main(String[] args) {\n        // Within byte range (-128 to 127): Integer.valueOf caches instances\n        Integer x1 = 100;\n        Integer x2 = 100;\n        System.out.println(\"100 == 100 (Cached):   \" + (x1 == x2)); // true\n\n        // Outside byte range: Integer.valueOf allocates brand new objects\n        Integer y1 = 200;\n        Integer y2 = 200;\n        System.out.println(\"200 == 200 (Uncached): \" + (y1 == y2)); // FALSE!\n\n        // Proper logical equality check:\n        System.out.println(\"200 .equals 200:        \" + y1.equals(y2)); // true\n    }\n}",
+      "code": "public class IntegerCacheDemo {\n    public static void main(String[] args) {\n        // Within byte range (-128 to 127): Integer.valueOf caches instances\n        Integer x1 = 100;\n        Integer x2 = 100;\n        System.out.println(\"100 == 100 (Cached):   \" + (x1 == x2)); // true\n\n        // Outside byte range: Integer.valueOf allocates brand new objects\n        Integer y1 = 200;\n        Integer y2 = 200;\n        System.out.println(\"200 == 200 (Uncached): \" + (y1 == y2)); // FALSE!\n\n        // Proper logical equality check:\n        System.out.println(\"200 .equals 200:        \" + y1.equals(y2)); // true\n    }\n}",
+      "language": "java",
+      "explanation": "Illustrates why using == on wrapper types is an insidious bug: it appears to work in small unit tests (numbers < 128) but crashes in production on numbers >= 128.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "Autoboxing `Integer x1 = 100` calls `Integer.valueOf(100)`."
+        },
+        {
+          "step": 2,
+          "description": "`Integer.valueOf` reuses a pre-cached instance for values in [-128, 127]."
+        },
+        {
+          "step": 3,
+          "description": "For 200, `Integer.valueOf` instantiates a new heap object each time, so `y1 == y2` is `false`."
+        },
+        {
+          "step": 4,
+          "description": "`y1.equals(y2)` correctly compares integer values, returning `true`."
+        }
+      ]
+    },
+    {
+      "id": "act-les3-mcq",
+      "type": "mcq",
+      "title": "== and References Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What does the == operator compare when applied to two object references in Java?",
+          "options": [
+            "Their field values for logical equality",
+            "Their memory addresses (heap reference pointers)",
+            "Their class names",
+            "Their hash codes"
+          ],
+          "correctAnswer": 1,
+          "explanation": "For reference types, == checks whether both references point to the exact same memory address.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What is the output of: `new String(\"test\") == new String(\"test\")`?",
+          "options": [
+            "true",
+            "false",
+            "compile error",
+            "NullPointerException"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Each 'new' keyword creates a separate, independent object in heap memory, so their addresses differ.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "What is the output of: `\"hello\" == \"hello\"`?",
+          "options": [
+            "true, because identical string literals are interned into the String Constant Pool",
+            "false, because they are two strings",
+            "compile error",
+            "Depends on the OS"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Literal strings are stored in the JVM String Constant Pool; identical literals share the same pooled instance.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "What range of values does Java's Integer Cache pre-allocate by default?",
+          "options": [
+            "0 to 100",
+            "-128 to 127",
+            "-32768 to 32767",
+            "All positive integers"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The JVM Integer cache caches instances for values between -128 and 127 inclusive.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "Given: `Integer a = 128; Integer b = 128; boolean r = (a == b);`. What is r?",
+          "options": [
+            "true",
+            "false",
+            "compile error",
+            "null"
+          ],
+          "correctAnswer": 1,
+          "explanation": "128 is outside the cached range [-128, 127], so two separate Integer instances are created; their references differ.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q6",
+          "question": "How can you check if an object reference variable 'ref' does NOT point to any object?",
+          "options": [
+            "ref == null",
+            "ref == 0",
+            "ref.isEmpty()",
+            "ref.isNull()"
+          ],
+          "correctAnswer": 0,
+          "explanation": "'ref == null' verifies that the reference variable does not point to any heap address.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "If `x == y` is true for two reference variables, what is GUARANTEED to be true?",
+          "options": [
+            "They point to the exact same object in heap memory (or both are null)",
+            "They were instantiated in the same method",
+            "They are primitive types",
+            "Their hashCodes are negative"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Reference equality guarantees they point to the identical heap instance (or both are null).",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "What String method can force a dynamically created string into the JVM String Constant Pool?",
+          "options": [
+            "intern()",
+            "pool()",
+            "cache()",
+            "freeze()"
+          ],
+          "correctAnswer": 0,
+          "explanation": "String.intern() returns the canonical representation from the string pool.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Why is testing user input using `if (input == \"yes\")` a severe bug?",
+          "options": [
+            "Input strings are read from streams at runtime, creating new heap strings outside the pool, so == evaluates to false",
+            "Java doesn't allow strings in if statements",
+            "input.toString() throws an error",
+            "Because \"yes\" is a reserved keyword"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Dynamically entered input creates new String objects that do not share reference identity with the literal constant \"yes\".",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "Which types in Java should ALWAYS be compared using == ?",
+          "options": [
+            "Primitive types (int, boolean, double, etc.) and enum constants",
+            "All objects",
+            "Strings and Lists",
+            "Custom domain entities"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Primitives and Enums (which are guaranteed singletons) are safely and idiomatically compared using ==.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les3-interview",
+      "type": "interview_qa",
+      "title": "== and References Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why is `==` safe for Enum comparison in Java?",
+          "answer": "In Java, enum constants are guaranteed singletons managed by the JVM classloader. There is strictly only ever one instance of each enum constant in memory. Therefore, `==` is not only 100% safe for enums, it is preferred because it avoids NullPointerExceptions (`color == Color.RED` is null-safe if `color` is null).",
+          "expectedAnswer": "In Java, enum constants are guaranteed singletons managed by the JVM classloader. There is strictly only ever one instance of each enum constant in memory. Therefore, `==` is not only 100% safe for enums, it is preferred because it avoids NullPointerExceptions (`color == Color.RED` is null-safe if `color` is null).",
+          "keyTakeaway": "Enum comparison with == is preferred because enums are singletons and == is null-safe.",
+          "keyPoints": [
+            "Enum comparison with == is preferred because enums are singletons and == is null-safe."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Can the JVM Integer cache range be customized?",
+          "answer": "Yes. The lower bound is fixed at -128, but the upper bound can be tuned using the JVM command-line flag `-XX:AutoBoxCacheMax=<size>` or system property `java.lang.Integer.IntegerCache.high`.",
+          "expectedAnswer": "Yes. The lower bound is fixed at -128, but the upper bound can be tuned using the JVM command-line flag `-XX:AutoBoxCacheMax=<size>` or system property `java.lang.Integer.IntegerCache.high`.",
+          "keyTakeaway": "IntegerCache upper bound is tunable via -XX:AutoBoxCacheMax.",
+          "keyPoints": [
+            "IntegerCache upper bound is tunable via -XX:AutoBoxCacheMax."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the String Constant Pool and where does it reside in modern Java memory?",
+          "answer": "The String Constant Pool is a special hash table managed by the JVM that stores unique instances of string literals. In Java 7 and later, it resides in the main Heap memory (previously in PermGen), allowing unused pooled strings to be garbage collected.",
+          "expectedAnswer": "The String Constant Pool is a special hash table managed by the JVM that stores unique instances of string literals. In Java 7 and later, it resides in the main Heap memory (previously in PermGen), allowing unused pooled strings to be garbage collected.",
+          "keyTakeaway": "The String Constant Pool stores unique literals and resides in the standard Heap.",
+          "keyPoints": [
+            "The String Constant Pool stores unique literals and resides in the standard Heap."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between shallow reference identity and structural equivalence?",
+          "answer": "Shallow reference identity checks whether two variables point to the exact same memory address (==). Structural equivalence checks whether two distinct objects hold identical meaningful field state (.equals()).",
+          "expectedAnswer": "Shallow reference identity checks whether two variables point to the exact same memory address (==). Structural equivalence checks whether two distinct objects hold identical meaningful field state (.equals()).",
+          "keyTakeaway": "Identity = same memory address; Equivalence = matching field values.",
+          "keyPoints": [
+            "Identity = same memory address; Equivalence = matching field values."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why does `Double.NaN == Double.NaN` evaluate to false?",
+          "answer": "According to the IEEE 754 floating-point standard, NaN (Not-a-Number) is unequal to everything, including itself. However, `Double.valueOf(Double.NaN).equals(Double.valueOf(Double.NaN))` evaluates to `true` because Java's `.equals()` overrides IEEE behavior to satisfy equivalence relations.",
+          "expectedAnswer": "According to the IEEE 754 floating-point standard, NaN (Not-a-Number) is unequal to everything, including itself. However, `Double.valueOf(Double.NaN).equals(Double.valueOf(Double.NaN))` evaluates to `true` because Java's `.equals()` overrides IEEE behavior to satisfy equivalence relations.",
+          "keyTakeaway": "Primitive NaN == NaN is false; Double.valueOf(NaN).equals(...) is true.",
+          "keyPoints": [
+            "Primitive NaN == NaN is false; Double.valueOf(NaN).equals(...) is true."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is an 'Aliasing Bug' caused by reference assignment?",
+          "answer": "When you do `List b = a;`, you create an alias—both variables point to the exact same list in heap. If code modifies `b`, it inadvertently mutates `a`. Developers who don't understand reference semantics are often surprised by this shared mutation.",
+          "expectedAnswer": "When you do `List b = a;`, you create an alias—both variables point to the exact same list in heap. If code modifies `b`, it inadvertently mutates `a`. Developers who don't understand reference semantics are often surprised by this shared mutation.",
+          "keyTakeaway": "Assigning an object reference copies the pointer, not the object's contents.",
+          "keyPoints": [
+            "Assigning an object reference copies the pointer, not the object's contents."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why is `==` safe for Enum comparison in Java?",
+          "answer": "In Java, enum constants are guaranteed singletons managed by the JVM classloader. There is strictly only ever one instance of each enum constant in memory. Therefore, `==` is not only 100% safe for enums, it is preferred because it avoids NullPointerExceptions (`color == Color.RED` is null-safe if `color` is null).",
+          "expectedAnswer": "In Java, enum constants are guaranteed singletons managed by the JVM classloader. There is strictly only ever one instance of each enum constant in memory. Therefore, `==` is not only 100% safe for enums, it is preferred because it avoids NullPointerExceptions (`color == Color.RED` is null-safe if `color` is null).",
+          "keyTakeaway": "Enum comparison with == is preferred because enums are singletons and == is null-safe.",
+          "keyPoints": [
+            "Enum comparison with == is preferred because enums are singletons and == is null-safe."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Can the JVM Integer cache range be customized?",
+          "answer": "Yes. The lower bound is fixed at -128, but the upper bound can be tuned using the JVM command-line flag `-XX:AutoBoxCacheMax=<size>` or system property `java.lang.Integer.IntegerCache.high`.",
+          "expectedAnswer": "Yes. The lower bound is fixed at -128, but the upper bound can be tuned using the JVM command-line flag `-XX:AutoBoxCacheMax=<size>` or system property `java.lang.Integer.IntegerCache.high`.",
+          "keyTakeaway": "IntegerCache upper bound is tunable via -XX:AutoBoxCacheMax.",
+          "keyPoints": [
+            "IntegerCache upper bound is tunable via -XX:AutoBoxCacheMax."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the String Constant Pool and where does it reside in modern Java memory?",
+          "answer": "The String Constant Pool is a special hash table managed by the JVM that stores unique instances of string literals. In Java 7 and later, it resides in the main Heap memory (previously in PermGen), allowing unused pooled strings to be garbage collected.",
+          "expectedAnswer": "The String Constant Pool is a special hash table managed by the JVM that stores unique instances of string literals. In Java 7 and later, it resides in the main Heap memory (previously in PermGen), allowing unused pooled strings to be garbage collected.",
+          "keyTakeaway": "The String Constant Pool stores unique literals and resides in the standard Heap.",
+          "keyPoints": [
+            "The String Constant Pool stores unique literals and resides in the standard Heap."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "What is the difference between shallow reference identity and structural equivalence?",
+          "answer": "Shallow reference identity checks whether two variables point to the exact same memory address (==). Structural equivalence checks whether two distinct objects hold identical meaningful field state (.equals()).",
+          "expectedAnswer": "Shallow reference identity checks whether two variables point to the exact same memory address (==). Structural equivalence checks whether two distinct objects hold identical meaningful field state (.equals()).",
+          "keyTakeaway": "Identity = same memory address; Equivalence = matching field values.",
+          "keyPoints": [
+            "Identity = same memory address; Equivalence = matching field values."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why does `Double.NaN == Double.NaN` evaluate to false?",
+          "answer": "According to the IEEE 754 floating-point standard, NaN (Not-a-Number) is unequal to everything, including itself. However, `Double.valueOf(Double.NaN).equals(Double.valueOf(Double.NaN))` evaluates to `true` because Java's `.equals()` overrides IEEE behavior to satisfy equivalence relations.",
+          "expectedAnswer": "According to the IEEE 754 floating-point standard, NaN (Not-a-Number) is unequal to everything, including itself. However, `Double.valueOf(Double.NaN).equals(Double.valueOf(Double.NaN))` evaluates to `true` because Java's `.equals()` overrides IEEE behavior to satisfy equivalence relations.",
+          "keyTakeaway": "Primitive NaN == NaN is false; Double.valueOf(NaN).equals(...) is true.",
+          "keyPoints": [
+            "Primitive NaN == NaN is false; Double.valueOf(NaN).equals(...) is true."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is an 'Aliasing Bug' caused by reference assignment?",
+          "answer": "When you do `List b = a;`, you create an alias—both variables point to the exact same list in heap. If code modifies `b`, it inadvertently mutates `a`. Developers who don't understand reference semantics are often surprised by this shared mutation.",
+          "expectedAnswer": "When you do `List b = a;`, you create an alias—both variables point to the exact same list in heap. If code modifies `b`, it inadvertently mutates `a`. Developers who don't understand reference semantics are often surprised by this shared mutation.",
+          "keyTakeaway": "Assigning an object reference copies the pointer, not the object's contents.",
+          "keyPoints": [
+            "Assigning an object reference copies the pointer, not the object's contents."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les3-checklist",
+      "type": "self_evaluation",
+      "title": "== and References Architecture Checklist",
+      "items": [
+        "I know that == compares memory addresses for reference types.",
+        "I know that == compares raw values for primitive types.",
+        "I never use == to compare Strings or custom business objects.",
+        "I understand the String Constant Pool literal interning mechanism.",
+        "I know why Integer cache causes 127 == 127 (true) but 128 == 128 (false).",
+        "I safely use == for Enum comparisons and null checks.",
+        "I recognize that new ClassName() always allocates a fresh heap address.",
+        "I understand reference aliasing (Object b = a shares the same instance).",
+        "I know how String.intern() interacts with the constant pool.",
+        "I know that Double.NaN == Double.NaN is false by IEEE 754 spec."
+      ],
+      "checklist": [
+        "I know that == compares memory addresses for reference types.",
+        "I know that == compares raw values for primitive types.",
+        "I never use == to compare Strings or custom business objects.",
+        "I understand the String Constant Pool literal interning mechanism.",
+        "I know why Integer cache causes 127 == 127 (true) but 128 == 128 (false).",
+        "I safely use == for Enum comparisons and null checks.",
+        "I recognize that new ClassName() always allocates a fresh heap address.",
+        "I understand reference aliasing (Object b = a shares the same instance).",
+        "I know how String.intern() interacts with the constant pool.",
+        "I know that Double.NaN == Double.NaN is false by IEEE 754 spec."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les3-p1",
+      "lessonId": "java-oop-mod9-les3",
+      "orderIndex": 1,
+      "title": "Reference Identity vs Literal Pooling Demonstration",
+      "difficulty": "easy",
+      "problemStatement": "Examine the strings in the program below. Complete the print statements to display whether `s1 == s2` (both literals) and whether `s1 == s3` (one literal, one new String). Produce the exact expected output.",
+      "starterCode": "public class StringPoolApp {\n    public static void main(String[] args) {\n        String s1 = \"learn\";\n        String s2 = \"learn\";\n        String s3 = new String(\"learn\");\n\n        // TODO: Print 's1 == s2 (Pooled): ' + (s1 == s2)\n        // TODO: Print 's1 == s3 (New Object): ' + (s1 == s3)\n    }\n}",
+      "initialCode": "public class StringPoolApp {\n    public static void main(String[] args) {\n        String s1 = \"learn\";\n        String s2 = \"learn\";\n        String s3 = new String(\"learn\");\n\n        // TODO: Print 's1 == s2 (Pooled): ' + (s1 == s2)\n        // TODO: Print 's1 == s3 (New Object): ' + (s1 == s3)\n    }\n}",
+      "solutionCode": "public class StringPoolApp {\n    public static void main(String[] args) {\n        String s1 = \"learn\";\n        String s2 = \"learn\";\n        String s3 = new String(\"learn\");\n\n        System.out.println(\"s1 == s2 (Pooled): \" + (s1 == s2));\n        System.out.println(\"s1 == s3 (New Object): \" + (s1 == s3));\n    }\n}",
+      "expectedOutput": "s1 == s2 (Pooled): true\ns1 == s3 (New Object): false",
+      "hints": [
+        "Remember parentheses around `(s1 == s2)` so string concatenation doesn't preempt the boolean comparison.",
+        "s1 and s2 share the same pooled instance; s3 is allocated independently on the heap."
+      ]
+    },
+    {
+      "id": "prob-les3-p2",
+      "lessonId": "java-oop-mod9-les3",
+      "orderIndex": 2,
+      "title": "Object Identity Validator and Aliasing Inspector",
+      "difficulty": "medium",
+      "problemStatement": "Build an identity inspector from scratch:\n1. Class `SessionToken`: holds `private String tokenStr`. Constructor initializes it.\n2. Class `IdentityInspector`: method `public static void inspectRelationship(SessionToken a, SessionToken b)`:\n   - If `a == b`, prints `'Same Reference: Exact identical heap instance'`.\n   - If `a != b`, prints `'Distinct References: Separate heap allocations'`.\n3. In `Main`, create `SessionToken t1 = new SessionToken(\"AUTH-1\")`. Create `SessionToken t2 = new SessionToken(\"AUTH-1\")`. Create `SessionToken t3 = t1`.\n4. Call `inspectRelationship(t1, t2)`. Then call `inspectRelationship(t1, t3)`.",
+      "solutionCode": "class SessionToken {\n    private String tokenStr;\n    public SessionToken(String tokenStr) {\n        this.tokenStr = tokenStr;\n    }\n}\n\nclass IdentityInspector {\n    public static void inspectRelationship(SessionToken a, SessionToken b) {\n        if (a == b) {\n            System.out.println(\"Same Reference: Exact identical heap instance\");\n        } else {\n            System.out.println(\"Distinct References: Separate heap allocations\");\n        }\n    }\n}\n\npublic class IdentityApp {\n    public static void main(String[] args) {\n        SessionToken t1 = new SessionToken(\"AUTH-1\");\n        SessionToken t2 = new SessionToken(\"AUTH-1\");\n        SessionToken t3 = t1;\n        \n        IdentityInspector.inspectRelationship(t1, t2);\n        IdentityInspector.inspectRelationship(t1, t3);\n    }\n}",
+      "expectedOutput": "Distinct References: Separate heap allocations\nSame Reference: Exact identical heap instance",
+      "hints": [
+        "t1 and t2 were created with separate 'new' keywords.",
+        "t3 = t1 copies the reference address."
+      ]
+    },
+    {
+      "id": "prob-les3-p3",
+      "lessonId": "java-oop-mod9-les3",
+      "orderIndex": 3,
+      "title": "Safe Enum Status Comparator",
+      "difficulty": "medium",
+      "problemStatement": "Demonstrate null-safe Enum comparison using == from scratch:\n1. Enum `OrderStatus`: `PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`.\n2. Class `OrderTracker`: holds `private OrderStatus status` (which can be null!). Constructor accepts `OrderStatus`.\n   - Method `public boolean isShipped()`: returns `this.status == OrderStatus.SHIPPED` (Notice how == never throws NPE even if status is null!).\n   - Method `public boolean isDelivered()`: returns `this.status == OrderStatus.DELIVERED`.\n3. In `Main`, create an order with `OrderStatus.SHIPPED`. Print `'Shipped: ' + order1.isShipped()`. Create an order with `null` status. Print `'Shipped (null status): ' + order2.isShipped()`.",
+      "solutionCode": "enum OrderStatus {\n    PENDING, PROCESSING, SHIPPED, DELIVERED\n}\n\nclass OrderTracker {\n    private OrderStatus status;\n    public OrderTracker(OrderStatus status) {\n        this.status = status;\n    }\n    public boolean isShipped() {\n        return this.status == OrderStatus.SHIPPED;\n    }\n    public boolean isDelivered() {\n        return this.status == OrderStatus.DELIVERED;\n    }\n}\n\npublic class EnumApp {\n    public static void main(String[] args) {\n        OrderTracker o1 = new OrderTracker(OrderStatus.SHIPPED);\n        System.out.println(\"Shipped: \" + o1.isShipped());\n        \n        OrderTracker o2 = new OrderTracker(null);\n        System.out.println(\"Shipped (null status): \" + o2.isShipped());\n    }\n}",
+      "expectedOutput": "Shipped: true\nShipped (null status): false",
+      "hints": [
+        "Using `==` on enums is null-safe: `null == OrderStatus.SHIPPED` evaluates to false without throwing NPE.",
+        "If you had used `.equals()`, calling `status.equals(OrderStatus.SHIPPED)` would crash with NullPointerException."
+      ]
+    },
+    {
+      "id": "prob-les3-p4",
+      "lessonId": "java-oop-mod9-les3",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Comparing User Input with ==",
+      "difficulty": "medium",
+      "problemStatement": "The program below fails to recognize the user's confirmation because it uses `==` to compare dynamic strings. Fix `PromptValidator.isConfirmed` to use `.equalsIgnoreCase(\"YES\")` instead of `== \"YES\"`.",
+      "starterCode": "class PromptValidator {\n    public static boolean isConfirmed(String input) {\n        // BUG: Using == on dynamically allocated input strings!\n        return input == \"YES\";\n    }\n}\n\npublic class PromptBugApp {\n    public static void main(String[] args) {\n        // Simulating dynamically constructed string input from user\n        String userInput = new String(\"YES\");\n        boolean confirmed = PromptValidator.isConfirmed(userInput);\n        System.out.println(\"Confirmed status: \" + confirmed);\n    }\n}",
+      "initialCode": "class PromptValidator {\n    public static boolean isConfirmed(String input) {\n        // BUG: Using == on dynamically allocated input strings!\n        return input == \"YES\";\n    }\n}\n\npublic class PromptBugApp {\n    public static void main(String[] args) {\n        // Simulating dynamically constructed string input from user\n        String userInput = new String(\"YES\");\n        boolean confirmed = PromptValidator.isConfirmed(userInput);\n        System.out.println(\"Confirmed status: \" + confirmed);\n    }\n}",
+      "solutionCode": "class PromptValidator {\n    public static boolean isConfirmed(String input) {\n        return \"YES\".equalsIgnoreCase(input);\n    }\n}\n\npublic class PromptBugApp {\n    public static void main(String[] args) {\n        String userInput = new String(\"YES\");\n        boolean confirmed = PromptValidator.isConfirmed(userInput);\n        System.out.println(\"Confirmed status: \" + confirmed);\n    }\n}",
+      "expectedOutput": "Confirmed status: true",
+      "hints": [
+        "Change `input == \"YES\"` to `\"YES\".equalsIgnoreCase(input)`.",
+        "Placing the literal first (`\"YES\".equalsIgnoreCase(...)`) prevents NPE if input is null."
+      ]
+    },
+    {
+      "id": "prob-les3-p5",
+      "lessonId": "java-oop-mod9-les3",
+      "orderIndex": 5,
+      "title": "Integer Cache Boundary Diagnostic Tool",
+      "difficulty": "hard",
+      "problemStatement": "Build an Integer Cache boundary testing tool from scratch:\n1. Class `CacheTester`: method `public static void testRange(int value)`:\n   - Autoboxes `Integer a = value` and `Integer b = value`.\n   - Checks if `a == b`.\n   - If true, prints `'Value ' + value + ' -> CACHED (Same Address)'`.\n   - If false, prints `'Value ' + value + ' -> UNCACHED (Distinct Addresses)'`.\n2. In `Main`, test with 4 values:\n   - 127 (top of standard cache)\n   - 128 (first uncached positive)\n   - -128 (bottom of standard cache)\n   - -129 (first uncached negative)\n3. Run `CacheTester.testRange` on each in that exact order.",
+      "solutionCode": "class CacheTester {\n    public static void testRange(int value) {\n        Integer a = value;\n        Integer b = value;\n        if (a == b) {\n            System.out.println(\"Value \" + value + \" -> CACHED (Same Address)\");\n        } else {\n            System.out.println(\"Value \" + value + \" -> UNCACHED (Distinct Addresses)\");\n        }\n    }\n}\n\npublic class CacheTesterApp {\n    public static void main(String[] args) {\n        CacheTester.testRange(127);\n        CacheTester.testRange(128);\n        CacheTester.testRange(-128);\n        CacheTester.testRange(-129);\n    }\n}",
+      "expectedOutput": "Value 127 -> CACHED (Same Address)\nValue 128 -> UNCACHED (Distinct Addresses)\nValue -128 -> CACHED (Same Address)\nValue -129 -> UNCACHED (Distinct Addresses)",
+      "hints": [
+        "127 and -128 fall squarely within the default [-128, 127] cached range.",
+        "128 and -129 fall outside, producing distinct objects."
+      ]
+    }
+  ]
+}

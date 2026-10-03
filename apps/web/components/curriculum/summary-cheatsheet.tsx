@@ -2763,6 +2763,887 @@ Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual ass
         </Card>
       )}
 
+      {/* ============================================================ */}
+      {/* MODULE 8: COMPOSITION & RELATIONSHIPS CHEAT SHEETS           */}
+      {/* ============================================================ */}
+
+      {/* Lesson 1: has-a-vs-is-a */}
+      {(slug === 'has-a-vs-is-a') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Is-A (Inheritance) vs. Has-A (Composition) Decision Matrix
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Dimension</th>
+                  <th className="p-2.5">Is-A (Inheritance)</th>
+                  <th className="p-2.5 rounded-r-lg">Has-A (Composition)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Relationship</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Specialization / Subtyping (Car is a Vehicle)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Containment / Membership (Car has an Engine)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Java Syntax</td>
+                  <td className="p-2.5 font-mono text-slate-600">extends BaseClass</td>
+                  <td className="p-2.5 font-mono text-slate-600">private Component comp;</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Coupling Type</td>
+                  <td className="p-2.5 text-rose-700 font-medium">White-Box (Tight compile-time coupling)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Black-Box (Loose runtime interface coupling)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Runtime Flexibility</td>
+                  <td className="p-2.5 text-slate-600">Static (Fixed hierarchy at compile time)</td>
+                  <td className="p-2.5 text-slate-600">Dynamic (Swappable components via setters)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">LSP Rule</td>
+                  <td className="p-2.5 text-slate-600">Child MUST be fully substitutable for Parent</td>
+                  <td className="p-2.5 text-slate-600">No substitutability obligation between classes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: objects-inside-objects */}
+      {(slug === 'objects-inside-objects') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Nested Object Graphs &amp; Memory Layout
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Architecture Layer</th>
+                  <th className="p-2.5">Memory Location</th>
+                  <th className="p-2.5">Best Practice</th>
+                  <th className="p-2.5 rounded-r-lg">Common Pitfall</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Outer Object Reference</td>
+                  <td className="p-2.5 text-slate-600">Stack frame (Local pointer)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Objects.requireNonNull in constructor</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Unchecked null dereferencing</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Inner Member Reference</td>
+                  <td className="p-2.5 text-slate-600">Heap (Field of container object)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Keep private, provide delegated access</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Leaking raw mutable inner references</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Multi-Hop Dot Chains</td>
+                  <td className="p-2.5 text-slate-600">Heap pointer navigation</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Law of Demeter (Talk only to friends)</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Cascading NullPointerExceptions</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Value Object Decomposition</td>
+                  <td className="p-2.5 text-slate-600">Independent Heap allocations</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Group related primitives into Value Objects</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Primitive obsession (30 flat fields)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: association */}
+      {(slug === 'association') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <BookOpen className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Association Cardinality &amp; Link Integrity
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Association Type</th>
+                  <th className="p-2.5">Structure &amp; Cardinality</th>
+                  <th className="p-2.5">Implementation Pattern</th>
+                  <th className="p-2.5 rounded-r-lg">Synchronization Risk</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Unidirectional 1-to-1</td>
+                  <td className="p-2.5 text-slate-600">A references B; B does not know A</td>
+                  <td className="p-2.5 font-mono text-slate-600">class A &#123; B b; &#125;</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Zero risk (single source of truth)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Bidirectional 1-to-1</td>
+                  <td className="p-2.5 text-slate-600">A references B; B references A</td>
+                  <td className="p-2.5 font-mono text-slate-600">Coordinated setter methods</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Broken link symmetry or infinite toString recursion</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">1-to-Many</td>
+                  <td className="p-2.5 text-slate-600">One container references multiple peers</td>
+                  <td className="p-2.5 font-mono text-slate-600">List&lt;Item&gt; items;</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Exposing raw mutable collections</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Many-to-Many</td>
+                  <td className="p-2.5 text-slate-600">Students and Courses</td>
+                  <td className="p-2.5 font-mono text-slate-600">Association Class (Enrollment)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">High coupling spiderwebs without join entity</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: aggregation */}
+      {(slug === 'aggregation') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Aggregation (Weak Has-A) Architecture
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Aggregation Characteristic</th>
+                  <th className="p-2.5 rounded-r-lg">Engineering Impact</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Lifecycle Coupling</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Independent (Parts survive deletion of Whole)</td>
+                  <td className="p-2.5 text-slate-600">Department closure does not destroy Professor objects</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Creation Source</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">External (Constructor or Setter Dependency Injection)</td>
+                  <td className="p-2.5 text-slate-600">Parts are passed in from outside, never new&#39;d internally</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Sharing Semantics</td>
+                  <td className="p-2.5 text-slate-600">Shared ownership permitted</td>
+                  <td className="p-2.5 text-slate-600">The same Song instance can exist in multiple Playlists</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">UML Symbol</td>
+                  <td className="p-2.5 font-mono text-slate-700">&lt;&gt; (Hollow white diamond on Container)</td>
+                  <td className="p-2.5 text-slate-600">Standard UML specification for weak whole-part</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: composition */}
+      {(slug === 'composition') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Lock className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Composition (Strong Has-A) Architecture
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Composition Characteristic</th>
+                  <th className="p-2.5 rounded-r-lg">Engineering Impact</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Lifecycle Coupling</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Bound (Parts die when Whole is destroyed)</td>
+                  <td className="p-2.5 text-slate-600">Deleting an Order permanently deletes all OrderItems</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Creation Source</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Internal (Created inside container constructor/methods)</td>
+                  <td className="p-2.5 text-slate-600">Container owns new Component() and manages disposal</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Exclusivity</td>
+                  <td className="p-2.5 text-slate-600">Exclusive ownership (No sharing between parents)</td>
+                  <td className="p-2.5 text-slate-600">A Room belongs to exactly one House; cannot belong to two</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">UML Symbol</td>
+                  <td className="p-2.5 font-mono text-slate-700">&lt;*&gt; (Solid black filled diamond on Composite)</td>
+                  <td className="p-2.5 text-slate-600">Standard UML specification for strong whole-part</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: composition-vs-inheritance */}
+      {(slug === 'composition-vs-inheritance') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Fragile Base Class Problem &amp; Wrapper Solution
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Pattern</th>
+                  <th className="p-2.5">Structure</th>
+                  <th className="p-2.5">Vulnerability / Strength</th>
+                  <th className="p-2.5 rounded-r-lg">Verdict</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-rose-700">Subclassing HashSet</td>
+                  <td className="p-2.5 font-mono text-xs">class CountedSet extends HashSet</td>
+                  <td className="p-2.5 text-rose-600">Double-counting bug: addAll calls overridden add()</td>
+                  <td className="p-2.5 text-rose-700 font-bold">Fragile &amp; Dangerous</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Forwarding Wrapper</td>
+                  <td className="p-2.5 font-mono text-xs">class SafeSet implements Set &#123; Set inner; &#125;</td>
+                  <td className="p-2.5 text-emerald-600">Black-box encapsulation: delegates to wrapped set</td>
+                  <td className="p-2.5 text-emerald-700 font-bold">Recommended Pattern</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Decorator Pattern</td>
+                  <td className="p-2.5 font-mono text-xs">class UpperCasePrinter implements Printer</td>
+                  <td className="p-2.5 text-indigo-600">Dynamically augments behavior without class explosion</td>
+                  <td className="p-2.5 text-indigo-700 font-bold">Modular &amp; Stackable</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: object-collaboration */}
+      {(slug === 'object-collaboration') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Object Collaboration &amp; Orchestration Architecture
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Role</th>
+                  <th className="p-2.5">Responsibilities</th>
+                  <th className="p-2.5">State Characteristics</th>
+                  <th className="p-2.5 rounded-r-lg">Guiding Principle</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Domain Entity</td>
+                  <td className="p-2.5 text-slate-600">Holds domain state and enforces business invariants</td>
+                  <td className="p-2.5 text-slate-700 font-medium">Stateful (e.g. BankAccount, User)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Encapsulation &amp; Invariants</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Service Orchestrator</td>
+                  <td className="p-2.5 text-slate-600">Coordinates multi-step workflows across entities</td>
+                  <td className="p-2.5 text-slate-700 font-medium">Stateless (Thread-safe across requests)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Single Responsibility</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Message Passing</td>
+                  <td className="p-2.5 text-slate-600">Tells objects what to do via public methods</td>
+                  <td className="p-2.5 text-slate-700 font-medium">Transient arguments on stack</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">&quot;Tell, Don&#39;t Ask&quot;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: delegation */}
+      {(slug === 'delegation') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Check className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Delegation Pattern &amp; Design Applications
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Design Pattern</th>
+                  <th className="p-2.5">Delegation Purpose</th>
+                  <th className="p-2.5 rounded-r-lg">Runtime Benefit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Strategy Pattern</td>
+                  <td className="p-2.5 text-slate-600">Delegates an algorithm (e.g. Compression, Sorting) to a swappable interface</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Algorithm hot-swapping at runtime via setter</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Proxy Pattern</td>
+                  <td className="p-2.5 text-slate-600">Intercepts calls, checks security/caching, then forwards to real delegate</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Transparent access control and lazy initialization</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Facade Pattern</td>
+                  <td className="p-2.5 text-slate-600">Presents a simplified public interface, delegating to dozens of internal helpers</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Hides complex subsystem architecture from clients</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: designing-real-world-relationships */}
+      {(slug === 'designing-real-world-relationships') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Master OOP Relationship Synthesis Guide
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Relationship</th>
+                  <th className="p-2.5">Key Question</th>
+                  <th className="p-2.5">Lifecycle Boundary</th>
+                  <th className="p-2.5 rounded-r-lg">Canonical Example</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-blue-700">Inheritance (Is-A)</td>
+                  <td className="p-2.5 text-slate-600">Is B a specialized subtype of A fulfilling LSP?</td>
+                  <td className="p-2.5 text-slate-600">Static single hierarchy</td>
+                  <td className="p-2.5 font-mono text-slate-700">Dog extends Animal</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Composition (Strong Has-A)</td>
+                  <td className="p-2.5 text-slate-600">Does B die if A is deleted? Is B exclusive to A?</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Strictly bound lifecycles</td>
+                  <td className="p-2.5 font-mono text-slate-700">Order composes OrderItems</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Aggregation (Weak Has-A)</td>
+                  <td className="p-2.5 text-slate-600">Does B survive if A is deleted? Can B be shared?</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Independent lifecycles</td>
+                  <td className="p-2.5 font-mono text-slate-700">Department aggregates Teachers</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-700">Association (Peer)</td>
+                  <td className="p-2.5 text-slate-600">Do independent entities simply interact or link?</td>
+                  <td className="p-2.5 text-slate-600">Peer objects communicating</td>
+                  <td className="p-2.5 font-mono text-slate-700">Doctor treats Patient</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 10: library-management-project */}
+      {(slug === 'library-management-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Library Management Architecture Blueprint
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Entity Pair</th>
+                  <th className="p-2.5">Relationship Type</th>
+                  <th className="p-2.5 rounded-r-lg">Architectural Rationale</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">LibraryBranch &#8594; BookCopy</td>
+                  <td className="p-2.5 text-purple-700 font-medium">Composition</td>
+                  <td className="p-2.5 text-slate-600">Physical book copies are inventoried assets owned exclusively by a branch</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">BookCopy &#8594; Book</td>
+                  <td className="p-2.5 text-blue-700 font-medium">Association / Flyweight</td>
+                  <td className="p-2.5 text-slate-600">Separates physical barcode copies from shared conceptual title/author metadata</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Book &#8594; Author</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Aggregation</td>
+                  <td className="p-2.5 text-slate-600">Author exists independently and can write multiple books across catalog</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Member &#8594; BookCopy</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Association (Loan)</td>
+                  <td className="p-2.5 text-slate-600">Temporary borrowing relationship; returning copy restores branch inventory</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODULE 9: OBJECT CLASS, EQUALITY & IDENTITY CHEAT SHEETS     */}
+      {/* ============================================================ */}
+
+      {/* Lesson 1: the-object-class */}
+      {(slug === 'the-object-class') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 11 Methods of java.lang.Object
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Method Signature</th>
+                  <th className="p-2.5">Purpose</th>
+                  <th className="p-2.5 rounded-r-lg">Overridable?</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono font-bold text-indigo-700">String toString()</td>
+                  <td className="p-2.5 text-slate-600">Readable text representation of the object</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">YES (Recommended)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono font-bold text-indigo-700">boolean equals(Object obj)</td>
+                  <td className="p-2.5 text-slate-600">Logical value equivalence relation</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">YES (For Value Objects)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono font-bold text-indigo-700">int hashCode()</td>
+                  <td className="p-2.5 text-slate-600">32-bit integer for hash collection bucket indexing</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">YES (Must match equals)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono font-bold text-slate-900">Class&lt;?&gt; getClass()</td>
+                  <td className="p-2.5 text-slate-600">Returns runtime class token of instance</td>
+                  <td className="p-2.5 text-rose-700 font-medium">NO (final)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono font-bold text-slate-900">void wait() / notify()</td>
+                  <td className="p-2.5 text-slate-600">Intrinsic JVM monitor lock thread synchronization</td>
+                  <td className="p-2.5 text-rose-700 font-medium">NO (final)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-mono font-bold text-slate-700">void finalize()</td>
+                  <td className="p-2.5 text-slate-600">Garbage collection hook (Deprecated in Java 9)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Deprecated (Use AutoCloseable)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: to-string-method */}
+      {(slug === 'to-string-method') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <BookOpen className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              toString() Rules &amp; Security Standards
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Standard</th>
+                  <th className="p-2.5">Best Practice</th>
+                  <th className="p-2.5 rounded-r-lg">Risk if Ignored</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Default Output</td>
+                  <td className="p-2.5 text-slate-600">Always override on domain classes to replace ClassName@HexHash</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Cryptic, unreadable production logs</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">PII &amp; Credentials</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Mask SSN/cards (***-**-1234) and redact passwords ([REDACTED])</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Catastrophic compliance breach in logs</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Array Fields</td>
+                  <td className="p-2.5 font-mono text-slate-600">Arrays.toString(arr)</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Prints [I@1540e19d instead of array data</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Side-Effect Free</td>
+                  <td className="p-2.5 text-slate-600">Read only in-memory fields; no DB or network I/O</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Severe performance bottlenecks in logging</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: double-equals-and-references */}
+      {(slug === 'double-equals-and-references') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertCircle className="w-4 h-4 text-amber-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              == Operator Reference Identity &amp; JVM Caching Traps
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Operand Types</th>
+                  <th className="p-2.5">== Comparison Meaning</th>
+                  <th className="p-2.5 rounded-r-lg">JVM Special Behavior</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Primitives (int, boolean)</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Raw binary value comparison</td>
+                  <td className="p-2.5 text-slate-600">Direct bit comparison (5 == 5 is true)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Reference Objects</td>
+                  <td className="p-2.5 text-indigo-700 font-medium">Heap memory address comparison</td>
+                  <td className="p-2.5 text-slate-600">new Object() == new Object() is ALWAYS false</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">String Literals</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Constant Pool interning</td>
+                  <td className="p-2.5 text-slate-600">&quot;hi&quot; == &quot;hi&quot; is true; new String(&quot;hi&quot;) == &quot;hi&quot; is false</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Integer Wrappers</td>
+                  <td className="p-2.5 text-amber-700 font-medium">Integer Cache [-128, 127]</td>
+                  <td className="p-2.5 text-slate-600">100 == 100 is true; 200 == 200 is FALSE!</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: equals-method */}
+      {(slug === 'equals-method') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The 4-Step Recipe for a Flawless equals()
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Step</th>
+                  <th className="p-2.5">Code Snippet</th>
+                  <th className="p-2.5 rounded-r-lg">Purpose &amp; Rationale</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-xs">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-indigo-700">1. Identity Check</td>
+                  <td className="p-2.5 text-slate-700">if (this == obj) return true;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Fast performance short-circuit for identical references</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-indigo-700">2. Type &amp; Null Guard</td>
+                  <td className="p-2.5 text-slate-700">if (obj == null || getClass() != obj.getClass()) return false;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Null-safe; enforces exact class match to preserve symmetry</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-indigo-700">3. Safe Cast</td>
+                  <td className="p-2.5 text-slate-700">MyClass other = (MyClass) obj;</td>
+                  <td className="p-2.5 font-sans text-slate-600">Guaranteed safe because step 2 verified runtime class</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-indigo-700">4. Field Comparisons</td>
+                  <td className="p-2.5 text-slate-700">return id == other.id &amp;&amp; Objects.equals(name, other.name);</td>
+                  <td className="p-2.5 font-sans text-slate-600">Primitives use ==; objects use Objects.equals; floats use Double.compare</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: identity-vs-logical-equality */}
+      {(slug === 'identity-vs-logical-equality') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-purple-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Identity vs. Logical Equality Classification
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Class Category</th>
+                  <th className="p-2.5">Equality Semantics</th>
+                  <th className="p-2.5">Comparison Mechanism</th>
+                  <th className="p-2.5 rounded-r-lg">Examples</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Value Object</td>
+                  <td className="p-2.5 text-slate-600">Logical value equivalence (attribute values)</td>
+                  <td className="p-2.5 font-mono text-emerald-700">Overridden .equals()</td>
+                  <td className="p-2.5 text-slate-600">Money, LocalDate, String, ComplexNumber</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Active Entity / Resource</td>
+                  <td className="p-2.5 text-slate-600">Unique memory identity (each instance is distinct)</td>
+                  <td className="p-2.5 font-mono text-indigo-700">Default Object.equals (==)</td>
+                  <td className="p-2.5 text-slate-600">Thread, Socket, FileInputStream, Process</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Identity-Bound Map</td>
+                  <td className="p-2.5 text-slate-600">Bypasses .equals(), compares key pointer addresses</td>
+                  <td className="p-2.5 font-mono text-amber-700">IdentityHashMap (==)</td>
+                  <td className="p-2.5 text-slate-600">Compiler symbol tables, serialization graphs</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: hashcode-method */}
+      {(slug === 'hashcode-method') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Hashing Mechanics &amp; Prime Multiplier Rules
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Technique</th>
+                  <th className="p-2.5">Formula / Implementation</th>
+                  <th className="p-2.5 rounded-r-lg">Engineering Rationale</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Prime 31 Multiplier</td>
+                  <td className="p-2.5 font-mono text-xs">result = 31 * result + field;</td>
+                  <td className="p-2.5 text-slate-600">Evenly distributes bits; optimized by JIT to (i &lt;&lt; 5) - i</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Objects.hash()</td>
+                  <td className="p-2.5 font-mono text-xs">return Objects.hash(id, name, age);</td>
+                  <td className="p-2.5 text-slate-600">Concise, clean, idiomatic Java 7+ multi-field hashing</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-amber-700">Array Hashing</td>
+                  <td className="p-2.5 font-mono text-xs">Arrays.hashCode(myArray)</td>
+                  <td className="p-2.5 text-slate-600">Hashes array elements instead of array memory pointer</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Collision Handling</td>
+                  <td className="p-2.5 text-slate-600">Buckets: Linked List &#8594; Red-Black Tree (&gt;8 items)</td>
+                  <td className="p-2.5 text-slate-600">Guarantees O(log N) worst-case lookup in Java 8+</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: equals-hashcode-contract */}
+      {(slug === 'equals-hashcode-contract') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Golden equals() / hashCode() Contract
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Contract Clause</th>
+                  <th className="p-2.5">Rule Specification</th>
+                  <th className="p-2.5 rounded-r-lg">Consequence if Broken</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Equal &#8594; Equal Hashes</td>
+                  <td className="p-2.5 font-mono text-xs">a.equals(b) == true &#8658; a.hashCode() == b.hashCode()</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Ghost objects: HashSet/HashMap cannot find existing elements</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-700">Hash Collision Permitted</td>
+                  <td className="p-2.5 font-mono text-xs">a.hashCode() == b.hashCode() does NOT imply a.equals(b)</td>
+                  <td className="p-2.5 text-slate-600">Normal behavior; collections resolve via bucket traversal</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Consistency</td>
+                  <td className="p-2.5 text-slate-600">hashCode must return identical int across calls if fields are unchanged</td>
+                  <td className="p-2.5 text-rose-700 font-medium">Key corruption if mutable fields are altered after map insertion</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: common-equality-bugs */}
+      {(slug === 'common-equality-bugs') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              The Top 5 Treacherous Equality Anti-Patterns
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Anti-Pattern</th>
+                  <th className="p-2.5">Buggy Implementation</th>
+                  <th className="p-2.5 rounded-r-lg">Bulletproof Solution</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-xs">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-rose-700">1. Raw Field Dereference</td>
+                  <td className="p-2.5 text-rose-600">this.name.equals(other.name)</td>
+                  <td className="p-2.5 text-emerald-700">Objects.equals(this.name, other.name)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-rose-700">2. Accidental Overload</td>
+                  <td className="p-2.5 text-rose-600">public boolean equals(MyClass other)</td>
+                  <td className="p-2.5 text-emerald-700">@Override public boolean equals(Object obj)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-rose-700">3. Inheritance Asymmetry</td>
+                  <td className="p-2.5 text-rose-600">if (obj instanceof MyClass)</td>
+                  <td className="p-2.5 text-emerald-700">if (obj == null || getClass() != obj.getClass())</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-rose-700">4. Float / Double ==</td>
+                  <td className="p-2.5 text-rose-600">this.rate == other.rate</td>
+                  <td className="p-2.5 text-emerald-700">Double.compare(this.rate, other.rate) == 0</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold font-sans text-rose-700">5. Array Address Equals</td>
+                  <td className="p-2.5 text-rose-600">this.tags.equals(other.tags)</td>
+                  <td className="p-2.5 text-emerald-700">Arrays.equals(this.tags, other.tags)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 9: product-customer-project */}
+      {(slug === 'product-customer-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <FileCode className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Enterprise Customer &amp; Product Entity Architecture
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Component</th>
+                  <th className="p-2.5">Pattern &amp; Equality Basis</th>
+                  <th className="p-2.5 rounded-r-lg">Security &amp; Immutability Invariant</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700">Money Value Object</td>
+                  <td className="p-2.5 text-slate-600">Full field equality: amount (Double.compare) &amp; currency</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Immutable final class; fail-fast null check on currency</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700">Product Entity</td>
+                  <td className="p-2.5 text-slate-600">Business key equality: unique immutable sku field</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Safe as HashMap key; promo price updates don&#39;t corrupt hash</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-purple-700">Customer Entity</td>
+                  <td className="p-2.5 text-slate-600">Identity key equality: unique customerId field</td>
+                  <td className="p-2.5 text-emerald-700 font-medium">Masks PII (taxId/SSN to ***-**-1234) in toString() logging</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+
 
       {/* Lesson: java-and-jvm */}
       {(slug === 'java-and-jvm' || slug === 'what-is-java-and-the-jvm') && (

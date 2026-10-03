@@ -1,0 +1,523 @@
+{
+  "id": "java-oop-mod8-les10",
+  "slug": "library-management-project",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Mini Project: Library Management",
+  "summary": "Synthesize all Module 8 relationship concepts into an enterprise Library Management System combining Composition, Aggregation, and Association.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 35,
+  "prerequisites": [
+    "has-a-vs-is-a",
+    "objects-inside-objects",
+    "association",
+    "aggregation",
+    "composition",
+    "composition-vs-inheritance",
+    "delegation",
+    "designing-real-world-relationships"
+  ],
+  "learningObjectives": [
+    "Build a production-grade Library Management architecture balancing Composition, Aggregation, and Association",
+    "Enforce strict book copy lifecycle composition inside library branches",
+    "Model member borrowing associations and checkout transaction audits",
+    "Apply the Delegation pattern to service coordinators and inventory managers"
+  ],
+  "expectedOutcomes": [
+    "You have built a complete, runnable multi-tier Library Management System using idiomatic OOP relationships",
+    "You can defend every architectural relationship choice (Has-A, Is-A, Aggregation, Composition) in a system design interview"
+  ],
+  "activities": [
+    {
+      "id": "act-les10-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Metropolitan Library Network",
+      "concept": "Full Enterprise Relationship Architecture",
+      "realWorldMetaphor": {
+        "scenario": "A city library network consists of central branches. Each branch owns physical bookshelves and catalog records (Composition). The library has Authors whose intellectual property is printed in books (Association). Citizens register as Library Members; members borrow physical copies temporarily (Association). Library staff coordinate checkouts using a borrowing desk (Service Collaboration).",
+        "mapping": "Branch COMPOSES Shelves/Inventory. Library AGGREGATES Authors and Books. Members ASSOCIATE with Books during loans. The CheckoutDesk ORCHESTRATES transactions using delegation.",
+        "takeaway": "An enterprise system is a tapestry of collaborating objects bound by precise lifecycle and communication contracts."
+      }
+    },
+    {
+      "id": "act-les10-concept",
+      "type": "concept",
+      "title": "Library Architecture Design Blueprint",
+      "content": "### System Architecture & Relationship Specifications\n\n1. **Value Object: `Author`**:\n   - Holds: `name`, `email`.\n   - Created independently (Aggregation).\n\n2. **Entity: `Book`**:\n   - Holds: `isbn`, `title`, `Author author` (Association with Author).\n\n3. **Composite Part: `BookCopy`**:\n   - Holds: `copyId`, `Book book`, `boolean isBorrowed`.\n   - Created and managed exclusively by `LibraryBranch` (Composition).\n\n4. **Entity: `LibraryMember`**:\n   - Holds: `memberId`, `name`, `List<BookCopy> borrowedCopies` (Association).\n\n5. **Aggregate Root: `LibraryBranch`**:\n   - Holds: `branchName`, `List<BookCopy> inventory` (Composition).\n   - Methods: `addBookCopy(...)`, `findAvailableCopy(...)`.\n\n6. **Service Orchestrator: `BorrowingService`**:\n   - Coordinates checkout: verifies availability -> marks copy borrowed -> attaches to member -> logs transaction."
+    },
+    {
+      "id": "act-les10-cw1",
+      "type": "code_walkthrough",
+      "title": "Core Library Architecture Implementation",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Author {\n    private String name;\n    public Author(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Book {\n    private String isbn;\n    private String title;\n    private Author author; // Association\n\n    public Book(String isbn, String title, Author author) {\n        this.isbn = isbn;\n        this.title = title;\n        this.author = author;\n    }\n    public String getTitle() { return title; }\n    public String getDetails() { return \"\\\"\" + title + \"\\\" by \" + author.getName(); }\n}\n\nclass BookCopy {\n    private String barcode;\n    private Book book; // Reference\n    private boolean borrowed = false;\n\n    public BookCopy(String barcode, Book book) {\n        this.barcode = barcode;\n        this.book = book;\n    }\n    public boolean isBorrowed() { return borrowed; }\n    public void setBorrowed(boolean b) { this.borrowed = b; }\n    public String getBarcode() { return barcode; }\n    public Book getBook() { return book; }\n}\n\nclass LibraryMember {\n    private String memberId;\n    private String name;\n    private List<BookCopy> loans = new ArrayList<>(); // Association\n\n    public LibraryMember(String memberId, String name) {\n        this.memberId = memberId;\n        this.name = name;\n    }\n    public void addLoan(BookCopy copy) { loans.add(copy); }\n    public String getName() { return name; }\n    public int getLoanCount() { return loans.size(); }\n}\n\nclass LibraryBranch {\n    private String name;\n    private List<BookCopy> inventory = new ArrayList<>(); // Composition\n\n    public LibraryBranch(String name) { this.name = name; }\n    \n    public BookCopy registerCopy(String barcode, Book book) {\n        BookCopy copy = new BookCopy(barcode, book);\n        inventory.add(copy);\n        return copy;\n    }\n\n    public BookCopy findAvailable(Book book) {\n        for (BookCopy c : inventory) {\n            if (c.getBook() == book && !c.isBorrowed()) return c;\n        }\n        return null;\n    }\n}\n\npublic class LibraryCoreDemo {\n    public static void main(String[] args) {\n        Author knuth = new Author(\"Donald Knuth\");\n        Book taocp = new Book(\"978-0201896831\", \"The Art of Computer Programming\", knuth);\n        \n        LibraryBranch mainBranch = new LibraryBranch(\"Downtown Central\");\n        mainBranch.registerCopy(\"CPY-001\", taocp);\n        \n        LibraryMember reader = new LibraryMember(\"MEM-501\", \"Grace\");\n        BookCopy available = mainBranch.findAvailable(taocp);\n        if (available != null) {\n            available.setBorrowed(true);\n            reader.addLoan(available);\n            System.out.println(reader.getName() + \" checked out \" + available.getBook().getDetails());\n        }\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Author {\n    private String name;\n    public Author(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Book {\n    private String isbn;\n    private String title;\n    private Author author; // Association\n\n    public Book(String isbn, String title, Author author) {\n        this.isbn = isbn;\n        this.title = title;\n        this.author = author;\n    }\n    public String getTitle() { return title; }\n    public String getDetails() { return \"\\\"\" + title + \"\\\" by \" + author.getName(); }\n}\n\nclass BookCopy {\n    private String barcode;\n    private Book book; // Reference\n    private boolean borrowed = false;\n\n    public BookCopy(String barcode, Book book) {\n        this.barcode = barcode;\n        this.book = book;\n    }\n    public boolean isBorrowed() { return borrowed; }\n    public void setBorrowed(boolean b) { this.borrowed = b; }\n    public String getBarcode() { return barcode; }\n    public Book getBook() { return book; }\n}\n\nclass LibraryMember {\n    private String memberId;\n    private String name;\n    private List<BookCopy> loans = new ArrayList<>(); // Association\n\n    public LibraryMember(String memberId, String name) {\n        this.memberId = memberId;\n        this.name = name;\n    }\n    public void addLoan(BookCopy copy) { loans.add(copy); }\n    public String getName() { return name; }\n    public int getLoanCount() { return loans.size(); }\n}\n\nclass LibraryBranch {\n    private String name;\n    private List<BookCopy> inventory = new ArrayList<>(); // Composition\n\n    public LibraryBranch(String name) { this.name = name; }\n    \n    public BookCopy registerCopy(String barcode, Book book) {\n        BookCopy copy = new BookCopy(barcode, book);\n        inventory.add(copy);\n        return copy;\n    }\n\n    public BookCopy findAvailable(Book book) {\n        for (BookCopy c : inventory) {\n            if (c.getBook() == book && !c.isBorrowed()) return c;\n        }\n        return null;\n    }\n}\n\npublic class LibraryCoreDemo {\n    public static void main(String[] args) {\n        Author knuth = new Author(\"Donald Knuth\");\n        Book taocp = new Book(\"978-0201896831\", \"The Art of Computer Programming\", knuth);\n        \n        LibraryBranch mainBranch = new LibraryBranch(\"Downtown Central\");\n        mainBranch.registerCopy(\"CPY-001\", taocp);\n        \n        LibraryMember reader = new LibraryMember(\"MEM-501\", \"Grace\");\n        BookCopy available = mainBranch.findAvailable(taocp);\n        if (available != null) {\n            available.setBorrowed(true);\n            reader.addLoan(available);\n            System.out.println(reader.getName() + \" checked out \" + available.getBook().getDetails());\n        }\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates the clean separation of Author (independent), Book (intellectual entity), BookCopy (composed branch asset), and Member (collaborating patron).",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Author` and `Book` model catalog metadata independently of any physical copies."
+        },
+        {
+          "step": 2,
+          "description": "`LibraryBranch` composes physical `BookCopy` assets."
+        },
+        {
+          "step": 3,
+          "description": "`LibraryMember` enters an association with `BookCopy` upon borrowing."
+        },
+        {
+          "step": 4,
+          "description": "Returning or discarding a copy does not delete the author or book metadata."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-cw2",
+      "type": "code_walkthrough",
+      "title": "Orchestrating Borrowing with Service Coordination",
+      "codeSnippet": "class CirculationDesk {\n    // Collaborates with LibraryBranch, Book, and LibraryMember\n    public boolean checkout(LibraryBranch branch, Book book, LibraryMember member) {\n        System.out.println(\"[Circulation] Processing checkout request for: \" + member.getName());\n        BookCopy copy = branch.findAvailable(book);\n        if (copy == null) {\n            System.out.println(\"[Circulation] REJECTED: No copies available for \" + book.getTitle());\n            return false;\n        }\n        copy.setBorrowed(true);\n        member.addLoan(copy);\n        System.out.println(\"[Circulation] APPROVED: Issued barcode \" + copy.getBarcode() + \" to \" + member.getName());\n        return true;\n    }\n}\n\npublic class CirculationDemo {\n    public static void main(String[] args) {\n        Author orwell = new Author(\"George Orwell\");\n        Book b1984 = new Book(\"978-0451524935\", \"1984\", orwell);\n        \n        LibraryBranch branch = new LibraryBranch(\"East Wing\");\n        branch.registerCopy(\"CPY-101\", b1984);\n        \n        LibraryMember m1 = new LibraryMember(\"M1\", \"Winston\");\n        LibraryMember m2 = new LibraryMember(\"M2\", \"Julia\");\n        \n        CirculationDesk desk = new CirculationDesk();\n        desk.checkout(branch, b1984, m1); // Succeeds\n        desk.checkout(branch, b1984, m2); // Fails (no copies left)\n    }\n}",
+      "code": "class CirculationDesk {\n    // Collaborates with LibraryBranch, Book, and LibraryMember\n    public boolean checkout(LibraryBranch branch, Book book, LibraryMember member) {\n        System.out.println(\"[Circulation] Processing checkout request for: \" + member.getName());\n        BookCopy copy = branch.findAvailable(book);\n        if (copy == null) {\n            System.out.println(\"[Circulation] REJECTED: No copies available for \" + book.getTitle());\n            return false;\n        }\n        copy.setBorrowed(true);\n        member.addLoan(copy);\n        System.out.println(\"[Circulation] APPROVED: Issued barcode \" + copy.getBarcode() + \" to \" + member.getName());\n        return true;\n    }\n}\n\npublic class CirculationDemo {\n    public static void main(String[] args) {\n        Author orwell = new Author(\"George Orwell\");\n        Book b1984 = new Book(\"978-0451524935\", \"1984\", orwell);\n        \n        LibraryBranch branch = new LibraryBranch(\"East Wing\");\n        branch.registerCopy(\"CPY-101\", b1984);\n        \n        LibraryMember m1 = new LibraryMember(\"M1\", \"Winston\");\n        LibraryMember m2 = new LibraryMember(\"M2\", \"Julia\");\n        \n        CirculationDesk desk = new CirculationDesk();\n        desk.checkout(branch, b1984, m1); // Succeeds\n        desk.checkout(branch, b1984, m2); // Fails (no copies left)\n    }\n}",
+      "language": "java",
+      "explanation": "CirculationDesk coordinates checkout without holding permanent state, interacting with branch inventory and member records.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`CirculationDesk` acts as a stateless service coordinator."
+        },
+        {
+          "step": 2,
+          "description": "The first checkout finds CPY-101 available, marks it borrowed, and adds it to Winston's loans."
+        },
+        {
+          "step": 3,
+          "description": "The second checkout for Julia fails because all copies are currently on loan."
+        },
+        {
+          "step": 4,
+          "description": "Invariants are protected through single-point orchestration."
+        }
+      ]
+    },
+    {
+      "id": "act-les10-mcq",
+      "type": "mcq",
+      "title": "Library Mini Project Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Why is `BookCopy` modeled as a Composition of `LibraryBranch` rather than `Book` inheriting from `BookCopy`?",
+          "options": [
+            "Because a physical copy is owned by a specific physical branch and managed in its inventory, not an inheritance subtype",
+            "Because Java forbids BookCopy from extending Book",
+            "Because BookCopy is a primitive type",
+            "Because branches must have static methods"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A physical book copy is an inventory asset belonging to a specific branch. Modeling it via composition reflects physical ownership.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q2",
+          "question": "What is the relationship between `Book` and `Author` in a library management system?",
+          "options": [
+            "Inheritance (Book extends Author)",
+            "Association (Book references Author)",
+            "Composition (Author is destroyed when Book is deleted)",
+            "Implementation"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Book references Author (Association). An author exists independently and can write multiple books.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "When a member returns a borrowed book copy, what happens to the BookCopy object?",
+          "options": [
+            "It is destroyed and recreated",
+            "Its borrowed status is set to false, remaining in the branch's composed inventory",
+            "It is converted to an Author",
+            "It becomes garbage collected immediately"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The copy remains in the branch's inventory; its loan association with the member is simply removed.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "Why is `CirculationDesk` designed as a stateless service rather than storing members and books in fields?",
+          "options": [
+            "To allow concurrent checkouts without cross-request state contamination and race conditions",
+            "Because services cannot have private fields in Java",
+            "To save hard drive space",
+            "To speed up JVM compilation"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Stateless service design ensures thread-safety and allows one desk instance to process many checkout requests.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "Which design pattern is best suited for searching books by Title, Author, or ISBN in a library catalog?",
+          "options": [
+            "Strategy Pattern",
+            "Singleton Pattern",
+            "Prototype Pattern",
+            "Flyweight Pattern"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The Strategy Pattern allows plugging in different search algorithms (by title, by author, by ISBN) interchangeably.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "How should a library system enforce that a member cannot borrow more than 5 books at once?",
+          "options": [
+            "Inside the checkout validation logic before creating the loan association",
+            "By catching an OutOfMemoryError",
+            "By making BookCopy final",
+            "By setting maximum heap size to 5MB"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Validation logic checks `member.getLoans().size() < 5` before approving the checkout.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "If multiple library branches exist in a city network, what relationship does `LibraryNetwork` have with `LibraryBranch`?",
+          "options": [
+            "Composition or Aggregation (whole-part containment)",
+            "Inheritance (LibraryNetwork extends LibraryBranch)",
+            "Can-Do Interface",
+            "Volatile primitive"
+          ],
+          "correctAnswer": 0,
+          "explanation": "LibraryNetwork contains multiple LibraryBranches as a whole-part container relationship.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "What is the primary architectural advantage of separating `Book` (intellectual work) from `BookCopy` (physical item)?",
+          "options": [
+            "It allows holding multiple physical copies of the same book without duplicating title, author, and description metadata",
+            "It saves 1 byte of memory",
+            "It avoids writing constructors",
+            "It requires zero getters"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Separating the conceptual Book from physical BookCopies avoids data duplication across multiple copies on shelves.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Which relationship exists between a `BorrowingTransaction` audit log and the `Member` who made it?",
+          "options": [
+            "Association",
+            "Inheritance",
+            "Subclassing",
+            "Immutability"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The transaction log associates with the member who performed the borrowing event.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "What happens if you accidentally use Inheritance: `class BookCopy extends Book`?",
+          "options": [
+            "Each copy redundantly inherits separate title, author, and metadata fields instead of referencing a shared book entity",
+            "The code won't compile",
+            "Memory is reduced",
+            "The author is deleted"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Inheriting would duplicate all intellectual book metadata across every single physical copy on the shelf.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les10-interview",
+      "type": "interview_qa",
+      "title": "Library Mini Project Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why is separating Book (the abstraction) from BookCopy (the physical item) considered textbook OOP modeling?",
+          "answer": "This follows the Flyweight/Metadata pattern. A library may have 50 physical copies of 'Clean Code'. If each copy stored title, description, and author strings, memory would be wasted and updating a typo would require updating 50 objects. By separating `Book` (metadata) from `BookCopy` (barcode, status, condition), all 50 copies simply reference the single `Book` instance.",
+          "expectedAnswer": "This follows the Flyweight/Metadata pattern. A library may have 50 physical copies of 'Clean Code'. If each copy stored title, description, and author strings, memory would be wasted and updating a typo would require updating 50 objects. By separating `Book` (metadata) from `BookCopy` (barcode, status, condition), all 50 copies simply reference the single `Book` instance.",
+          "keyTakeaway": "Separate shared conceptual metadata (Book) from individual physical instances (BookCopy).",
+          "keyPoints": [
+            "Separate shared conceptual metadata (Book) from individual physical instances (BookCopy)."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you model fines and late fees in this architecture?",
+          "answer": "A `LoanRecord` association class connects `Member` and `BookCopy`, recording `checkoutDate` and `dueDate`. A `FineCalculationService` inspects active or returned loans, calculates overdue days, and delegates to a `PaymentGateway` or appends a fine to the member's account.",
+          "expectedAnswer": "A `LoanRecord` association class connects `Member` and `BookCopy`, recording `checkoutDate` and `dueDate`. A `FineCalculationService` inspects active or returned loans, calculates overdue days, and delegates to a `PaymentGateway` or appends a fine to the member's account.",
+          "keyTakeaway": "Use a LoanRecord association entity to track temporal borrowing state and overdue penalties.",
+          "keyPoints": [
+            "Use a LoanRecord association entity to track temporal borrowing state and overdue penalties."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How would you handle concurrent checkouts of the last remaining copy of a popular book?",
+          "answer": "In memory, synchronize the checkout method on the `BookCopy` or use an `AtomicBoolean` for the `isBorrowed` flag with compare-and-swap (`compareAndSet(false, true)`). In a database, use pessimistic locking (`SELECT ... FOR UPDATE`) or optimistic locking with a `@Version` field to prevent race conditions.",
+          "expectedAnswer": "In memory, synchronize the checkout method on the `BookCopy` or use an `AtomicBoolean` for the `isBorrowed` flag with compare-and-swap (`compareAndSet(false, true)`). In a database, use pessimistic locking (`SELECT ... FOR UPDATE`) or optimistic locking with a `@Version` field to prevent race conditions.",
+          "keyTakeaway": "Use atomic state transitions or database locking to prevent double-checkout race conditions.",
+          "keyPoints": [
+            "Use atomic state transitions or database locking to prevent double-checkout race conditions."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How does the Library Management design demonstrate high cohesion and low coupling?",
+          "answer": "Each class has a single distinct focus: `Author` manages author info, `Book` manages bibliographic data, `BookCopy` tracks physical item state, `LibraryBranch` manages local inventory, and `CirculationDesk` orchestrates lending transactions. Modifying checkout rules does not touch author or book classes.",
+          "expectedAnswer": "Each class has a single distinct focus: `Author` manages author info, `Book` manages bibliographic data, `BookCopy` tracks physical item state, `LibraryBranch` manages local inventory, and `CirculationDesk` orchestrates lending transactions. Modifying checkout rules does not touch author or book classes.",
+          "keyTakeaway": "Isolated responsibilities ensure changes in business rules don't ripple into domain entities.",
+          "keyPoints": [
+            "Isolated responsibilities ensure changes in business rules don't ripple into domain entities."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How would you add Digital Audiobooks / E-Books to this physical library model?",
+          "answer": "Create an abstract `CatalogItem` or `BorrowableItem` interface implemented by `PhysicalBookCopy` and `DigitalEBook`. A `DigitalEBook` would have a `licenseCount` or URL stream rather than a physical shelf barcode, allowing uniform checkout through polymorphism.",
+          "expectedAnswer": "Create an abstract `CatalogItem` or `BorrowableItem` interface implemented by `PhysicalBookCopy` and `DigitalEBook`. A `DigitalEBook` would have a `licenseCount` or URL stream rather than a physical shelf barcode, allowing uniform checkout through polymorphism.",
+          "keyTakeaway": "Introduce a BorrowableItem interface to treat physical copies and digital loans polymorphically.",
+          "keyPoints": [
+            "Introduce a BorrowableItem interface to treat physical copies and digital loans polymorphically."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is Composition better than Aggregation for BookCopy inside LibraryBranch?",
+          "answer": "A physical book copy is housed in, barcoded by, and inventoried by a specific branch. If a branch is closed or demolished, its specific shelf copies are accounted for within that branch's inventory lifecycle, making composition the natural fit.",
+          "expectedAnswer": "A physical book copy is housed in, barcoded by, and inventoried by a specific branch. If a branch is closed or demolished, its specific shelf copies are accounted for within that branch's inventory lifecycle, making composition the natural fit.",
+          "keyTakeaway": "Physical inventory belongs to and is lifecycle-governed by the owning facility.",
+          "keyPoints": [
+            "Physical inventory belongs to and is lifecycle-governed by the owning facility."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Why is separating Book (the abstraction) from BookCopy (the physical item) considered textbook OOP modeling?",
+          "answer": "This follows the Flyweight/Metadata pattern. A library may have 50 physical copies of 'Clean Code'. If each copy stored title, description, and author strings, memory would be wasted and updating a typo would require updating 50 objects. By separating `Book` (metadata) from `BookCopy` (barcode, status, condition), all 50 copies simply reference the single `Book` instance.",
+          "expectedAnswer": "This follows the Flyweight/Metadata pattern. A library may have 50 physical copies of 'Clean Code'. If each copy stored title, description, and author strings, memory would be wasted and updating a typo would require updating 50 objects. By separating `Book` (metadata) from `BookCopy` (barcode, status, condition), all 50 copies simply reference the single `Book` instance.",
+          "keyTakeaway": "Separate shared conceptual metadata (Book) from individual physical instances (BookCopy).",
+          "keyPoints": [
+            "Separate shared conceptual metadata (Book) from individual physical instances (BookCopy)."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "How do you model fines and late fees in this architecture?",
+          "answer": "A `LoanRecord` association class connects `Member` and `BookCopy`, recording `checkoutDate` and `dueDate`. A `FineCalculationService` inspects active or returned loans, calculates overdue days, and delegates to a `PaymentGateway` or appends a fine to the member's account.",
+          "expectedAnswer": "A `LoanRecord` association class connects `Member` and `BookCopy`, recording `checkoutDate` and `dueDate`. A `FineCalculationService` inspects active or returned loans, calculates overdue days, and delegates to a `PaymentGateway` or appends a fine to the member's account.",
+          "keyTakeaway": "Use a LoanRecord association entity to track temporal borrowing state and overdue penalties.",
+          "keyPoints": [
+            "Use a LoanRecord association entity to track temporal borrowing state and overdue penalties."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "How would you handle concurrent checkouts of the last remaining copy of a popular book?",
+          "answer": "In memory, synchronize the checkout method on the `BookCopy` or use an `AtomicBoolean` for the `isBorrowed` flag with compare-and-swap (`compareAndSet(false, true)`). In a database, use pessimistic locking (`SELECT ... FOR UPDATE`) or optimistic locking with a `@Version` field to prevent race conditions.",
+          "expectedAnswer": "In memory, synchronize the checkout method on the `BookCopy` or use an `AtomicBoolean` for the `isBorrowed` flag with compare-and-swap (`compareAndSet(false, true)`). In a database, use pessimistic locking (`SELECT ... FOR UPDATE`) or optimistic locking with a `@Version` field to prevent race conditions.",
+          "keyTakeaway": "Use atomic state transitions or database locking to prevent double-checkout race conditions.",
+          "keyPoints": [
+            "Use atomic state transitions or database locking to prevent double-checkout race conditions."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How does the Library Management design demonstrate high cohesion and low coupling?",
+          "answer": "Each class has a single distinct focus: `Author` manages author info, `Book` manages bibliographic data, `BookCopy` tracks physical item state, `LibraryBranch` manages local inventory, and `CirculationDesk` orchestrates lending transactions. Modifying checkout rules does not touch author or book classes.",
+          "expectedAnswer": "Each class has a single distinct focus: `Author` manages author info, `Book` manages bibliographic data, `BookCopy` tracks physical item state, `LibraryBranch` manages local inventory, and `CirculationDesk` orchestrates lending transactions. Modifying checkout rules does not touch author or book classes.",
+          "keyTakeaway": "Isolated responsibilities ensure changes in business rules don't ripple into domain entities.",
+          "keyPoints": [
+            "Isolated responsibilities ensure changes in business rules don't ripple into domain entities."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How would you add Digital Audiobooks / E-Books to this physical library model?",
+          "answer": "Create an abstract `CatalogItem` or `BorrowableItem` interface implemented by `PhysicalBookCopy` and `DigitalEBook`. A `DigitalEBook` would have a `licenseCount` or URL stream rather than a physical shelf barcode, allowing uniform checkout through polymorphism.",
+          "expectedAnswer": "Create an abstract `CatalogItem` or `BorrowableItem` interface implemented by `PhysicalBookCopy` and `DigitalEBook`. A `DigitalEBook` would have a `licenseCount` or URL stream rather than a physical shelf barcode, allowing uniform checkout through polymorphism.",
+          "keyTakeaway": "Introduce a BorrowableItem interface to treat physical copies and digital loans polymorphically.",
+          "keyPoints": [
+            "Introduce a BorrowableItem interface to treat physical copies and digital loans polymorphically."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "Why is Composition better than Aggregation for BookCopy inside LibraryBranch?",
+          "answer": "A physical book copy is housed in, barcoded by, and inventoried by a specific branch. If a branch is closed or demolished, its specific shelf copies are accounted for within that branch's inventory lifecycle, making composition the natural fit.",
+          "expectedAnswer": "A physical book copy is housed in, barcoded by, and inventoried by a specific branch. If a branch is closed or demolished, its specific shelf copies are accounted for within that branch's inventory lifecycle, making composition the natural fit.",
+          "keyTakeaway": "Physical inventory belongs to and is lifecycle-governed by the owning facility.",
+          "keyPoints": [
+            "Physical inventory belongs to and is lifecycle-governed by the owning facility."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les10-checklist",
+      "type": "self_evaluation",
+      "title": "Library Mini Project Architecture Checklist",
+      "items": [
+        "I separated bibliographic metadata (Book) from physical items (BookCopy).",
+        "I modeled Book and Author using Association.",
+        "I modeled LibraryBranch and BookCopy using Composition.",
+        "I modeled Member and BookCopy borrowing using Association.",
+        "I designed the CirculationDesk as a stateless service orchestrator.",
+        "I prevented race conditions during checkout availability checks.",
+        "I used delegation to forward inventory queries from branch to copies.",
+        "I protected internal collection encapsulation using unmodifiable lists.",
+        "I followed high cohesion and low coupling throughout the architecture.",
+        "I can articulate and defend every relationship choice in technical interviews."
+      ],
+      "checklist": [
+        "I separated bibliographic metadata (Book) from physical items (BookCopy).",
+        "I modeled Book and Author using Association.",
+        "I modeled LibraryBranch and BookCopy using Composition.",
+        "I modeled Member and BookCopy borrowing using Association.",
+        "I designed the CirculationDesk as a stateless service orchestrator.",
+        "I prevented race conditions during checkout availability checks.",
+        "I used delegation to forward inventory queries from branch to copies.",
+        "I protected internal collection encapsulation using unmodifiable lists.",
+        "I followed high cohesion and low coupling throughout the architecture.",
+        "I can articulate and defend every relationship choice in technical interviews."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les10-p1",
+      "lessonId": "java-oop-mod8-les10",
+      "orderIndex": 1,
+      "title": "Complete Library Catalog Search",
+      "difficulty": "easy",
+      "problemStatement": "Complete the search method in `LibraryCatalog`. Complete `findBookByTitle` to search through the aggregated books and return matching book or null. Produce the expected output.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Book {\n    private String title;\n    private String author;\n    public Book(String title, String author) { this.title = title; this.author = author; }\n    public String getTitle() { return title; }\n    public String getDisplay() { return \"\\\"\" + title + \"\\\" by \" + author; }\n}\n\nclass LibraryCatalog {\n    private List<Book> catalog = new ArrayList<>();\n    public void registerBook(Book b) { catalog.add(b); }\n    \n    public Book findBookByTitle(String searchTitle) {\n        // TODO: Loop through catalog, if book title equals searchTitle (ignore case), return it\n        return null;\n    }\n}\n\npublic class CatalogApp {\n    public static void main(String[] args) {\n        LibraryCatalog catalog = new LibraryCatalog();\n        catalog.registerBook(new Book(\"Clean Code\", \"Robert C. Martin\"));\n        catalog.registerBook(new Book(\"Design Patterns\", \"Gang of Four\"));\n        \n        Book found = catalog.findBookByTitle(\"clean code\");\n        if (found != null) {\n            System.out.println(\"Found: \" + found.getDisplay());\n        }\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Book {\n    private String title;\n    private String author;\n    public Book(String title, String author) { this.title = title; this.author = author; }\n    public String getTitle() { return title; }\n    public String getDisplay() { return \"\\\"\" + title + \"\\\" by \" + author; }\n}\n\nclass LibraryCatalog {\n    private List<Book> catalog = new ArrayList<>();\n    public void registerBook(Book b) { catalog.add(b); }\n    \n    public Book findBookByTitle(String searchTitle) {\n        // TODO: Loop through catalog, if book title equals searchTitle (ignore case), return it\n        return null;\n    }\n}\n\npublic class CatalogApp {\n    public static void main(String[] args) {\n        LibraryCatalog catalog = new LibraryCatalog();\n        catalog.registerBook(new Book(\"Clean Code\", \"Robert C. Martin\"));\n        catalog.registerBook(new Book(\"Design Patterns\", \"Gang of Four\"));\n        \n        Book found = catalog.findBookByTitle(\"clean code\");\n        if (found != null) {\n            System.out.println(\"Found: \" + found.getDisplay());\n        }\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Book {\n    private String title;\n    private String author;\n    public Book(String title, String author) { this.title = title; this.author = author; }\n    public String getTitle() { return title; }\n    public String getDisplay() { return \"\\\"\" + title + \"\\\" by \" + author; }\n}\n\nclass LibraryCatalog {\n    private List<Book> catalog = new ArrayList<>();\n    public void registerBook(Book b) { catalog.add(b); }\n    \n    public Book findBookByTitle(String searchTitle) {\n        for (Book b : catalog) {\n            if (b.getTitle().equalsIgnoreCase(searchTitle)) {\n                return b;\n            }\n        }\n        return null;\n    }\n}\n\npublic class CatalogApp {\n    public static void main(String[] args) {\n        LibraryCatalog catalog = new LibraryCatalog();\n        catalog.registerBook(new Book(\"Clean Code\", \"Robert C. Martin\"));\n        catalog.registerBook(new Book(\"Design Patterns\", \"Gang of Four\"));\n        \n        Book found = catalog.findBookByTitle(\"clean code\");\n        if (found != null) {\n            System.out.println(\"Found: \" + found.getDisplay());\n        }\n    }\n}",
+      "expectedOutput": "Found: \"Clean Code\" by Robert C. Martin",
+      "hints": [
+        "Loop through `catalog` using `for (Book b : catalog)`.",
+        "Use `b.getTitle().equalsIgnoreCase(searchTitle)`."
+      ]
+    },
+    {
+      "id": "prob-les10-p2",
+      "lessonId": "java-oop-mod8-les10",
+      "orderIndex": 2,
+      "title": "Book Return Workflow and Fine Calculator",
+      "difficulty": "medium",
+      "problemStatement": "Build a book return and overdue fine system from scratch:\n1. Class `LoanTicket`: holds `private String barcode`, `private String memberName`, `private int daysLate`. Constructor initializes all three. Getters for all three.\n2. Class `FinePolicy`: holds `private double finePerDay = 0.50`. Method `public double calculateFine(int daysLate)`: returns `Math.max(0, daysLate * finePerDay)`.\n3. Class `ReturnDesk`: holds `private FinePolicy finePolicy = new FinePolicy()`. Method `public void processReturn(LoanTicket ticket)`:\n   - Calculates fine using `finePolicy.calculateFine(ticket.getDaysLate())`.\n   - If fine == 0, prints `'[Return] Copy ' + ticket.getBarcode() + ' returned on time by ' + ticket.getMemberName() + '. No fines.'`.\n   - If fine > 0, prints `'[Return] Copy ' + ticket.getBarcode() + ' returned by ' + ticket.getMemberName() + ' (' + ticket.getDaysLate() + ' days late). Fine: $' + String.format(\"%.2f\", fine)`.\n4. In `Main`, test with ticket 1 ('BAR-101', 'Alice', 0) and ticket 2 ('BAR-202', 'Bob', 5). Process both returns.",
+      "solutionCode": "class LoanTicket {\n    private String barcode;\n    private String memberName;\n    private int daysLate;\n    public LoanTicket(String barcode, String memberName, int daysLate) {\n        this.barcode = barcode;\n        this.memberName = memberName;\n        this.daysLate = daysLate;\n    }\n    public String getBarcode() { return barcode; }\n    public String getMemberName() { return memberName; }\n    public int getDaysLate() { return daysLate; }\n}\n\nclass FinePolicy {\n    private double finePerDay = 0.50;\n    public double calculateFine(int daysLate) {\n        return Math.max(0, daysLate * finePerDay);\n    }\n}\n\nclass ReturnDesk {\n    private FinePolicy finePolicy = new FinePolicy();\n    public void processReturn(LoanTicket ticket) {\n        double fine = finePolicy.calculateFine(ticket.getDaysLate());\n        if (fine == 0) {\n            System.out.println(\"[Return] Copy \" + ticket.getBarcode() + \" returned on time by \" + ticket.getMemberName() + \". No fines.\");\n        } else {\n            System.out.println(\"[Return] Copy \" + ticket.getBarcode() + \" returned by \" + ticket.getMemberName() + \" (\" + ticket.getDaysLate() + \" days late). Fine: $\" + String.format(\"%.2f\", fine));\n        }\n    }\n}\n\npublic class ReturnApp {\n    public static void main(String[] args) {\n        ReturnDesk desk = new ReturnDesk();\n        desk.processReturn(new LoanTicket(\"BAR-101\", \"Alice\", 0));\n        desk.processReturn(new LoanTicket(\"BAR-202\", \"Bob\", 5));\n    }\n}",
+      "expectedOutput": "[Return] Copy BAR-101 returned on time by Alice. No fines.\n[Return] Copy BAR-202 returned by Bob (5 days late). Fine: $2.50",
+      "hints": [
+        "FinePolicy calculates fine = daysLate * 0.50.",
+        "ReturnDesk handles zero vs non-zero fine output formatting."
+      ]
+    },
+    {
+      "id": "prob-les10-p3",
+      "lessonId": "java-oop-mod8-les10",
+      "orderIndex": 3,
+      "title": "Multi-Branch Book Transfer Coordinator",
+      "difficulty": "medium",
+      "problemStatement": "Build an inter-branch book copy transfer coordinator from scratch:\n1. Class `BranchInventory`: holds `private String branchName` and `private java.util.List<String> barcodes = new java.util.ArrayList<>()`.\n   - Constructor initializes branchName.\n   - Method `public void addCopy(String bc)` adds bc.\n   - Method `public boolean removeCopy(String bc)` removes and returns true if found, false otherwise.\n   - Method `public String getReport()` returns branchName + ' stock: ' + barcodes;\n2. Class `InterBranchTransferService`: method `public boolean transferCopy(BranchInventory from, BranchInventory to, String barcode)`:\n   - Calls `from.removeCopy(barcode)`.\n   - If true, calls `to.addCopy(barcode)` and prints `'[Transfer] Successfully moved ' + barcode + ' to ' + to.getReport().split(\" \")[0]` and returns true.\n   - If false, prints `'[Transfer] Failed: Barcode not found at origin'` and returns false.\n3. In `Main`, create North Branch with 'CPY-90' and 'CPY-91'. Create South Branch (empty). Transfer 'CPY-90' from North to South. Print report for both branches.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass BranchInventory {\n    private String branchName;\n    private List<String> barcodes = new ArrayList<>();\n    public BranchInventory(String branchName) {\n        this.branchName = branchName;\n    }\n    public String getBranchName() { return branchName; }\n    public void addCopy(String bc) { barcodes.add(bc); }\n    public boolean removeCopy(String bc) { return barcodes.remove(bc); }\n    public String getReport() { return branchName + \" stock: \" + barcodes; }\n}\n\nclass InterBranchTransferService {\n    public boolean transferCopy(BranchInventory from, BranchInventory to, String barcode) {\n        if (from.removeCopy(barcode)) {\n            to.addCopy(barcode);\n            System.out.println(\"[Transfer] Successfully moved \" + barcode + \" to \" + to.getBranchName());\n            return true;\n        } else {\n            System.out.println(\"[Transfer] Failed: Barcode not found at origin\");\n            return false;\n        }\n    }\n}\n\npublic class TransferApp {\n    public static void main(String[] args) {\n        BranchInventory north = new BranchInventory(\"North Branch\");\n        north.addCopy(\"CPY-90\");\n        north.addCopy(\"CPY-91\");\n        \n        BranchInventory south = new BranchInventory(\"South Branch\");\n        \n        InterBranchTransferService transferService = new InterBranchTransferService();\n        transferService.transferCopy(north, south, \"CPY-90\");\n        \n        System.out.println(north.getReport());\n        System.out.println(south.getReport());\n    }\n}",
+      "expectedOutput": "[Transfer] Successfully moved CPY-90 to South Branch\nNorth Branch stock: [CPY-91]\nSouth Branch stock: [CPY-90]",
+      "hints": [
+        "BranchInventory manages a list of barcodes.",
+        "InterBranchTransferService transfers barcode atomically between branches."
+      ]
+    },
+    {
+      "id": "prob-les10-p4",
+      "lessonId": "java-oop-mod8-les10",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Shared Mutable Book Copy State Across Branches",
+      "difficulty": "medium",
+      "problemStatement": "A developer created two library branches, but mistakenly passed the SAME mutable list of book copies into both branches! As a result, checking out a book in Branch A mysteriously marks it unavailable in Branch B. Fix `LibraryBranch` so that it encapsulates and owns its own independent inventory via proper composition.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass InventoryRegistry {\n    // BUG: Shared mutable list passed into multiple branches violates composition!\n    private List<String> items;\n    public InventoryRegistry(List<String> items) {\n        this.items = items; // Leaking shared reference!\n    }\n    public void add(String s) { items.add(s); }\n    public int count() { return items.size(); }\n}\n\npublic class SharedInventoryBugApp {\n    public static void main(String[] args) {\n        List<String> sharedList = new ArrayList<>();\n        InventoryRegistry branchA = new InventoryRegistry(sharedList);\n        InventoryRegistry branchB = new InventoryRegistry(sharedList);\n        \n        branchA.add(\"Book-1\");\n        // BUG: branchB now has count 1 even though branchB never added a book!\n        System.out.println(\"Branch A count: \" + branchA.count());\n        System.out.println(\"Branch B count: \" + branchB.count());\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass InventoryRegistry {\n    // BUG: Shared mutable list passed into multiple branches violates composition!\n    private List<String> items;\n    public InventoryRegistry(List<String> items) {\n        this.items = items; // Leaking shared reference!\n    }\n    public void add(String s) { items.add(s); }\n    public int count() { return items.size(); }\n}\n\npublic class SharedInventoryBugApp {\n    public static void main(String[] args) {\n        List<String> sharedList = new ArrayList<>();\n        InventoryRegistry branchA = new InventoryRegistry(sharedList);\n        InventoryRegistry branchB = new InventoryRegistry(sharedList);\n        \n        branchA.add(\"Book-1\");\n        // BUG: branchB now has count 1 even though branchB never added a book!\n        System.out.println(\"Branch A count: \" + branchA.count());\n        System.out.println(\"Branch B count: \" + branchB.count());\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass InventoryRegistry {\n    private List<String> items = new ArrayList<>(); // Proper composition: private independent list\n    \n    public void add(String s) { items.add(s); }\n    public int count() { return items.size(); }\n}\n\npublic class SharedInventoryBugApp {\n    public static void main(String[] args) {\n        InventoryRegistry branchA = new InventoryRegistry();\n        InventoryRegistry branchB = new InventoryRegistry();\n        \n        branchA.add(\"Book-1\");\n        System.out.println(\"Branch A count: \" + branchA.count());\n        System.out.println(\"Branch B count: \" + branchB.count());\n    }\n}",
+      "expectedOutput": "Branch A count: 1\nBranch B count: 0",
+      "hints": [
+        "Initialize items = new ArrayList<>() internally in InventoryRegistry.",
+        "Do not accept external list in constructor."
+      ]
+    },
+    {
+      "id": "prob-les10-p5",
+      "lessonId": "java-oop-mod8-les10",
+      "orderIndex": 5,
+      "title": "Complete Multi-Tier Library Management System",
+      "difficulty": "hard",
+      "problemStatement": "Build the complete end-to-end Library Management System synthesizing all Module 8 relationships from scratch:\n1. Class `Author`: holds `private String name`. Constructor initializes name. Method `public String getName()` returns name.\n2. Class `Book`: holds `private String isbn`, `private String title`, `private Author author` (Association). Constructor initializes all three. Getters for title and author.\n3. Class `BookCopy`: holds `private String barcode`, `private Book book`, `private boolean borrowed = false`. Constructor accepts `String barcode, Book book`. Methods: `isBorrowed()`, `setBorrowed(boolean b)`, `getBarcode()`, `getBook()`.\n4. Class `Member`: holds `private String memberId`, `private String name`, `private java.util.List<BookCopy> activeLoans = new java.util.ArrayList<>()`. Constructor initializes memberId and name. Methods: `borrow(BookCopy copy)` adds copy to loans, `getName()` returns name, `getLoanCount()` returns activeLoans.size().\n5. Class `LibraryBranch`: holds `private String branchName` and composed `private java.util.List<BookCopy> shelfCopies = new java.util.ArrayList<>()`.\n   - Method `public void acquireCopy(String barcode, Book book)`: adds `new BookCopy(barcode, book)`.\n   - Method `public BookCopy borrowBook(Book book)`: searches for first unborrowed copy matching book. If found, sets borrowed = true and returns it. If not found, returns null.\n6. In `Main`:\n   - Create Author 'Robert C. Martin'.\n   - Create Book 'Clean Architecture' with ISBN '978-0134494166' and the author.\n   - Create LibraryBranch 'City Central Library'.\n   - Acquire 2 copies: 'BARCODE-001' and 'BARCODE-002'.\n   - Create Member 'Alice'.\n   - Call `branch.borrowBook(book)` and if non-null, call `alice.borrow(copy)`.\n   - Print: `'[Loan Confirmed] ' + alice.getName() + ' borrowed: \"' + book.getTitle() + '\" (Copy: ' + copy.getBarcode() + ')'`.\n   - Print: `'Alice active loans: ' + alice.getLoanCount()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Author {\n    private String name;\n    public Author(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Book {\n    private String isbn;\n    private String title;\n    private Author author;\n    public Book(String isbn, String title, Author author) {\n        this.isbn = isbn;\n        this.title = title;\n        this.author = author;\n    }\n    public String getTitle() { return title;\n    }\n    public Author getAuthor() { return author; }\n}\n\nclass BookCopy {\n    private String barcode;\n    private Book book;\n    private boolean borrowed = false;\n    public BookCopy(String barcode, Book book) {\n        this.barcode = barcode;\n        this.book = book;\n    }\n    public boolean isBorrowed() { return borrowed; }\n    public void setBorrowed(boolean b) { this.borrowed = b; }\n    public String getBarcode() { return barcode; }\n    public Book getBook() { return book; }\n}\n\nclass Member {\n    private String memberId;\n    private String name;\n    private List<BookCopy> activeLoans = new ArrayList<>();\n    public Member(String memberId, String name) {\n        this.memberId = memberId;\n        this.name = name;\n    }\n    public void borrow(BookCopy copy) { activeLoans.add(copy); }\n    public String getName() { return name; }\n    public int getLoanCount() { return activeLoans.size(); }\n}\n\nclass LibraryBranch {\n    private String branchName;\n    private List<BookCopy> shelfCopies = new ArrayList<>();\n    public LibraryBranch(String branchName) {\n        this.branchName = branchName;\n    }\n    public void acquireCopy(String barcode, Book book) {\n        shelfCopies.add(new BookCopy(barcode, book));\n    }\n    public BookCopy borrowBook(Book book) {\n        for (BookCopy c : shelfCopies) {\n            if (c.getBook() == book && !c.isBorrowed()) {\n                c.setBorrowed(true);\n                return c;\n            }\n        }\n        return null;\n    }\n}\n\npublic class LibraryApp {\n    public static void main(String[] args) {\n        Author author = new Author(\"Robert C. Martin\");\n        Book book = new Book(\"978-0134494166\", \"Clean Architecture\", author);\n        \n        LibraryBranch branch = new LibraryBranch(\"City Central Library\");\n        branch.acquireCopy(\"BARCODE-001\", book);\n        branch.acquireCopy(\"BARCODE-002\", book);\n        \n        Member alice = new Member(\"MEM-1\", \"Alice\");\n        BookCopy copy = branch.borrowBook(book);\n        if (copy != null) {\n            alice.borrow(copy);\n            System.out.println(\"[Loan Confirmed] \" + alice.getName() + \" borrowed: \\\"\" + book.getTitle() + \"\\\" (Copy: \" + copy.getBarcode() + \")\");\n        }\n        System.out.println(\"Alice active loans: \" + alice.getLoanCount());\n    }\n}",
+      "expectedOutput": "[Loan Confirmed] Alice borrowed: \"Clean Architecture\" (Copy: BARCODE-001)\nAlice active loans: 1",
+      "hints": [
+        "Follow the full object graph: LibraryBranch composes BookCopies, BookCopy associates with Book, Book associates with Author.",
+        "Member records active loan upon successful borrow."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,517 @@
+{
+  "id": "java-oop-mod8-les9",
+  "slug": "designing-real-world-relationships",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Designing Real-World Relationships",
+  "summary": "Synthesize association, aggregation, composition, and inheritance to model complex real-world enterprise architectures.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "delegation"
+  ],
+  "learningObjectives": [
+    "Translate messy real-world business requirements into precise OOP relationships",
+    "Combine Inheritance (Is-A), Aggregation (weak Has-A), and Composition (strong Has-A) into a cohesive domain model",
+    "Establish clear lifecycle boundaries and ownership hierarchies in multi-tier domains",
+    "Produce UML-aligned Java architectures ready for enterprise persistence and services"
+  ],
+  "expectedOutcomes": [
+    "You can analyze any business scenario and accurately identify which relationship applies to each entity pair",
+    "You can build clean multi-class architectures that avoid both monolithic inheritance and excessive coupling"
+  ],
+  "activities": [
+    {
+      "id": "act-les9-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Modern Commercial Airline System",
+      "concept": "Synthesizing Domain Relationships",
+      "realWorldMetaphor": {
+        "scenario": "Consider a major airline. A `Boeing787` IS-A `CommercialAirplane` (Inheritance). The airplane HAS engines and wings that were built with it and die with it (Composition). The airline aggregates Pilots and Flight Attendants who work for the airline but exist independently and transfer between planes (Aggregation). A Passenger buys a ticket to fly on a flight from London to New York (Association).",
+        "mapping": "Every relationship type has its exact, irreplaceable role: Is-A defines the machine category; Composition builds the aircraft fuselage; Aggregation manages the flight crew; Association manages passenger travel.",
+        "takeaway": "Real-world systems flourish when you mix and match relationship types according to true domain ownership and lifecycle boundaries."
+      }
+    },
+    {
+      "id": "act-les9-concept",
+      "type": "concept",
+      "title": "The Master Decision Matrix for OOP Relationships",
+      "content": "### The Comprehensive Decision Tree\n\nWhen evaluating relationship between Entity A and Entity B, ask:\n\n1. **Is B a specialized type of A?**\n   - Does B fulfill Liskov Substitutability? Can you replace A with B anywhere?\n   - *YES* -> **Inheritance (Is-A)** -> `class B extends A` or `implements A`.\n   - *NO* -> Proceed to 2.\n\n2. **Does A contain or own B? (Part-Whole Relationship)**\n   - *YES*:\n     - Does B's lifecycle depend strictly on A? If A is deleted, is B destroyed? Is B exclusive to A?\n       - *YES* -> **Composition (Strong Has-A)** -> A creates `new B()` internally.\n       - *NO* (B survives A, B can be shared) -> **Aggregation (Weak Has-A)** -> B injected into A.\n   - *NO* -> Proceed to 3.\n\n3. **Do A and B simply interact or communicate?**\n   - *YES* -> **Association** -> A references B as a peer or receives B as a method parameter."
+    },
+    {
+      "id": "act-les9-cw1",
+      "type": "code_walkthrough",
+      "title": "Full Synthesis: University, Department, Course, Professor, and Student",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\n// 1. Inheritance: Person base\nabstract class Person {\n    protected String name;\n    public Person(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Professor extends Person { // IS-A Person\n    public Professor(String name) { super(name); }\n}\n\nclass Student extends Person { // IS-A Person\n    public Student(String name) { super(name); }\n}\n\n// 2. Association: Student enrolls in Course\nclass Course {\n    private String code;\n    private Professor instructor; // Aggregation (Professor exists independently)\n\n    public Course(String code, Professor instructor) {\n        this.code = code;\n        this.instructor = instructor;\n    }\n    public String getSummary() {\n        return code + \" taught by \" + instructor.getName();\n    }\n}\n\n// 3. Composition: Department owns its Office Rooms\nclass Department {\n    static class OfficeRoom {\n        private int roomNo;\n        public OfficeRoom(int roomNo) { this.roomNo = roomNo; }\n        public int getRoomNo() { return roomNo; }\n    }\n\n    private String deptName;\n    private List<OfficeRoom> offices = new ArrayList<>(); // Composition\n    private List<Professor> faculty = new ArrayList<>();   // Aggregation\n\n    public Department(String deptName) {\n        this.deptName = deptName;\n        // Composing offices internally\n        offices.add(new OfficeRoom(101));\n        offices.add(new OfficeRoom(102));\n    }\n\n    public void addFaculty(Professor p) {\n        faculty.add(p); // Aggregation: external professor\n    }\n\n    public void printReport() {\n        System.out.println(\"Dept: \" + deptName + \" | Offices: \" + offices.size() + \" | Faculty: \" + faculty.size());\n    }\n}\n\npublic class DomainSynthesisDemo {\n    public static void main(String[] args) {\n        Professor prof = new Professor(\"Dr. Shannon\");\n        Department cs = new Department(\"Computer Science\");\n        cs.addFaculty(prof);\n        cs.printReport();\n\n        Course infoTheory = new Course(\"CS-401\", prof);\n        System.out.println(\"Course: \" + infoTheory.getSummary());\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\n// 1. Inheritance: Person base\nabstract class Person {\n    protected String name;\n    public Person(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Professor extends Person { // IS-A Person\n    public Professor(String name) { super(name); }\n}\n\nclass Student extends Person { // IS-A Person\n    public Student(String name) { super(name); }\n}\n\n// 2. Association: Student enrolls in Course\nclass Course {\n    private String code;\n    private Professor instructor; // Aggregation (Professor exists independently)\n\n    public Course(String code, Professor instructor) {\n        this.code = code;\n        this.instructor = instructor;\n    }\n    public String getSummary() {\n        return code + \" taught by \" + instructor.getName();\n    }\n}\n\n// 3. Composition: Department owns its Office Rooms\nclass Department {\n    static class OfficeRoom {\n        private int roomNo;\n        public OfficeRoom(int roomNo) { this.roomNo = roomNo; }\n        public int getRoomNo() { return roomNo; }\n    }\n\n    private String deptName;\n    private List<OfficeRoom> offices = new ArrayList<>(); // Composition\n    private List<Professor> faculty = new ArrayList<>();   // Aggregation\n\n    public Department(String deptName) {\n        this.deptName = deptName;\n        // Composing offices internally\n        offices.add(new OfficeRoom(101));\n        offices.add(new OfficeRoom(102));\n    }\n\n    public void addFaculty(Professor p) {\n        faculty.add(p); // Aggregation: external professor\n    }\n\n    public void printReport() {\n        System.out.println(\"Dept: \" + deptName + \" | Offices: \" + offices.size() + \" | Faculty: \" + faculty.size());\n    }\n}\n\npublic class DomainSynthesisDemo {\n    public static void main(String[] args) {\n        Professor prof = new Professor(\"Dr. Shannon\");\n        Department cs = new Department(\"Computer Science\");\n        cs.addFaculty(prof);\n        cs.printReport();\n\n        Course infoTheory = new Course(\"CS-401\", prof);\n        System.out.println(\"Course: \" + infoTheory.getSummary());\n    }\n}",
+      "language": "java",
+      "explanation": "This architecture seamlessly incorporates: (1) Inheritance (Professor IS-A Person), (2) Aggregation (Department AGGREGATES Professor), (3) Composition (Department COMPOSES OfficeRoom), and (4) Association (Course ASSOCIATES with Professor).",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Professor` and `Student` extend `Person` modeling subtyping."
+        },
+        {
+          "step": 2,
+          "description": "`Department` instantiates `OfficeRoom` internally modeling strong composition."
+        },
+        {
+          "step": 3,
+          "description": "`Department` aggregates `Professor` instances created externally."
+        },
+        {
+          "step": 4,
+          "description": "`Course` holds an association reference to the instructor `Professor`."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-cw2",
+      "type": "code_walkthrough",
+      "title": "Hospital Management Multi-Tier Architecture",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\nclass MedicalBed {\n    private int bedNumber;\n    public MedicalBed(int num) { this.bedNumber = num; }\n    public int getBedNumber() { return bedNumber; }\n}\n\nclass HospitalWard {\n    private String wardName;\n    private List<MedicalBed> beds = new ArrayList<>(); // Composition: ward owns beds\n\n    public HospitalWard(String wardName, int bedCapacity) {\n        this.wardName = wardName;\n        for (int i = 1; i <= bedCapacity; i++) {\n            beds.add(new MedicalBed(i));\n        }\n    }\n    public int getBedCount() { return beds.size(); }\n    public String getWardName() { return wardName; }\n}\n\nclass Nurse {\n    private String name;\n    public Nurse(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass HospitalFacility {\n    private String hospitalName;\n    private List<HospitalWard> wards = new ArrayList<>(); // Composition\n    private List<Nurse> nursingStaff = new ArrayList<>();  // Aggregation\n\n    public HospitalFacility(String name) {\n        this.hospitalName = name;\n        wards.add(new HospitalWard(\"ICU\", 4));\n        wards.add(new HospitalWard(\"Pediatrics\", 8));\n    }\n\n    public void employNurse(Nurse n) { nursingStaff.add(n); }\n\n    public void printAudit() {\n        System.out.println(\"Hospital: \" + hospitalName);\n        System.out.println(\"Wards operating: \" + wards.size());\n        System.out.println(\"Nurses employed: \" + nursingStaff.size());\n    }\n}\n\npublic class HospitalSynthesisDemo {\n    public static void main(String[] args) {\n        HospitalFacility clinic = new HospitalFacility(\"Metro General\");\n        clinic.employNurse(new Nurse(\"Florence\"));\n        clinic.employNurse(new Nurse(\"Clara\"));\n        clinic.printAudit();\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass MedicalBed {\n    private int bedNumber;\n    public MedicalBed(int num) { this.bedNumber = num; }\n    public int getBedNumber() { return bedNumber; }\n}\n\nclass HospitalWard {\n    private String wardName;\n    private List<MedicalBed> beds = new ArrayList<>(); // Composition: ward owns beds\n\n    public HospitalWard(String wardName, int bedCapacity) {\n        this.wardName = wardName;\n        for (int i = 1; i <= bedCapacity; i++) {\n            beds.add(new MedicalBed(i));\n        }\n    }\n    public int getBedCount() { return beds.size(); }\n    public String getWardName() { return wardName; }\n}\n\nclass Nurse {\n    private String name;\n    public Nurse(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass HospitalFacility {\n    private String hospitalName;\n    private List<HospitalWard> wards = new ArrayList<>(); // Composition\n    private List<Nurse> nursingStaff = new ArrayList<>();  // Aggregation\n\n    public HospitalFacility(String name) {\n        this.hospitalName = name;\n        wards.add(new HospitalWard(\"ICU\", 4));\n        wards.add(new HospitalWard(\"Pediatrics\", 8));\n    }\n\n    public void employNurse(Nurse n) { nursingStaff.add(n); }\n\n    public void printAudit() {\n        System.out.println(\"Hospital: \" + hospitalName);\n        System.out.println(\"Wards operating: \" + wards.size());\n        System.out.println(\"Nurses employed: \" + nursingStaff.size());\n    }\n}\n\npublic class HospitalSynthesisDemo {\n    public static void main(String[] args) {\n        HospitalFacility clinic = new HospitalFacility(\"Metro General\");\n        clinic.employNurse(new Nurse(\"Florence\"));\n        clinic.employNurse(new Nurse(\"Clara\"));\n        clinic.printAudit();\n    }\n}",
+      "language": "java",
+      "explanation": "HospitalFacility composes HospitalWards, which compose MedicalBeds. Meanwhile, Nurses are aggregated by HospitalFacility, surviving any ward renovations.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`HospitalWard` composes `MedicalBed` objects in its constructor."
+        },
+        {
+          "step": 2,
+          "description": "`HospitalFacility` composes `HospitalWard` objects."
+        },
+        {
+          "step": 3,
+          "description": "`Nurse` objects are injected via `employNurse`, modeling aggregation."
+        },
+        {
+          "step": 4,
+          "description": "The audit outputs metrics across both composed and aggregated tiers."
+        }
+      ]
+    },
+    {
+      "id": "act-les9-mcq",
+      "type": "mcq",
+      "title": "Designing Real-World Relationships Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "A Customer places an Order. The Order contains OrderItems. What are the relationships?",
+          "options": [
+            "Customer AGGREGATES Order; Order COMPOSES OrderItems",
+            "Customer IS-A Order; Order IS-A OrderItems",
+            "Customer COMPOSES Order; Order AGGREGATES OrderItems",
+            "OrderItem EXTENDS Customer"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Customer and Order have independent lifecycles (Customer aggregates/associates with Order), but an Order strictly composes its line items.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q2",
+          "question": "A Dog has 4 Legs and is an Animal. What are the relationships?",
+          "options": [
+            "Dog IS-A Animal; Dog HAS-A (composes) Legs",
+            "Dog HAS-A Animal; Dog IS-A Leg",
+            "Leg EXTENDS Dog; Dog EXTENDS Animal",
+            "Animal COMPOSES Dog"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Dog is a specialized Animal (Is-A / inheritance), and Dog composes its biological limbs (Has-A / composition).",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q3",
+          "question": "Which relationship represents: 'A School has Classrooms (which cease to exist if the school building is demolished)'?",
+          "options": [
+            "Inheritance",
+            "Association",
+            "Aggregation",
+            "Composition"
+          ],
+          "correctAnswer": 3,
+          "explanation": "Bound lifecycle and physical containment make School and Classrooms a classic composition relationship.",
+          "correctOptionIndex": 3
+        },
+        {
+          "id": "q4",
+          "question": "Which relationship represents: 'A Company has Employees (who can leave and work elsewhere)'?",
+          "options": [
+            "Composition",
+            "Aggregation",
+            "Inheritance",
+            "Interface implementation"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because Employees survive company closure and can transition elsewhere, it is Aggregation (weak Has-A).",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "What is the primary danger of using Inheritance for every relationship in a large system?",
+          "options": [
+            "Massive class explosion, fragile base classes, tight compile-time coupling, and violation of LSP",
+            "Garbage collector stops functioning",
+            "Stack memory exhaustion on every line",
+            "Compilation takes 5 hours"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Overusing inheritance produces rigid, brittle hierarchies that break when superclasses change.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "How do Aggregate Roots in Domain-Driven Design (DDD) relate to Composition?",
+          "answer": "An Aggregate Root acts as the top-level composite object controlling access to all inner composed entities.",
+          "options": [
+            "The Aggregate Root is the outer composite object that guards invariants and lifecycle of its composed entities",
+            "The Aggregate Root is an abstract interface",
+            "The Aggregate Root must be static",
+            "It has no relation to OOP"
+          ],
+          "correctAnswer": 0,
+          "explanation": "In DDD, an Aggregate Root encapsulates an entire boundary of composed entities, controlling transactions and access.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "If you are unsure whether a relationship is Aggregation or Composition, what question should you ask?",
+          "options": [
+            "'Does the child part survive when the parent container is deleted?'",
+            "'Which class has more methods?'",
+            "'Is the child class public or private?'",
+            "'Does the class use ArrayList or LinkedList?'"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Lifecycle survival of the child object upon parent destruction is the definitive test.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "A Driver drives a RentalCar for 3 days. What relationship is this?",
+          "options": [
+            "Composition",
+            "Aggregation",
+            "Association / Use-Dependency",
+            "Inheritance"
+          ],
+          "correctAnswer": 2,
+          "explanation": "The Driver temporarily uses the RentalCar; neither owns or is part of the other.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q9",
+          "question": "In a clean architecture, where should persistence annotations (like @Entity) be placed?",
+          "options": [
+            "On concrete Domain Entities that represent stateful database tables",
+            "Only on utility classes",
+            "Only on static methods",
+            "On every interface"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Domain entities representing tables hold ORM persistence annotations.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "What is the key benefit of modeling real-world domains with proper relationship semantics?",
+          "options": [
+            "The code mirrors business reality, is easy to extend, test, and maintain, and minimizes unexpected bugs",
+            "The compiled bytecode is 50% smaller",
+            "Memory addresses are randomized",
+            "Variables cannot be null"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Accurate domain modeling creates intuitive, maintainable software that reflects actual business constraints.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les9-interview",
+      "type": "interview_qa",
+      "title": "Designing Real-World Relationships Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How would you model an E-Commerce system with Customer, Order, OrderItem, Product, and Payment in an interview?",
+          "answer": "1. `Product` is a standalone entity. 2. `Customer` aggregates or associates with `Order`s. 3. `Order` strictly COMPOSES `OrderItem`s (an OrderItem only belongs to that order and dies with it). 4. `OrderItem` references a `Product` via Association. 5. `Order` associates with a `Payment` transaction object.",
+          "expectedAnswer": "1. `Product` is a standalone entity. 2. `Customer` aggregates or associates with `Order`s. 3. `Order` strictly COMPOSES `OrderItem`s (an OrderItem only belongs to that order and dies with it). 4. `OrderItem` references a `Product` via Association. 5. `Order` associates with a `Payment` transaction object.",
+          "keyTakeaway": "Order composes OrderItems; OrderItem associates with Product; Customer aggregates Orders.",
+          "keyPoints": [
+            "Order composes OrderItems; OrderItem associates with Product; Customer aggregates Orders."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is an Aggregate in Domain-Driven Design and how does it prevent data corruption?",
+          "answer": "An Aggregate is a cluster of domain objects treated as a single unit for data changes. External objects may only reference the Aggregate Root (e.g. `Order`), never its internal composed entities directly (e.g. `OrderItem`). All business rules and mutations pass through the root, ensuring invariants are always enforced.",
+          "expectedAnswer": "An Aggregate is a cluster of domain objects treated as a single unit for data changes. External objects may only reference the Aggregate Root (e.g. `Order`), never its internal composed entities directly (e.g. `OrderItem`). All business rules and mutations pass through the root, ensuring invariants are always enforced.",
+          "keyTakeaway": "Aggregate Roots encapsulate internal entities, preventing external tampering.",
+          "keyPoints": [
+            "Aggregate Roots encapsulate internal entities, preventing external tampering."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "When modeling relationships in JPA/Hibernate, how do Cascading Types map to Aggregation vs Composition?",
+          "answer": "Composition maps to `CascadeType.ALL` with `orphanRemoval = true` (deleting the parent deletes all children). Aggregation maps to no cascading delete or `CascadeType.PERSIST`/`MERGE` only, ensuring children survive parent deletion.",
+          "expectedAnswer": "Composition maps to `CascadeType.ALL` with `orphanRemoval = true` (deleting the parent deletes all children). Aggregation maps to no cascading delete or `CascadeType.PERSIST`/`MERGE` only, ensuring children survive parent deletion.",
+          "keyTakeaway": "CascadeType.ALL + orphanRemoval = true represents strong Composition in JPA.",
+          "keyPoints": [
+            "CascadeType.ALL + orphanRemoval = true represents strong Composition in JPA."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do you detect inappropriate relationship modeling during a code review?",
+          "answer": "Watch out for: (1) `extends` used purely to inherit helper methods, (2) leaking internal collections of a composite without defensive copies or unmodifiable views, (3) long getter navigation chains violating Demeter, and (4) bidirectional links that lack synchronization.",
+          "expectedAnswer": "Watch out for: (1) `extends` used purely to inherit helper methods, (2) leaking internal collections of a composite without defensive copies or unmodifiable views, (3) long getter navigation chains violating Demeter, and (4) bidirectional links that lack synchronization.",
+          "keyTakeaway": "Flag inappropriate extends, leaked collections, Demeter violations, and unsynced bidirectional links.",
+          "keyPoints": [
+            "Flag inappropriate extends, leaked collections, Demeter violations, and unsynced bidirectional links."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does Polymorphism interact with Composition?",
+          "answer": "Polymorphism supercharges composition: when a composite holds an interface reference instead of a concrete class (e.g. `Car` holds `Engine` interface), any concrete implementation can be plugged in polymorphically at runtime, achieving maximum decoupling.",
+          "expectedAnswer": "Polymorphism supercharges composition: when a composite holds an interface reference instead of a concrete class (e.g. `Car` holds `Engine` interface), any concrete implementation can be plugged in polymorphically at runtime, achieving maximum decoupling.",
+          "keyTakeaway": "Composing interface references combines polymorphic dispatch with loose coupling.",
+          "keyPoints": [
+            "Composing interface references combines polymorphic dispatch with loose coupling."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the difference between a Value Object and an Entity in domain design?",
+          "answer": "An Entity has an ongoing identity across time and mutations (e.g. `User` with `userId`). A Value Object is defined entirely by its attributes with no conceptual identity, and is usually immutable (e.g. `Money($50, USD)`, `Address`). Value Objects are heavily used in composition.",
+          "expectedAnswer": "An Entity has an ongoing identity across time and mutations (e.g. `User` with `userId`). A Value Object is defined entirely by its attributes with no conceptual identity, and is usually immutable (e.g. `Money($50, USD)`, `Address`). Value Objects are heavily used in composition.",
+          "keyTakeaway": "Entities have identity; Value Objects are defined strictly by their attributes and are immutable.",
+          "keyPoints": [
+            "Entities have identity; Value Objects are defined strictly by their attributes and are immutable."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How would you model an E-Commerce system with Customer, Order, OrderItem, Product, and Payment in an interview?",
+          "answer": "1. `Product` is a standalone entity. 2. `Customer` aggregates or associates with `Order`s. 3. `Order` strictly COMPOSES `OrderItem`s (an OrderItem only belongs to that order and dies with it). 4. `OrderItem` references a `Product` via Association. 5. `Order` associates with a `Payment` transaction object.",
+          "expectedAnswer": "1. `Product` is a standalone entity. 2. `Customer` aggregates or associates with `Order`s. 3. `Order` strictly COMPOSES `OrderItem`s (an OrderItem only belongs to that order and dies with it). 4. `OrderItem` references a `Product` via Association. 5. `Order` associates with a `Payment` transaction object.",
+          "keyTakeaway": "Order composes OrderItems; OrderItem associates with Product; Customer aggregates Orders.",
+          "keyPoints": [
+            "Order composes OrderItems; OrderItem associates with Product; Customer aggregates Orders."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is an Aggregate in Domain-Driven Design and how does it prevent data corruption?",
+          "answer": "An Aggregate is a cluster of domain objects treated as a single unit for data changes. External objects may only reference the Aggregate Root (e.g. `Order`), never its internal composed entities directly (e.g. `OrderItem`). All business rules and mutations pass through the root, ensuring invariants are always enforced.",
+          "expectedAnswer": "An Aggregate is a cluster of domain objects treated as a single unit for data changes. External objects may only reference the Aggregate Root (e.g. `Order`), never its internal composed entities directly (e.g. `OrderItem`). All business rules and mutations pass through the root, ensuring invariants are always enforced.",
+          "keyTakeaway": "Aggregate Roots encapsulate internal entities, preventing external tampering.",
+          "keyPoints": [
+            "Aggregate Roots encapsulate internal entities, preventing external tampering."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "When modeling relationships in JPA/Hibernate, how do Cascading Types map to Aggregation vs Composition?",
+          "answer": "Composition maps to `CascadeType.ALL` with `orphanRemoval = true` (deleting the parent deletes all children). Aggregation maps to no cascading delete or `CascadeType.PERSIST`/`MERGE` only, ensuring children survive parent deletion.",
+          "expectedAnswer": "Composition maps to `CascadeType.ALL` with `orphanRemoval = true` (deleting the parent deletes all children). Aggregation maps to no cascading delete or `CascadeType.PERSIST`/`MERGE` only, ensuring children survive parent deletion.",
+          "keyTakeaway": "CascadeType.ALL + orphanRemoval = true represents strong Composition in JPA.",
+          "keyPoints": [
+            "CascadeType.ALL + orphanRemoval = true represents strong Composition in JPA."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do you detect inappropriate relationship modeling during a code review?",
+          "answer": "Watch out for: (1) `extends` used purely to inherit helper methods, (2) leaking internal collections of a composite without defensive copies or unmodifiable views, (3) long getter navigation chains violating Demeter, and (4) bidirectional links that lack synchronization.",
+          "expectedAnswer": "Watch out for: (1) `extends` used purely to inherit helper methods, (2) leaking internal collections of a composite without defensive copies or unmodifiable views, (3) long getter navigation chains violating Demeter, and (4) bidirectional links that lack synchronization.",
+          "keyTakeaway": "Flag inappropriate extends, leaked collections, Demeter violations, and unsynced bidirectional links.",
+          "keyPoints": [
+            "Flag inappropriate extends, leaked collections, Demeter violations, and unsynced bidirectional links."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How does Polymorphism interact with Composition?",
+          "answer": "Polymorphism supercharges composition: when a composite holds an interface reference instead of a concrete class (e.g. `Car` holds `Engine` interface), any concrete implementation can be plugged in polymorphically at runtime, achieving maximum decoupling.",
+          "expectedAnswer": "Polymorphism supercharges composition: when a composite holds an interface reference instead of a concrete class (e.g. `Car` holds `Engine` interface), any concrete implementation can be plugged in polymorphically at runtime, achieving maximum decoupling.",
+          "keyTakeaway": "Composing interface references combines polymorphic dispatch with loose coupling.",
+          "keyPoints": [
+            "Composing interface references combines polymorphic dispatch with loose coupling."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What is the difference between a Value Object and an Entity in domain design?",
+          "answer": "An Entity has an ongoing identity across time and mutations (e.g. `User` with `userId`). A Value Object is defined entirely by its attributes with no conceptual identity, and is usually immutable (e.g. `Money($50, USD)`, `Address`). Value Objects are heavily used in composition.",
+          "expectedAnswer": "An Entity has an ongoing identity across time and mutations (e.g. `User` with `userId`). A Value Object is defined entirely by its attributes with no conceptual identity, and is usually immutable (e.g. `Money($50, USD)`, `Address`). Value Objects are heavily used in composition.",
+          "keyTakeaway": "Entities have identity; Value Objects are defined strictly by their attributes and are immutable.",
+          "keyPoints": [
+            "Entities have identity; Value Objects are defined strictly by their attributes and are immutable."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les9-checklist",
+      "type": "self_evaluation",
+      "title": "Designing Real-World Relationships Checklist",
+      "items": [
+        "I can apply the master decision tree to pick the right OOP relationship.",
+        "I use inheritance only for true subtyping conforming to Liskov substitution.",
+        "I model shared or independent components using Aggregation.",
+        "I model exclusive, lifecycle-bound components using Composition.",
+        "I model temporary interactions between independent objects using Association.",
+        "I understand the Aggregate Root concept from Domain-Driven Design.",
+        "I configure JPA cascade types (orphanRemoval) to match Composition semantics.",
+        "I use immutable Value Objects for composed descriptive attributes.",
+        "I compose interface types to leverage runtime polymorphism.",
+        "I prevent encapsulation leaks in all multi-tier domain architectures."
+      ],
+      "checklist": [
+        "I can apply the master decision tree to pick the right OOP relationship.",
+        "I use inheritance only for true subtyping conforming to Liskov substitution.",
+        "I model shared or independent components using Aggregation.",
+        "I model exclusive, lifecycle-bound components using Composition.",
+        "I model temporary interactions between independent objects using Association.",
+        "I understand the Aggregate Root concept from Domain-Driven Design.",
+        "I configure JPA cascade types (orphanRemoval) to match Composition semantics.",
+        "I use immutable Value Objects for composed descriptive attributes.",
+        "I compose interface types to leverage runtime polymorphism.",
+        "I prevent encapsulation leaks in all multi-tier domain architectures."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les9-p1",
+      "lessonId": "java-oop-mod8-les9",
+      "orderIndex": 1,
+      "title": "Vehicle Fleet Domain Modeling",
+      "difficulty": "easy",
+      "problemStatement": "Complete the vehicle fleet model combining inheritance and composition:\n1. Abstract class `Vehicle`: has `protected String vin`. Constructor initializes vin. Abstract method `public abstract String getType()`.\n2. Class `DeliveryVan` extending `Vehicle`: has `private int capacityBoxes`. Constructor initializes vin and capacityBoxes. Overrides `getType()` returning `'Van (' + capacityBoxes + ' boxes)'`.\n3. Class `FleetManager`: composes a `List<Vehicle> fleet = new ArrayList<>()`. Complete `addVehicle(Vehicle v)` and `printFleetReport()` to output each vehicle as `' * [' + vin + '] ' + getType()`.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nabstract class Vehicle {\n    protected String vin;\n    public Vehicle(String vin) { this.vin = vin; }\n    public String getVin() { return vin; }\n    public abstract String getType();\n}\n\nclass DeliveryVan extends Vehicle {\n    private int capacityBoxes;\n    public DeliveryVan(String vin, int capacityBoxes) {\n        super(vin);\n        this.capacityBoxes = capacityBoxes;\n    }\n    @Override\n    public String getType() {\n        return \"Van (\" + capacityBoxes + \" boxes)\";\n    }\n}\n\nclass FleetManager {\n    private List<Vehicle> fleet = new ArrayList<>();\n    \n    public void addVehicle(Vehicle v) {\n        // TODO: add vehicle to fleet\n    }\n    \n    public void printFleetReport() {\n        System.out.println(\"=== Fleet Roster ===\");\n        // TODO: Print each vehicle formatted as ' * [' + v.getVin() + '] ' + v.getType()\n    }\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        FleetManager mgr = new FleetManager();\n        mgr.addVehicle(new DeliveryVan(\"1HGCR2F8\", 120));\n        mgr.addVehicle(new DeliveryVan(\"1FTFW1ED\", 250));\n        mgr.printFleetReport();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nabstract class Vehicle {\n    protected String vin;\n    public Vehicle(String vin) { this.vin = vin; }\n    public String getVin() { return vin; }\n    public abstract String getType();\n}\n\nclass DeliveryVan extends Vehicle {\n    private int capacityBoxes;\n    public DeliveryVan(String vin, int capacityBoxes) {\n        super(vin);\n        this.capacityBoxes = capacityBoxes;\n    }\n    @Override\n    public String getType() {\n        return \"Van (\" + capacityBoxes + \" boxes)\";\n    }\n}\n\nclass FleetManager {\n    private List<Vehicle> fleet = new ArrayList<>();\n    \n    public void addVehicle(Vehicle v) {\n        // TODO: add vehicle to fleet\n    }\n    \n    public void printFleetReport() {\n        System.out.println(\"=== Fleet Roster ===\");\n        // TODO: Print each vehicle formatted as ' * [' + v.getVin() + '] ' + v.getType()\n    }\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        FleetManager mgr = new FleetManager();\n        mgr.addVehicle(new DeliveryVan(\"1HGCR2F8\", 120));\n        mgr.addVehicle(new DeliveryVan(\"1FTFW1ED\", 250));\n        mgr.printFleetReport();\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nabstract class Vehicle {\n    protected String vin;\n    public Vehicle(String vin) { this.vin = vin; }\n    public String getVin() { return vin; }\n    public abstract String getType();\n}\n\nclass DeliveryVan extends Vehicle {\n    private int capacityBoxes;\n    public DeliveryVan(String vin, int capacityBoxes) {\n        super(vin);\n        this.capacityBoxes = capacityBoxes;\n    }\n    @Override\n    public String getType() {\n        return \"Van (\" + capacityBoxes + \" boxes)\";\n    }\n}\n\nclass FleetManager {\n    private List<Vehicle> fleet = new ArrayList<>();\n    \n    public void addVehicle(Vehicle v) {\n        fleet.add(v);\n    }\n    \n    public void printFleetReport() {\n        System.out.println(\"=== Fleet Roster ===\");\n        for (Vehicle v : fleet) {\n            System.out.println(\" * [\" + v.getVin() + \"] \" + v.getType());\n        }\n    }\n}\n\npublic class FleetApp {\n    public static void main(String[] args) {\n        FleetManager mgr = new FleetManager();\n        mgr.addVehicle(new DeliveryVan(\"1HGCR2F8\", 120));\n        mgr.addVehicle(new DeliveryVan(\"1FTFW1ED\", 250));\n        mgr.printFleetReport();\n    }\n}",
+      "expectedOutput": "=== Fleet Roster ===\n * [1HGCR2F8] Van (120 boxes)\n * [1FTFW1ED] Van (250 boxes)",
+      "hints": [
+        "Call `fleet.add(v)` in `addVehicle`.",
+        "Loop through fleet and call `v.getVin()` and `v.getType()`."
+      ]
+    },
+    {
+      "id": "prob-les9-p2",
+      "lessonId": "java-oop-mod8-les9",
+      "orderIndex": 2,
+      "title": "Hospital Patient and Ward Multi-Relationship Architecture",
+      "difficulty": "medium",
+      "problemStatement": "Build a hospital domain combining aggregation and composition from scratch:\n1. Class `Doctor`: holds `private String name` and `private String specialty`. Constructor initializes both. Method `public String getBadge()` returns name + ' (' + specialty + ')'.\n2. Class `Bed`: holds `private int bedNumber`. Constructor initializes bedNumber. Method `public int getBedNumber()` returns bedNumber.\n3. Class `HospitalWard`: holds `private String wardName`, a composed `List<Bed> beds = new ArrayList<>()`, and an aggregated `Doctor supervisingDoctor`.\n   - Constructor accepts `String wardName, int bedCount, Doctor doctor`. It instantiates `bedCount` new Bed objects (beds 1 to bedCount) internally (composition), and assigns the doctor (aggregation).\n   - Method `public void printWardStatus()`: prints `'Ward: ' + wardName + ' | Beds: ' + beds.size() + ' | Supervising: ' + supervisingDoctor.getBadge()`.\n4. In `Main`, create Doctor 'Dr. Gregory House' ('Diagnostics'). Create HospitalWard 'Ward-B', 6 beds, with Dr. House. Call `printWardStatus()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Doctor {\n    private String name;\n    private String specialty;\n    public Doctor(String name, String specialty) {\n        this.name = name;\n        this.specialty = specialty;\n    }\n    public String getBadge() { return name + \" (\" + specialty + \")\"; }\n}\n\nclass Bed {\n    private int bedNumber;\n    public Bed(int bedNumber) { this.bedNumber = bedNumber; }\n    public int getBedNumber() { return bedNumber; }\n}\n\nclass HospitalWard {\n    private String wardName;\n    private List<Bed> beds = new ArrayList<>(); // Composition\n    private Doctor supervisingDoctor;           // Aggregation\n\n    public HospitalWard(String wardName, int bedCount, Doctor doctor) {\n        this.wardName = wardName;\n        this.supervisingDoctor = doctor;\n        for (int i = 1; i <= bedCount; i++) {\n            beds.add(new Bed(i));\n        }\n    }\n\n    public void printWardStatus() {\n        System.out.println(\"Ward: \" + wardName + \" | Beds: \" + beds.size() + \" | Supervising: \" + supervisingDoctor.getBadge());\n    }\n}\n\npublic class HospitalApp {\n    public static void main(String[] args) {\n        Doctor doc = new Doctor(\"Dr. Gregory House\", \"Diagnostics\");\n        HospitalWard ward = new HospitalWard(\"Ward-B\", 6, doc);\n        ward.printWardStatus();\n    }\n}",
+      "expectedOutput": "Ward: Ward-B | Beds: 6 | Supervising: Dr. Gregory House (Diagnostics)",
+      "hints": [
+        "Beds are instantiated internally in the loop (composition).",
+        "Doctor is passed in from outside (aggregation)."
+      ]
+    },
+    {
+      "id": "prob-les9-p3",
+      "lessonId": "java-oop-mod8-les9",
+      "orderIndex": 3,
+      "title": "E-Commerce Shopping Cart and Product Catalog Architecture",
+      "difficulty": "medium",
+      "problemStatement": "Build an e-commerce shopping model with accurate relationships from scratch:\n1. Class `Product`: holds `private String id`, `private String title`, `private double price`. Constructor initializes all three. Getters for title and price.\n2. Class `CartItem`: holds `private Product product` (Aggregation - product exists in catalog) and `private int quantity`. Method `public double getSubtotal()` returns `product.getPrice() * quantity`. Method `public String getLine()` returns `product.getTitle() + ' x' + quantity + ' = $' + getSubtotal()`.\n3. Class `ShoppingCart`: holds composed `List<CartItem> items = new ArrayList<>()`.\n   - Method `public void addItem(Product p, int qty)`: adds `new CartItem(p, qty)`.\n   - Method `public double getTotal()`: sums all item subtotals.\n   - Method `public void printSummary()`: prints `'=== Shopping Cart ==='`. Prints each item line as `' - ' + line`. Prints `'Total: $' + getTotal()`.\n4. In `Main`, create Product p1 ('P1', 'Wireless Mouse', 25.0) and Product p2 ('P2', 'Mechanical Keyboard', 80.0). Add 2 mice and 1 keyboard to the cart. Call `printSummary()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Product {\n    private String id;\n    private String title;\n    private double price;\n    public Product(String id, String title, double price) {\n        this.id = id;\n        this.title = title;\n        this.price = price;\n    }\n    public String getTitle() { return title; }\n    public double getPrice() { return price; }\n}\n\nclass CartItem {\n    private Product product;\n    private int quantity;\n    public CartItem(Product product, int quantity) {\n        this.product = product;\n        this.quantity = quantity;\n    }\n    public double getSubtotal() {\n        return product.getPrice() * quantity;\n    }\n    public String getLine() {\n        return product.getTitle() + \" x\" + quantity + \" = $\" + getSubtotal();\n    }\n}\n\nclass ShoppingCart {\n    private List<CartItem> items = new ArrayList<>();\n    public void addItem(Product p, int qty) {\n        items.add(new CartItem(p, qty));\n    }\n    public double getTotal() {\n        double total = 0;\n        for (CartItem item : items) total += item.getSubtotal();\n        return total;\n    }\n    public void printSummary() {\n        System.out.println(\"=== Shopping Cart ===\");\n        for (CartItem item : items) {\n            System.out.println(\" - \" + item.getLine());\n        }\n        System.out.println(\"Total: $\" + getTotal());\n    }\n}\n\npublic class ShopApp {\n    public static void main(String[] args) {\n        Product mouse = new Product(\"P1\", \"Wireless Mouse\", 25.0);\n        Product keyboard = new Product(\"P2\", \"Mechanical Keyboard\", 80.0);\n        \n        ShoppingCart cart = new ShoppingCart();\n        cart.addItem(mouse, 2);\n        cart.addItem(keyboard, 1);\n        cart.printSummary();\n    }\n}",
+      "expectedOutput": "=== Shopping Cart ===\n - Wireless Mouse x2 = $50.0\n - Mechanical Keyboard x1 = $80.0\nTotal: $130.0",
+      "hints": [
+        "ShoppingCart composes CartItem instances.",
+        "CartItem aggregates Product instances (products survive cart emptying)."
+      ]
+    },
+    {
+      "id": "prob-les9-p4",
+      "lessonId": "java-oop-mod8-les9",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Inverted Ownership in Company and Department Hierarchy",
+      "difficulty": "medium",
+      "problemStatement": "A developer inverted the relationship in an enterprise model: they made `Department` compose the `Company`, so deleting a department destroys the whole corporation! Fix the architecture: make `Company` the container that composes `Department`s, and `Department` hold a simple name.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\n// BUG: Department is erroneously acting as the composite owner of Company!\nclass Company {\n    private String name;\n    public Company(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Department {\n    private String deptName;\n    // Inverted! Department should not own Company!\n    private Company company;\n    public Department(String deptName, String companyName) {\n        this.deptName = deptName;\n        this.company = new Company(companyName);\n    }\n    public void print() {\n        System.out.println(deptName + \" of \" + company.getName());\n    }\n}\n\npublic class InvertedBugApp {\n    public static void main(String[] args) {\n        // Should be: Company has multiple Departments!\n        Department d1 = new Department(\"Finance\", \"Acme Corp\");\n        Department d2 = new Department(\"R&D\", \"Acme Corp\"); // Created a duplicate second Acme Corp!\n        d1.print();\n        d2.print();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\n// BUG: Department is erroneously acting as the composite owner of Company!\nclass Company {\n    private String name;\n    public Company(String name) { this.name = name; }\n    public String getName() { return name; }\n}\n\nclass Department {\n    private String deptName;\n    // Inverted! Department should not own Company!\n    private Company company;\n    public Department(String deptName, String companyName) {\n        this.deptName = deptName;\n        this.company = new Company(companyName);\n    }\n    public void print() {\n        System.out.println(deptName + \" of \" + company.getName());\n    }\n}\n\npublic class InvertedBugApp {\n    public static void main(String[] args) {\n        // Should be: Company has multiple Departments!\n        Department d1 = new Department(\"Finance\", \"Acme Corp\");\n        Department d2 = new Department(\"R&D\", \"Acme Corp\"); // Created a duplicate second Acme Corp!\n        d1.print();\n        d2.print();\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Department {\n    private String deptName;\n    public Department(String deptName) { this.deptName = deptName; }\n    public String getDeptName() { return deptName; }\n}\n\nclass Company {\n    private String name;\n    private List<Department> departments = new ArrayList<>();\n\n    public Company(String name) {\n        this.name = name;\n    }\n    public void addDepartment(String deptName) {\n        departments.add(new Department(deptName));\n    }\n    public void printStructure() {\n        System.out.println(\"Company: \" + name);\n        for (Department d : departments) {\n            System.out.println(\" - Dept: \" + d.getDeptName());\n        }\n    }\n}\n\npublic class InvertedBugApp {\n    public static void main(String[] args) {\n        Company company = new Company(\"Acme Corp\");\n        company.addDepartment(\"Finance\");\n        company.addDepartment(\"R&D\");\n        company.printStructure();\n    }\n}",
+      "expectedOutput": "Company: Acme Corp\n - Dept: Finance\n - Dept: R&D",
+      "hints": [
+        "Make Company the composite owner of Department.",
+        "Company.addDepartment creates new Department objects internally."
+      ]
+    },
+    {
+      "id": "prob-les9-p5",
+      "lessonId": "java-oop-mod8-les9",
+      "orderIndex": 5,
+      "title": "Comprehensive Airline Flight Operations Hierarchy",
+      "difficulty": "hard",
+      "problemStatement": "Build a complete airline flight operations domain synthesizing all OOP relationships from scratch:\n1. Class `Pilot`: holds `private String licenseNumber` and `private String name`. Constructor initializes both. Method `public String getProfile()` returns `'Capt. ' + name + ' [License: ' + licenseNumber + ']'`.\n2. Class `Passenger`: holds `private String ticketNum` and `private String name`. Constructor initializes both. Method `public String getTicket()` returns `'Tkt ' + ticketNum + ' (' + name + ')'`.\n3. Class `CommercialFlight`: \n   - Holds `private String flightCode`\n   - Aggregated `private Pilot pilot` (injected via constructor)\n   - Associated `private List<Passenger> manifest = new ArrayList<>()`\n   - Constructor accepts `String flightCode, Pilot pilot`.\n   - Method `public void boardPassenger(Passenger p)` adds to manifest.\n   - Method `public void dispatchFlight()`: prints `'=== Flight ' + flightCode + ' Dispatch ==='`. Prints `'Pilot in Command: ' + pilot.getProfile()`. Prints `'Passenger Manifest (' + manifest.size() + ' boarded):'`. Then prints each passenger indented with `' > ' + p.getTicket()`.\n4. In `Main`, create Pilot 'P-8801' ('Chesley Sullenberger'). Create flight 'FLIGHT-1549' with the pilot. Board passengers: 'T-01' ('Alice'), 'T-02' ('Bob'). Call `dispatchFlight()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Pilot {\n    private String licenseNumber;\n    private String name;\n    public Pilot(String licenseNumber, String name) {\n        this.licenseNumber = licenseNumber;\n        this.name = name;\n    }\n    public String getProfile() {\n        return \"Capt. \" + name + \" [License: \" + licenseNumber + \"]\";\n    }\n}\n\nclass Passenger {\n    private String ticketNum;\n    private String name;\n    public Passenger(String ticketNum, String name) {\n        this.ticketNum = ticketNum;\n        this.name = name;\n    }\n    public String getTicket() {\n        return \"Tkt \" + ticketNum + \" (\" + name + \")\";\n    }\n}\n\nclass CommercialFlight {\n    private String flightCode;\n    private Pilot pilot; // Aggregation\n    private List<Passenger> manifest = new ArrayList<>(); // Association\n\n    public CommercialFlight(String flightCode, Pilot pilot) {\n        this.flightCode = flightCode;\n        this.pilot = pilot;\n    }\n\n    public void boardPassenger(Passenger p) {\n        manifest.add(p);\n    }\n\n    public void dispatchFlight() {\n        System.out.println(\"=== Flight \" + flightCode + \" Dispatch ===\");\n        System.out.println(\"Pilot in Command: \" + pilot.getProfile());\n        System.out.println(\"Passenger Manifest (\" + manifest.size() + \" boarded):\");\n        for (Passenger p : manifest) {\n            System.out.println(\" > \" + p.getTicket());\n        }\n    }\n}\n\npublic class AirlineApp {\n    public static void main(String[] args) {\n        Pilot pilot = new Pilot(\"P-8801\", \"Chesley Sullenberger\");\n        CommercialFlight flight = new CommercialFlight(\"FLIGHT-1549\", pilot);\n        flight.boardPassenger(new Passenger(\"T-01\", \"Alice\"));\n        flight.boardPassenger(new Passenger(\"T-02\", \"Bob\"));\n        flight.dispatchFlight();\n    }\n}",
+      "expectedOutput": "=== Flight FLIGHT-1549 Dispatch ===\nPilot in Command: Capt. Chesley Sullenberger [License: P-8801]\nPassenger Manifest (2 boarded):\n > Tkt T-01 (Alice)\n > Tkt T-02 (Bob)",
+      "hints": [
+        "Pilot is aggregated by CommercialFlight (pilot exists independently of this flight).",
+        "Passengers are associated with CommercialFlight in the manifest."
+      ]
+    }
+  ]
+}

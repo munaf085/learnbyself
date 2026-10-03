@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod8-les5",
+  "slug": "composition",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Composition",
+  "summary": "Master strong 'has-a' composition where the container owns and controls the complete lifecycle of its constituent parts.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "aggregation"
+  ],
+  "learningObjectives": [
+    "Define Composition as a strict whole-part relationship with tied lifecycles",
+    "Identify real-world composition patterns (Order & OrderItems, House & Rooms, Computer & Motherboard)",
+    "Enforce component lifecycle encapsulation inside the owner class",
+    "Implement deep cleanup and cascading disposal when the composite object is terminated"
+  ],
+  "expectedOutcomes": [
+    "You can model tightly-coupled whole-part architectures where parts cannot exist without the whole",
+    "You know how to prevent external leaking of internal composed component references"
+  ],
+  "activities": [
+    {
+      "id": "act-les5-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Living Human Body and Its Heart",
+      "concept": "Composition (Strong Has-A)",
+      "realWorldMetaphor": {
+        "scenario": "Consider a living human body and its biological heart. The body does not simply borrow the heart from a store on Tuesdays. The body generates and develops the heart from gestation. When the human body dies, the biological heart stops functioning and perishes with it. It cannot live on independently as an active living entity.",
+        "mapping": "In software, `Human` COMPOSES `Heart`. The `Human` class instantiates `new Heart()` in its constructor and does not share that private instance with external objects. If the `Human` object is destroyed, its composed `Heart` becomes unreachable and is garbage collected alongside it.",
+        "takeaway": "In composition, the whole strictly owns the parts. The part cannot exist without the whole."
+      }
+    },
+    {
+      "id": "act-les5-concept",
+      "type": "concept",
+      "title": "The Pillars of Strong Composition",
+      "content": "### What is Composition?\n\n**Composition** is the strongest form of relationship in object-oriented design. It is a **strong whole-part** relationship with **bound lifecycles**:\n\n1. **Lifecycle Binding**: The parts are created *by* the whole (often inside the constructor) and destroyed *with* the whole.\n2. **Exclusive Ownership**: A part belongs to exactly **one** whole at any given time. It cannot be shared across multiple parents.\n3. **Encapsulation**: The outer class acts as a protective boundary. External clients should generally interact with the parts through methods on the composite, not by grabbing direct references.\n\n### UML Representation\nIn UML class diagrams, composition is depicted by a **solid (filled black) diamond** at the composite class end.\n\n### Code Signature of Composition\n```java\nclass Order {\n    private final List<OrderItem> items = new ArrayList<>();\n\n    // Parts are instantiated internally, not passed in from outside:\n    public void addItem(String sku, int qty, double price) {\n        items.add(new OrderItem(sku, qty, price)); // Strong composition!\n    }\n}\n```"
+    },
+    {
+      "id": "act-les5-cw1",
+      "type": "code_walkthrough",
+      "title": "E-Commerce Order and OrderItems Composition",
+      "codeSnippet": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Order {\n    // Inner private/package class representing tightly bound part\n    static class OrderItem {\n        private String sku;\n        private int quantity;\n        private double unitPrice;\n\n        public OrderItem(String sku, int quantity, double unitPrice) {\n            this.sku = sku;\n            this.quantity = quantity;\n            this.unitPrice = unitPrice;\n        }\n\n        public double getSubtotal() { return quantity * unitPrice; }\n        public String getLine() { return sku + \" (x\" + quantity + \") @ $\" + unitPrice + \" = $\" + getSubtotal(); }\n    }\n\n    private String orderId;\n    private List<OrderItem> items = new ArrayList<>(); // Strong Has-A\n\n    public Order(String orderId) {\n        this.orderId = orderId;\n    }\n\n    // The Order manages the creation and lifecycle of OrderItems\n    public void addLineItem(String sku, int qty, double price) {\n        this.items.add(new OrderItem(sku, qty, price));\n    }\n\n    public double calculateTotal() {\n        double total = 0;\n        for (OrderItem item : items) total += item.getSubtotal();\n        return total;\n    }\n\n    public void printReceipt() {\n        System.out.println(\"=== Order Receipt: \" + orderId + \" ===\");\n        for (OrderItem item : items) {\n            System.out.println(\" - \" + item.getLine());\n        }\n        System.out.println(\"Total Due: $\" + calculateTotal());\n    }\n}\n\npublic class CompositionDemo {\n    public static void main(String[] args) {\n        Order order = new Order(\"ORD-2026-901\");\n        order.addLineItem(\"BOOK-JAVA\", 2, 45.00);\n        order.addLineItem(\"MUG-COFFEE\", 1, 15.50);\n        order.printReceipt();\n    }\n}",
+      "code": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Order {\n    // Inner private/package class representing tightly bound part\n    static class OrderItem {\n        private String sku;\n        private int quantity;\n        private double unitPrice;\n\n        public OrderItem(String sku, int quantity, double unitPrice) {\n            this.sku = sku;\n            this.quantity = quantity;\n            this.unitPrice = unitPrice;\n        }\n\n        public double getSubtotal() { return quantity * unitPrice; }\n        public String getLine() { return sku + \" (x\" + quantity + \") @ $\" + unitPrice + \" = $\" + getSubtotal(); }\n    }\n\n    private String orderId;\n    private List<OrderItem> items = new ArrayList<>(); // Strong Has-A\n\n    public Order(String orderId) {\n        this.orderId = orderId;\n    }\n\n    // The Order manages the creation and lifecycle of OrderItems\n    public void addLineItem(String sku, int qty, double price) {\n        this.items.add(new OrderItem(sku, qty, price));\n    }\n\n    public double calculateTotal() {\n        double total = 0;\n        for (OrderItem item : items) total += item.getSubtotal();\n        return total;\n    }\n\n    public void printReceipt() {\n        System.out.println(\"=== Order Receipt: \" + orderId + \" ===\");\n        for (OrderItem item : items) {\n            System.out.println(\" - \" + item.getLine());\n        }\n        System.out.println(\"Total Due: $\" + calculateTotal());\n    }\n}\n\npublic class CompositionDemo {\n    public static void main(String[] args) {\n        Order order = new Order(\"ORD-2026-901\");\n        order.addLineItem(\"BOOK-JAVA\", 2, 45.00);\n        order.addLineItem(\"MUG-COFFEE\", 1, 15.50);\n        order.printReceipt();\n    }\n}",
+      "language": "java",
+      "explanation": "Order encapsulates creation of OrderItem. An OrderItem cannot exist without an Order and is never shared between orders.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`OrderItem` represents a line item strictly belonging to an order."
+        },
+        {
+          "step": 2,
+          "description": "`Order.addLineItem` accepts raw data (sku, qty, price) and instantiates the `OrderItem` internally."
+        },
+        {
+          "step": 3,
+          "description": "`calculateTotal` aggregates subtotals across composed items."
+        },
+        {
+          "step": 4,
+          "description": "When the order is closed or discarded, all line items are discarded with it."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-cw2",
+      "type": "code_walkthrough",
+      "title": "Cascading Lifecycle Management and Resource Disposal",
+      "codeSnippet": "class ProcessorCore {\n    private int coreId;\n    private boolean active = true;\n\n    public ProcessorCore(int coreId) {\n        this.coreId = coreId;\n    }\n\n    public void shutdown() {\n        this.active = false;\n        System.out.println(\"[Core-\" + coreId + \"] Safely powered down.\");\n    }\n}\n\nclass Microprocessor {\n    private String model;\n    private ProcessorCore[] cores; // Composed internal hardware\n\n    public Microprocessor(String model, int coreCount) {\n        this.model = model;\n        this.cores = new ProcessorCore[coreCount];\n        // The processor creates its own cores\n        for (int i = 0; i < coreCount; i++) {\n            cores[i] = new ProcessorCore(i);\n        }\n    }\n\n    // Cascading disposal of composed parts\n    public void powerOff() {\n        System.out.println(\"Shutting down processor: \" + model);\n        for (ProcessorCore core : cores) {\n            core.shutdown();\n        }\n        System.out.println(\"All cores halted.\");\n    }\n}\n\npublic class CascadingDemo {\n    public static void main(String[] args) {\n        Microprocessor cpu = new Microprocessor(\"Octa-Silicon 9\", 4);\n        cpu.powerOff();\n    }\n}",
+      "code": "class ProcessorCore {\n    private int coreId;\n    private boolean active = true;\n\n    public ProcessorCore(int coreId) {\n        this.coreId = coreId;\n    }\n\n    public void shutdown() {\n        this.active = false;\n        System.out.println(\"[Core-\" + coreId + \"] Safely powered down.\");\n    }\n}\n\nclass Microprocessor {\n    private String model;\n    private ProcessorCore[] cores; // Composed internal hardware\n\n    public Microprocessor(String model, int coreCount) {\n        this.model = model;\n        this.cores = new ProcessorCore[coreCount];\n        // The processor creates its own cores\n        for (int i = 0; i < coreCount; i++) {\n            cores[i] = new ProcessorCore(i);\n        }\n    }\n\n    // Cascading disposal of composed parts\n    public void powerOff() {\n        System.out.println(\"Shutting down processor: \" + model);\n        for (ProcessorCore core : cores) {\n            core.shutdown();\n        }\n        System.out.println(\"All cores halted.\");\n    }\n}\n\npublic class CascadingDemo {\n    public static void main(String[] args) {\n        Microprocessor cpu = new Microprocessor(\"Octa-Silicon 9\", 4);\n        cpu.powerOff();\n    }\n}",
+      "language": "java",
+      "explanation": "Microprocessor instantiates its own cores and cascades the powerOff() event to every composed core.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Microprocessor` instantiates an array of `ProcessorCore` internally."
+        },
+        {
+          "step": 2,
+          "description": "No external caller can inject or remove a core from this processor."
+        },
+        {
+          "step": 3,
+          "description": "When `powerOff()` is invoked on the composite, it cascades down to each core."
+        },
+        {
+          "step": 4,
+          "description": "Both the processor and its cores are coupled in lifecycle and state."
+        }
+      ]
+    },
+    {
+      "id": "act-les5-mcq",
+      "type": "mcq",
+      "title": "Composition Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the defining characteristic of Composition in OOP?",
+          "options": [
+            "The parts outlive the whole",
+            "The whole owns and controls the lifecycle of its parts",
+            "Classes must inherit from each other",
+            "Methods must be declared synchronized"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In Composition, the composite object strictly owns and manages the lifecycle of its component parts.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "How is Composition depicted in UML class diagrams?",
+          "options": [
+            "A hollow (clear) diamond",
+            "A solid filled black diamond",
+            "A dotted circle",
+            "An open arrow"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Composition is represented by a solid filled black diamond attached to the composite (whole) class.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "Which of the following is the most classic example of Composition?",
+          "options": [
+            "A Teacher and a University",
+            "A Customer and a Store",
+            "A House and its Rooms",
+            "A Driver and a Road"
+          ],
+          "correctAnswer": 2,
+          "explanation": "If a House is demolished, its Rooms cease to exist. A Room cannot exist without the House.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q4",
+          "question": "In Java code, where are composed objects typically instantiated?",
+          "options": [
+            "In main() before being passed in",
+            "Internally within the composite class's constructor or factory method",
+            "In an external XML configuration file",
+            "In a static block only"
+          ],
+          "correctAnswer": 1,
+          "explanation": "To enforce exclusive lifecycle ownership, composed objects are instantiated internally by the composite class.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "Can an object participate in two different composition relationships at the same time?",
+          "options": [
+            "Yes, easily",
+            "No, an object can have at most one composite owner at any time",
+            "Only if it implements Serializable",
+            "Only if it is declared abstract"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In strict composition, a part belongs exclusively to one whole. It cannot be co-owned by another composite.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q6",
+          "question": "What happens to composed objects when the outer composite object is garbage collected?",
+          "options": [
+            "They become eligible for garbage collection as well (assuming no external leaks)",
+            "They are kept permanently in memory",
+            "They are moved to another object automatically",
+            "The JVM crashes"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Since the composite held the only references to the composed parts, dereferencing the composite makes the parts eligible for GC.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q7",
+          "question": "Why is exposing a direct reference to a composed part considered an encapsulation breach?",
+          "options": [
+            "It reduces CPU clock speed",
+            "It allows external callers to mutate or bypass the composite's business rules",
+            "Java prevents exposing inner references",
+            "It causes compiler errors"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Leaking a composed part reference allows external code to manipulate the part directly, bypassing the composite's invariants.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q8",
+          "question": "What is cascading disposal in a composite object?",
+          "options": [
+            "A technique where disposing the composite automatically triggers cleanup/closing on all composed parts",
+            "Throwing exceptions continuously",
+            "Deleting files on disk",
+            "Removing static fields"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Cascading disposal ensures that closing/disposing the parent closes/disposes all internal resources.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "Compare Aggregation vs Composition: which statement is TRUE?",
+          "options": [
+            "Aggregation is strong ownership; Composition is weak ownership",
+            "Aggregation: parts survive whole; Composition: parts die with whole",
+            "Aggregation uses private fields; Composition uses public fields",
+            "They are identical in bytecode and memory"
+          ],
+          "correctAnswer": 1,
+          "explanation": "In Aggregation, parts survive the whole. In Composition, parts' lifecycles are bound to and terminate with the whole.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "Why might a composite class declare its composed class as a private static nested class?",
+          "options": [
+            "To hide it entirely from the outside world and enforce that it is only used internally by the composite",
+            "To increase memory consumption",
+            "To make it an interface",
+            "To enable multiple inheritance"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A private nested class guarantees that the part cannot even be instantiated or referenced by outside code.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les5-interview",
+      "type": "interview_qa",
+      "title": "Composition Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you explain the difference between Composition and Aggregation in an interview?",
+          "answer": "Both are 'Has-A' relationships, but they differ in lifecycle coupling. In Aggregation (weak Has-A), parts are created externally and injected into the whole; if the whole dies, the parts survive (e.g. Department & Teachers). In Composition (strong Has-A), parts are created and managed exclusively by the whole; if the whole dies, the parts die with it (e.g. Order & OrderItems).",
+          "expectedAnswer": "Both are 'Has-A' relationships, but they differ in lifecycle coupling. In Aggregation (weak Has-A), parts are created externally and injected into the whole; if the whole dies, the parts survive (e.g. Department & Teachers). In Composition (strong Has-A), parts are created and managed exclusively by the whole; if the whole dies, the parts die with it (e.g. Order & OrderItems).",
+          "keyTakeaway": "Aggregation = independent lifecycle / shared parts; Composition = bound lifecycle / exclusive ownership.",
+          "keyPoints": [
+            "Aggregation = independent lifecycle / shared parts; Composition = bound lifecycle / exclusive ownership."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the 'Reference Leak' vulnerability in Composition?",
+          "answer": "If a composite class returns a direct reference to a mutable composed part (e.g. `public Engine getEngine() { return this.engine; }`), an external client can mutate the engine or pass it to another car, violating exclusive ownership. To prevent this, either expose delegating methods (`car.startEngine()`) or return a defensive copy.",
+          "expectedAnswer": "If a composite class returns a direct reference to a mutable composed part (e.g. `public Engine getEngine() { return this.engine; }`), an external client can mutate the engine or pass it to another car, violating exclusive ownership. To prevent this, either expose delegating methods (`car.startEngine()`) or return a defensive copy.",
+          "keyTakeaway": "Never leak mutable references to private composed parts.",
+          "keyPoints": [
+            "Never leak mutable references to private composed parts."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Why is the Composite Pattern useful in GUI or tree structures?",
+          "answer": "The Composite design pattern allows clients to treat individual objects and compositions of objects uniformly. For example, a `Panel` can contain `Buttons` as well as other `Panels`, and calling `draw()` on the top panel recursively draws all child components.",
+          "expectedAnswer": "The Composite design pattern allows clients to treat individual objects and compositions of objects uniformly. For example, a `Panel` can contain `Buttons` as well as other `Panels`, and calling `draw()` on the top panel recursively draws all child components.",
+          "keyTakeaway": "The Composite pattern treats leaves and branches uniformly through a common interface.",
+          "keyPoints": [
+            "The Composite pattern treats leaves and branches uniformly through a common interface."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How does Java's try-with-resources interact with composed Closeable resources?",
+          "answer": "If a composite class implements `AutoCloseable`, its `close()` method should cascade the close call to all composed `AutoCloseable` parts (e.g. database connections, file streams), ensuring all child resources are cleanly freed.",
+          "expectedAnswer": "If a composite class implements `AutoCloseable`, its `close()` method should cascade the close call to all composed `AutoCloseable` parts (e.g. database connections, file streams), ensuring all child resources are cleanly freed.",
+          "keyTakeaway": "Implement AutoCloseable on composites to cascade resource disposal.",
+          "keyPoints": [
+            "Implement AutoCloseable on composites to cascade resource disposal."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why do functional and domain-driven design architectures prefer Composition?",
+          "answer": "Composition enables building complex entities out of small, self-contained, easily testable value objects. It prevents the deep, fragile hierarchies caused by inheritance, keeping the architecture modular and flexible.",
+          "expectedAnswer": "Composition enables building complex entities out of small, self-contained, easily testable value objects. It prevents the deep, fragile hierarchies caused by inheritance, keeping the architecture modular and flexible.",
+          "keyTakeaway": "Composition builds rich domain models through aggregation of focused, cohesive units.",
+          "keyPoints": [
+            "Composition builds rich domain models through aggregation of focused, cohesive units."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What are the trade-offs of Composition vs Inheritance?",
+          "answer": "Composition offers loose coupling, runtime flexibility, and black-box testing, but requires writing forwarding/delegation methods. Inheritance provides direct polymorphism and code reuse without delegation boilerplate, but creates tight white-box coupling and fragile hierarchies.",
+          "expectedAnswer": "Composition offers loose coupling, runtime flexibility, and black-box testing, but requires writing forwarding/delegation methods. Inheritance provides direct polymorphism and code reuse without delegation boilerplate, but creates tight white-box coupling and fragile hierarchies.",
+          "keyTakeaway": "Composition trades slight forwarding boilerplate for massive flexibility and loose coupling.",
+          "keyPoints": [
+            "Composition trades slight forwarding boilerplate for massive flexibility and loose coupling."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you explain the difference between Composition and Aggregation in an interview?",
+          "answer": "Both are 'Has-A' relationships, but they differ in lifecycle coupling. In Aggregation (weak Has-A), parts are created externally and injected into the whole; if the whole dies, the parts survive (e.g. Department & Teachers). In Composition (strong Has-A), parts are created and managed exclusively by the whole; if the whole dies, the parts die with it (e.g. Order & OrderItems).",
+          "expectedAnswer": "Both are 'Has-A' relationships, but they differ in lifecycle coupling. In Aggregation (weak Has-A), parts are created externally and injected into the whole; if the whole dies, the parts survive (e.g. Department & Teachers). In Composition (strong Has-A), parts are created and managed exclusively by the whole; if the whole dies, the parts die with it (e.g. Order & OrderItems).",
+          "keyTakeaway": "Aggregation = independent lifecycle / shared parts; Composition = bound lifecycle / exclusive ownership.",
+          "keyPoints": [
+            "Aggregation = independent lifecycle / shared parts; Composition = bound lifecycle / exclusive ownership."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is the 'Reference Leak' vulnerability in Composition?",
+          "answer": "If a composite class returns a direct reference to a mutable composed part (e.g. `public Engine getEngine() { return this.engine; }`), an external client can mutate the engine or pass it to another car, violating exclusive ownership. To prevent this, either expose delegating methods (`car.startEngine()`) or return a defensive copy.",
+          "expectedAnswer": "If a composite class returns a direct reference to a mutable composed part (e.g. `public Engine getEngine() { return this.engine; }`), an external client can mutate the engine or pass it to another car, violating exclusive ownership. To prevent this, either expose delegating methods (`car.startEngine()`) or return a defensive copy.",
+          "keyTakeaway": "Never leak mutable references to private composed parts.",
+          "keyPoints": [
+            "Never leak mutable references to private composed parts."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Why is the Composite Pattern useful in GUI or tree structures?",
+          "answer": "The Composite design pattern allows clients to treat individual objects and compositions of objects uniformly. For example, a `Panel` can contain `Buttons` as well as other `Panels`, and calling `draw()` on the top panel recursively draws all child components.",
+          "expectedAnswer": "The Composite design pattern allows clients to treat individual objects and compositions of objects uniformly. For example, a `Panel` can contain `Buttons` as well as other `Panels`, and calling `draw()` on the top panel recursively draws all child components.",
+          "keyTakeaway": "The Composite pattern treats leaves and branches uniformly through a common interface.",
+          "keyPoints": [
+            "The Composite pattern treats leaves and branches uniformly through a common interface."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How does Java's try-with-resources interact with composed Closeable resources?",
+          "answer": "If a composite class implements `AutoCloseable`, its `close()` method should cascade the close call to all composed `AutoCloseable` parts (e.g. database connections, file streams), ensuring all child resources are cleanly freed.",
+          "expectedAnswer": "If a composite class implements `AutoCloseable`, its `close()` method should cascade the close call to all composed `AutoCloseable` parts (e.g. database connections, file streams), ensuring all child resources are cleanly freed.",
+          "keyTakeaway": "Implement AutoCloseable on composites to cascade resource disposal.",
+          "keyPoints": [
+            "Implement AutoCloseable on composites to cascade resource disposal."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "Why do functional and domain-driven design architectures prefer Composition?",
+          "answer": "Composition enables building complex entities out of small, self-contained, easily testable value objects. It prevents the deep, fragile hierarchies caused by inheritance, keeping the architecture modular and flexible.",
+          "expectedAnswer": "Composition enables building complex entities out of small, self-contained, easily testable value objects. It prevents the deep, fragile hierarchies caused by inheritance, keeping the architecture modular and flexible.",
+          "keyTakeaway": "Composition builds rich domain models through aggregation of focused, cohesive units.",
+          "keyPoints": [
+            "Composition builds rich domain models through aggregation of focused, cohesive units."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What are the trade-offs of Composition vs Inheritance?",
+          "answer": "Composition offers loose coupling, runtime flexibility, and black-box testing, but requires writing forwarding/delegation methods. Inheritance provides direct polymorphism and code reuse without delegation boilerplate, but creates tight white-box coupling and fragile hierarchies.",
+          "expectedAnswer": "Composition offers loose coupling, runtime flexibility, and black-box testing, but requires writing forwarding/delegation methods. Inheritance provides direct polymorphism and code reuse without delegation boilerplate, but creates tight white-box coupling and fragile hierarchies.",
+          "keyTakeaway": "Composition trades slight forwarding boilerplate for massive flexibility and loose coupling.",
+          "keyPoints": [
+            "Composition trades slight forwarding boilerplate for massive flexibility and loose coupling."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les5-checklist",
+      "type": "self_evaluation",
+      "title": "Composition Architecture Checklist",
+      "items": [
+        "I understand Composition as strong whole-part ownership with bound lifecycles.",
+        "I instantiate composed parts internally within the composite class.",
+        "I do not leak mutable references to composed parts to external clients.",
+        "I recognize the solid black diamond in UML class diagrams as Composition.",
+        "I ensure composed parts belong exclusively to one parent composite.",
+        "I provide delegate methods on the composite rather than exposing internal parts.",
+        "I implement cascading disposal when closing or terminating the composite.",
+        "I understand how garbage collection reclaims unreferenced composed parts.",
+        "I consider private static nested classes for strictly internal composed parts.",
+        "I choose Composition when a part cannot logically exist without its parent."
+      ],
+      "checklist": [
+        "I understand Composition as strong whole-part ownership with bound lifecycles.",
+        "I instantiate composed parts internally within the composite class.",
+        "I do not leak mutable references to composed parts to external clients.",
+        "I recognize the solid black diamond in UML class diagrams as Composition.",
+        "I ensure composed parts belong exclusively to one parent composite.",
+        "I provide delegate methods on the composite rather than exposing internal parts.",
+        "I implement cascading disposal when closing or terminating the composite.",
+        "I understand how garbage collection reclaims unreferenced composed parts.",
+        "I consider private static nested classes for strictly internal composed parts.",
+        "I choose Composition when a part cannot logically exist without its parent."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les5-p1",
+      "lessonId": "java-oop-mod8-les5",
+      "orderIndex": 1,
+      "title": "House and Room Composition",
+      "difficulty": "easy",
+      "problemStatement": "Implement strong composition between `House` and `Room`. The `House` creates its own `Room` objects internally when `addRoom` is called. Complete `House.addRoom` and `House.displayBlueprint` to output each room's details.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Room {\n    private String name;\n    private double areaSqFt;\n    public Room(String name, double areaSqFt) {\n        this.name = name;\n        this.areaSqFt = areaSqFt;\n    }\n    public String getInfo() { return name + \" (\" + areaSqFt + \" sq ft)\"; }\n}\n\nclass House {\n    private String address;\n    private List<Room> rooms = new ArrayList<>(); // Composed parts\n\n    public House(String address) {\n        this.address = address;\n    }\n\n    // Strong composition: House instantiates the Room directly\n    public void addRoom(String name, double areaSqFt) {\n        // TODO: create new Room internally and add to rooms\n    }\n\n    public void displayBlueprint() {\n        System.out.println(\"House at: \" + address);\n        // TODO: Print each room as ' - Room: ' + info\n    }\n}\n\npublic class HouseApp {\n    public static void main(String[] args) {\n        House home = new House(\"742 Evergreen Terrace\");\n        home.addRoom(\"Living Room\", 250.0);\n        home.addRoom(\"Kitchen\", 180.0);\n        home.displayBlueprint();\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Room {\n    private String name;\n    private double areaSqFt;\n    public Room(String name, double areaSqFt) {\n        this.name = name;\n        this.areaSqFt = areaSqFt;\n    }\n    public String getInfo() { return name + \" (\" + areaSqFt + \" sq ft)\"; }\n}\n\nclass House {\n    private String address;\n    private List<Room> rooms = new ArrayList<>(); // Composed parts\n\n    public House(String address) {\n        this.address = address;\n    }\n\n    // Strong composition: House instantiates the Room directly\n    public void addRoom(String name, double areaSqFt) {\n        // TODO: create new Room internally and add to rooms\n    }\n\n    public void displayBlueprint() {\n        System.out.println(\"House at: \" + address);\n        // TODO: Print each room as ' - Room: ' + info\n    }\n}\n\npublic class HouseApp {\n    public static void main(String[] args) {\n        House home = new House(\"742 Evergreen Terrace\");\n        home.addRoom(\"Living Room\", 250.0);\n        home.addRoom(\"Kitchen\", 180.0);\n        home.displayBlueprint();\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Room {\n    private String name;\n    private double areaSqFt;\n    public Room(String name, double areaSqFt) {\n        this.name = name;\n        this.areaSqFt = areaSqFt;\n    }\n    public String getInfo() { return name + \" (\" + areaSqFt + \" sq ft)\"; }\n}\n\nclass House {\n    private String address;\n    private List<Room> rooms = new ArrayList<>(); // Composed parts\n\n    public House(String address) {\n        this.address = address;\n    }\n\n    public void addRoom(String name, double areaSqFt) {\n        rooms.add(new Room(name, areaSqFt));\n    }\n\n    public void displayBlueprint() {\n        System.out.println(\"House at: \" + address);\n        for (Room r : rooms) {\n            System.out.println(\" - Room: \" + r.getInfo());\n        }\n    }\n}\n\npublic class HouseApp {\n    public static void main(String[] args) {\n        House home = new House(\"742 Evergreen Terrace\");\n        home.addRoom(\"Living Room\", 250.0);\n        home.addRoom(\"Kitchen\", 180.0);\n        home.displayBlueprint();\n    }\n}",
+      "expectedOutput": "House at: 742 Evergreen Terrace\n - Room: Living Room (250.0 sq ft)\n - Room: Kitchen (180.0 sq ft)",
+      "hints": [
+        "Call `rooms.add(new Room(name, areaSqFt));` in `addRoom`.",
+        "Iterate over rooms in `displayBlueprint`."
+      ]
+    },
+    {
+      "id": "prob-les5-p2",
+      "lessonId": "java-oop-mod8-les5",
+      "orderIndex": 2,
+      "title": "Desktop Computer and Hardware Components Composition",
+      "difficulty": "medium",
+      "problemStatement": "Build a desktop computer composition from scratch:\n1. Class `Motherboard`: holds `private String chipset`. Constructor accepts chipset. Method `public String getChipset()` returns chipset.\n2. Class `PowerSupply`: holds `private int wattage`. Constructor accepts wattage. Method `public int getWattage()` returns wattage.\n3. Class `DesktopPc`: holds `private String brand`, `private Motherboard motherboard`, and `private PowerSupply psu`.\n   - Constructor accepts `String brand, String chipset, int psuWattage`. It creates `new Motherboard(chipset)` and `new PowerSupply(psuWattage)` internally (enforcing composition!).\n   - Method `public void boot()` prints `'[PC: ' + brand + '] Booting motherboard (' + motherboard.getChipset() + ') powered by ' + psu.getWattage() + 'W PSU'`. \n4. In `Main`, create `DesktopPc pc = new DesktopPc(\"Custom Rig\", \"Intel Z790\", 850)`. Call `pc.boot()`.",
+      "solutionCode": "class Motherboard {\n    private String chipset;\n    public Motherboard(String chipset) {\n        this.chipset = chipset;\n    }\n    public String getChipset() { return chipset; }\n}\n\nclass PowerSupply {\n    private int wattage;\n    public PowerSupply(int wattage) {\n        this.wattage = wattage;\n    }\n    public int getWattage() { return wattage; }\n}\n\nclass DesktopPc {\n    private String brand;\n    private Motherboard motherboard;\n    private PowerSupply psu;\n\n    public DesktopPc(String brand, String chipset, int psuWattage) {\n        this.brand = brand;\n        this.motherboard = new Motherboard(chipset);\n        this.psu = new PowerSupply(psuWattage);\n    }\n\n    public void boot() {\n        System.out.println(\"[PC: \" + brand + \"] Booting motherboard (\" + motherboard.getChipset() + \") powered by \" + psu.getWattage() + \"W PSU\");\n    }\n}\n\npublic class PcApp {\n    public static void main(String[] args) {\n        DesktopPc pc = new DesktopPc(\"Custom Rig\", \"Intel Z790\", 850);\n        pc.boot();\n    }\n}",
+      "expectedOutput": "[PC: Custom Rig] Booting motherboard (Intel Z790) powered by 850W PSU",
+      "hints": [
+        "DesktopPc constructor instantiates Motherboard and PowerSupply internally using new.",
+        "Clients do not instantiate Motherboard or PowerSupply directly."
+      ]
+    },
+    {
+      "id": "prob-les5-p3",
+      "lessonId": "java-oop-mod8-les5",
+      "orderIndex": 3,
+      "title": "Document and Pages Composition with Word Counter",
+      "difficulty": "medium",
+      "problemStatement": "Build a document page hierarchy using strict composition from scratch:\n1. Class `DocumentPage`: holds `private int pageNum` and `private String textContent`. Constructor accepts `int pageNum, String textContent`. Method `public int getWordCount()`: splits textContent by `'\\\\s+'` and returns length (if empty string returns 0). Method `public String getSnippet()` returns `'Page ' + pageNum + ' (' + getWordCount() + ' words)'`.\n2. Class `Document`: holds `private String title` and `private java.util.List<DocumentPage> pages = new java.util.ArrayList<>()`.\n   - Constructor initializes title.\n   - Method `public void addPage(String content)`: instantiates a new page internally with `pages.size() + 1` as pageNum.\n   - Method `public void printDocumentStats()`: prints `'Document: ' + title + ' [' + pages.size() + ' pages]'`. Then prints each page snippet indented with `' > ' + snippet`. Then prints `'Total Words: ' + totalWords`.\n3. In `Main`, create document 'OOP Design Manual'. Add page 'Inheritance is powerful but easily misused'. Add page 'Favor object composition over class inheritance'. Call `printDocumentStats()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass DocumentPage {\n    private int pageNum;\n    private String textContent;\n\n    public DocumentPage(int pageNum, String textContent) {\n        this.pageNum = pageNum;\n        this.textContent = textContent;\n    }\n\n    public int getWordCount() {\n        if (textContent == null || textContent.trim().isEmpty()) return 0;\n        return textContent.trim().split(\"\\\\s+\").length;\n    }\n\n    public String getSnippet() {\n        return \"Page \" + pageNum + \" (\" + getWordCount() + \" words)\";\n    }\n}\n\nclass Document {\n    private String title;\n    private List<DocumentPage> pages = new ArrayList<>();\n\n    public Document(String title) {\n        this.title = title;\n    }\n\n    public void addPage(String content) {\n        pages.add(new DocumentPage(pages.size() + 1, content));\n    }\n\n    public void printDocumentStats() {\n        System.out.println(\"Document: \" + title + \" [\" + pages.size() + \" pages]\");\n        int totalWords = 0;\n        for (DocumentPage p : pages) {\n            System.out.println(\" > \" + p.getSnippet());\n            totalWords += p.getWordCount();\n        }\n        System.out.println(\"Total Words: \" + totalWords);\n    }\n}\n\npublic class DocApp {\n    public static void main(String[] args) {\n        Document doc = new Document(\"OOP Design Manual\");\n        doc.addPage(\"Inheritance is powerful but easily misused\");\n        doc.addPage(\"Favor object composition over class inheritance\");\n        doc.printDocumentStats();\n    }\n}",
+      "expectedOutput": "Document: OOP Design Manual [2 pages]\n > Page 1 (6 words)\n > Page 2 (6 words)\nTotal Words: 12",
+      "hints": [
+        "Document creates DocumentPage instances internally in addPage.",
+        "Split by \"\\\\s+\" counts words separated by spaces."
+      ]
+    },
+    {
+      "id": "prob-les5-p4",
+      "lessonId": "java-oop-mod8-les5",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Leaking Internal Composed Heart Reference",
+      "difficulty": "medium",
+      "problemStatement": "A developer wrote a `Robot` class that composes a `RobotBattery`. However, the developer wrote `public RobotBattery getBattery() { return this.battery; }`, allowing an external caller to directly drain and tamper with the battery from outside! Fix `Robot` to encapsulate the battery properly: remove `getBattery()`, provide a delegated `public void charge(int amount)` and `public int getChargeLevel()` method instead.",
+      "starterCode": "class RobotBattery {\n    private int charge = 100;\n    public void addCharge(int amt) { charge = Math.min(100, charge + amt); }\n    public int getCharge() { return charge; }\n}\n\nclass Robot {\n    private String serialNumber;\n    private RobotBattery battery = new RobotBattery(); // Composed\n\n    public Robot(String serialNumber) {\n        this.serialNumber = serialNumber;\n    }\n\n    // BUG: Leaking private composed component reference!\n    public RobotBattery getBattery() {\n        return battery;\n    }\n}\n\npublic class EncapsulationBugApp {\n    public static void main(String[] args) {\n        Robot bot = new Robot(\"BOT-X1\");\n        // Instead of leaking getBattery(), bot should have charge() and getChargeLevel()\n        bot.charge(10);\n        System.out.println(\"Robot [\" + bot.getSerialNumber() + \"] Battery: \" + bot.getChargeLevel() + \"%\");\n    }\n}",
+      "initialCode": "class RobotBattery {\n    private int charge = 100;\n    public void addCharge(int amt) { charge = Math.min(100, charge + amt); }\n    public int getCharge() { return charge; }\n}\n\nclass Robot {\n    private String serialNumber;\n    private RobotBattery battery = new RobotBattery(); // Composed\n\n    public Robot(String serialNumber) {\n        this.serialNumber = serialNumber;\n    }\n\n    // BUG: Leaking private composed component reference!\n    public RobotBattery getBattery() {\n        return battery;\n    }\n}\n\npublic class EncapsulationBugApp {\n    public static void main(String[] args) {\n        Robot bot = new Robot(\"BOT-X1\");\n        // Instead of leaking getBattery(), bot should have charge() and getChargeLevel()\n        bot.charge(10);\n        System.out.println(\"Robot [\" + bot.getSerialNumber() + \"] Battery: \" + bot.getChargeLevel() + \"%\");\n    }\n}",
+      "solutionCode": "class RobotBattery {\n    private int charge = 100;\n    public void addCharge(int amt) { charge = Math.min(100, charge + amt); }\n    public int getCharge() { return charge; }\n}\n\nclass Robot {\n    private String serialNumber;\n    private RobotBattery battery = new RobotBattery(); // Composed\n\n    public Robot(String serialNumber) {\n        this.serialNumber = serialNumber;\n    }\n\n    public String getSerialNumber() {\n        return serialNumber;\n    }\n\n    public void charge(int amt) {\n        battery.addCharge(amt);\n    }\n\n    public int getChargeLevel() {\n        return battery.getCharge();\n    }\n}\n\npublic class EncapsulationBugApp {\n    public static void main(String[] args) {\n        Robot bot = new Robot(\"BOT-X1\");\n        bot.charge(10);\n        System.out.println(\"Robot [\" + bot.getSerialNumber() + \"] Battery: \" + bot.getChargeLevel() + \"%\");\n    }\n}",
+      "expectedOutput": "Robot [BOT-X1] Battery: 100%",
+      "hints": [
+        "Remove getBattery() from Robot.",
+        "Add getSerialNumber(), charge(int amt), and getChargeLevel() delegation methods on Robot."
+      ]
+    },
+    {
+      "id": "prob-les5-p5",
+      "lessonId": "java-oop-mod8-les5",
+      "orderIndex": 5,
+      "title": "Cascading Database Transaction Unit-of-Work",
+      "difficulty": "hard",
+      "problemStatement": "Build a transactional database unit-of-work with cascading composition from scratch:\n1. Class `TransactionLog`: holds `private java.util.List<String> entries = new java.util.ArrayList<>()`. Method `public void record(String action)` adds action to entries. Method `public void flush()` prints `'Flushing ' + entries.size() + ' audit log entries'` and clears entries.\n2. Class `ConnectionPool`: holds `private int activeConnections`. Method `public void open()`: activeConnections = 3; prints `'Opened 3 DB connections'`. Method `public void closeAll()`: activeConnections = 0; prints `'Closed all DB connections'`.\n3. Class `DatabaseTransactionManager`: composes `TransactionLog` and `ConnectionPool` directly (instantiated in constructor). Also holds `private String txId`.\n   - Constructor initializes txId, creates new TransactionLog and ConnectionPool.\n   - Method `public void begin()`: prints `'=== Transaction ' + txId + ' BEGIN ==='` and calls connectionPool.open().\n   - Method `public void executeOp(String op)` calls transactionLog.record(op).\n   - Method `public void commit()`: prints `'Committing transaction ' + txId`. Calls transactionLog.flush(). Calls connectionPool.closeAll(). Prints `'=== Transaction ' + txId + ' END ==='`.\n4. In `Main`, create manager 'TX-770'. Call `begin()`. Execute ops 'INSERT User (Alice)' and 'UPDATE Balance (Alice, 500)'. Call `commit()`.",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass TransactionLog {\n    private List<String> entries = new ArrayList<>();\n    public void record(String action) {\n        entries.add(action);\n    }\n    public void flush() {\n        System.out.println(\"Flushing \" + entries.size() + \" audit log entries\");\n        entries.clear();\n    }\n}\n\nclass ConnectionPool {\n    private int activeConnections;\n    public void open() {\n        activeConnections = 3;\n        System.out.println(\"Opened 3 DB connections\");\n    }\n    public void closeAll() {\n        activeConnections = 0;\n        System.out.println(\"Closed all DB connections\");\n    }\n}\n\nclass DatabaseTransactionManager {\n    private String txId;\n    private TransactionLog log;\n    private ConnectionPool pool;\n\n    public DatabaseTransactionManager(String txId) {\n        this.txId = txId;\n        this.log = new TransactionLog();\n        this.pool = new ConnectionPool();\n    }\n\n    public void begin() {\n        System.out.println(\"=== Transaction \" + txId + \" BEGIN ===\");\n        pool.open();\n    }\n\n    public void executeOp(String op) {\n        log.record(op);\n    }\n\n    public void commit() {\n        System.out.println(\"Committing transaction \" + txId);\n        log.flush();\n        pool.closeAll();\n        System.out.println(\"=== Transaction \" + txId + \" END ===\");\n    }\n}\n\npublic class TxApp {\n    public static void main(String[] args) {\n        DatabaseTransactionManager tm = new DatabaseTransactionManager(\"TX-770\");\n        tm.begin();\n        tm.executeOp(\"INSERT User (Alice)\");\n        tm.executeOp(\"UPDATE Balance (Alice, 500)\");\n        tm.commit();\n    }\n}",
+      "expectedOutput": "=== Transaction TX-770 BEGIN ===\nOpened 3 DB connections\nCommitting transaction TX-770\nFlushing 2 audit log entries\nClosed all DB connections\n=== Transaction TX-770 END ===",
+      "hints": [
+        "DatabaseTransactionManager instantiates both TransactionLog and ConnectionPool internally.",
+        "commit() cascades to log.flush() and pool.closeAll() in sequence."
+      ]
+    }
+  ]
+}

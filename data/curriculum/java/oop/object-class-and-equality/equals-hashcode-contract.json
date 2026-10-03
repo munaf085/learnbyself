@@ -1,0 +1,513 @@
+{
+  "id": "java-oop-mod9-les7",
+  "slug": "equals-hashcode-contract",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "equals() / hashCode() Contract",
+  "summary": "Master the golden rule of Java collections: if a.equals(b) is true, then a.hashCode() MUST equal b.hashCode().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "hashcode-method"
+  ],
+  "learningObjectives": [
+    "State the official 3-part contract between equals() and hashCode() in java.lang.Object",
+    "Demonstrate how breaking the contract causes HashSet and HashMap to 'lose' objects",
+    "Identify the asymmetric converse: equal hash codes do NOT require equal objects (collisions)",
+    "Enforce invariant consistency when modifying or extending classes"
+  ],
+  "expectedOutcomes": [
+    "You can explain the catastrophic collection failures that occur when equals is overridden without hashCode",
+    "You will never ship code that violates the equals/hashCode contract"
+  ],
+  "activities": [
+    {
+      "id": "act-les7-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Coat Check Room Disaster",
+      "concept": "The equals/hashCode Contract",
+      "realWorldMetaphor": {
+        "scenario": "You go to a theatre coat check. When you hand the attendant your blue wool coat, they calculate a ticket number (hashCode) based on your seat number and hang your coat in Locker 42. Later, when you return to claim your coat, a different attendant calculates your ticket number using your coat's color instead, assigning ticket number 88. The attendant walks over to Locker 88, opens it, and says: 'Sorry, your coat isn't here! It has vanished!'",
+        "mapping": "Your coat was in Locker 42 the entire time. But because the hashing algorithm was inconsistent with identity/equals, the system looked in the wrong bucket. In Java, if two equal objects produce different hash codes, `HashSet.contains()` walks to the wrong bucket and claims the object does not exist!",
+        "takeaway": "If two objects are equal according to equals(), they MUST produce the exact same hashCode()."
+      }
+    },
+    {
+      "id": "act-les7-concept",
+      "type": "concept",
+      "title": "The Formal Contract Stated in java.lang.Object",
+      "content": "### The 3 Clauses of the Contract\n\n1. **Consistency**: Whenever invoked on the same object more than once during an execution, `hashCode()` must consistently return the same integer, provided no information used in `equals()` comparisons is modified.\n2. **The Golden Rule**: If two objects are **equal** according to `equals(Object)`, then calling `hashCode()` on each of the two objects **MUST produce the same integer result**.\n   > `a.equals(b) == true`  ===>  `a.hashCode() == b.hashCode()`\n3. **The Converse is NOT Required**: If two objects are **unequal** according to `equals(Object)`, it is **NOT** required that calling `hashCode()` produce distinct integers (though distinct integers improve hash table performance).\n\n### The Consequence of Breaking Clause 2\nIf you override `equals()` to compare fields, but DO NOT override `hashCode()`:\n- Two objects with identical fields have `a.equals(b) == true`.\n- But they inherit default `Object.hashCode()`, which derives from memory address, so `a.hashCode() != b.hashCode()`.\n- You put `a` into a `HashSet` (lands in bucket X).\n- You check `set.contains(b)`: it computes `b.hashCode()`, looks in bucket Y, finds nothing, and returns `false`!\n- **Your object is now a ghost inside the collection!**"
+    },
+    {
+      "id": "act-les7-cw1",
+      "type": "code_walkthrough",
+      "title": "Catastrophic Failure: The Ghost Object in HashSet",
+      "codeSnippet": "import java.util.HashSet;\nimport java.util.Set;\n\nclass BrokenItem {\n    private String sku;\n    public BrokenItem(String sku) { this.sku = sku; }\n\n    // Overrode equals()...\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return sku.equals(((BrokenItem) obj).sku);\n    }\n    // ...BUT FORGOT TO OVERRIDE hashCode()! Disastrous contract violation!\n}\n\npublic class ContractBreakerDemo {\n    public static void main(String[] args) {\n        Set<BrokenItem> warehouse = new HashSet<>();\n        BrokenItem item1 = new BrokenItem(\"SKU-400\");\n        warehouse.add(item1);\n\n        BrokenItem item2 = new BrokenItem(\"SKU-400\");\n        \n        // Logically equal:\n        System.out.println(\"item1.equals(item2): \" + item1.equals(item2)); // true!\n        \n        // But HashSet cannot find it!\n        boolean found = warehouse.contains(item2);\n        System.out.println(\"warehouse.contains(item2): \" + found); // FALSE! GHOST OBJECT!\n    }\n}",
+      "code": "import java.util.HashSet;\nimport java.util.Set;\n\nclass BrokenItem {\n    private String sku;\n    public BrokenItem(String sku) { this.sku = sku; }\n\n    // Overrode equals()...\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return sku.equals(((BrokenItem) obj).sku);\n    }\n    // ...BUT FORGOT TO OVERRIDE hashCode()! Disastrous contract violation!\n}\n\npublic class ContractBreakerDemo {\n    public static void main(String[] args) {\n        Set<BrokenItem> warehouse = new HashSet<>();\n        BrokenItem item1 = new BrokenItem(\"SKU-400\");\n        warehouse.add(item1);\n\n        BrokenItem item2 = new BrokenItem(\"SKU-400\");\n        \n        // Logically equal:\n        System.out.println(\"item1.equals(item2): \" + item1.equals(item2)); // true!\n        \n        // But HashSet cannot find it!\n        boolean found = warehouse.contains(item2);\n        System.out.println(\"warehouse.contains(item2): \" + found); // FALSE! GHOST OBJECT!\n    }\n}",
+      "language": "java",
+      "explanation": "Because hashCode() was omitted, item1 and item2 produce different memory-based hashes. HashSet looks in the wrong bucket and returns false.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`BrokenItem` overrides `equals()` but relies on default `Object.hashCode()`."
+        },
+        {
+          "step": 2,
+          "description": "`warehouse.add(item1)` places `item1` into bucket based on `item1.hashCode()`."
+        },
+        {
+          "step": 3,
+          "description": "`item2` has a different default hash code from `item1`."
+        },
+        {
+          "step": 4,
+          "description": "`warehouse.contains(item2)` computes `item2.hashCode()`, searches a different bucket, and returns `false`."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-cw2",
+      "type": "code_walkthrough",
+      "title": "Contract Restored: Flawless HashSet Lookup",
+      "codeSnippet": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass FixedItem {\n    private String sku;\n    public FixedItem(String sku) { this.sku = sku; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return Objects.equals(sku, ((FixedItem) obj).sku);\n    }\n\n    // Contract upheld: equal objects produce equal hash codes\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n}\n\npublic class ContractFixedDemo {\n    public static void main(String[] args) {\n        Set<FixedItem> warehouse = new HashSet<>();\n        warehouse.add(new FixedItem(\"SKU-400\"));\n\n        FixedItem searchTarget = new FixedItem(\"SKU-400\");\n        \n        // HashSet looks in the exact right bucket!\n        System.out.println(\"warehouse.contains(searchTarget): \" + warehouse.contains(searchTarget)); // true!\n    }\n}",
+      "code": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass FixedItem {\n    private String sku;\n    public FixedItem(String sku) { this.sku = sku; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return Objects.equals(sku, ((FixedItem) obj).sku);\n    }\n\n    // Contract upheld: equal objects produce equal hash codes\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n}\n\npublic class ContractFixedDemo {\n    public static void main(String[] args) {\n        Set<FixedItem> warehouse = new HashSet<>();\n        warehouse.add(new FixedItem(\"SKU-400\"));\n\n        FixedItem searchTarget = new FixedItem(\"SKU-400\");\n        \n        // HashSet looks in the exact right bucket!\n        System.out.println(\"warehouse.contains(searchTarget): \" + warehouse.contains(searchTarget)); // true!\n    }\n}",
+      "language": "java",
+      "explanation": "Overriding both equals() and hashCode() guarantees that matching items calculate the exact same bucket index.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`FixedItem` overrides both `equals` and `hashCode` based on `sku`."
+        },
+        {
+          "step": 2,
+          "description": "`new FixedItem(\"SKU-400\")` produces the exact same hash code as `searchTarget`."
+        },
+        {
+          "step": 3,
+          "description": "`warehouse.contains` navigates straight to the correct bucket."
+        },
+        {
+          "step": 4,
+          "description": "Inside that bucket, `equals()` confirms the match and returns `true`."
+        }
+      ]
+    },
+    {
+      "id": "act-les7-mcq",
+      "type": "mcq",
+      "title": "equals() / hashCode() Contract Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Which statement correctly represents the golden contract between equals() and hashCode()?",
+          "options": [
+            "If a.equals(b) is true, then a.hashCode() == b.hashCode() MUST be true",
+            "If a.hashCode() == b.hashCode(), then a.equals(b) MUST be true",
+            "If a.equals(b) is false, then a.hashCode() must not equal b.hashCode()",
+            "hashCode() must return positive numbers only"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The contract strictly states that equal objects must have equal hash codes.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q2",
+          "question": "What happens if a class overrides equals() but fails to override hashCode()?",
+          "options": [
+            "The compiler rejects the class",
+            "Instances of the class will fail to work properly in hash-based collections (HashSet, HashMap)",
+            "The JVM crashes with a ClassFormatError",
+            "Memory leaks occur immediately"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Omitting hashCode causes equal objects to hash to different buckets, making HashSet/HashMap lookups fail.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "If two objects have the same hashCode(), are they guaranteed to be equal according to equals()?",
+          "options": [
+            "Yes, always",
+            "No, two unequal objects may produce the same hash code due to a hash collision",
+            "Only if both are strings",
+            "Only if the hash code is prime"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Hash collisions mean distinct objects can share the same hash code; they are not required to be equal.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "What happens when you add an object to a HashSet, mutate one of its fields that is used in hashCode(), and then call set.contains(obj)?",
+          "options": [
+            "It returns true",
+            "It returns false because the mutated hash code points to a different bucket",
+            "The set automatically updates its buckets",
+            "An ConcurrentModificationException is thrown"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Mutating a key after insertion changes its hash code, so subsequent searches look in the wrong bucket and fail.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "Why are keys in a HashMap or elements in a HashSet strongly recommended to be IMMUTABLE?",
+          "options": [
+            "To prevent changes to equals/hashCode fields that would make the object unretrievable from the collection",
+            "Because Java forbids mutable classes in packages",
+            "To prevent multithreading",
+            "Because final classes run 50% faster"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Immutability guarantees that an object's hash code and equality never change while stored in a hash structure.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "If a class overrides neither equals() nor hashCode(), does it violate the contract?",
+          "options": [
+            "Yes, all classes must override both",
+            "No, default java.lang.Object implementations satisfy the contract based on memory address identity",
+            "Only if it is public",
+            "Only if it has fields"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Object's default implementations (identity equals and identity hashCode) satisfy the contract perfectly.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "In a HashMap, what role does hashCode() play vs equals()?",
+          "options": [
+            "hashCode() locates the bucket in O(1); equals() confirms the exact key match within that bucket",
+            "equals() finds the bucket; hashCode() confirms the key",
+            "They both do the exact same thing",
+            "hashCode() is only used for sorting"
+          ],
+          "correctAnswer": 0,
+          "explanation": "hashCode() is the quick bucket locator; equals() is the definitive content comparator.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q8",
+          "question": "What tool or feature in modern IDEs prevents equals/hashCode contract bugs?",
+          "options": [
+            "Code Generation wizards that generate both equals() and hashCode() simultaneously from selected fields",
+            "A special compiler plugin called AntiBug",
+            "Garbage collection logs",
+            "Auto-formatting code"
+          ],
+          "correctAnswer": 0,
+          "explanation": "IDEs (IntelliJ, Eclipse, VS Code) provide generators that generate paired, consistent equals and hashCode methods.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q9",
+          "question": "If you override hashCode(), are you required to override equals()?",
+          "options": [
+            "Technically no, but practically yes: changing hashCode without overriding equals leaves equals based on identity, which is almost always a design error",
+            "It is illegal in bytecode",
+            "Only if the class is abstract",
+            "No, never"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Overriding one without the other almost always signals a conceptual bug in domain modeling.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q10",
+          "question": "What is the consequence of adding an object to a HashSet twice if equals/hashCode are properly implemented?",
+          "options": [
+            "The set contains two copies",
+            "The second addition is rejected, keeping size at 1 (no duplicates)",
+            "An exception is thrown",
+            "The first copy is deleted"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A Set forbids duplicates; properly implemented equals and hashCode allow the set to detect and reject the duplicate.",
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-les7-interview",
+      "type": "interview_qa",
+      "title": "equals() / hashCode() Contract Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the single most common interview question on the equals/hashCode contract?",
+          "answer": "'What happens if you override equals() without overriding hashCode()?' The candidate must explain: Equal objects will produce different hash codes (derived from memory address). When added to a HashSet or HashMap, the object will be placed in one bucket, but searching for an identical object will compute a different hash and look in a different bucket, returning false. The object becomes an unfindable ghost.",
+          "expectedAnswer": "'What happens if you override equals() without overriding hashCode()?' The candidate must explain: Equal objects will produce different hash codes (derived from memory address). When added to a HashSet or HashMap, the object will be placed in one bucket, but searching for an identical object will compute a different hash and look in a different bucket, returning false. The object becomes an unfindable ghost.",
+          "keyTakeaway": "Omission of hashCode breaks hash collections: equal objects end up in different buckets.",
+          "keyPoints": [
+            "Omission of hashCode breaks hash collections: equal objects end up in different buckets."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Can you explain why the converse statement is false: 'If hashCode is the same, equals must be true'?",
+          "answer": "A hash code is a 32-bit int with only ~4.3 billion possible values. There are infinite possible distinct strings or objects. By the Pigeonhole Principle, two completely different objects (e.g. \"FB\" and \"Ea\") can produce the exact same integer hash code (3136). This is a collision, and `equals()` will correctly return `false`.",
+          "expectedAnswer": "A hash code is a 32-bit int with only ~4.3 billion possible values. There are infinite possible distinct strings or objects. By the Pigeonhole Principle, two completely different objects (e.g. \"FB\" and \"Ea\") can produce the exact same integer hash code (3136). This is a collision, and `equals()` will correctly return `false`.",
+          "keyTakeaway": "Collisions are mathematically inevitable; equal hashes do not imply equal objects.",
+          "keyPoints": [
+            "Collisions are mathematically inevitable; equal hashes do not imply equal objects."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What happens if a mutable field used in hashCode() is changed while the object is a key in a HashMap?",
+          "answer": "The object's hash code changes, but its position in the internal array table remains at the old bucket index. When `map.get(key)` is called, it recomputes the new hash code, navigates to the new (wrong) bucket, and fails to find the entry. The key-value pair is permanently leaked and cannot even be removed.",
+          "expectedAnswer": "The object's hash code changes, but its position in the internal array table remains at the old bucket index. When `map.get(key)` is called, it recomputes the new hash code, navigates to the new (wrong) bucket, and fails to find the entry. The key-value pair is permanently leaked and cannot even be removed.",
+          "keyTakeaway": "Mutating a key after insertion corrupts its bucket placement, causing permanent memory leaks.",
+          "keyPoints": [
+            "Mutating a key after insertion corrupts its bucket placement, causing permanent memory leaks."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do records in Java prevent equals/hashCode contract bugs?",
+          "answer": "Java records automatically generate paired, canonical implementations of `equals()` and `hashCode()` that inspect the exact same set of component fields. Because records are shallowly immutable, keys cannot be mutated after insertion into hash structures.",
+          "expectedAnswer": "Java records automatically generate paired, canonical implementations of `equals()` and `hashCode()` that inspect the exact same set of component fields. Because records are shallowly immutable, keys cannot be mutated after insertion into hash structures.",
+          "keyTakeaway": "Records automate contract compliance and guarantee immutability.",
+          "keyPoints": [
+            "Records automate contract compliance and guarantee immutability."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What happens if equals() compares 3 fields, but hashCode() only hashes 2 of them?",
+          "answer": "This does NOT violate the contract! If all 3 fields are equal, then the 2 hashed fields must also be equal, so `hashCode()` will still return equal results. However, it can increase hash collisions if many objects differ only on that third unhashed field.",
+          "expectedAnswer": "This does NOT violate the contract! If all 3 fields are equal, then the 2 hashed fields must also be equal, so `hashCode()` will still return equal results. However, it can increase hash collisions if many objects differ only on that third unhashed field.",
+          "keyTakeaway": "Omitting a field from hashCode does not break the contract, but increases collision rates.",
+          "keyPoints": [
+            "Omitting a field from hashCode does not break the contract, but increases collision rates."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What happens if hashCode() hashes 3 fields, but equals() only compares 2 of them?",
+          "answer": "This IS A FATAL CONTRACT VIOLATION! Two objects could be equal according to `equals()` (because the 2 compared fields match), but produce DIFFERENT hash codes (because the third uncompared field differed). This will break hash tables!",
+          "expectedAnswer": "This IS A FATAL CONTRACT VIOLATION! Two objects could be equal according to `equals()` (because the 2 compared fields match), but produce DIFFERENT hash codes (because the third uncompared field differed). This will break hash tables!",
+          "keyTakeaway": "Never include a field in hashCode that is ignored by equals().",
+          "keyPoints": [
+            "Never include a field in hashCode that is ignored by equals()."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "What is the single most common interview question on the equals/hashCode contract?",
+          "answer": "'What happens if you override equals() without overriding hashCode()?' The candidate must explain: Equal objects will produce different hash codes (derived from memory address). When added to a HashSet or HashMap, the object will be placed in one bucket, but searching for an identical object will compute a different hash and look in a different bucket, returning false. The object becomes an unfindable ghost.",
+          "expectedAnswer": "'What happens if you override equals() without overriding hashCode()?' The candidate must explain: Equal objects will produce different hash codes (derived from memory address). When added to a HashSet or HashMap, the object will be placed in one bucket, but searching for an identical object will compute a different hash and look in a different bucket, returning false. The object becomes an unfindable ghost.",
+          "keyTakeaway": "Omission of hashCode breaks hash collections: equal objects end up in different buckets.",
+          "keyPoints": [
+            "Omission of hashCode breaks hash collections: equal objects end up in different buckets."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Can you explain why the converse statement is false: 'If hashCode is the same, equals must be true'?",
+          "answer": "A hash code is a 32-bit int with only ~4.3 billion possible values. There are infinite possible distinct strings or objects. By the Pigeonhole Principle, two completely different objects (e.g. \"FB\" and \"Ea\") can produce the exact same integer hash code (3136). This is a collision, and `equals()` will correctly return `false`.",
+          "expectedAnswer": "A hash code is a 32-bit int with only ~4.3 billion possible values. There are infinite possible distinct strings or objects. By the Pigeonhole Principle, two completely different objects (e.g. \"FB\" and \"Ea\") can produce the exact same integer hash code (3136). This is a collision, and `equals()` will correctly return `false`.",
+          "keyTakeaway": "Collisions are mathematically inevitable; equal hashes do not imply equal objects.",
+          "keyPoints": [
+            "Collisions are mathematically inevitable; equal hashes do not imply equal objects."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What happens if a mutable field used in hashCode() is changed while the object is a key in a HashMap?",
+          "answer": "The object's hash code changes, but its position in the internal array table remains at the old bucket index. When `map.get(key)` is called, it recomputes the new hash code, navigates to the new (wrong) bucket, and fails to find the entry. The key-value pair is permanently leaked and cannot even be removed.",
+          "expectedAnswer": "The object's hash code changes, but its position in the internal array table remains at the old bucket index. When `map.get(key)` is called, it recomputes the new hash code, navigates to the new (wrong) bucket, and fails to find the entry. The key-value pair is permanently leaked and cannot even be removed.",
+          "keyTakeaway": "Mutating a key after insertion corrupts its bucket placement, causing permanent memory leaks.",
+          "keyPoints": [
+            "Mutating a key after insertion corrupts its bucket placement, causing permanent memory leaks."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "How do records in Java prevent equals/hashCode contract bugs?",
+          "answer": "Java records automatically generate paired, canonical implementations of `equals()` and `hashCode()` that inspect the exact same set of component fields. Because records are shallowly immutable, keys cannot be mutated after insertion into hash structures.",
+          "expectedAnswer": "Java records automatically generate paired, canonical implementations of `equals()` and `hashCode()` that inspect the exact same set of component fields. Because records are shallowly immutable, keys cannot be mutated after insertion into hash structures.",
+          "keyTakeaway": "Records automate contract compliance and guarantee immutability.",
+          "keyPoints": [
+            "Records automate contract compliance and guarantee immutability."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What happens if equals() compares 3 fields, but hashCode() only hashes 2 of them?",
+          "answer": "This does NOT violate the contract! If all 3 fields are equal, then the 2 hashed fields must also be equal, so `hashCode()` will still return equal results. However, it can increase hash collisions if many objects differ only on that third unhashed field.",
+          "expectedAnswer": "This does NOT violate the contract! If all 3 fields are equal, then the 2 hashed fields must also be equal, so `hashCode()` will still return equal results. However, it can increase hash collisions if many objects differ only on that third unhashed field.",
+          "keyTakeaway": "Omitting a field from hashCode does not break the contract, but increases collision rates.",
+          "keyPoints": [
+            "Omitting a field from hashCode does not break the contract, but increases collision rates."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "What happens if hashCode() hashes 3 fields, but equals() only compares 2 of them?",
+          "answer": "This IS A FATAL CONTRACT VIOLATION! Two objects could be equal according to `equals()` (because the 2 compared fields match), but produce DIFFERENT hash codes (because the third uncompared field differed). This will break hash tables!",
+          "expectedAnswer": "This IS A FATAL CONTRACT VIOLATION! Two objects could be equal according to `equals()` (because the 2 compared fields match), but produce DIFFERENT hash codes (because the third uncompared field differed). This will break hash tables!",
+          "keyTakeaway": "Never include a field in hashCode that is ignored by equals().",
+          "keyPoints": [
+            "Never include a field in hashCode that is ignored by equals()."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les7-checklist",
+      "type": "self_evaluation",
+      "title": "equals() / hashCode() Contract Checklist",
+      "items": [
+        "I memorize: If a.equals(b) is true, then a.hashCode() == b.hashCode() MUST be true.",
+        "I never override equals() without also overriding hashCode().",
+        "I never override hashCode() without also overriding equals().",
+        "I ensure hashCode() only includes fields that are compared in equals().",
+        "I never mutate an object after inserting it as a key in a HashMap or HashSet.",
+        "I make domain entities used as hash keys immutable.",
+        "I know why 'FB' and 'Ea' have the same hashCode (hash collision).",
+        "I know how HashMap coordinates bucket index jumping with equals() confirmation.",
+        "I verify that HashSet.contains() works as expected in unit tests.",
+        "I leverage Java records or IDE generators to guarantee contract pairing."
+      ],
+      "checklist": [
+        "I memorize: If a.equals(b) is true, then a.hashCode() == b.hashCode() MUST be true.",
+        "I never override equals() without also overriding hashCode().",
+        "I never override hashCode() without also overriding equals().",
+        "I ensure hashCode() only includes fields that are compared in equals().",
+        "I never mutate an object after inserting it as a key in a HashMap or HashSet.",
+        "I make domain entities used as hash keys immutable.",
+        "I know why 'FB' and 'Ea' have the same hashCode (hash collision).",
+        "I know how HashMap coordinates bucket index jumping with equals() confirmation.",
+        "I verify that HashSet.contains() works as expected in unit tests.",
+        "I leverage Java records or IDE generators to guarantee contract pairing."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les7-p1",
+      "lessonId": "java-oop-mod9-les7",
+      "orderIndex": 1,
+      "title": "Fixing the Broken HashSet Item Lookup",
+      "difficulty": "easy",
+      "problemStatement": "The `InventoryBadge` class below overrides `equals` but forgot `hashCode`, so `badgeSet.contains(target)` returns `false`! Fix `InventoryBadge` by adding the `@Override public int hashCode()` method using `java.util.Objects.hash(badgeCode)` so the set successfully finds the item.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass InventoryBadge {\n    private String badgeCode;\n    public InventoryBadge(String code) { this.badgeCode = code; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return Objects.equals(badgeCode, ((InventoryBadge) obj).badgeCode);\n    }\n    \n    // TODO: Add missing hashCode() method to uphold contract!\n}\n\npublic class BadgeApp {\n    public static void main(String[] args) {\n        Set<InventoryBadge> badgeSet = new HashSet<>();\n        badgeSet.add(new InventoryBadge(\"BDG-991\"));\n\n        InventoryBadge target = new InventoryBadge(\"BDG-991\");\n        System.out.println(\"Badge found: \" + badgeSet.contains(target));\n    }\n}",
+      "initialCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass InventoryBadge {\n    private String badgeCode;\n    public InventoryBadge(String code) { this.badgeCode = code; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return Objects.equals(badgeCode, ((InventoryBadge) obj).badgeCode);\n    }\n    \n    // TODO: Add missing hashCode() method to uphold contract!\n}\n\npublic class BadgeApp {\n    public static void main(String[] args) {\n        Set<InventoryBadge> badgeSet = new HashSet<>();\n        badgeSet.add(new InventoryBadge(\"BDG-991\"));\n\n        InventoryBadge target = new InventoryBadge(\"BDG-991\");\n        System.out.println(\"Badge found: \" + badgeSet.contains(target));\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass InventoryBadge {\n    private String badgeCode;\n    public InventoryBadge(String code) { this.badgeCode = code; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return Objects.equals(badgeCode, ((InventoryBadge) obj).badgeCode);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(badgeCode);\n    }\n}\n\npublic class BadgeApp {\n    public static void main(String[] args) {\n        Set<InventoryBadge> badgeSet = new HashSet<>();\n        badgeSet.add(new InventoryBadge(\"BDG-991\"));\n\n        InventoryBadge target = new InventoryBadge(\"BDG-991\");\n        System.out.println(\"Badge found: \" + badgeSet.contains(target));\n    }\n}",
+      "expectedOutput": "Badge found: true",
+      "hints": [
+        "Add `@Override public int hashCode() { return Objects.hash(badgeCode); }`.",
+        "Once hashCode matches, badgeSet finds the badge."
+      ]
+    },
+    {
+      "id": "prob-les7-p2",
+      "lessonId": "java-oop-mod9-les7",
+      "orderIndex": 2,
+      "title": "Pair of Objects Contract Validator",
+      "difficulty": "medium",
+      "problemStatement": "Build an automated contract compliance tester from scratch:\n1. Class `ContractValidator`: method `public static boolean verifyContract(Object a, Object b)`:\n   - Evaluates `boolean eq = a.equals(b);`.\n   - Evaluates `boolean hashEq = (a.hashCode() == b.hashCode());`.\n   - If `eq` is true and `hashEq` is false: prints `'VIOLATION: Objects are equal, but hashCodes differ!'` and returns false.\n   - Otherwise, prints `'COMPLIANT: Contract satisfied'` and returns true.\n2. In `Main`, create class `GoodEntity(int id)` with paired equals and hashCode. Create `BadEntity(int id)` with equals only.\n3. Test `verifyContract` on two GoodEntity(10) instances (prints COMPLIANT).\n4. Test `verifyContract` on two BadEntity(10) instances (prints VIOLATION).",
+      "solutionCode": "import java.util.Objects;\n\nclass GoodEntity {\n    private int id;\n    public GoodEntity(int id) { this.id = id; }\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (o == null || getClass() != o.getClass()) return false;\n        return id == ((GoodEntity) o).id;\n    }\n    @Override\n    public int hashCode() { return Objects.hash(id); }\n}\n\nclass BadEntity {\n    private int id;\n    public BadEntity(int id) { this.id = id; }\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (o == null || getClass() != o.getClass()) return false;\n        return id == ((BadEntity) o).id;\n    }\n    // Omits hashCode!\n}\n\nclass ContractValidator {\n    public static boolean verifyContract(Object a, Object b) {\n        boolean eq = a.equals(b);\n        boolean hashEq = (a.hashCode() == b.hashCode());\n        if (eq && !hashEq) {\n            System.out.println(\"VIOLATION: Objects are equal, but hashCodes differ!\");\n            return false;\n        } else {\n            System.out.println(\"COMPLIANT: Contract satisfied\");\n            return true;\n        }\n    }\n}\n\npublic class ValidatorApp {\n    public static void main(String[] args) {\n        ContractValidator.verifyContract(new GoodEntity(10), new GoodEntity(10));\n        ContractValidator.verifyContract(new BadEntity(10), new BadEntity(10));\n    }\n}",
+      "expectedOutput": "COMPLIANT: Contract satisfied\nVIOLATION: Objects are equal, but hashCodes differ!",
+      "hints": [
+        "Check `if (eq && !hashEq)` to detect the golden rule violation."
+      ]
+    },
+    {
+      "id": "prob-les7-p3",
+      "lessonId": "java-oop-mod9-les7",
+      "orderIndex": 3,
+      "title": "Eliminating Duplicate Registrations with HashSet",
+      "difficulty": "medium",
+      "problemStatement": "Build a unique member registry that prevents duplicate registrations using `HashSet` from scratch:\n1. Class `VipMember`: holds `private String nationalId` and `private String fullName`.\n   - Constructor initializes both.\n   - Implement paired `equals` and `hashCode` based SOLELY on `nationalId` (since nationalId is the unique identifier).\n2. Class `MemberRegistry`: holds `private java.util.Set<VipMember> members = new java.util.HashSet<>()`.\n   - Method `public boolean register(VipMember m)`: returns `members.add(m)`.\n   - Method `public int totalCount()`: returns `members.size()`.\n3. In `Main`, register VipMember('NID-100', 'Alice Cooper') (returns true). Register VipMember('NID-100', 'Alice C.') (returns false because national ID is duplicate!). Register VipMember('NID-200', 'Bob Dylan') (returns true). Print total count (2).",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\nclass VipMember {\n    private String nationalId;\n    private String fullName;\n\n    public VipMember(String nationalId, String fullName) {\n        this.nationalId = nationalId;\n        this.fullName = fullName;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        VipMember other = (VipMember) obj;\n        return Objects.equals(nationalId, other.nationalId);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(nationalId);\n    }\n}\n\nclass MemberRegistry {\n    private Set<VipMember> members = new HashSet<>();\n\n    public boolean register(VipMember m) {\n        return members.add(m);\n    }\n\n    public int totalCount() {\n        return members.size();\n    }\n}\n\npublic class RegistryApp {\n    public static void main(String[] args) {\n        MemberRegistry reg = new MemberRegistry();\n        System.out.println(\"Registered Alice: \" + reg.register(new VipMember(\"NID-100\", \"Alice Cooper\")));\n        System.out.println(\"Registered Dup:   \" + reg.register(new VipMember(\"NID-100\", \"Alice C.\")));\n        System.out.println(\"Registered Bob:   \" + reg.register(new VipMember(\"NID-200\", \"Bob Dylan\")));\n        System.out.println(\"Total count:      \" + reg.totalCount());\n    }\n}",
+      "expectedOutput": "Registered Alice: true\nRegistered Dup:   false\nRegistered Bob:   true\nTotal count:      2",
+      "hints": [
+        "HashSet.add() returns false when an equal element (matching equals and hashCode) already exists in the set."
+      ]
+    },
+    {
+      "id": "prob-les7-p4",
+      "lessonId": "java-oop-mod9-les7",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Contract Violation Caused by Field Mismatch",
+      "difficulty": "medium",
+      "problemStatement": "In the code below, `equals()` checks `firstName` AND `lastName`, but `hashCode()` hashes `firstName` ONLY. As a result, two people with the same first name but different last names share the same hash, but even worse, if a developer refactors to only compare `firstName`, the code behaves unpredictably. Fix `PersonKey` so that `equals()` and `hashCode()` use the EXACT same fields: `firstName` AND `lastName`.",
+      "starterCode": "import java.util.Objects;\n\nclass PersonKey {\n    private String firstName;\n    private String lastName;\n\n    public PersonKey(String first, String last) {\n        this.firstName = first;\n        this.lastName = last;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        PersonKey other = (PersonKey) obj;\n        return Objects.equals(firstName, other.firstName) &&\n               Objects.equals(lastName, other.lastName);\n    }\n\n    // BUG: Omits lastName from hashCode! Violates field alignment\n    @Override\n    public int hashCode() {\n        return Objects.hash(firstName);\n    }\n}\n\npublic class FieldMismatchBugApp {\n    public static void main(String[] args) {\n        PersonKey p1 = new PersonKey(\"John\", \"Smith\");\n        PersonKey p2 = new PersonKey(\"John\", \"Smith\");\n        \n        System.out.println(\"p1.equals(p2): \" + p1.equals(p2));\n        System.out.println(\"Hashes match: \" + (p1.hashCode() == p2.hashCode()));\n    }\n}",
+      "initialCode": "import java.util.Objects;\n\nclass PersonKey {\n    private String firstName;\n    private String lastName;\n\n    public PersonKey(String first, String last) {\n        this.firstName = first;\n        this.lastName = last;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        PersonKey other = (PersonKey) obj;\n        return Objects.equals(firstName, other.firstName) &&\n               Objects.equals(lastName, other.lastName);\n    }\n\n    // BUG: Omits lastName from hashCode! Violates field alignment\n    @Override\n    public int hashCode() {\n        return Objects.hash(firstName);\n    }\n}\n\npublic class FieldMismatchBugApp {\n    public static void main(String[] args) {\n        PersonKey p1 = new PersonKey(\"John\", \"Smith\");\n        PersonKey p2 = new PersonKey(\"John\", \"Smith\");\n        \n        System.out.println(\"p1.equals(p2): \" + p1.equals(p2));\n        System.out.println(\"Hashes match: \" + (p1.hashCode() == p2.hashCode()));\n    }\n}",
+      "solutionCode": "import java.util.Objects;\n\nclass PersonKey {\n    private String firstName;\n    private String lastName;\n\n    public PersonKey(String first, String last) {\n        this.firstName = first;\n        this.lastName = last;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        PersonKey other = (PersonKey) obj;\n        return Objects.equals(firstName, other.firstName) &&\n               Objects.equals(lastName, other.lastName);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(firstName, lastName);\n    }\n}\n\npublic class FieldMismatchBugApp {\n    public static void main(String[] args) {\n        PersonKey p1 = new PersonKey(\"John\", \"Smith\");\n        PersonKey p2 = new PersonKey(\"John\", \"Smith\");\n        \n        System.out.println(\"p1.equals(p2): \" + p1.equals(p2));\n        System.out.println(\"Hashes match: \" + (p1.hashCode() == p2.hashCode()));\n    }\n}",
+      "expectedOutput": "p1.equals(p2): true\nHashes match: true",
+      "hints": [
+        "Change `Objects.hash(firstName)` to `Objects.hash(firstName, lastName)`."
+      ]
+    },
+    {
+      "id": "prob-les7-p5",
+      "lessonId": "java-oop-mod9-les7",
+      "orderIndex": 5,
+      "title": "Mutable Key Corruption Post-Mortem Simulator",
+      "difficulty": "hard",
+      "problemStatement": "Build a simulation demonstrating the danger of mutating a key stored in a HashMap from scratch:\n1. Class `MutableAccount`: holds `private String accountId`. Constructor initializes it. Method `public void setAccountId(String newId)` mutates accountId.\n   - Override `equals(Object o)` comparing accountId.\n   - Override `hashCode()` returning `Objects.hash(accountId)`.\n2. In `Main`:\n   - Create `java.util.HashMap<MutableAccount, String> accountMap = new HashMap<>()`.\n   - Create account = new MutableAccount(\"ORIGINAL-ID\");\n   - Put account into map with value \"Active Account Profile\".\n   - Verify `accountMap.containsKey(account)` is true.\n   - Now MUTATE the key: `account.setAccountId(\"MUTATED-ID\");`\n   - Check `accountMap.containsKey(account)`: print `'Contains mutated key: ' + accountMap.containsKey(account)` (prints false!).\n   - Print `'Map size: ' + accountMap.size()` (prints 1, proving the entry is trapped in the wrong bucket!).",
+      "solutionCode": "import java.util.HashMap;\nimport java.util.Map;\nimport java.util.Objects;\n\nclass MutableAccount {\n    private String accountId;\n    public MutableAccount(String accountId) {\n        this.accountId = accountId;\n    }\n    public void setAccountId(String newId) {\n        this.accountId = newId;\n    }\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        MutableAccount other = (MutableAccount) obj;\n        return Objects.equals(accountId, other.accountId);\n    }\n    @Override\n    public int hashCode() {\n        return Objects.hash(accountId);\n    }\n}\n\npublic class MutableKeyApp {\n    public static void main(String[] args) {\n        Map<MutableAccount, String> accountMap = new HashMap<>();\n        MutableAccount acc = new MutableAccount(\"ORIGINAL-ID\");\n        accountMap.put(acc, \"Active Account Profile\");\n        \n        acc.setAccountId(\"MUTATED-ID\");\n        \n        System.out.println(\"Contains mutated key: \" + accountMap.containsKey(acc));\n        System.out.println(\"Map size: \" + accountMap.size());\n    }\n}",
+      "expectedOutput": "Contains mutated key: false\nMap size: 1",
+      "hints": [
+        "Mutating accountId changes the hash code returned by acc.hashCode().",
+        "containsKey searches the bucket for MUTATED-ID, but the entry sits in the bucket for ORIGINAL-ID!"
+      ]
+    }
+  ]
+}

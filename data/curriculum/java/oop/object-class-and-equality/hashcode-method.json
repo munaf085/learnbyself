@@ -1,0 +1,516 @@
+{
+  "id": "java-oop-mod9-les6",
+  "slug": "hashcode-method",
+  "sectionSlug": "oop",
+  "moduleSlug": "object-class-and-equality",
+  "languageSlug": "java",
+  "title": "hashCode()",
+  "summary": "Master the hashCode() method: how integer hash codes power O(1) hash tables (HashMap, HashSet), the 31 prime multiplier, and Objects.hash().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "equals-method"
+  ],
+  "learningObjectives": [
+    "Explain how hash codes map arbitrary objects to 32-bit integer bucket indices",
+    "Trace how HashMap and HashSet use hashCode() to achieve average O(1) lookups",
+    "Implement custom hashCode() algorithms using the prime 31 multiplier technique",
+    "Use java.util.Objects.hash(...) for clean, idiomatic hashing across multiple fields"
+  ],
+  "expectedOutcomes": [
+    "You can implement efficient, well-distributed hashCode() methods that avoid clustering",
+    "You understand the mathematical necessity of the prime number 31 in hash computation"
+  ],
+  "activities": [
+    {
+      "id": "act-les6-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Alphabetical Post Office Mailboxes",
+      "concept": "Hashing and Bucket Indexing",
+      "realWorldMetaphor": {
+        "scenario": "Imagine a post office with 100,000 residents. If all incoming mail were thrown into a single colossal pile on the floor, finding a letter for 'Zoe Washington' would require inspecting up to 100,000 letters one by one (O(N) search). Instead, the post office installs 26 sorted wall cubbies labeled A through Z. When a letter arrives, the postal clerk looks at the first letter of the last name: 'W'. They walk straight to bucket 'W' (O(1) bucket jump) and search only the few dozen letters inside that specific bin.",
+        "mapping": "In Java, `hashCode()` is the function that determines which bucket an object belongs to. `HashMap` uses `hashCode()` to jump directly to the target bucket, then uses `.equals()` to find the exact matching item among any items sharing that bucket.",
+        "takeaway": "`hashCode()` is a fast preliminary filter that narrows down the search space to a single bucket in O(1) time."
+      }
+    },
+    {
+      "id": "act-les6-concept",
+      "type": "concept",
+      "title": "The Mechanics of Hashing and the Magic Prime 31",
+      "content": "### What is a Hash Code?\nA hash code is a single 32-bit signed `int` produced by a mathematical algorithm that condenses an object's state into a numeric summary.\n\n### How HashMap Uses hashCode()\nWhen you call `map.get(key)`:\n1. It computes `int h = key.hashCode()`.\n2. It maps the hash code to a bucket index: `int bucket = (h & 0x7FFFFFFF) % table.length`.\n3. It jumps directly to that bucket array index (O(1) speed!).\n4. If multiple keys landed in that same bucket (a **hash collision**), it iterates through the bucket's linked list/tree calling `key.equals(candidate)` to find the exact match.\n\n### Why the Multiplier 31?\nJoshua Bloch's classic hash formula uses the prime number 31:\n```java\nint result = 17;\nresult = 31 * result + field1;\nresult = 31 * result + (field2 != null ? field2.hashCode() : 0);\n```\nWhy 31?\n1. **Prime Multiplier**: Primes minimize collision clustering when hashing structured data.\n2. **Hardware Optimization**: Modern JVMs automatically optimize `31 * i` into a bit-shift and subtraction: `(i << 5) - i`, which executes in a single CPU cycle!\n\n### Modern Java: Objects.hash()\nIn Java 7+, you can write:\n```java\n@Override\npublic int hashCode() {\n    return Objects.hash(id, name, email);\n}\n```"
+    },
+    {
+      "id": "act-les6-cw1",
+      "type": "code_walkthrough",
+      "title": "Custom 31-Multiplier Hashing vs Objects.hash()",
+      "codeSnippet": "import java.util.Objects;\n\nclass Coordinate {\n    private int x;\n    private int y;\n\n    public Coordinate(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    // Classic Joshua Bloch 31 recipe\n    public int computeClassicHash() {\n        int result = 17;\n        result = 31 * result + x;\n        result = 31 * result + y;\n        return result;\n    }\n\n    // Modern idiomatic approach\n    @Override\n    public int hashCode() {\n        return Objects.hash(x, y);\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Coordinate other = (Coordinate) obj;\n        return x == other.x && y == other.y;\n    }\n}\n\npublic class HashCodeDemo {\n    public static void main(String[] args) {\n        Coordinate c1 = new Coordinate(15, 30);\n        Coordinate c2 = new Coordinate(15, 30);\n\n        System.out.println(\"c1.hashCode(): \" + c1.hashCode());\n        System.out.println(\"c2.hashCode(): \" + c2.hashCode());\n        System.out.println(\"Hashes match:  \" + (c1.hashCode() == c2.hashCode()));\n    }\n}",
+      "code": "import java.util.Objects;\n\nclass Coordinate {\n    private int x;\n    private int y;\n\n    public Coordinate(int x, int y) {\n        this.x = x;\n        this.y = y;\n    }\n\n    // Classic Joshua Bloch 31 recipe\n    public int computeClassicHash() {\n        int result = 17;\n        result = 31 * result + x;\n        result = 31 * result + y;\n        return result;\n    }\n\n    // Modern idiomatic approach\n    @Override\n    public int hashCode() {\n        return Objects.hash(x, y);\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Coordinate other = (Coordinate) obj;\n        return x == other.x && y == other.y;\n    }\n}\n\npublic class HashCodeDemo {\n    public static void main(String[] args) {\n        Coordinate c1 = new Coordinate(15, 30);\n        Coordinate c2 = new Coordinate(15, 30);\n\n        System.out.println(\"c1.hashCode(): \" + c1.hashCode());\n        System.out.println(\"c2.hashCode(): \" + c2.hashCode());\n        System.out.println(\"Hashes match:  \" + (c1.hashCode() == c2.hashCode()));\n    }\n}",
+      "language": "java",
+      "explanation": "Because c1 and c2 have matching fields, their hash codes are identical, allowing hash sets to recognize them as matching candidates.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Coordinate` holds `x` and `y` integer fields."
+        },
+        {
+          "step": 2,
+          "description": "`computeClassicHash` demonstrates the prime 31 accumulation recipe."
+        },
+        {
+          "step": 3,
+          "description": "`Objects.hash(x, y)` provides the standard, concise implementation."
+        },
+        {
+          "step": 4,
+          "description": "`c1.hashCode() == c2.hashCode()` evaluates to `true`."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-cw2",
+      "type": "code_walkthrough",
+      "title": "Simulating a Hash Bucket Collision",
+      "codeSnippet": "import java.util.HashMap;\nimport java.util.Map;\n\n// Intentionally poor hash code: forces all objects into the same bucket\nclass CollisionProneKey {\n    private String keyName;\n    public CollisionProneKey(String name) { this.keyName = name; }\n\n    @Override\n    public int hashCode() {\n        return 42; // Constant hash! Every instance collides into bucket 42!\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return keyName.equals(((CollisionProneKey) obj).keyName);\n    }\n}\n\npublic class CollisionDemo {\n    public static void main(String[] args) {\n        Map<CollisionProneKey, String> map = new HashMap<>();\n        CollisionProneKey k1 = new CollisionProneKey(\"Alpha\");\n        CollisionProneKey k2 = new CollisionProneKey(\"Beta\");\n\n        map.put(k1, \"First Value\");\n        map.put(k2, \"Second Value\");\n\n        // Both live in the same bucket, but equals() differentiates them!\n        System.out.println(\"Retrieved k1: \" + map.get(k1));\n        System.out.println(\"Retrieved k2: \" + map.get(k2));\n        System.out.println(\"Map size: \" + map.size());\n    }\n}",
+      "code": "import java.util.HashMap;\nimport java.util.Map;\n\n// Intentionally poor hash code: forces all objects into the same bucket\nclass CollisionProneKey {\n    private String keyName;\n    public CollisionProneKey(String name) { this.keyName = name; }\n\n    @Override\n    public int hashCode() {\n        return 42; // Constant hash! Every instance collides into bucket 42!\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        return keyName.equals(((CollisionProneKey) obj).keyName);\n    }\n}\n\npublic class CollisionDemo {\n    public static void main(String[] args) {\n        Map<CollisionProneKey, String> map = new HashMap<>();\n        CollisionProneKey k1 = new CollisionProneKey(\"Alpha\");\n        CollisionProneKey k2 = new CollisionProneKey(\"Beta\");\n\n        map.put(k1, \"First Value\");\n        map.put(k2, \"Second Value\");\n\n        // Both live in the same bucket, but equals() differentiates them!\n        System.out.println(\"Retrieved k1: \" + map.get(k1));\n        System.out.println(\"Retrieved k2: \" + map.get(k2));\n        System.out.println(\"Map size: \" + map.size());\n    }\n}",
+      "language": "java",
+      "explanation": "Demonstrates that even if two keys produce the exact same hashCode (a collision), HashMap still functions correctly using equals(), but search performance degrades from O(1) to O(N).",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`CollisionProneKey` returns constant 42 from `hashCode()`."
+        },
+        {
+          "step": 2,
+          "description": "Both `k1` and `k2` are placed into the exact same bucket in the HashMap."
+        },
+        {
+          "step": 3,
+          "description": "`map.get(k1)` iterates through bucket 42 and calls `equals()`, successfully finding `k1`."
+        },
+        {
+          "step": 4,
+          "description": "While correct, degraded hashing turns an O(1) hash table into a slow O(N) linked list."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-mcq",
+      "type": "mcq",
+      "title": "hashCode() Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the return type of the hashCode() method in Java?",
+          "options": [
+            "long",
+            "int",
+            "String",
+            "byte[]"
+          ],
+          "correctAnswer": 1,
+          "explanation": "hashCode() returns a 32-bit signed integer (`int`).",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "What is the average time complexity of retrieving a value from a HashMap with a well-distributed hashCode()?",
+          "options": [
+            "O(1)",
+            "O(log N)",
+            "O(N)",
+            "O(N^2)"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A good hash distribution maps entries evenly across buckets, providing O(1) average lookup time.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q3",
+          "question": "What happens if every single object returns the constant integer 1 from its hashCode() method?",
+          "options": [
+            "The program crashes with a HashOverflowException",
+            "The HashMap still functions logically using equals(), but lookups degrade from O(1) to O(N) due to collisions",
+            "All entries overwrite each other",
+            "The map cannot store more than 1 entry"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Constant hashCode collapses all entries into a single bucket. The map functions via equals(), but lookups become O(N).",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "Why is the prime number 31 traditionally chosen in Java hashCode implementations?",
+          "options": [
+            "It is a prime that distributes bits well and modern JVMs optimize 31 * i to (i << 5) - i",
+            "Because 31 is the maximum number of fields in a class",
+            "Because Java was created on the 31st of October",
+            "It was mandated by the ANSI C standard"
+          ],
+          "correctAnswer": 0,
+          "explanation": "31 minimizes collision clustering and enables the JIT compiler to replace multiplication with a fast shift-and-subtract.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "What helper method from java.util.Objects calculates a combined hash code for multiple fields?",
+          "options": [
+            "Objects.hash(f1, f2, ...)",
+            "Objects.calculateHash(f1, f2)",
+            "Objects.hashAll(f1, f2)",
+            "Objects.digest(f1, f2)"
+          ],
+          "correctAnswer": 0,
+          "explanation": "java.util.Objects.hash(Object... values) is the standard utility for generating combined hash codes.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q6",
+          "question": "Can two completely distinct and unequal objects have the exact same hashCode()?",
+          "options": [
+            "No, hash codes must be strictly unique for every object",
+            "Yes, this is known as a hash collision and is mathematically inevitable due to the Pigeonhole Principle",
+            "Only if both objects are null",
+            "Only in Java 8"
+          ],
+          "correctAnswer": 1,
+          "explanation": "There are only 2^32 possible int values. Uncountably infinite distinct objects must inevitably collide on the same hash.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "How should an array field be incorporated into an object's hashCode()?",
+          "options": [
+            "array.hashCode()",
+            "java.util.Arrays.hashCode(array)",
+            "array.length",
+            "Objects.hash(array)"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Arrays do not override hashCode(). You must call Arrays.hashCode(array) to hash based on array contents.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q8",
+          "question": "If you don't override hashCode() in your class, what is the default implementation?",
+          "options": [
+            "Returns 0",
+            "Returns the length of the class name",
+            "Returns the default identity hash code from java.lang.Object",
+            "Throws an exception"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Default Object.hashCode() derives an integer from the object's internal memory identity.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q9",
+          "question": "What is the performance overhead of using Objects.hash(f1, f2) compared to manual calculation?",
+          "options": [
+            "Zero overhead",
+            "Minor overhead due to varargs array allocation and primitive autoboxing",
+            "It is 1000x slower",
+            "It triggers full GC"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Objects.hash creates a small temporary varargs Object[] and autoboxes primitives, which is negligible except in extreme performance hotspots.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "In Java 8+, what data structure does HashMap convert long bucket collision chains into when a bucket exceeds 8 elements?",
+          "options": [
+            "A Red-Black Tree (TreeMap node), improving worst-case search from O(N) to O(log N)",
+            "An ArrayList",
+            "A LinkedList",
+            "A static array"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Java 8+ treeifies collision buckets into Red-Black balanced trees once they exceed 8 elements, guaranteeing O(log N) worst-case lookup.",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les6-interview",
+      "type": "interview_qa",
+      "title": "hashCode() Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Can you walk through what happens internally inside HashMap.put(key, value)?",
+          "answer": "1. It evaluates `key.hashCode()`. 2. It applies a bit-spreading scrambler `(h ^ (h >>> 16))` to prevent poor lower-bit distributions. 3. It calculates bucket index `(n - 1) & hash`. 4. If the bucket is empty, it inserts a new Node. 5. If occupied, it traverses the bucket: if an existing key has matching hash AND `(existingKey == key || key.equals(existingKey))`, it updates the value. Otherwise, it appends a new node (converting to Red-Black tree if bucket size exceeds 8). 6. If table load factor (0.75) is exceeded, it doubles the table capacity and rehashes.",
+          "expectedAnswer": "1. It evaluates `key.hashCode()`. 2. It applies a bit-spreading scrambler `(h ^ (h >>> 16))` to prevent poor lower-bit distributions. 3. It calculates bucket index `(n - 1) & hash`. 4. If the bucket is empty, it inserts a new Node. 5. If occupied, it traverses the bucket: if an existing key has matching hash AND `(existingKey == key || key.equals(existingKey))`, it updates the value. Otherwise, it appends a new node (converting to Red-Black tree if bucket size exceeds 8). 6. If table load factor (0.75) is exceeded, it doubles the table capacity and rehashes.",
+          "keyTakeaway": "HashMap hashes the key, finds the bucket index, verifies with == and equals(), and rehashes when load factor is exceeded.",
+          "keyPoints": [
+            "HashMap hashes the key, finds the bucket index, verifies with == and equals(), and rehashes when load factor is exceeded."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why must every field used in equals() also be used in hashCode()?",
+          "answer": "If a field is used in `equals()` but omitted from `hashCode()`, two objects with matching fields might be considered equal by `equals()`, but could end up with different hash codes if another field differs. This violates the golden contract: equal objects MUST have equal hash codes!",
+          "expectedAnswer": "If a field is used in `equals()` but omitted from `hashCode()`, two objects with matching fields might be considered equal by `equals()`, but could end up with different hash codes if another field differs. This violates the golden contract: equal objects MUST have equal hash codes!",
+          "keyTakeaway": "Every field that influences equals() MUST be included in hashCode().",
+          "keyPoints": [
+            "Every field that influences equals() MUST be included in hashCode()."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Is it permissible to exclude fields from hashCode() that ARE in equals()?",
+          "answer": "NO! You must NEVER exclude an equals-significant field from hashCode. However, it is permissible to exclude fields from both (like cached transient fields or non-significant timestamps).",
+          "expectedAnswer": "NO! You must NEVER exclude an equals-significant field from hashCode. However, it is permissible to exclude fields from both (like cached transient fields or non-significant timestamps).",
+          "keyTakeaway": "Equals and hashCode must examine the exact same set of significant fields.",
+          "keyPoints": [
+            "Equals and hashCode must examine the exact same set of significant fields."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Can a class cache its hashCode for high-performance immutable objects?",
+          "answer": "Yes! For immutable objects (like `java.lang.String`), the hash code can be computed once on first use and stored in a private `hash` field. Subsequent calls return the cached integer immediately, achieving zero-cost hashing.",
+          "expectedAnswer": "Yes! For immutable objects (like `java.lang.String`), the hash code can be computed once on first use and stored in a private `hash` field. Subsequent calls return the cached integer immediately, achieving zero-cost hashing.",
+          "keyTakeaway": "Immutable objects can lazily compute and cache their hash code for peak performance.",
+          "keyPoints": [
+            "Immutable objects can lazily compute and cache their hash code for peak performance."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the HashDOS vulnerability and how did Java 8 fix it?",
+          "answer": "Attackers can craft thousands of malicious keys that all produce the exact same hashCode, causing massive bucket collisions and degrading server response times from O(1) to O(N^2) (denial of service). Java 8 fixed this by converting collision buckets into balanced Red-Black trees (O(log N)) when bucket depth exceeds 8.",
+          "expectedAnswer": "Attackers can craft thousands of malicious keys that all produce the exact same hashCode, causing massive bucket collisions and degrading server response times from O(1) to O(N^2) (denial of service). Java 8 fixed this by converting collision buckets into balanced Red-Black trees (O(log N)) when bucket depth exceeds 8.",
+          "keyTakeaway": "Treeification in Java 8 protects HashMaps against HashDOS collision attacks.",
+          "keyPoints": [
+            "Treeification in Java 8 protects HashMaps against HashDOS collision attacks."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How do you hash primitive boolean, float, and double types manually in Java?",
+          "answer": "For `boolean`, use `(b ? 1231 : 1237)`. For `float`, use `Float.floatToIntBits(f)`. For `double`, use `Double.doubleToLongBits(d)`, then fold the 64-bit long into 32-bit int: `(int)(bits ^ (bits >>> 32))`.",
+          "expectedAnswer": "For `boolean`, use `(b ? 1231 : 1237)`. For `float`, use `Float.floatToIntBits(f)`. For `double`, use `Double.doubleToLongBits(d)`, then fold the 64-bit long into 32-bit int: `(int)(bits ^ (bits >>> 32))`.",
+          "keyTakeaway": "Use Float.floatToIntBits and Double.doubleToLongBits to fold floating-point values into hash codes.",
+          "keyPoints": [
+            "Use Float.floatToIntBits and Double.doubleToLongBits to fold floating-point values into hash codes."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Can you walk through what happens internally inside HashMap.put(key, value)?",
+          "answer": "1. It evaluates `key.hashCode()`. 2. It applies a bit-spreading scrambler `(h ^ (h >>> 16))` to prevent poor lower-bit distributions. 3. It calculates bucket index `(n - 1) & hash`. 4. If the bucket is empty, it inserts a new Node. 5. If occupied, it traverses the bucket: if an existing key has matching hash AND `(existingKey == key || key.equals(existingKey))`, it updates the value. Otherwise, it appends a new node (converting to Red-Black tree if bucket size exceeds 8). 6. If table load factor (0.75) is exceeded, it doubles the table capacity and rehashes.",
+          "expectedAnswer": "1. It evaluates `key.hashCode()`. 2. It applies a bit-spreading scrambler `(h ^ (h >>> 16))` to prevent poor lower-bit distributions. 3. It calculates bucket index `(n - 1) & hash`. 4. If the bucket is empty, it inserts a new Node. 5. If occupied, it traverses the bucket: if an existing key has matching hash AND `(existingKey == key || key.equals(existingKey))`, it updates the value. Otherwise, it appends a new node (converting to Red-Black tree if bucket size exceeds 8). 6. If table load factor (0.75) is exceeded, it doubles the table capacity and rehashes.",
+          "keyTakeaway": "HashMap hashes the key, finds the bucket index, verifies with == and equals(), and rehashes when load factor is exceeded.",
+          "keyPoints": [
+            "HashMap hashes the key, finds the bucket index, verifies with == and equals(), and rehashes when load factor is exceeded."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why must every field used in equals() also be used in hashCode()?",
+          "answer": "If a field is used in `equals()` but omitted from `hashCode()`, two objects with matching fields might be considered equal by `equals()`, but could end up with different hash codes if another field differs. This violates the golden contract: equal objects MUST have equal hash codes!",
+          "expectedAnswer": "If a field is used in `equals()` but omitted from `hashCode()`, two objects with matching fields might be considered equal by `equals()`, but could end up with different hash codes if another field differs. This violates the golden contract: equal objects MUST have equal hash codes!",
+          "keyTakeaway": "Every field that influences equals() MUST be included in hashCode().",
+          "keyPoints": [
+            "Every field that influences equals() MUST be included in hashCode()."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Is it permissible to exclude fields from hashCode() that ARE in equals()?",
+          "answer": "NO! You must NEVER exclude an equals-significant field from hashCode. However, it is permissible to exclude fields from both (like cached transient fields or non-significant timestamps).",
+          "expectedAnswer": "NO! You must NEVER exclude an equals-significant field from hashCode. However, it is permissible to exclude fields from both (like cached transient fields or non-significant timestamps).",
+          "keyTakeaway": "Equals and hashCode must examine the exact same set of significant fields.",
+          "keyPoints": [
+            "Equals and hashCode must examine the exact same set of significant fields."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "Can a class cache its hashCode for high-performance immutable objects?",
+          "answer": "Yes! For immutable objects (like `java.lang.String`), the hash code can be computed once on first use and stored in a private `hash` field. Subsequent calls return the cached integer immediately, achieving zero-cost hashing.",
+          "expectedAnswer": "Yes! For immutable objects (like `java.lang.String`), the hash code can be computed once on first use and stored in a private `hash` field. Subsequent calls return the cached integer immediately, achieving zero-cost hashing.",
+          "keyTakeaway": "Immutable objects can lazily compute and cache their hash code for peak performance.",
+          "keyPoints": [
+            "Immutable objects can lazily compute and cache their hash code for peak performance."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the HashDOS vulnerability and how did Java 8 fix it?",
+          "answer": "Attackers can craft thousands of malicious keys that all produce the exact same hashCode, causing massive bucket collisions and degrading server response times from O(1) to O(N^2) (denial of service). Java 8 fixed this by converting collision buckets into balanced Red-Black trees (O(log N)) when bucket depth exceeds 8.",
+          "expectedAnswer": "Attackers can craft thousands of malicious keys that all produce the exact same hashCode, causing massive bucket collisions and degrading server response times from O(1) to O(N^2) (denial of service). Java 8 fixed this by converting collision buckets into balanced Red-Black trees (O(log N)) when bucket depth exceeds 8.",
+          "keyTakeaway": "Treeification in Java 8 protects HashMaps against HashDOS collision attacks.",
+          "keyPoints": [
+            "Treeification in Java 8 protects HashMaps against HashDOS collision attacks."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How do you hash primitive boolean, float, and double types manually in Java?",
+          "answer": "For `boolean`, use `(b ? 1231 : 1237)`. For `float`, use `Float.floatToIntBits(f)`. For `double`, use `Double.doubleToLongBits(d)`, then fold the 64-bit long into 32-bit int: `(int)(bits ^ (bits >>> 32))`.",
+          "expectedAnswer": "For `boolean`, use `(b ? 1231 : 1237)`. For `float`, use `Float.floatToIntBits(f)`. For `double`, use `Double.doubleToLongBits(d)`, then fold the 64-bit long into 32-bit int: `(int)(bits ^ (bits >>> 32))`.",
+          "keyTakeaway": "Use Float.floatToIntBits and Double.doubleToLongBits to fold floating-point values into hash codes.",
+          "keyPoints": [
+            "Use Float.floatToIntBits and Double.doubleToLongBits to fold floating-point values into hash codes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les6-checklist",
+      "type": "self_evaluation",
+      "title": "hashCode() Architecture Checklist",
+      "items": [
+        "I know that hashCode() returns a 32-bit signed integer (int).",
+        "I always use the exact same fields in hashCode() as in equals().",
+        "I use java.util.Objects.hash(...) for clean, idiomatic hashing.",
+        "I use Arrays.hashCode() when hashing array member fields.",
+        "I understand the prime multiplier 31 and its bit-shift optimization (i << 5) - i.",
+        "I know how HashMap maps hashCode to bucket indices via bitwise AND.",
+        "I understand that hash collisions are normal and handled via buckets and equals().",
+        "I know that Java 8+ treeifies collision buckets to Red-Black trees (O(log N)).",
+        "I consider lazy hash caching for heavy immutable objects.",
+        "I ensure hashCode() is consistent: it must return the same value across calls."
+      ],
+      "checklist": [
+        "I know that hashCode() returns a 32-bit signed integer (int).",
+        "I always use the exact same fields in hashCode() as in equals().",
+        "I use java.util.Objects.hash(...) for clean, idiomatic hashing.",
+        "I use Arrays.hashCode() when hashing array member fields.",
+        "I understand the prime multiplier 31 and its bit-shift optimization (i << 5) - i.",
+        "I know how HashMap maps hashCode to bucket indices via bitwise AND.",
+        "I understand that hash collisions are normal and handled via buckets and equals().",
+        "I know that Java 8+ treeifies collision buckets to Red-Black trees (O(log N)).",
+        "I consider lazy hash caching for heavy immutable objects.",
+        "I ensure hashCode() is consistent: it must return the same value across calls."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les6-p1",
+      "lessonId": "java-oop-mod9-les6",
+      "orderIndex": 1,
+      "title": "Stock Ticker hashCode() Implementation",
+      "difficulty": "easy",
+      "problemStatement": "Implement `hashCode()` in `StockTicker` using `java.util.Objects.hash(symbol, exchange)`. Also implement `equals(Object obj)`. Verify that two instances with the same symbol and exchange produce identical hash codes.",
+      "starterCode": "import java.util.Objects;\n\nclass StockTicker {\n    private String symbol;\n    private String exchange;\n\n    public StockTicker(String symbol, String exchange) {\n        this.symbol = symbol;\n        this.exchange = exchange;\n    }\n\n    // TODO: Override equals(Object obj)\n    \n    // TODO: Override hashCode() using Objects.hash(symbol, exchange)\n}\n\npublic class StockApp {\n    public static void main(String[] args) {\n        StockTicker t1 = new StockTicker(\"AAPL\", \"NASDAQ\");\n        StockTicker t2 = new StockTicker(\"AAPL\", \"NASDAQ\");\n\n        System.out.println(\"Equals: \" + t1.equals(t2));\n        System.out.println(\"Hashes match: \" + (t1.hashCode() == t2.hashCode()));\n    }\n}",
+      "initialCode": "import java.util.Objects;\n\nclass StockTicker {\n    private String symbol;\n    private String exchange;\n\n    public StockTicker(String symbol, String exchange) {\n        this.symbol = symbol;\n        this.exchange = exchange;\n    }\n\n    // TODO: Override equals(Object obj)\n    \n    // TODO: Override hashCode() using Objects.hash(symbol, exchange)\n}\n\npublic class StockApp {\n    public static void main(String[] args) {\n        StockTicker t1 = new StockTicker(\"AAPL\", \"NASDAQ\");\n        StockTicker t2 = new StockTicker(\"AAPL\", \"NASDAQ\");\n\n        System.out.println(\"Equals: \" + t1.equals(t2));\n        System.out.println(\"Hashes match: \" + (t1.hashCode() == t2.hashCode()));\n    }\n}",
+      "solutionCode": "import java.util.Objects;\n\nclass StockTicker {\n    private String symbol;\n    private String exchange;\n\n    public StockTicker(String symbol, String exchange) {\n        this.symbol = symbol;\n        this.exchange = exchange;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        StockTicker other = (StockTicker) obj;\n        return Objects.equals(symbol, other.symbol) &&\n               Objects.equals(exchange, other.exchange);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(symbol, exchange);\n    }\n}\n\npublic class StockApp {\n    public static void main(String[] args) {\n        StockTicker t1 = new StockTicker(\"AAPL\", \"NASDAQ\");\n        StockTicker t2 = new StockTicker(\"AAPL\", \"NASDAQ\");\n\n        System.out.println(\"Equals: \" + t1.equals(t2));\n        System.out.println(\"Hashes match: \" + (t1.hashCode() == t2.hashCode()));\n    }\n}",
+      "expectedOutput": "Equals: true\nHashes match: true",
+      "hints": [
+        "Implement equals using Objects.equals on symbol and exchange.",
+        "Return `Objects.hash(symbol, exchange)` from hashCode()."
+      ]
+    },
+    {
+      "id": "prob-les6-p2",
+      "lessonId": "java-oop-mod9-les6",
+      "orderIndex": 2,
+      "title": "Manual Prime 31 Hashing for GeoBoundingBox",
+      "difficulty": "medium",
+      "problemStatement": "Build a `GeoBoundingBox` class with a manual prime 31 hash implementation from scratch:\n1. Class `GeoBoundingBox`: holds `private int minLat`, `private int maxLat`, `private int minLon`, `private int maxLon`.\n   - Constructor initializes all four.\n   - Override `equals(Object obj)`: all four integers must match.\n   - Override `hashCode()` using the manual prime 31 recipe:\n     - `int result = 17;`\n     - `result = 31 * result + minLat;`\n     - `result = 31 * result + maxLat;`\n     - `result = 31 * result + minLon;`\n     - `result = 31 * result + maxLon;`\n     - `return result;`\n2. In `Main`, create box1 = new GeoBoundingBox(10, 20, 30, 40) and box2 = new GeoBoundingBox(10, 20, 30, 40).\n3. Print `'Equal: ' + box1.equals(box2)`.\n4. Print `'Hashes match: ' + (box1.hashCode() == box2.hashCode())`.",
+      "solutionCode": "class GeoBoundingBox {\n    private int minLat, maxLat, minLon, maxLon;\n\n    public GeoBoundingBox(int minLat, int maxLat, int minLon, int maxLon) {\n        this.minLat = minLat;\n        this.maxLat = maxLat;\n        this.minLon = minLon;\n        this.maxLon = maxLon;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        GeoBoundingBox other = (GeoBoundingBox) obj;\n        return minLat == other.minLat && maxLat == other.maxLat &&\n               minLon == other.minLon && maxLon == other.maxLon;\n    }\n\n    @Override\n    public int hashCode() {\n        int result = 17;\n        result = 31 * result + minLat;\n        result = 31 * result + maxLat;\n        result = 31 * result + minLon;\n        result = 31 * result + maxLon;\n        return result;\n    }\n}\n\npublic class BoundingBoxApp {\n    public static void main(String[] args) {\n        GeoBoundingBox b1 = new GeoBoundingBox(10, 20, 30, 40);\n        GeoBoundingBox b2 = new GeoBoundingBox(10, 20, 30, 40);\n        \n        System.out.println(\"Equal: \" + b1.equals(b2));\n        System.out.println(\"Hashes match: \" + (b1.hashCode() == b2.hashCode()));\n    }\n}",
+      "expectedOutput": "Equal: true\nHashes match: true",
+      "hints": [
+        "Accumulate hash into result using `result = 31 * result + field;`.",
+        "Verify both prints."
+      ]
+    },
+    {
+      "id": "prob-les6-p3",
+      "lessonId": "java-oop-mod9-les6",
+      "orderIndex": 3,
+      "title": "Lazy Caching of Hash Code for Immutable Token",
+      "difficulty": "medium",
+      "problemStatement": "Build an immutable security token with lazy hash caching from scratch:\n1. Class `CryptoToken`: holds `private final String rawHex` and `private int cachedHash = 0` (mutable cache field!).\n   - Constructor initializes `rawHex`.\n   - Override `equals(Object obj)`: matches if rawHex matches.\n   - Override `hashCode()` with lazy caching:\n     - If `cachedHash == 0`, compute `cachedHash = rawHex.hashCode();`.\n     - Return `cachedHash;`.\n   - Method `public boolean isHashCached()` returns `cachedHash != 0`.\n2. In `Main`, create token = new CryptoToken(\"9f8a3b2c\").\n3. Print `'Hash cached before call: ' + token.isHashCached()` (false).\n4. Call `token.hashCode()`.\n5. Print `'Hash cached after call: ' + token.isHashCached()` (true).",
+      "solutionCode": "import java.util.Objects;\n\nclass CryptoToken {\n    private final String rawHex;\n    private int cachedHash = 0;\n\n    public CryptoToken(String rawHex) {\n        this.rawHex = rawHex;\n    }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        CryptoToken other = (CryptoToken) obj;\n        return Objects.equals(rawHex, other.rawHex);\n    }\n\n    @Override\n    public int hashCode() {\n        if (cachedHash == 0) {\n            cachedHash = rawHex.hashCode();\n        }\n        return cachedHash;\n    }\n\n    public boolean isHashCached() {\n        return cachedHash != 0;\n    }\n}\n\npublic class TokenApp {\n    public static void main(String[] args) {\n        CryptoToken token = new CryptoToken(\"9f8a3b2c\");\n        System.out.println(\"Hash cached before call: \" + token.isHashCached());\n        token.hashCode();\n        System.out.println(\"Hash cached after call: \" + token.isHashCached());\n    }\n}",
+      "expectedOutput": "Hash cached before call: false\nHash cached after call: true",
+      "hints": [
+        "Check cachedHash == 0, compute on demand, and save to cachedHash.",
+        "Subsequent calls return cachedHash instantly without recalculation."
+      ]
+    },
+    {
+      "id": "prob-les6-p4",
+      "lessonId": "java-oop-mod9-les6",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Forgetting to Hash Array Contents",
+      "difficulty": "medium",
+      "problemStatement": "A developer wrote a `ByteSignature` class containing a `byte[] data` array. But in `hashCode()`, they wrote `return Objects.hash(data);`, which hashes the array's memory address pointer instead of its byte values! Fix `hashCode()` to use `java.util.Arrays.hashCode(data)` and `equals()` to use `java.util.Arrays.equals(data, other.data)`.",
+      "starterCode": "import java.util.Arrays;\nimport java.util.Objects;\n\nclass ByteSignature {\n    private byte[] data;\n    public ByteSignature(byte[] data) { this.data = data; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        ByteSignature other = (ByteSignature) obj;\n        // BUG: data.equals(other.data) checks memory identity!\n        return data.equals(other.data);\n    }\n\n    @Override\n    public int hashCode() {\n        // BUG: Objects.hash(data) hashes array address, not bytes!\n        return Objects.hash(data);\n    }\n}\n\npublic class ArrayHashBugApp {\n    public static void main(String[] args) {\n        ByteSignature s1 = new ByteSignature(new byte[]{1, 2, 3});\n        ByteSignature s2 = new ByteSignature(new byte[]{1, 2, 3});\n        \n        System.out.println(\"Equals: \" + s1.equals(s2));\n        System.out.println(\"Hashes match: \" + (s1.hashCode() == s2.hashCode()));\n    }\n}",
+      "initialCode": "import java.util.Arrays;\nimport java.util.Objects;\n\nclass ByteSignature {\n    private byte[] data;\n    public ByteSignature(byte[] data) { this.data = data; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        ByteSignature other = (ByteSignature) obj;\n        // BUG: data.equals(other.data) checks memory identity!\n        return data.equals(other.data);\n    }\n\n    @Override\n    public int hashCode() {\n        // BUG: Objects.hash(data) hashes array address, not bytes!\n        return Objects.hash(data);\n    }\n}\n\npublic class ArrayHashBugApp {\n    public static void main(String[] args) {\n        ByteSignature s1 = new ByteSignature(new byte[]{1, 2, 3});\n        ByteSignature s2 = new ByteSignature(new byte[]{1, 2, 3});\n        \n        System.out.println(\"Equals: \" + s1.equals(s2));\n        System.out.println(\"Hashes match: \" + (s1.hashCode() == s2.hashCode()));\n    }\n}",
+      "solutionCode": "import java.util.Arrays;\n\nclass ByteSignature {\n    private byte[] data;\n    public ByteSignature(byte[] data) { this.data = data; }\n\n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        ByteSignature other = (ByteSignature) obj;\n        return Arrays.equals(data, other.data);\n    }\n\n    @Override\n    public int hashCode() {\n        return Arrays.hashCode(data);\n    }\n}\n\npublic class ArrayHashBugApp {\n    public static void main(String[] args) {\n        ByteSignature s1 = new ByteSignature(new byte[]{1, 2, 3});\n        ByteSignature s2 = new ByteSignature(new byte[]{1, 2, 3});\n        \n        System.out.println(\"Equals: \" + s1.equals(s2));\n        System.out.println(\"Hashes match: \" + (s1.hashCode() == s2.hashCode()));\n    }\n}",
+      "expectedOutput": "Equals: true\nHashes match: true",
+      "hints": [
+        "Use Arrays.equals(data, other.data) in equals().",
+        "Use Arrays.hashCode(data) in hashCode()."
+      ]
+    },
+    {
+      "id": "prob-les6-p5",
+      "lessonId": "java-oop-mod9-les6",
+      "orderIndex": 5,
+      "title": "Hash Table Bucket Distribution Simulator",
+      "difficulty": "hard",
+      "problemStatement": "Simulate a hash bucket distribution engine from scratch:\n1. Class `SimpleBucketTable`:\n   - Holds `private int bucketCount` (e.g. 10).\n   - Holds `private int[] bucketSizes` initialized to size `bucketCount`.\n   - Constructor accepts `int bucketCount`.\n   - Method `public void insert(Object item)`:\n     - Computes index: `int idx = Math.abs(item.hashCode()) % bucketCount;`.\n     - Increments `bucketSizes[idx]++`.\n   - Method `public void printDistribution()`: prints `'=== Bucket Histogram ==='` and for each bucket `0` to `bucketCount - 1` prints `'Bucket ' + i + ': ' + bucketSizes[i] + ' items'`.\n2. In `Main`, create a table with 4 buckets. Insert 8 String items: 'Apple', 'Banana', 'Cherry', 'Date', 'Elderberry', 'Fig', 'Grape', 'Honeydew'. Call `printDistribution()`.",
+      "solutionCode": "class SimpleBucketTable {\n    private int bucketCount;\n    private int[] bucketSizes;\n\n    public SimpleBucketTable(int bucketCount) {\n        this.bucketCount = bucketCount;\n        this.bucketSizes = new int[bucketCount];\n    }\n\n    public void insert(Object item) {\n        int idx = Math.abs(item.hashCode()) % bucketCount;\n        bucketSizes[idx]++;\n    }\n\n    public void printDistribution() {\n        System.out.println(\"=== Bucket Histogram ===\");\n        for (int i = 0; i < bucketCount; i++) {\n            System.out.println(\"Bucket \" + i + \": \" + bucketSizes[i] + \" items\");\n        }\n    }\n}\n\npublic class HistogramApp {\n    public static void main(String[] args) {\n        SimpleBucketTable table = new SimpleBucketTable(4);\n        String[] fruits = {\"Apple\", \"Banana\", \"Cherry\", \"Date\", \"Elderberry\", \"Fig\", \"Grape\", \"Honeydew\"};\n        for (String f : fruits) {\n            table.insert(f);\n        }\n        table.printDistribution();\n    }\n}",
+      "expectedOutput": "=== Bucket Histogram ===\nBucket 0: 3 items\nBucket 1: 0 items\nBucket 2: 2 items\nBucket 3: 3 items",
+      "hints": [
+        "Calculate index as `Math.abs(item.hashCode()) % bucketCount`.",
+        "Verify the distribution counts for the standard JDK String hash codes."
+      ]
+    }
+  ]
+}

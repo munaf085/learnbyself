@@ -1,0 +1,517 @@
+{
+  "id": "java-oop-mod8-les6",
+  "slug": "composition-vs-inheritance",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Composition vs Inheritance",
+  "summary": "Deep dive into the 'Favor Composition over Inheritance' principle: the fragile base class problem, tight coupling risks, and wrapper patterns.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "has-a-vs-is-a",
+    "composition"
+  ],
+  "learningObjectives": [
+    "Explain the 'Fragile Base Class' problem and how superclass modifications break subclasses",
+    "Identify the Decorator / Wrapper pattern as a robust alternative to subclassing",
+    "Evaluate design trade-offs between white-box code reuse (inheritance) and black-box reuse (composition)",
+    "Refactor brittle inheritance hierarchies into flexible composed components"
+  ],
+  "expectedOutcomes": [
+    "You can defend architectural choices prioritizing composition in code reviews",
+    "You can wrap and enhance existing third-party classes safely using the Forwarding Wrapper pattern"
+  ],
+  "activities": [
+    {
+      "id": "act-les6-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Welded Super-Tool vs The Modular Toolbelt",
+      "concept": "Composition vs Inheritance Flexibility",
+      "realWorldMetaphor": {
+        "scenario": "Imagine a handyman welding a hammer, a screwdriver, a flashlight, and a drill together into one single giant steel device (Inheritance). If the flashlight bulb breaks, the entire contraption must be repaired. If you need a new laser guide, you have to weld another piece onto the monstrosity. Now compare that to a leather toolbelt (Composition). The belt holds modular pockets. If you want a flashlight, you slip it into a pouch. If a better laser flashlight comes out, you take the old one out and insert the new one instantly.",
+        "mapping": "Inheritance welds classes together with tight compile-time coupling. Composition provides a modular toolbelt where independent components can be swapped, upgraded, and isolated at will.",
+        "takeaway": "Favor modular composition over rigid monolithic inheritance hierarchies."
+      }
+    },
+    {
+      "id": "act-les6-concept",
+      "type": "concept",
+      "title": "The Fragile Base Class Problem & The Decorator Solution",
+      "content": "### The Fragile Base Class Problem\n\nInheritance breaks encapsulation because a subclass depends heavily on the implementation details of its superclass (white-box reuse). If the superclass author alters internal method dispatch, subclasses can fail catastrophically without any compiler errors.\n\n### The Classic Josh Bloch InstrumentedSet Flaw\nIn *Effective Java*, Joshua Bloch illustrates this vulnerability with a counting set:\n```java\n// ANTI-PATTERN: Extending HashSet\nclass BadCountedSet<E> extends HashSet<E> {\n    private int addCount = 0;\n    @Override public boolean add(E e) {\n        addCount++;\n        return super.add(e);\n    }\n    @Override public boolean addAll(Collection<? extends E> c) {\n        addCount += c.size();\n        return super.addAll(c); // HashSet.addAll() internally calls add()!\n    }\n}\n```\nIf you call `addAll(List.of(\"A\", \"B\", \"C\"))`:\n1. `addAll()` adds 3 to `addCount` (count = 3).\n2. `super.addAll()` in Java's `HashSet` calls `this.add()` for each item.\n3. Because of dynamic dispatch, `BadCountedSet.add()` is executed 3 times, adding 3 MORE (count = 6)!\n4. The count is now **double** the actual number of elements!\n\n### The Solution: Forwarding Wrapper (Composition)\nInstead of extending `HashSet`, create a class that *wraps* a `Set` and delegates calls to it."
+    },
+    {
+      "id": "act-les6-cw1",
+      "type": "code_walkthrough",
+      "title": "Demonstrating the Double-Counting Bug and the Forwarding Fix",
+      "codeSnippet": "import java.util.Collection;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\n// SAFE: Forwarding Wrapper using Composition\nclass InstrumentedSet<E> {\n    private final Set<E> set;\n    private int addCount = 0;\n\n    public InstrumentedSet(Set<E> set) {\n        this.set = set;\n    }\n\n    public boolean add(E e) {\n        addCount++;\n        return set.add(e); // Delegating to encapsulated set\n    }\n\n    public boolean addAll(Collection<? extends E> c) {\n        addCount += c.size();\n        return set.addAll(c); // set.addAll calls set.add, NOT InstrumentedSet.add!\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return set.size(); }\n}\n\npublic class SafeWrapperDemo {\n    public static void main(String[] args) {\n        InstrumentedSet<String> safeSet = new InstrumentedSet<>(new HashSet<>());\n        safeSet.addAll(List.of(\"Alpha\", \"Beta\", \"Gamma\"));\n        \n        System.out.println(\"Actual set size: \" + safeSet.size());\n        System.out.println(\"Add count tracked: \" + safeSet.getAddCount());\n    }\n}",
+      "code": "import java.util.Collection;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\n// SAFE: Forwarding Wrapper using Composition\nclass InstrumentedSet<E> {\n    private final Set<E> set;\n    private int addCount = 0;\n\n    public InstrumentedSet(Set<E> set) {\n        this.set = set;\n    }\n\n    public boolean add(E e) {\n        addCount++;\n        return set.add(e); // Delegating to encapsulated set\n    }\n\n    public boolean addAll(Collection<? extends E> c) {\n        addCount += c.size();\n        return set.addAll(c); // set.addAll calls set.add, NOT InstrumentedSet.add!\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return set.size(); }\n}\n\npublic class SafeWrapperDemo {\n    public static void main(String[] args) {\n        InstrumentedSet<String> safeSet = new InstrumentedSet<>(new HashSet<>());\n        safeSet.addAll(List.of(\"Alpha\", \"Beta\", \"Gamma\"));\n        \n        System.out.println(\"Actual set size: \" + safeSet.size());\n        System.out.println(\"Add count tracked: \" + safeSet.getAddCount());\n    }\n}",
+      "language": "java",
+      "explanation": "Because InstrumentedSet wraps a Set instance rather than extending HashSet, internal superclass callbacks do not trigger overridden methods, preventing the double-counting bug.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`InstrumentedSet` stores `Set<E> set` as a private final field."
+        },
+        {
+          "step": 2,
+          "description": "The constructor accepts any `Set` implementation (HashSet, TreeSet, LinkedHashSet)."
+        },
+        {
+          "step": 3,
+          "description": "`addAll` increments count by collection size and delegates to `set.addAll(c)`."
+        },
+        {
+          "step": 4,
+          "description": "Even if `HashSet.addAll` calls its own `add()`, it calls `HashSet.add()`, not `InstrumentedSet.add()`. Count remains accurately 3."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-cw2",
+      "type": "code_walkthrough",
+      "title": "Flexible Feature Decorator using Composition",
+      "codeSnippet": "interface Logger {\n    void log(String message);\n}\n\nclass ConsoleLogger implements Logger {\n    public void log(String message) {\n        System.out.println(\"[Log] \" + message);\n    }\n}\n\n// Decorator adds timestamp without inheritance\nclass TimestampLoggerDecorator implements Logger {\n    private final Logger wrappedLogger;\n\n    public TimestampLoggerDecorator(Logger wrappedLogger) {\n        this.wrappedLogger = wrappedLogger;\n    }\n\n    @Override\n    public void log(String message) {\n        String timestamped = \"[2026-10-03 10:00:00] \" + message;\n        wrappedLogger.log(timestamped);\n    }\n}\n\npublic class DecoratorDemo {\n    public static void main(String[] args) {\n        Logger standard = new ConsoleLogger();\n        Logger timestamped = new TimestampLoggerDecorator(standard);\n        \n        timestamped.log(\"Server initiated startup routine.\");\n    }\n}",
+      "code": "interface Logger {\n    void log(String message);\n}\n\nclass ConsoleLogger implements Logger {\n    public void log(String message) {\n        System.out.println(\"[Log] \" + message);\n    }\n}\n\n// Decorator adds timestamp without inheritance\nclass TimestampLoggerDecorator implements Logger {\n    private final Logger wrappedLogger;\n\n    public TimestampLoggerDecorator(Logger wrappedLogger) {\n        this.wrappedLogger = wrappedLogger;\n    }\n\n    @Override\n    public void log(String message) {\n        String timestamped = \"[2026-10-03 10:00:00] \" + message;\n        wrappedLogger.log(timestamped);\n    }\n}\n\npublic class DecoratorDemo {\n    public static void main(String[] args) {\n        Logger standard = new ConsoleLogger();\n        Logger timestamped = new TimestampLoggerDecorator(standard);\n        \n        timestamped.log(\"Server initiated startup routine.\");\n    }\n}",
+      "language": "java",
+      "explanation": "TimestampLoggerDecorator wraps any Logger implementation, enhancing behavior without coupling to a specific concrete superclass.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Logger` defines the common interface contract."
+        },
+        {
+          "step": 2,
+          "description": "`ConsoleLogger` is the core basic implementation."
+        },
+        {
+          "step": 3,
+          "description": "`TimestampLoggerDecorator` wraps a `Logger` reference and augments the message."
+        },
+        {
+          "step": 4,
+          "description": "Decorators can be stacked cleanly (e.g. Timestamp -> Encrypted -> FileLogger) without subclass explosion."
+        }
+      ]
+    },
+    {
+      "id": "act-les6-mcq",
+      "type": "mcq",
+      "title": "Composition vs Inheritance Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "What is the 'Fragile Base Class' problem in object-oriented programming?",
+          "options": [
+            "Subclasses crashing due to low RAM",
+            "Modifications to a superclass's internal implementation inadvertently breaking subclasses that depend on those details",
+            "Base classes that cannot be extended because they are marked final",
+            "A class with more than 100 methods"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The fragile base class problem occurs when seemingly safe changes to a parent class cause unexpected failures in descendant subclasses.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "In Josh Bloch's classic InstrumentedSet example, why did subclassing HashSet cause double-counting?",
+          "options": [
+            "Java garbage collected the items twice",
+            "HashSet.addAll() internally calls add(), which triggered the overridden subclass add() method polymorphically",
+            "The count variable was static",
+            "HashSet does not allow duplicate keys"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Because HashSet.addAll internally calls add(), overriding both in a subclass caused the counter to increment once in addAll and again for each element in add.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q3",
+          "question": "What design pattern uses composition to add behavior to an object without subclassing?",
+          "options": [
+            "Decorator / Wrapper Pattern",
+            "Singleton Pattern",
+            "Prototype Pattern",
+            "Abstract Factory Pattern"
+          ],
+          "correctAnswer": 0,
+          "explanation": "The Decorator (or Wrapper) pattern wraps an instance of a class and implements the same interface to augment behavior dynamically.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q4",
+          "question": "What is 'White-Box' code reuse?",
+          "options": [
+            "Inheritance, where internal implementation details of the parent are exposed to the child",
+            "Composition, where only the public API is accessible",
+            "Writing code using only white text on black background",
+            "Refactoring using static methods"
+          ],
+          "correctAnswer": 0,
+          "explanation": "Inheritance is often called white-box reuse because subclasses frequently depend on the internal mechanics of superclasses.",
+          "correctOptionIndex": 0
+        },
+        {
+          "id": "q5",
+          "question": "What is 'Black-Box' code reuse?",
+          "options": [
+            "Inheritance through private methods",
+            "Composition, where components interact strictly through public interfaces without knowing internal code",
+            "Compiling code to obfuscated bytecode",
+            "Using deprecated APIs"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Composition is black-box reuse because objects collaborate solely across defined public interfaces without peering into each other's internals.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q6",
+          "question": "When is inheritance genuinely safer to use?",
+          "options": [
+            "When extending third-party classes from external libraries",
+            "When extending classes specifically designed and documented for extension within the same package",
+            "Whenever you want to save typing 5 lines of code",
+            "When the parent class has lots of private fields"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Inheritance is safe within the same package or when a class is specifically designed, documented, and tested for subclassing.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q7",
+          "question": "What is the primary drawback of using composition over inheritance?",
+          "options": [
+            "Composition breaks polymorphism",
+            "Forwarding methods introduce slight delegation boilerplate code",
+            "Composition does not allow unit testing",
+            "Composition only works in Java 8+"
+          ],
+          "correctAnswer": 1,
+          "explanation": "The main downside of composition is that you may need to write boilerplate forwarding methods to delegate calls to the wrapped object.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q8",
+          "question": "Which Java keyword prevents a class from ever suffering the fragile base class problem by preventing extension entirely?",
+          "options": [
+            "abstract",
+            "final",
+            "static",
+            "volatile"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Declaring a class `final` prevents anyone from subclassing it, eliminating fragile base class risks entirely.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q9",
+          "question": "If you need a class that behaves like a List but logs every addition, what is the best architectural approach?",
+          "options": [
+            "Extend ArrayList directly",
+            "Create a class that implements List and wraps an internal List (Composition / Decorator)",
+            "Modify the JDK source code",
+            "Use reflection at runtime"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Wrapping an internal List and implementing the List interface gives you complete safety and compatibility without fragile base class risks.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "What happens if a new method is added to a superclass with the same name as a method you created in your subclass?",
+          "options": [
+            "The code continues running unchanged",
+            "It may cause an accidental override or compile error due to conflicting return types",
+            "The JVM deletes the subclass",
+            "The method is renamed automatically"
+          ],
+          "correctAnswer": 1,
+          "explanation": "New methods added to a parent class can inadvertently collide with existing subclass methods, causing compile failures or unintended overrides.",
+          "correctOptionIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "act-les6-interview",
+      "type": "interview_qa",
+      "title": "Composition vs Inheritance Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Can you summarize Joshua Bloch's famous recommendation 'Item 18: Favor composition over inheritance'?",
+          "answer": "Bloch explains that inheritance violates encapsulation because a subclass depends on the implementation details of its superclass. Changes in the superclass across library versions can break subclasses without warning. Composition avoids this by treating the collaborator as a black-box component wrapped inside a forwarding class.",
+          "expectedAnswer": "Bloch explains that inheritance violates encapsulation because a subclass depends on the implementation details of its superclass. Changes in the superclass across library versions can break subclasses without warning. Composition avoids this by treating the collaborator as a black-box component wrapped inside a forwarding class.",
+          "keyTakeaway": "Inheritance exposes subclasses to superclass evolution; composition protects against it.",
+          "keyPoints": [
+            "Inheritance exposes subclasses to superclass evolution; composition protects against it."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is a 'Forwarding Class'?",
+          "answer": "A forwarding class contains an instance of the wrapped object and implements the same interface, with each method simply calling the corresponding method on the wrapped instance. Subclasses or decorators then extend the forwarding class, overriding only the specific methods they wish to customize.",
+          "expectedAnswer": "A forwarding class contains an instance of the wrapped object and implements the same interface, with each method simply calling the corresponding method on the wrapped instance. Subclasses or decorators then extend the forwarding class, overriding only the specific methods they wish to customize.",
+          "keyTakeaway": "A forwarding class encapsulates delegation boilerplate, making decorators clean and concise.",
+          "keyPoints": [
+            "A forwarding class encapsulates delegation boilerplate, making decorators clean and concise."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the 'Self-Problem' in wrappers / decorators?",
+          "answer": "When an object is wrapped, the wrapped object does not know about the wrapper. If the wrapped object passes `this` to another callback, callbacks will interact with the inner object directly, bypassing any decorator logic.",
+          "expectedAnswer": "When an object is wrapped, the wrapped object does not know about the wrapper. If the wrapped object passes `this` to another callback, callbacks will interact with the inner object directly, bypassing any decorator logic.",
+          "keyTakeaway": "The wrapped object's `this` reference does not refer to the decorator.",
+          "keyPoints": [
+            "The wrapped object's `this` reference does not refer to the decorator."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "When SHOULD you use inheritance instead of composition?",
+          "answer": "Use inheritance only when: (1) A true 'Is-A' relationship exists, (2) The subclass is prepared to expose the parent's ENTIRE public API forever, (3) The parent class was designed and documented explicitly for inheritance (or both classes are maintained by the same team), and (4) Polymorphic substitution is essential.",
+          "expectedAnswer": "Use inheritance only when: (1) A true 'Is-A' relationship exists, (2) The subclass is prepared to expose the parent's ENTIRE public API forever, (3) The parent class was designed and documented explicitly for inheritance (or both classes are maintained by the same team), and (4) Polymorphic substitution is essential.",
+          "keyTakeaway": "Inheritance requires true subtyping, API commitment, and purposeful extensibility design.",
+          "keyPoints": [
+            "Inheritance requires true subtyping, API commitment, and purposeful extensibility design."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do you design a class that is safe for inheritance?",
+          "answer": "1. Document all self-use of overridable methods. 2. Provide hooks via protected methods where appropriate. 3. Test the class by writing 2-3 realistic subclasses before releasing it. 4. Never call overridable methods inside constructors. 5. If not designing for inheritance, prohibit it by declaring the class `final`.",
+          "expectedAnswer": "1. Document all self-use of overridable methods. 2. Provide hooks via protected methods where appropriate. 3. Test the class by writing 2-3 realistic subclasses before releasing it. 4. Never call overridable methods inside constructors. 5. If not designing for inheritance, prohibit it by declaring the class `final`.",
+          "keyTakeaway": "Design and document for inheritance, or else prohibit it.",
+          "keyPoints": [
+            "Design and document for inheritance, or else prohibit it."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does the Open-Closed Principle relate to composition vs inheritance?",
+          "answer": "Composition enables classes to be open for extension but closed for modification by injecting new strategy or decorator implementations at runtime, without having to alter or inherit from the existing class codebase.",
+          "expectedAnswer": "Composition enables classes to be open for extension but closed for modification by injecting new strategy or decorator implementations at runtime, without having to alter or inherit from the existing class codebase.",
+          "keyTakeaway": "Composition allows behavioral extension without modifying existing tested classes.",
+          "keyPoints": [
+            "Composition allows behavioral extension without modifying existing tested classes."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "Can you summarize Joshua Bloch's famous recommendation 'Item 18: Favor composition over inheritance'?",
+          "answer": "Bloch explains that inheritance violates encapsulation because a subclass depends on the implementation details of its superclass. Changes in the superclass across library versions can break subclasses without warning. Composition avoids this by treating the collaborator as a black-box component wrapped inside a forwarding class.",
+          "expectedAnswer": "Bloch explains that inheritance violates encapsulation because a subclass depends on the implementation details of its superclass. Changes in the superclass across library versions can break subclasses without warning. Composition avoids this by treating the collaborator as a black-box component wrapped inside a forwarding class.",
+          "keyTakeaway": "Inheritance exposes subclasses to superclass evolution; composition protects against it.",
+          "keyPoints": [
+            "Inheritance exposes subclasses to superclass evolution; composition protects against it."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "What is a 'Forwarding Class'?",
+          "answer": "A forwarding class contains an instance of the wrapped object and implements the same interface, with each method simply calling the corresponding method on the wrapped instance. Subclasses or decorators then extend the forwarding class, overriding only the specific methods they wish to customize.",
+          "expectedAnswer": "A forwarding class contains an instance of the wrapped object and implements the same interface, with each method simply calling the corresponding method on the wrapped instance. Subclasses or decorators then extend the forwarding class, overriding only the specific methods they wish to customize.",
+          "keyTakeaway": "A forwarding class encapsulates delegation boilerplate, making decorators clean and concise.",
+          "keyPoints": [
+            "A forwarding class encapsulates delegation boilerplate, making decorators clean and concise."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "What is the 'Self-Problem' in wrappers / decorators?",
+          "answer": "When an object is wrapped, the wrapped object does not know about the wrapper. If the wrapped object passes `this` to another callback, callbacks will interact with the inner object directly, bypassing any decorator logic.",
+          "expectedAnswer": "When an object is wrapped, the wrapped object does not know about the wrapper. If the wrapped object passes `this` to another callback, callbacks will interact with the inner object directly, bypassing any decorator logic.",
+          "keyTakeaway": "The wrapped object's `this` reference does not refer to the decorator.",
+          "keyPoints": [
+            "The wrapped object's `this` reference does not refer to the decorator."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "When SHOULD you use inheritance instead of composition?",
+          "answer": "Use inheritance only when: (1) A true 'Is-A' relationship exists, (2) The subclass is prepared to expose the parent's ENTIRE public API forever, (3) The parent class was designed and documented explicitly for inheritance (or both classes are maintained by the same team), and (4) Polymorphic substitution is essential.",
+          "expectedAnswer": "Use inheritance only when: (1) A true 'Is-A' relationship exists, (2) The subclass is prepared to expose the parent's ENTIRE public API forever, (3) The parent class was designed and documented explicitly for inheritance (or both classes are maintained by the same team), and (4) Polymorphic substitution is essential.",
+          "keyTakeaway": "Inheritance requires true subtyping, API commitment, and purposeful extensibility design.",
+          "keyPoints": [
+            "Inheritance requires true subtyping, API commitment, and purposeful extensibility design."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "How do you design a class that is safe for inheritance?",
+          "answer": "1. Document all self-use of overridable methods. 2. Provide hooks via protected methods where appropriate. 3. Test the class by writing 2-3 realistic subclasses before releasing it. 4. Never call overridable methods inside constructors. 5. If not designing for inheritance, prohibit it by declaring the class `final`.",
+          "expectedAnswer": "1. Document all self-use of overridable methods. 2. Provide hooks via protected methods where appropriate. 3. Test the class by writing 2-3 realistic subclasses before releasing it. 4. Never call overridable methods inside constructors. 5. If not designing for inheritance, prohibit it by declaring the class `final`.",
+          "keyTakeaway": "Design and document for inheritance, or else prohibit it.",
+          "keyPoints": [
+            "Design and document for inheritance, or else prohibit it."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does the Open-Closed Principle relate to composition vs inheritance?",
+          "answer": "Composition enables classes to be open for extension but closed for modification by injecting new strategy or decorator implementations at runtime, without having to alter or inherit from the existing class codebase.",
+          "expectedAnswer": "Composition enables classes to be open for extension but closed for modification by injecting new strategy or decorator implementations at runtime, without having to alter or inherit from the existing class codebase.",
+          "keyTakeaway": "Composition allows behavioral extension without modifying existing tested classes.",
+          "keyPoints": [
+            "Composition allows behavioral extension without modifying existing tested classes."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les6-checklist",
+      "type": "self_evaluation",
+      "title": "Composition vs Inheritance Checklist",
+      "items": [
+        "I can explain the fragile base class problem in technical interviews.",
+        "I understand Josh Bloch's InstrumentedSet double-counting failure.",
+        "I know how the Forwarding Wrapper (Decorator) pattern fixes fragile inheritance.",
+        "I mark classes final when they are not explicitly designed for extension.",
+        "I recognize the difference between white-box and black-box code reuse.",
+        "I never call overridable methods from inside constructors.",
+        "I choose composition when I only need a portion of another class's functionality.",
+        "I understand the 'self-problem' where the inner object's `this` bypasses the wrapper.",
+        "I verify that subclasses expose the entire parent API responsibly before using extends.",
+        "I follow the standard motto: 'Favor object composition over class inheritance'."
+      ],
+      "checklist": [
+        "I can explain the fragile base class problem in technical interviews.",
+        "I understand Josh Bloch's InstrumentedSet double-counting failure.",
+        "I know how the Forwarding Wrapper (Decorator) pattern fixes fragile inheritance.",
+        "I mark classes final when they are not explicitly designed for extension.",
+        "I recognize the difference between white-box and black-box code reuse.",
+        "I never call overridable methods from inside constructors.",
+        "I choose composition when I only need a portion of another class's functionality.",
+        "I understand the 'self-problem' where the inner object's `this` bypasses the wrapper.",
+        "I verify that subclasses expose the entire parent API responsibly before using extends.",
+        "I follow the standard motto: 'Favor object composition over class inheritance'."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les6-p1",
+      "lessonId": "java-oop-mod8-les6",
+      "orderIndex": 1,
+      "title": "Refactoring Brittle HashSet Subclass to Safe Wrapper",
+      "difficulty": "easy",
+      "problemStatement": "A developer wrote `CountingSet` by subclassing `HashSet`, causing double counting when `addAll` is called. Refactor `CountingSet` to use COMPOSITION: wrap an internal `Set<String>`, delegate `add` and `addAll` cleanly without double-counting, and provide `getAddCount()`.",
+      "starterCode": "import java.util.Collection;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\n// TODO: Remove 'extends HashSet<String>' and use Composition with a Set<String> field\nclass CountingSet {\n    private Set<String> innerSet = new HashSet<>();\n    private int addCount = 0;\n\n    public boolean add(String element) {\n        // TODO: increment addCount, delegate to innerSet.add\n        return false;\n    }\n\n    public boolean addAll(Collection<String> elements) {\n        // TODO: increment addCount by elements.size(), delegate to innerSet.addAll\n        return false;\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return innerSet.size(); }\n}\n\npublic class CountingApp {\n    public static void main(String[] args) {\n        CountingSet set = new CountingSet();\n        set.addAll(List.of(\"Java\", \"Python\", \"Rust\"));\n        System.out.println(\"Add count: \" + set.getAddCount());\n        System.out.println(\"Set size: \" + set.size());\n    }\n}",
+      "initialCode": "import java.util.Collection;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\n// TODO: Remove 'extends HashSet<String>' and use Composition with a Set<String> field\nclass CountingSet {\n    private Set<String> innerSet = new HashSet<>();\n    private int addCount = 0;\n\n    public boolean add(String element) {\n        // TODO: increment addCount, delegate to innerSet.add\n        return false;\n    }\n\n    public boolean addAll(Collection<String> elements) {\n        // TODO: increment addCount by elements.size(), delegate to innerSet.addAll\n        return false;\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return innerSet.size(); }\n}\n\npublic class CountingApp {\n    public static void main(String[] args) {\n        CountingSet set = new CountingSet();\n        set.addAll(List.of(\"Java\", \"Python\", \"Rust\"));\n        System.out.println(\"Add count: \" + set.getAddCount());\n        System.out.println(\"Set size: \" + set.size());\n    }\n}",
+      "solutionCode": "import java.util.Collection;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\nclass CountingSet {\n    private Set<String> innerSet = new HashSet<>();\n    private int addCount = 0;\n\n    public boolean add(String element) {\n        addCount++;\n        return innerSet.add(element);\n    }\n\n    public boolean addAll(Collection<String> elements) {\n        addCount += elements.size();\n        return innerSet.addAll(elements);\n    }\n\n    public int getAddCount() { return addCount; }\n    public int size() { return innerSet.size(); }\n}\n\npublic class CountingApp {\n    public static void main(String[] args) {\n        CountingSet set = new CountingSet();\n        set.addAll(List.of(\"Java\", \"Python\", \"Rust\"));\n        System.out.println(\"Add count: \" + set.getAddCount());\n        System.out.println(\"Set size: \" + set.size());\n    }\n}",
+      "expectedOutput": "Add count: 3\nSet size: 3",
+      "hints": [
+        "Increment addCount++ in add() and return innerSet.add(element).",
+        "Increment addCount += elements.size() in addAll() and return innerSet.addAll(elements)."
+      ]
+    },
+    {
+      "id": "prob-les6-p2",
+      "lessonId": "java-oop-mod8-les6",
+      "orderIndex": 2,
+      "title": "UpperCase Text Printer Decorator",
+      "difficulty": "medium",
+      "problemStatement": "Implement a printing decorator using composition from scratch:\n1. Interface `TextPrinter`: `void print(String text)`.\n2. Class `StandardPrinter` implementing `TextPrinter`: `print(String text)` prints `'[Standard] ' + text`.\n3. Class `UpperCasePrinterDecorator` implementing `TextPrinter`: has `private TextPrinter wrappedPrinter`.\n   - Constructor accepts `TextPrinter wrapped`.\n   - `print(String text)` converts text to uppercase and delegates to `wrappedPrinter.print(text.toUpperCase())`.\n4. In `Main`, create a `StandardPrinter`. Wrap it in `UpperCasePrinterDecorator`. Call `print(\"hello world\")` on the decorator.",
+      "solutionCode": "interface TextPrinter {\n    void print(String text);\n}\n\nclass StandardPrinter implements TextPrinter {\n    @Override\n    public void print(String text) {\n        System.out.println(\"[Standard] \" + text);\n    }\n}\n\nclass UpperCasePrinterDecorator implements TextPrinter {\n    private TextPrinter wrappedPrinter;\n    public UpperCasePrinterDecorator(TextPrinter wrappedPrinter) {\n        this.wrappedPrinter = wrappedPrinter;\n    }\n    @Override\n    public void print(String text) {\n        wrappedPrinter.print(text.toUpperCase());\n    }\n}\n\npublic class DecoratorApp {\n    public static void main(String[] args) {\n        TextPrinter standard = new StandardPrinter();\n        TextPrinter upper = new UpperCasePrinterDecorator(standard);\n        upper.print(\"hello world\");\n    }\n}",
+      "expectedOutput": "[Standard] HELLO WORLD",
+      "hints": [
+        "UpperCasePrinterDecorator implements TextPrinter and wraps a TextPrinter instance.",
+        "print delegates to wrappedPrinter with uppercase text."
+      ]
+    },
+    {
+      "id": "prob-les6-p3",
+      "lessonId": "java-oop-mod8-les6",
+      "orderIndex": 3,
+      "title": "Bounded Queue via Composition (Not Inheritance)",
+      "difficulty": "medium",
+      "problemStatement": "Build a bounded queue using composition rather than extending `java.util.LinkedList` from scratch:\n1. Class `BoundedQueue`: holds `private java.util.LinkedList<String> list = new java.util.LinkedList<>()` and `private int capacity`.\n   - Constructor accepts `int capacity`.\n   - Method `public boolean offer(String item)`: if `list.size() < capacity`, adds to end of list and returns true. Otherwise returns false.\n   - Method `public String poll()`: if empty returns null, else removes and returns the first element.\n   - Method `public int size()` returns `list.size()`.\n2. In `Main`, create a `BoundedQueue(2)`. Call `offer(\"Item A\")` (prints result true). Call `offer(\"Item B\")` (prints result true). Call `offer(\"Item C\")` (prints result false because queue is full). Then call `poll()` and print the polled item.",
+      "solutionCode": "import java.util.LinkedList;\n\nclass BoundedQueue {\n    private LinkedList<String> list = new LinkedList<>();\n    private int capacity;\n\n    public BoundedQueue(int capacity) {\n        this.capacity = capacity;\n    }\n\n    public boolean offer(String item) {\n        if (list.size() < capacity) {\n            list.addLast(item);\n            return true;\n        }\n        return false;\n    }\n\n    public String poll() {\n        return list.isEmpty() ? null : list.removeFirst();\n    }\n\n    public int size() {\n        return list.size();\n    }\n}\n\npublic class QueueApp {\n    public static void main(String[] args) {\n        BoundedQueue q = new BoundedQueue(2);\n        System.out.println(\"Offer A: \" + q.offer(\"Item A\"));\n        System.out.println(\"Offer B: \" + q.offer(\"Item B\"));\n        System.out.println(\"Offer C: \" + q.offer(\"Item C\"));\n        System.out.println(\"Polled: \" + q.poll());\n    }\n}",
+      "expectedOutput": "Offer A: true\nOffer B: true\nOffer C: false\nPolled: Item A",
+      "hints": [
+        "BoundedQueue encapsulates LinkedList; it does NOT extend LinkedList.",
+        "offer returns false when size reaches capacity."
+      ]
+    },
+    {
+      "id": "prob-les6-p4",
+      "lessonId": "java-oop-mod8-les6",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Superclass Constructor Calling Overridden Subclass Method",
+      "difficulty": "medium",
+      "problemStatement": "A classic trap: a parent class constructor invokes an overridable method that depends on a subclass field that HAS NOT YET BEEN INITIALIZED! The program prints null or crashes with NPE. Fix the bug by eliminating the dangerous inheritance: refactor `SubService` to compose `BaseService`, so both objects are properly initialized before methods execute.",
+      "starterCode": "class BaseService {\n    public BaseService() {\n        // BUG: Calling overridable method from parent constructor!\n        init();\n    }\n    public void init() {\n        System.out.println(\"Base init\");\n    }\n}\n\nclass SubService extends BaseService {\n    private String configKey = \"SECRET-KEY-99\";\n\n    @Override\n    public void init() {\n        // At this point configKey is still NULL because subclass constructor hasn't run!\n        System.out.println(\"Config loaded: \" + configKey.toUpperCase());\n    }\n}\n\npublic class ConstructorBugApp {\n    public static void main(String[] args) {\n        // Triggers NullPointerException in buggy code\n        SubService service = new SubService();\n    }\n}",
+      "initialCode": "class BaseService {\n    public BaseService() {\n        // BUG: Calling overridable method from parent constructor!\n        init();\n    }\n    public void init() {\n        System.out.println(\"Base init\");\n    }\n}\n\nclass SubService extends BaseService {\n    private String configKey = \"SECRET-KEY-99\";\n\n    @Override\n    public void init() {\n        // At this point configKey is still NULL because subclass constructor hasn't run!\n        System.out.println(\"Config loaded: \" + configKey.toUpperCase());\n    }\n}\n\npublic class ConstructorBugApp {\n    public static void main(String[] args) {\n        // Triggers NullPointerException in buggy code\n        SubService service = new SubService();\n    }\n}",
+      "solutionCode": "class BaseService {\n    public void init() {\n        System.out.println(\"Base init\");\n    }\n}\n\nclass SubService {\n    private String configKey = \"SECRET-KEY-99\";\n    private BaseService base = new BaseService();\n\n    public void init() {\n        base.init();\n        System.out.println(\"Config loaded: \" + configKey.toUpperCase());\n    }\n}\n\npublic class ConstructorBugApp {\n    public static void main(String[] args) {\n        SubService service = new SubService();\n        service.init();\n    }\n}",
+      "expectedOutput": "Base init\nConfig loaded: SECRET-KEY-99",
+      "hints": [
+        "Remove init() call from BaseService constructor.",
+        "Have SubService compose BaseService and call base.init() inside its own init() method."
+      ]
+    },
+    {
+      "id": "prob-les6-p5",
+      "lessonId": "java-oop-mod8-les6",
+      "orderIndex": 5,
+      "title": "Stackable Multi-Layer Stream Decorator",
+      "difficulty": "hard",
+      "problemStatement": "Build a modular, stackable message transmission pipeline using composition decorators from scratch:\n1. Interface `MessageChannel`: `String send(String rawMessage)`.\n2. Class `BasicChannel` implementing `MessageChannel`: returns `'[Raw: ' + rawMessage + ']'`.\n3. Class `EncryptionDecorator` implementing `MessageChannel`: holds `private MessageChannel next`. Constructor accepts MessageChannel. In `send(String rawMessage)`, wraps message into `'[Encrypted(' + next.send(rawMessage) + ')]'`.\n4. Class `CompressionDecorator` implementing `MessageChannel`: holds `private MessageChannel next`. Constructor accepts MessageChannel. In `send(String rawMessage)`, wraps into `'[Compressed(' + next.send(rawMessage) + ')]'`.\n5. In `Main`, compose a pipeline: wrap `BasicChannel` inside `CompressionDecorator`, and wrap that inside `EncryptionDecorator`.\n6. Call `pipeline.send(\"payload_data\")` and print the resulting string.",
+      "solutionCode": "interface MessageChannel {\n    String send(String rawMessage);\n}\n\nclass BasicChannel implements MessageChannel {\n    @Override\n    public String send(String rawMessage) {\n        return \"[Raw: \" + rawMessage + \"]\";\n    }\n}\n\nclass EncryptionDecorator implements MessageChannel {\n    private MessageChannel next;\n    public EncryptionDecorator(MessageChannel next) {\n        this.next = next;\n    }\n    @Override\n    public String send(String rawMessage) {\n        return \"[Encrypted(\" + next.send(rawMessage) + \")]\";\n    }\n}\n\nclass CompressionDecorator implements MessageChannel {\n    private MessageChannel next;\n    public CompressionDecorator(MessageChannel next) {\n        this.next = next;\n    }\n    @Override\n    public String send(String rawMessage) {\n        return \"[Compressed(\" + next.send(rawMessage) + \")]\";\n    }\n}\n\npublic class PipelineApp {\n    public static void main(String[] args) {\n        MessageChannel basic = new BasicChannel();\n        MessageChannel compressed = new CompressionDecorator(basic);\n        MessageChannel pipeline = new EncryptionDecorator(compressed);\n        \n        System.out.println(pipeline.send(\"payload_data\"));\n    }\n}",
+      "expectedOutput": "[Encrypted([Compressed([Raw: payload_data])])]",
+      "hints": [
+        "Notice how decorators nest: Encryption wraps Compression which wraps BasicChannel.",
+        "Each decorator delegates to next.send(rawMessage) and decorates the output."
+      ]
+    }
+  ]
+}

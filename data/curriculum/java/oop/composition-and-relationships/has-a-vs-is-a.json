@@ -1,0 +1,518 @@
+{
+  "id": "java-oop-mod8-les1",
+  "slug": "has-a-vs-is-a",
+  "sectionSlug": "oop",
+  "moduleSlug": "composition-and-relationships",
+  "languageSlug": "java",
+  "title": "Has-A vs Is-A",
+  "summary": "Master the fundamental architectural choice between inheritance ('Is-A') and composition ('Has-A') to avoid brittle class hierarchies.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "what-is-inheritance",
+    "the-extends-keyword"
+  ],
+  "learningObjectives": [
+    "Distinguish between 'Is-A' (inheritance/generalization) and 'Has-A' (composition/aggregation) relationships",
+    "Identify the perils of modeling containment or capability using inheritance",
+    "Apply the substitutability test (Liskov Substitution Principle) to determine if Is-A is valid",
+    "Refactor misapplied inheritance into clean reference-based composition"
+  ],
+  "expectedOutcomes": [
+    "You can confidently evaluate any domain relationship and pick between extends and field reference",
+    "You can articulate why a Car HAS-A Engine rather than IS-AN Engine in technical discussions"
+  ],
+  "activities": [
+    {
+      "id": "act-les1-analogy",
+      "type": "analogy",
+      "title": "Everyday Analogy: The Smartphone and Its Battery",
+      "concept": "Has-A vs Is-A Modeling",
+      "realWorldMetaphor": {
+        "scenario": "Consider a smartphone and its lithium-ion battery. A smartphone HAS a battery, a screen, and a cellular modem. It would be absurd to say a Smartphone IS a Battery. If a smartphone were a battery, then everywhere a battery is needed (like a flashlight or a TV remote), you should be able to plug in your entire smartphone!",
+        "mapping": "In software, saying `class Smartphone extends Battery` inherits all internal battery functions inappropriately (like chemical cell chemistry), exposing irrelevant methods. Modeling `Smartphone` with a `private Battery battery;` field creates a clean 'Has-A' relationship where the phone delegates power management to the internal component.",
+        "takeaway": "Use 'Is-A' only when the child is truly a specialized subtype of the parent. If an entity merely possesses, utilizes, or contains another, use 'Has-A'."
+      }
+    },
+    {
+      "id": "act-les1-concept",
+      "type": "concept",
+      "title": "The Decisive Boundary: Is-A vs Has-A",
+      "content": "### The Fundamental Question\n\nWhen designing object-oriented systems, you constantly choose between two foundational relationships:\n\n1. **Is-A (Inheritance)**: Expressed in Java via `extends` (for classes) or `implements` (for interfaces). Indicates specialization and strict classification.\n   - *Example*: A `Sparrow` **is a** `Bird`. A `SavingsAccount` **is a** `BankAccount`.\n2. **Has-A (Composition / Aggregation)**: Expressed in Java by declaring an instance variable of another class's type inside your class.\n   - *Example*: A `Car` **has an** `Engine`. A `User` **has an** `Address`.\n\n### The Substitutability Litmus Test\nTo determine if an inheritance relationship is sound, apply the **Liskov Substitution Principle (LSP)**:\n> *Can an instance of the subclass be substituted anywhere an instance of the superclass is expected without breaking system assumptions or introducing nonsensical semantics?*\n\n- Can you substitute an `Engine` with a `Car`? **No.** If a mechanic asks for an engine, handing them an entire car with leather seats makes no sense.\n- Therefore: `Car extends Engine` is **wrong**; `Car` having an `Engine` field is **correct**.\n\n### Why Has-A is Often Superior\n- **Loose Coupling**: The internal mechanics of the child component are hidden behind its public interface.\n- **Runtime Swappability**: You can swap an object's component at runtime (`car.setEngine(new ElectricMotor())`). Inheritance hard-codes behavior at compile time.\n- **Avoids Class Explosion**: You don't need `DieselFrontWheelDriveSunroofCar` subclasses; you simply compose the parts."
+    },
+    {
+      "id": "act-les1-cw1",
+      "type": "code_walkthrough",
+      "title": "Anti-Pattern: The Misguided Is-A vs The Clean Has-A",
+      "codeSnippet": "// ANTI-PATTERN: Car extends Engine\n// Why it's bad: A Car is NOT an Engine. A Car shouldn't inherit internal spark plug logic!\nclass Engine {\n    private int horsepower;\n    public Engine(int horsepower) { this.horsepower = horsepower; }\n    public void start() {\n        System.out.println(\"Engine roaring: \" + horsepower + \" HP\");\n    }\n}\n\n// CORRECT: Car HAS-AN Engine\nclass Car {\n    private String model;\n    private Engine engine; // HAS-A relationship\n\n    public Car(String model, Engine engine) {\n        this.model = model;\n        this.engine = engine;\n    }\n\n    public void drive() {\n        System.out.println(\"Starting trip in \" + model);\n        engine.start();\n    }\n}\n\npublic class HasAVsIsADemo {\n    public static void main(String[] args) {\n        Engine v8 = new Engine(450);\n        Car mustang = new Car(\"Mustang GT\", v8);\n        mustang.drive();\n    }\n}",
+      "code": "// ANTI-PATTERN: Car extends Engine\n// Why it's bad: A Car is NOT an Engine. A Car shouldn't inherit internal spark plug logic!\nclass Engine {\n    private int horsepower;\n    public Engine(int horsepower) { this.horsepower = horsepower; }\n    public void start() {\n        System.out.println(\"Engine roaring: \" + horsepower + \" HP\");\n    }\n}\n\n// CORRECT: Car HAS-AN Engine\nclass Car {\n    private String model;\n    private Engine engine; // HAS-A relationship\n\n    public Car(String model, Engine engine) {\n        this.model = model;\n        this.engine = engine;\n    }\n\n    public void drive() {\n        System.out.println(\"Starting trip in \" + model);\n        engine.start();\n    }\n}\n\npublic class HasAVsIsADemo {\n    public static void main(String[] args) {\n        Engine v8 = new Engine(450);\n        Car mustang = new Car(\"Mustang GT\", v8);\n        mustang.drive();\n    }\n}",
+      "language": "java",
+      "explanation": "Car holds a reference to Engine rather than subclassing it. This models reality faithfully, encapsulates the engine, and allows swapping engines without rewriting Car.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`Engine` encapsulates its own horsepower and startup mechanics."
+        },
+        {
+          "step": 2,
+          "description": "`Car` declares an instance field `private Engine engine;` modeling the Has-A relationship."
+        },
+        {
+          "step": 3,
+          "description": "The `Car` constructor receives an `Engine` dependency and assigns it."
+        },
+        {
+          "step": 4,
+          "description": "When `drive()` is invoked, `Car` delegates to `engine.start()`."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-cw2",
+      "type": "code_walkthrough",
+      "title": "Runtime Component Swapping with Has-A",
+      "codeSnippet": "interface SoundDevice {\n    void play(String audioFile);\n}\n\nclass Headset implements SoundDevice {\n    public void play(String audioFile) {\n        System.out.println(\"[Headset] Playing private audio: \" + audioFile);\n    }\n}\n\nclass BluetoothSpeaker implements SoundDevice {\n    public void play(String audioFile) {\n        System.out.println(\"[Speaker] Broadcasting stereo audio: \" + audioFile);\n    }\n}\n\nclass Laptop {\n    private SoundDevice audioOutput; // Has-A interface\n\n    public Laptop(SoundDevice initialOutput) {\n        this.audioOutput = initialOutput;\n    }\n\n    public void setAudioOutput(SoundDevice newOutput) {\n        this.audioOutput = newOutput;\n    }\n\n    public void watchMovie(String movieTitle) {\n        System.out.println(\"Streaming movie: \" + movieTitle);\n        audioOutput.play(movieTitle + \"_soundtrack.mp3\");\n    }\n}\n\npublic class SwappableDemo {\n    public static void main(String[] args) {\n        Laptop laptop = new Laptop(new Headset());\n        laptop.watchMovie(\"Interstellar\");\n        \n        // Hot-swapping the output device at runtime\n        laptop.setAudioOutput(new BluetoothSpeaker());\n        laptop.watchMovie(\"Inception\");\n    }\n}",
+      "code": "interface SoundDevice {\n    void play(String audioFile);\n}\n\nclass Headset implements SoundDevice {\n    public void play(String audioFile) {\n        System.out.println(\"[Headset] Playing private audio: \" + audioFile);\n    }\n}\n\nclass BluetoothSpeaker implements SoundDevice {\n    public void play(String audioFile) {\n        System.out.println(\"[Speaker] Broadcasting stereo audio: \" + audioFile);\n    }\n}\n\nclass Laptop {\n    private SoundDevice audioOutput; // Has-A interface\n\n    public Laptop(SoundDevice initialOutput) {\n        this.audioOutput = initialOutput;\n    }\n\n    public void setAudioOutput(SoundDevice newOutput) {\n        this.audioOutput = newOutput;\n    }\n\n    public void watchMovie(String movieTitle) {\n        System.out.println(\"Streaming movie: \" + movieTitle);\n        audioOutput.play(movieTitle + \"_soundtrack.mp3\");\n    }\n}\n\npublic class SwappableDemo {\n    public static void main(String[] args) {\n        Laptop laptop = new Laptop(new Headset());\n        laptop.watchMovie(\"Interstellar\");\n        \n        // Hot-swapping the output device at runtime\n        laptop.setAudioOutput(new BluetoothSpeaker());\n        laptop.watchMovie(\"Inception\");\n    }\n}",
+      "language": "java",
+      "explanation": "Because Laptop uses Has-A with a SoundDevice reference, it can change audio devices on the fly. Inheritance would permanently bake a single device type into the class.",
+      "stepByStepWalkthrough": [
+        {
+          "step": 1,
+          "description": "`SoundDevice` interface defines the audio playback contract."
+        },
+        {
+          "step": 2,
+          "description": "`Laptop` references `SoundDevice` as an instance field rather than subclassing any audio hardware."
+        },
+        {
+          "step": 3,
+          "description": "The setter `setAudioOutput` enables swapping the output device dynamically at runtime."
+        },
+        {
+          "step": 4,
+          "description": "`main()` demonstrates seamlessly switching from `Headset` to `BluetoothSpeaker`."
+        }
+      ]
+    },
+    {
+      "id": "act-les1-mcq",
+      "type": "mcq",
+      "title": "Has-A vs Is-A Mastery Quiz",
+      "questions": [
+        {
+          "id": "q1",
+          "question": "Which of the following relationships is best modeled as an 'Is-A' relationship?",
+          "options": [
+            "A Car and its Wheels",
+            "A Circle and a Shape",
+            "A Computer and its CPU",
+            "A Library and its Books"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A Circle is a specialized form of Shape (Circle IS-A Shape). The others are containment/possession relationships (Has-A).",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q2",
+          "question": "How is a 'Has-A' relationship typically implemented in Java?",
+          "options": [
+            "Using the 'extends' keyword",
+            "Using the 'implements' keyword",
+            "Declaring an instance variable of another class's type inside a class",
+            "Using static methods only"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Has-A is represented by holding an object reference as a member field inside the containing class.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q3",
+          "question": "What principle is violated if you declare 'class Person extends Heart'?",
+          "options": [
+            "Open/Closed Principle",
+            "Liskov Substitution Principle",
+            "Single Choice Principle",
+            "DRY Principle"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A Person cannot substitute for a Heart (e.g. you cannot pump blood using a whole Person). This violates Liskov Substitution.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q4",
+          "question": "Why is 'Has-A' generally more flexible than 'Is-A'?",
+          "options": [
+            "Has-A runs faster in bytecode",
+            "Has-A permits swapping components dynamically at runtime",
+            "Has-A avoids creating objects in heap memory",
+            "Has-A requires fewer semicolons"
+          ],
+          "correctAnswer": 1,
+          "explanation": "With Has-A, reference fields can be reassigned at runtime, whereas inheritance binds relationships permanently at compile time.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q5",
+          "question": "Which code snippet correctly demonstrates a Has-A relationship between House and Roof?",
+          "options": [
+            "class House extends Roof {}",
+            "class Roof extends House {}",
+            "class House { private Roof roof; }",
+            "interface House implements Roof {}"
+          ],
+          "correctAnswer": 2,
+          "explanation": "A House HAS-A Roof, so Roof should be a private instance variable inside House.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q6",
+          "question": "If Class A extends Class B, what can Class A NOT do easily at runtime?",
+          "options": [
+            "Call public methods of B",
+            "Pass itself as an instance of B",
+            "Change its parent class to Class C",
+            "Access protected fields of B"
+          ],
+          "correctAnswer": 2,
+          "explanation": "Inheritance is fixed at compile time in Java; an object cannot change its superclass hierarchy dynamically at runtime.",
+          "correctOptionIndex": 2
+        },
+        {
+          "id": "q7",
+          "question": "What is the classic Gang of Four design principle regarding inheritance and composition?",
+          "options": [
+            "Favor Inheritance over Interfaces",
+            "Favor Composition over Inheritance",
+            "Always use abstract classes before interfaces",
+            "Avoid all private fields"
+          ],
+          "correctAnswer": 1,
+          "explanation": "'Favor object composition over class inheritance' is a core Gang of Four design principle for building maintainable systems.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q8",
+          "question": "Which relationship represents: 'A Flight has many Passengers'?",
+          "options": [
+            "Is-A",
+            "Has-A",
+            "Can-Do",
+            "Implements"
+          ],
+          "correctAnswer": 1,
+          "explanation": "A Flight contains or references Passengers; it is a Has-A (specifically aggregation) relationship.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q9",
+          "question": "What occurs when inheritance is used purely for code reuse rather than true subtyping?",
+          "options": [
+            "Tighter, cleaner encapsulation",
+            "Fragile base class problem and inappropriate API exposure",
+            "Faster garbage collection",
+            "Automatic thread safety"
+          ],
+          "correctAnswer": 1,
+          "explanation": "Subclassing purely for code reuse exposes inappropriate superclass methods to clients and creates tight coupling.",
+          "correctOptionIndex": 1
+        },
+        {
+          "id": "q10",
+          "question": "If you have classes Animal, Dog, and Collar, what are the relationships?",
+          "options": [
+            "Dog IS-A Animal, Dog HAS-A Collar",
+            "Dog HAS-A Animal, Dog IS-A Collar",
+            "Collar IS-A Dog, Dog IS-A Animal",
+            "Animal HAS-A Dog, Dog HAS-A Collar"
+          ],
+          "correctAnswer": 0,
+          "explanation": "A Dog IS-AN Animal (inheritance), and a Dog HAS-A Collar (composition/aggregation).",
+          "correctOptionIndex": 0
+        }
+      ]
+    },
+    {
+      "id": "act-les1-interview",
+      "type": "interview_qa",
+      "title": "Has-A vs Is-A Interview Focus",
+      "questions": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you explain the difference between 'Is-A' and 'Has-A' in a technical interview?",
+          "answer": "'Is-A' represents inheritance and specialization, where a subclass is a specialized type of its parent and fulfills the Liskov Substitution Principle (e.g. Dog IS-A Mammal). 'Has-A' represents composition or aggregation, where a class holds a reference to another object as an instance field to reuse its capability (e.g. Car HAS-A Engine).",
+          "expectedAnswer": "'Is-A' represents inheritance and specialization, where a subclass is a specialized type of its parent and fulfills the Liskov Substitution Principle (e.g. Dog IS-A Mammal). 'Has-A' represents composition or aggregation, where a class holds a reference to another object as an instance field to reuse its capability (e.g. Car HAS-A Engine).",
+          "keyTakeaway": "Is-A = inheritance / subtype polymorphism. Has-A = composition / member reference.",
+          "keyPoints": [
+            "Is-A = inheritance / subtype polymorphism. Has-A = composition / member reference."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why do design experts recommend 'Favor object composition over class inheritance'?",
+          "answer": "Class inheritance creates compile-time white-box coupling where changes to the superclass can inadvertently break subclasses (the fragile base class problem). It also leaks the parent's entire interface. Composition provides black-box encapsulation, decouples classes through interfaces, and allows changing behavior dynamically at runtime.",
+          "expectedAnswer": "Class inheritance creates compile-time white-box coupling where changes to the superclass can inadvertently break subclasses (the fragile base class problem). It also leaks the parent's entire interface. Composition provides black-box encapsulation, decouples classes through interfaces, and allows changing behavior dynamically at runtime.",
+          "keyTakeaway": "Composition avoids tight coupling, maintains encapsulation, and enables runtime flexibility.",
+          "keyPoints": [
+            "Composition avoids tight coupling, maintains encapsulation, and enables runtime flexibility."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can you give an example of Java's own standard library violating this principle?",
+          "answer": "A famous example is `java.util.Stack` extending `java.util.Vector`. A Stack HAS-A vector or list structure; it IS NOT a random-access vector. Because it extended Vector, methods like `stack.insertElementAt(0, item)` or `stack.get(3)` were exposed, breaking LIFO invariants.",
+          "expectedAnswer": "A famous example is `java.util.Stack` extending `java.util.Vector`. A Stack HAS-A vector or list structure; it IS NOT a random-access vector. Because it extended Vector, methods like `stack.insertElementAt(0, item)` or `stack.get(3)` were exposed, breaking LIFO invariants.",
+          "keyTakeaway": "Stack extending Vector is Java's classic textbook example of inappropriate inheritance.",
+          "keyPoints": [
+            "Stack extending Vector is Java's classic textbook example of inappropriate inheritance."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "When IS inheritance actually appropriate?",
+          "answer": "Inheritance is appropriate when: (1) A true 'Is-A' hierarchical relationship exists that satisfies Liskov substitution, (2) The subclass will always be an extension of the parent throughout its lifecycle, and (3) You want polymorphic substitution in client code.",
+          "expectedAnswer": "Inheritance is appropriate when: (1) A true 'Is-A' hierarchical relationship exists that satisfies Liskov substitution, (2) The subclass will always be an extension of the parent throughout its lifecycle, and (3) You want polymorphic substitution in client code.",
+          "keyTakeaway": "Use inheritance only when subtyping semantics and full substitutability hold true.",
+          "keyPoints": [
+            "Use inheritance only when subtyping semantics and full substitutability hold true."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the relationship between 'Has-A' and Dependency Injection?",
+          "answer": "Dependency Injection is the practical application of 'Has-A'. Instead of a class instantiating its own dependencies internally, dependencies are injected via constructor or setter, allowing loose coupling and easy mocking during unit tests.",
+          "expectedAnswer": "Dependency Injection is the practical application of 'Has-A'. Instead of a class instantiating its own dependencies internally, dependencies are injected via constructor or setter, allowing loose coupling and easy mocking during unit tests.",
+          "keyTakeaway": "DI supplies the objects that satisfy a class's 'Has-A' member variables.",
+          "keyPoints": [
+            "DI supplies the objects that satisfy a class's 'Has-A' member variables."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does composition prevent class explosion?",
+          "answer": "If you use inheritance for features (e.g. `ElectricSunroofCar`, `GasManualCar`, `ElectricManualCar`), the number of classes grows exponentially with every feature. With composition, you have one `Car` class holding references to `Engine`, `Transmission`, and `Roof` interfaces, combining any configuration freely.",
+          "expectedAnswer": "If you use inheritance for features (e.g. `ElectricSunroofCar`, `GasManualCar`, `ElectricManualCar`), the number of classes grows exponentially with every feature. With composition, you have one `Car` class holding references to `Engine`, `Transmission`, and `Roof` interfaces, combining any configuration freely.",
+          "keyTakeaway": "Composition combines behaviors multiplicatively without spawning combinatorial subclasses.",
+          "keyPoints": [
+            "Composition combines behaviors multiplicatively without spawning combinatorial subclasses."
+          ]
+        }
+      ],
+      "interviewQA": [
+        {
+          "id": "q1",
+          "companyTag": "Google",
+          "companyTags": [
+            "Google"
+          ],
+          "question": "How do you explain the difference between 'Is-A' and 'Has-A' in a technical interview?",
+          "answer": "'Is-A' represents inheritance and specialization, where a subclass is a specialized type of its parent and fulfills the Liskov Substitution Principle (e.g. Dog IS-A Mammal). 'Has-A' represents composition or aggregation, where a class holds a reference to another object as an instance field to reuse its capability (e.g. Car HAS-A Engine).",
+          "expectedAnswer": "'Is-A' represents inheritance and specialization, where a subclass is a specialized type of its parent and fulfills the Liskov Substitution Principle (e.g. Dog IS-A Mammal). 'Has-A' represents composition or aggregation, where a class holds a reference to another object as an instance field to reuse its capability (e.g. Car HAS-A Engine).",
+          "keyTakeaway": "Is-A = inheritance / subtype polymorphism. Has-A = composition / member reference.",
+          "keyPoints": [
+            "Is-A = inheritance / subtype polymorphism. Has-A = composition / member reference."
+          ]
+        },
+        {
+          "id": "q2",
+          "companyTag": "Amazon",
+          "companyTags": [
+            "Amazon"
+          ],
+          "question": "Why do design experts recommend 'Favor object composition over class inheritance'?",
+          "answer": "Class inheritance creates compile-time white-box coupling where changes to the superclass can inadvertently break subclasses (the fragile base class problem). It also leaks the parent's entire interface. Composition provides black-box encapsulation, decouples classes through interfaces, and allows changing behavior dynamically at runtime.",
+          "expectedAnswer": "Class inheritance creates compile-time white-box coupling where changes to the superclass can inadvertently break subclasses (the fragile base class problem). It also leaks the parent's entire interface. Composition provides black-box encapsulation, decouples classes through interfaces, and allows changing behavior dynamically at runtime.",
+          "keyTakeaway": "Composition avoids tight coupling, maintains encapsulation, and enables runtime flexibility.",
+          "keyPoints": [
+            "Composition avoids tight coupling, maintains encapsulation, and enables runtime flexibility."
+          ]
+        },
+        {
+          "id": "q3",
+          "companyTag": "Microsoft",
+          "companyTags": [
+            "Microsoft"
+          ],
+          "question": "Can you give an example of Java's own standard library violating this principle?",
+          "answer": "A famous example is `java.util.Stack` extending `java.util.Vector`. A Stack HAS-A vector or list structure; it IS NOT a random-access vector. Because it extended Vector, methods like `stack.insertElementAt(0, item)` or `stack.get(3)` were exposed, breaking LIFO invariants.",
+          "expectedAnswer": "A famous example is `java.util.Stack` extending `java.util.Vector`. A Stack HAS-A vector or list structure; it IS NOT a random-access vector. Because it extended Vector, methods like `stack.insertElementAt(0, item)` or `stack.get(3)` were exposed, breaking LIFO invariants.",
+          "keyTakeaway": "Stack extending Vector is Java's classic textbook example of inappropriate inheritance.",
+          "keyPoints": [
+            "Stack extending Vector is Java's classic textbook example of inappropriate inheritance."
+          ]
+        },
+        {
+          "id": "q4",
+          "companyTag": "Meta",
+          "companyTags": [
+            "Meta"
+          ],
+          "question": "When IS inheritance actually appropriate?",
+          "answer": "Inheritance is appropriate when: (1) A true 'Is-A' hierarchical relationship exists that satisfies Liskov substitution, (2) The subclass will always be an extension of the parent throughout its lifecycle, and (3) You want polymorphic substitution in client code.",
+          "expectedAnswer": "Inheritance is appropriate when: (1) A true 'Is-A' hierarchical relationship exists that satisfies Liskov substitution, (2) The subclass will always be an extension of the parent throughout its lifecycle, and (3) You want polymorphic substitution in client code.",
+          "keyTakeaway": "Use inheritance only when subtyping semantics and full substitutability hold true.",
+          "keyPoints": [
+            "Use inheritance only when subtyping semantics and full substitutability hold true."
+          ]
+        },
+        {
+          "id": "q5",
+          "companyTag": "Netflix",
+          "companyTags": [
+            "Netflix"
+          ],
+          "question": "What is the relationship between 'Has-A' and Dependency Injection?",
+          "answer": "Dependency Injection is the practical application of 'Has-A'. Instead of a class instantiating its own dependencies internally, dependencies are injected via constructor or setter, allowing loose coupling and easy mocking during unit tests.",
+          "expectedAnswer": "Dependency Injection is the practical application of 'Has-A'. Instead of a class instantiating its own dependencies internally, dependencies are injected via constructor or setter, allowing loose coupling and easy mocking during unit tests.",
+          "keyTakeaway": "DI supplies the objects that satisfy a class's 'Has-A' member variables.",
+          "keyPoints": [
+            "DI supplies the objects that satisfy a class's 'Has-A' member variables."
+          ]
+        },
+        {
+          "id": "q6",
+          "companyTag": "Apple",
+          "companyTags": [
+            "Apple"
+          ],
+          "question": "How does composition prevent class explosion?",
+          "answer": "If you use inheritance for features (e.g. `ElectricSunroofCar`, `GasManualCar`, `ElectricManualCar`), the number of classes grows exponentially with every feature. With composition, you have one `Car` class holding references to `Engine`, `Transmission`, and `Roof` interfaces, combining any configuration freely.",
+          "expectedAnswer": "If you use inheritance for features (e.g. `ElectricSunroofCar`, `GasManualCar`, `ElectricManualCar`), the number of classes grows exponentially with every feature. With composition, you have one `Car` class holding references to `Engine`, `Transmission`, and `Roof` interfaces, combining any configuration freely.",
+          "keyTakeaway": "Composition combines behaviors multiplicatively without spawning combinatorial subclasses.",
+          "keyPoints": [
+            "Composition combines behaviors multiplicatively without spawning combinatorial subclasses."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "act-les1-checklist",
+      "type": "self_evaluation",
+      "title": "Has-A vs Is-A Architecture Checklist",
+      "items": [
+        "I can clearly distinguish between 'Is-A' (inheritance) and 'Has-A' (composition).",
+        "I test every potential inheritance tree against the Liskov Substitution Principle.",
+        "I do not use 'extends' purely to reuse a few utility methods from another class.",
+        "I model containment, ownership, and part-whole relationships with instance fields.",
+        "I know why java.util.Stack extending java.util.Vector is considered an architectural flaw.",
+        "I prefer declaring Has-A fields using interface types rather than concrete types.",
+        "I utilize constructor injection to supply Has-A collaborator objects.",
+        "I know that composition allows hot-swapping collaborators at runtime via setters.",
+        "I understand how composition prevents combinatorial subclass explosion.",
+        "I adhere to the Gang of Four rule: 'Favor object composition over class inheritance'."
+      ],
+      "checklist": [
+        "I can clearly distinguish between 'Is-A' (inheritance) and 'Has-A' (composition).",
+        "I test every potential inheritance tree against the Liskov Substitution Principle.",
+        "I do not use 'extends' purely to reuse a few utility methods from another class.",
+        "I model containment, ownership, and part-whole relationships with instance fields.",
+        "I know why java.util.Stack extending java.util.Vector is considered an architectural flaw.",
+        "I prefer declaring Has-A fields using interface types rather than concrete types.",
+        "I utilize constructor injection to supply Has-A collaborator objects.",
+        "I know that composition allows hot-swapping collaborators at runtime via setters.",
+        "I understand how composition prevents combinatorial subclass explosion.",
+        "I adhere to the Gang of Four rule: 'Favor object composition over class inheritance'."
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-les1-p1",
+      "lessonId": "java-oop-mod8-les1",
+      "orderIndex": 1,
+      "title": "Refactoring Misguided Inheritance to Has-A",
+      "difficulty": "easy",
+      "problemStatement": "A junior developer wrote a `Computer` class that extends `Processor`. While a computer uses a processor, a computer IS NOT a processor. Refactor `Computer` so that it HAS-A `Processor` as a private field. Complete the constructor and the `computeReport` method so it prints the expected output.",
+      "starterCode": "class Processor {\n    private String model;\n    private double clockSpeedGhz;\n    \n    public Processor(String model, double clockSpeedGhz) {\n        this.model = model;\n        this.clockSpeedGhz = clockSpeedGhz;\n    }\n    \n    public String getSpecs() {\n        return model + \" @ \" + clockSpeedGhz + \"GHz\";\n    }\n}\n\n// TODO: Remove 'extends Processor' and implement HAS-A relationship\nclass Computer {\n    private String brand;\n    // TODO: Declare private Processor field\n    \n    public Computer(String brand, Processor processor) {\n        this.brand = brand;\n        // TODO: Initialize processor field\n    }\n    \n    public void computeReport() {\n        // TODO: Print 'Computer [' + brand + '] powered by: ' + processor specs\n    }\n}\n\npublic class ComputerApp {\n    public static void main(String[] args) {\n        Processor cpu = new Processor(\"Intel Core i7\", 3.8);\n        Computer pc = new Computer(\"Dell XPS\", cpu);\n        pc.computeReport();\n    }\n}",
+      "initialCode": "class Processor {\n    private String model;\n    private double clockSpeedGhz;\n    \n    public Processor(String model, double clockSpeedGhz) {\n        this.model = model;\n        this.clockSpeedGhz = clockSpeedGhz;\n    }\n    \n    public String getSpecs() {\n        return model + \" @ \" + clockSpeedGhz + \"GHz\";\n    }\n}\n\n// TODO: Remove 'extends Processor' and implement HAS-A relationship\nclass Computer {\n    private String brand;\n    // TODO: Declare private Processor field\n    \n    public Computer(String brand, Processor processor) {\n        this.brand = brand;\n        // TODO: Initialize processor field\n    }\n    \n    public void computeReport() {\n        // TODO: Print 'Computer [' + brand + '] powered by: ' + processor specs\n    }\n}\n\npublic class ComputerApp {\n    public static void main(String[] args) {\n        Processor cpu = new Processor(\"Intel Core i7\", 3.8);\n        Computer pc = new Computer(\"Dell XPS\", cpu);\n        pc.computeReport();\n    }\n}",
+      "solutionCode": "class Processor {\n    private String model;\n    private double clockSpeedGhz;\n    \n    public Processor(String model, double clockSpeedGhz) {\n        this.model = model;\n        this.clockSpeedGhz = clockSpeedGhz;\n    }\n    \n    public String getSpecs() {\n        return model + \" @ \" + clockSpeedGhz + \"GHz\";\n    }\n}\n\nclass Computer {\n    private String brand;\n    private Processor processor;\n    \n    public Computer(String brand, Processor processor) {\n        this.brand = brand;\n        this.processor = processor;\n    }\n    \n    public void computeReport() {\n        System.out.println(\"Computer [\" + brand + \"] powered by: \" + processor.getSpecs());\n    }\n}\n\npublic class ComputerApp {\n    public static void main(String[] args) {\n        Processor cpu = new Processor(\"Intel Core i7\", 3.8);\n        Computer pc = new Computer(\"Dell XPS\", cpu);\n        pc.computeReport();\n    }\n}",
+      "expectedOutput": "Computer [Dell XPS] powered by: Intel Core i7 @ 3.8GHz",
+      "hints": [
+        "Declare `private Processor processor;` inside `Computer`.",
+        "In `computeReport()`, call `processor.getSpecs()`."
+      ]
+    },
+    {
+      "id": "prob-les1-p2",
+      "lessonId": "java-oop-mod8-les1",
+      "orderIndex": 2,
+      "title": "Smart Home Thermostat Composition",
+      "difficulty": "medium",
+      "problemStatement": "Build a smart thermostat system using composition from scratch:\n1. Class `TemperatureSensor`: holds `private double currentTemp`. Constructor accepts double. Method `public double readTemp()` returns currentTemp. Method `public void updateTemp(double newTemp)` sets currentTemp.\n2. Class `Thermostat`: has `private String zoneName`, `private double targetTemp`, and `private TemperatureSensor sensor` (HAS-A).\n   - Constructor accepts `String zoneName, double targetTemp, TemperatureSensor sensor`.\n   - Method `public void evaluate()`: reads current temp from sensor. If `currentTemp < targetTemp`, prints `'[Zone: ' + zoneName + '] HEATING ON (Current: ' + currentTemp + 'C, Target: ' + targetTemp + 'C)'`. Else prints `'[Zone: ' + zoneName + '] TARGET REACHED (Current: ' + currentTemp + 'C)'`.\n3. In `Main`, create a `TemperatureSensor(18.5)`. Create a `Thermostat(\"Living Room\", 21.0, sensor)`. Call `evaluate()`. Then update sensor to `21.5` and call `evaluate()` again.",
+      "solutionCode": "class TemperatureSensor {\n    private double currentTemp;\n    public TemperatureSensor(double currentTemp) {\n        this.currentTemp = currentTemp;\n    }\n    public double readTemp() {\n        return currentTemp;\n    }\n    public void updateTemp(double newTemp) {\n        this.currentTemp = newTemp;\n    }\n}\n\nclass Thermostat {\n    private String zoneName;\n    private double targetTemp;\n    private TemperatureSensor sensor;\n\n    public Thermostat(String zoneName, double targetTemp, TemperatureSensor sensor) {\n        this.zoneName = zoneName;\n        this.targetTemp = targetTemp;\n        this.sensor = sensor;\n    }\n\n    public void evaluate() {\n        double current = sensor.readTemp();\n        if (current < targetTemp) {\n            System.out.println(\"[Zone: \" + zoneName + \"] HEATING ON (Current: \" + current + \"C, Target: \" + targetTemp + \"C)\");\n        } else {\n            System.out.println(\"[Zone: \" + zoneName + \"] TARGET REACHED (Current: \" + current + \"C)\");\n        }\n    }\n}\n\npublic class ThermostatApp {\n    public static void main(String[] args) {\n        TemperatureSensor sensor = new TemperatureSensor(18.5);\n        Thermostat thermostat = new Thermostat(\"Living Room\", 21.0, sensor);\n        thermostat.evaluate();\n        sensor.updateTemp(21.5);\n        thermostat.evaluate();\n    }\n}",
+      "expectedOutput": "[Zone: Living Room] HEATING ON (Current: 18.5C, Target: 21.0C)\n[Zone: Living Room] TARGET REACHED (Current: 21.5C)",
+      "hints": [
+        "Thermostat references TemperatureSensor directly as a private field.",
+        "Calling sensor.updateTemp(...) mutates the underlying sensor that Thermostat inspects."
+      ]
+    },
+    {
+      "id": "prob-les1-p3",
+      "lessonId": "java-oop-mod8-les1",
+      "orderIndex": 3,
+      "title": "Payment Terminal with Swappable Auth Method",
+      "difficulty": "medium",
+      "problemStatement": "Build a payment system demonstrating runtime swappability via composition:\n1. Interface `PaymentMethod`: `boolean processPayment(double amount)`.\n2. Class `CreditCardPayment` implementing `PaymentMethod`: has `private String maskedCard`. Constructor accepts String. `processPayment(double amount)` prints `'Charging $' + amount + ' to card ' + maskedCard` and returns true.\n3. Class `CryptoPayment` implementing `PaymentMethod`: has `private String walletAddress`. Constructor accepts String. `processPayment(double amount)` prints `'Sending $' + amount + ' in crypto to ' + walletAddress` and returns true.\n4. Class `CheckoutTerminal`: has `private PaymentMethod currentMethod` (HAS-A).\n   - Constructor accepts `PaymentMethod method`.\n   - Method `public void setPaymentMethod(PaymentMethod method)` updates the method.\n   - Method `public void checkout(double amount)` calls `currentMethod.processPayment(amount)`.\n5. In `Main`, checkout $99.50 with `CreditCardPayment(\"****-1234\")`, then switch to `CryptoPayment(\"0xABC123\")` and checkout $450.00.",
+      "solutionCode": "interface PaymentMethod {\n    boolean processPayment(double amount);\n}\n\nclass CreditCardPayment implements PaymentMethod {\n    private String maskedCard;\n    public CreditCardPayment(String maskedCard) {\n        this.maskedCard = maskedCard;\n    }\n    @Override\n    public boolean processPayment(double amount) {\n        System.out.println(\"Charging $\" + amount + \" to card \" + maskedCard);\n        return true;\n    }\n}\n\nclass CryptoPayment implements PaymentMethod {\n    private String walletAddress;\n    public CryptoPayment(String walletAddress) {\n        this.walletAddress = walletAddress;\n    }\n    @Override\n    public boolean processPayment(double amount) {\n        System.out.println(\"Sending $\" + amount + \" in crypto to \" + walletAddress);\n        return true;\n    }\n}\n\nclass CheckoutTerminal {\n    private PaymentMethod currentMethod;\n    public CheckoutTerminal(PaymentMethod currentMethod) {\n        this.currentMethod = currentMethod;\n    }\n    public void setPaymentMethod(PaymentMethod currentMethod) {\n        this.currentMethod = currentMethod;\n    }\n    public void checkout(double amount) {\n        currentMethod.processPayment(amount);\n    }\n}\n\npublic class PaymentApp {\n    public static void main(String[] args) {\n        CheckoutTerminal terminal = new CheckoutTerminal(new CreditCardPayment(\"****-1234\"));\n        terminal.checkout(99.50);\n        terminal.setPaymentMethod(new CryptoPayment(\"0xABC123\"));\n        terminal.checkout(450.00);\n    }\n}",
+      "expectedOutput": "Charging $99.5 to card ****-1234\nSending $450.0 in crypto to 0xABC123",
+      "hints": [
+        "CheckoutTerminal references PaymentMethod interface.",
+        "setPaymentMethod swaps the collaborator at runtime."
+      ]
+    },
+    {
+      "id": "prob-les1-p4",
+      "lessonId": "java-oop-mod8-les1",
+      "orderIndex": 4,
+      "title": "Bug Hunt: Inappropriate Stack Subclassing Vector",
+      "difficulty": "medium",
+      "problemStatement": "A developer simulated the historical bug in Java: they made a `SafeStack` extend `SimpleList`. As a result, users can call `insertAtBottom` and break LIFO order! Fix `SafeStack` by refactoring from inheritance to composition: make `SimpleList` a private field inside `SafeStack`, remove `extends SimpleList`, and delegate `push` and `pop` properly.",
+      "starterCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SimpleList {\n    protected List<String> items = new ArrayList<>();\n    public void add(String s) { items.add(s); }\n    public String removeLast() { return items.isEmpty() ? null : items.remove(items.size() - 1); }\n    public void insertAt(int idx, String s) { items.add(idx, s); } // Stack should NOT expose this!\n    public int size() { return items.size(); }\n}\n\n// BUG: SafeStack extends SimpleList, exposing insertAt and breaking encapsulation!\nclass SafeStack extends SimpleList {\n    public void push(String s) {\n        add(s);\n    }\n    public String pop() {\n        return removeLast();\n    }\n}\n\npublic class StackBugApp {\n    public static void main(String[] args) {\n        SafeStack stack = new SafeStack();\n        stack.push(\"First\");\n        stack.push(\"Second\");\n        System.out.println(\"Popped: \" + stack.pop());\n        System.out.println(\"Popped: \" + stack.pop());\n    }\n}",
+      "initialCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SimpleList {\n    protected List<String> items = new ArrayList<>();\n    public void add(String s) { items.add(s); }\n    public String removeLast() { return items.isEmpty() ? null : items.remove(items.size() - 1); }\n    public void insertAt(int idx, String s) { items.add(idx, s); } // Stack should NOT expose this!\n    public int size() { return items.size(); }\n}\n\n// BUG: SafeStack extends SimpleList, exposing insertAt and breaking encapsulation!\nclass SafeStack extends SimpleList {\n    public void push(String s) {\n        add(s);\n    }\n    public String pop() {\n        return removeLast();\n    }\n}\n\npublic class StackBugApp {\n    public static void main(String[] args) {\n        SafeStack stack = new SafeStack();\n        stack.push(\"First\");\n        stack.push(\"Second\");\n        System.out.println(\"Popped: \" + stack.pop());\n        System.out.println(\"Popped: \" + stack.pop());\n    }\n}",
+      "solutionCode": "import java.util.ArrayList;\nimport java.util.List;\n\nclass SimpleList {\n    protected List<String> items = new ArrayList<>();\n    public void add(String s) { items.add(s); }\n    public String removeLast() { return items.isEmpty() ? null : items.remove(items.size() - 1); }\n    public void insertAt(int idx, String s) { items.add(idx, s); }\n    public int size() { return items.size(); }\n}\n\nclass SafeStack {\n    private SimpleList list = new SimpleList();\n    \n    public void push(String s) {\n        list.add(s);\n    }\n    public String pop() {\n        return list.removeLast();\n    }\n    public int size() {\n        return list.size();\n    }\n}\n\npublic class StackBugApp {\n    public static void main(String[] args) {\n        SafeStack stack = new SafeStack();\n        stack.push(\"First\");\n        stack.push(\"Second\");\n        System.out.println(\"Popped: \" + stack.pop());\n        System.out.println(\"Popped: \" + stack.pop());\n    }\n}",
+      "expectedOutput": "Popped: Second\nPopped: First",
+      "hints": [
+        "Remove 'extends SimpleList' from SafeStack.",
+        "Add 'private SimpleList list = new SimpleList();' inside SafeStack.",
+        "Delegate push to list.add(s) and pop to list.removeLast()."
+      ]
+    },
+    {
+      "id": "prob-les1-p5",
+      "lessonId": "java-oop-mod8-les1",
+      "orderIndex": 5,
+      "title": "Complete Drone Flight Controller Modeling",
+      "difficulty": "hard",
+      "problemStatement": "Design a drone flight control system adhering strictly to Has-A and Is-A:\n1. Interface `PowerSource`: `int getChargePercent();` and `void drain(int percent);`.\n2. Class `LithiumBattery` implementing `PowerSource`: holds `private int charge` initialized in constructor. `getChargePercent()` returns charge. `drain(int percent)` subtracts percent (minimum 0).\n3. Class `GpsModule`: holds `private double lat, lon`. Constructor accepts both. Method `public String getCoordinates()` returns `'(' + lat + \", \" + lon + ')'`.\n4. Class `Quadcopter`: HAS-A `PowerSource` and HAS-A `GpsModule`. Also has `private String serialNum`.\n   - Constructor accepts `String serialNum, PowerSource battery, GpsModule gps`.\n   - Method `public void flyMission(double destLat, double destLon, int drainCost)`: prints `'[Drone ' + serialNum + '] Mission launch from ' + gps.getCoordinates()`. Calls `battery.drain(drainCost)`. Then prints `'[Drone ' + serialNum + '] Mission complete. Remaining battery: ' + battery.getChargePercent() + '%'`. (Ignore updating GPS coordinate).\n5. In `Main`, create battery with 90% charge, GPS with lat 37.7749 and lon -122.4194. Create `Quadcopter(\"DRONE-X9\", battery, gps)`. Execute `flyMission(37.8000, -122.4000, 25)`.",
+      "solutionCode": "interface PowerSource {\n    int getChargePercent();\n    void drain(int percent);\n}\n\nclass LithiumBattery implements PowerSource {\n    private int charge;\n    public LithiumBattery(int charge) {\n        this.charge = charge;\n    }\n    @Override\n    public int getChargePercent() {\n        return charge;\n    }\n    @Override\n    public void drain(int percent) {\n        this.charge = Math.max(0, this.charge - percent);\n    }\n}\n\nclass GpsModule {\n    private double lat, lon;\n    public GpsModule(double lat, double lon) {\n        this.lat = lat;\n        this.lon = lon;\n    }\n    public String getCoordinates() {\n        return \"(\" + lat + \", \" + lon + \")\";\n    }\n}\n\nclass Quadcopter {\n    private String serialNum;\n    private PowerSource battery;\n    private GpsModule gps;\n\n    public Quadcopter(String serialNum, PowerSource battery, GpsModule gps) {\n        this.serialNum = serialNum;\n        this.battery = battery;\n        this.gps = gps;\n    }\n\n    public void flyMission(double destLat, double destLon, int drainCost) {\n        System.out.println(\"[Drone \" + serialNum + \"] Mission launch from \" + gps.getCoordinates());\n        battery.drain(drainCost);\n        System.out.println(\"[Drone \" + serialNum + \"] Mission complete. Remaining battery: \" + battery.getChargePercent() + \"%\");\n    }\n}\n\npublic class DroneApp {\n    public static void main(String[] args) {\n        PowerSource battery = new LithiumBattery(90);\n        GpsModule gps = new GpsModule(37.7749, -122.4194);\n        Quadcopter drone = new Quadcopter(\"DRONE-X9\", battery, gps);\n        drone.flyMission(37.8000, -122.4000, 25);\n    }\n}",
+      "expectedOutput": "[Drone DRONE-X9] Mission launch from (37.7749, -122.4194)\n[Drone DRONE-X9] Mission complete. Remaining battery: 65%",
+      "hints": [
+        "LithiumBattery implements PowerSource (Is-A).",
+        "Quadcopter contains PowerSource and GpsModule as member fields (Has-A)."
+      ]
+    }
+  ]
+}
