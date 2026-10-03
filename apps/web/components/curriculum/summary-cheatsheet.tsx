@@ -470,6 +470,338 @@ export const SummaryCheatSheet: React.FC<SummaryCheatSheetProps> = ({ lesson }) 
         </Card>
       )}
 
+      {/* ==================================================== */}
+      {/* OOP MODULE 2 CHEAT SHEETS: CONSTRUCTORS & INIT      */}
+      {/* ==================================================== */}
+
+      {/* Lesson 1: What Is a Constructor? */}
+      {(slug === 'what-is-a-constructor') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Constructor Anatomy &amp; Execution Sequence
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Phase</th>
+                  <th className="p-2.5">What Happens in Memory</th>
+                  <th className="p-2.5">Actor</th>
+                  <th className="p-2.5 rounded-r-lg">Rule to Remember</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-brand-700 font-mono">1. new Class()</td>
+                  <td className="p-2.5 text-slate-700">Allocates blank heap memory; sets default values (null, 0, false)</td>
+                  <td className="p-2.5 text-indigo-600 font-semibold">JVM Runtime</td>
+                  <td className="p-2.5 text-slate-600">'new' allocates space; constructor does NOT allocate memory</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-emerald-700 font-mono">2. Constructor()</td>
+                  <td className="p-2.5 text-slate-700">Executes initialization block; populates initial instance fields</td>
+                  <td className="p-2.5 text-emerald-600 font-semibold">Constructor Code</td>
+                  <td className="p-2.5 text-slate-600">Must match class name; NEVER has a return type (not even void)</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-indigo-700 font-mono">3. Assignment</td>
+                  <td className="p-2.5 text-slate-700">Memory address of ready object returned to reference variable</td>
+                  <td className="p-2.5 text-indigo-600 font-semibold">Stack Variable</td>
+                  <td className="p-2.5 text-slate-600">Object is 100% ready for method invocation immediately</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 2: Default Constructors */}
+      {(slug === 'default-constructors') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Compiler Default vs Explicit No-Arg Constructor Rules
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Scenario in Code</th>
+                  <th className="p-2.5">Does javac create Default?</th>
+                  <th className="p-2.5">Does new ClassName() work?</th>
+                  <th className="p-2.5 rounded-r-lg">Architectural Behavior</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Zero constructors written</td>
+                  <td className="p-2.5 text-emerald-600 font-bold font-mono">YES (Automatic)</td>
+                  <td className="p-2.5 text-emerald-600 font-bold font-mono">YES</td>
+                  <td className="p-2.5 text-slate-600">Javac synthesizes invisible empty ClassName() &#123;&#125; in bytecode</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-rose-50/40">
+                  <td className="p-2.5 font-bold text-rose-800">Only Parameterized written</td>
+                  <td className="p-2.5 text-rose-600 font-bold font-mono">NO (Vanished!)</td>
+                  <td className="p-2.5 text-rose-600 font-bold font-mono">NO (Compile Error!)</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">Java assumes you want mandatory parameters; removes default</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-emerald-50/30">
+                  <td className="p-2.5 font-bold text-emerald-900">Explicit No-arg + Parameterized</td>
+                  <td className="p-2.5 text-indigo-600 font-mono">Developer provided</td>
+                  <td className="p-2.5 text-emerald-600 font-bold font-mono">YES</td>
+                  <td className="p-2.5 text-slate-600">Best practice: gives callers flexibility for default or custom initialization</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 3: Parameterized Constructors */}
+      {(slug === 'parameterized-constructors') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Parameterized Constructor Heap Flow &amp; Best Practices
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="font-bold text-brand-700 font-mono">1. Atomic Creation</span>
+              <p className="text-slate-600 text-[11px]">Object is born with all required data populated in 1 atomic statement. No half-initialized states.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="font-bold text-indigo-700 font-mono">2. Type Enforcement</span>
+              <p className="text-slate-600 text-[11px]">Compiler enforces data types at compile time (e.g. string cannot be passed where double is expected).</p>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="font-bold text-emerald-700 font-mono">3. Gatekeeper Validation</span>
+              <p className="text-slate-600 text-[11px]">Constructors can sanitize input (clamp negative prices, reject null names) before object enters memory.</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 4: Constructor Overloading */}
+      {(slug === 'constructor-overloading') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Constructor Overloading Signature Resolution Matrix
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Variation Factor</th>
+                  <th className="p-2.5">Example Signatures</th>
+                  <th className="p-2.5">Valid Overload?</th>
+                  <th className="p-2.5 rounded-r-lg">Compiler Rule</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Different Parameter Count</td>
+                  <td className="p-2.5 font-mono text-[11px] text-brand-700">Student() vs Student(String)</td>
+                  <td className="p-2.5 font-bold text-emerald-600 font-mono">VALID ✓</td>
+                  <td className="p-2.5 text-slate-600">Different parameter counts are unambiguous</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Different Parameter Types</td>
+                  <td className="p-2.5 font-mono text-[11px] text-brand-700">Item(int id) vs Item(String id)</td>
+                  <td className="p-2.5 font-bold text-emerald-600 font-mono">VALID ✓</td>
+                  <td className="p-2.5 text-slate-600">Javac matches argument type at compile time</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Different Parameter Order</td>
+                  <td className="p-2.5 font-mono text-[11px] text-brand-700">Pair(int, String) vs Pair(String, int)</td>
+                  <td className="p-2.5 font-bold text-emerald-600 font-mono">VALID ✓</td>
+                  <td className="p-2.5 text-slate-600">Parameter type sequence forms part of signature</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-rose-50/40">
+                  <td className="p-2.5 font-bold text-rose-800">Only Parameter Names Differ</td>
+                  <td className="p-2.5 font-mono text-[11px] text-rose-700">User(String name) vs User(String email)</td>
+                  <td className="p-2.5 font-bold text-rose-600 font-mono">INVALID ✗</td>
+                  <td className="p-2.5 text-rose-700">Variable names are discarded; signatures are identical</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 5: The this Keyword */}
+      {(slug === 'the-this-keyword') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Lightbulb className="w-4 h-4 text-amber-500" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Variable Shadowing &amp; 'this' Reference Cheat Sheet
+            </h4>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-200 space-y-2">
+              <span className="font-bold text-rose-800 font-mono">❌ Shadowing Trap: name = name;</span>
+              <p className="text-slate-700 leading-relaxed text-[11px]">
+                When parameter has the same name as the instance field, local parameter takes priority.
+                <code className="block mt-1 p-1 bg-white rounded font-mono text-[11px] text-rose-700 border border-rose-200">
+                  name = name; // Writes parameter into parameter! Field stays null!
+                </code>
+              </p>
+            </div>
+            <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
+              <span className="font-bold text-emerald-800 font-mono">✓ Idiomatic Fix: this.name = name;</span>
+              <p className="text-slate-700 leading-relaxed text-[11px]">
+                'this' points to the current heap instance, explicitly anchoring the assignment to the field.
+                <code className="block mt-1 p-1 bg-white rounded font-mono text-[11px] text-emerald-700 border border-emerald-200">
+                  this.name = name; // Stored directly in instance memory!
+                </code>
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 6: Constructor Chaining with this() */}
+      {(slug === 'constructor-chaining-with-this') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Layers className="w-4 h-4 text-indigo-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Constructor Chaining Flow &amp; Inviolable Rules
+            </h4>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950 font-mono text-xs text-amber-200 border border-slate-800/80 leading-relaxed">
+            <pre>&#47;&#47; Chaining Architecture: Small Constructors forward to Master Constructor
+Student()                      ──► this("Unknown", 18, "General");
+Student(String name)           ──► this(name, 18, "General");
+Student(name, age, course)     ──► [MASTER CONSTRUCTOR performs actual assignments]</pre>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="font-bold text-rose-700 font-mono">Rule 1: First Line Only</span>
+              <p className="text-slate-600 text-[11px]">this(...) MUST be line 1. Any code before it causes a compile error.</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="font-bold text-indigo-700 font-mono">Rule 2: At Most One</span>
+              <p className="text-slate-600 text-[11px]">An object cannot be initialized twice; you cannot call this(...) twice.</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+              <span className="font-bold text-amber-700 font-mono">Rule 3: No Cycles</span>
+              <p className="text-slate-600 text-[11px]">A calling B and B calling A is detected as recursive invocation error.</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 7: Constructor vs Method */}
+      {(slug === 'constructor-vs-method') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <BookOpen className="w-4 h-4 text-brand-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Master Comparison Matrix: Constructor vs Method
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Feature</th>
+                  <th className="p-2.5">Constructor</th>
+                  <th className="p-2.5">Regular Method</th>
+                  <th className="p-2.5 rounded-r-lg">Key Interview Distinction</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Primary Purpose</td>
+                  <td className="p-2.5 text-brand-700 font-semibold">Initialize instance fields at birth</td>
+                  <td className="p-2.5 text-indigo-700 font-semibold">Perform actions &amp; return results</td>
+                  <td className="p-2.5 text-slate-600">Birth vs Daily Life</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Name Rule</td>
+                  <td className="p-2.5 text-emerald-700 font-mono">MUST match class name exactly</td>
+                  <td className="p-2.5 font-mono text-slate-700">Any valid identifier (camelCase)</td>
+                  <td className="p-2.5 text-slate-600">PascalCase vs camelCase verb</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80 bg-rose-50/30">
+                  <td className="p-2.5 font-bold text-slate-900">Return Type</td>
+                  <td className="p-2.5 font-bold text-rose-700 font-mono">NO return type (not even void!)</td>
+                  <td className="p-2.5 text-emerald-700 font-mono font-semibold">MUST specify type or void</td>
+                  <td className="p-2.5 text-rose-700 font-semibold">Writing 'void Student()' turns it into a method!</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Invocation</td>
+                  <td className="p-2.5 text-slate-700">Automatically during <code className="text-brand-700 font-mono">new</code></td>
+                  <td className="p-2.5 text-slate-700">Explicitly via dot: <code className="text-indigo-700 font-mono">obj.action()</code></td>
+                  <td className="p-2.5 text-slate-600">Cannot call constructor with dot notation later</td>
+                </tr>
+                <tr className="hover:bg-slate-50/80">
+                  <td className="p-2.5 font-bold text-slate-900">Call Frequency</td>
+                  <td className="p-2.5 font-bold text-indigo-700">Exactly ONCE per object</td>
+                  <td className="p-2.5 text-slate-700">0, 1, or thousands of times</td>
+                  <td className="p-2.5 text-slate-600">Objects are born once, but act repeatedly</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Lesson 8: Mini Project: Bank Account */}
+      {(slug === 'bank-account-project') && (
+        <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-5">
+          <div className="flex items-center space-x-2 border-b border-slate-100 pb-3">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
+            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+              Bank Account Guided Architecture &amp; 10-Point Production Checklist
+            </h4>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px]">
+                  <th className="p-2.5 rounded-l-lg">Check #</th>
+                  <th className="p-2.5">Architecture Requirement</th>
+                  <th className="p-2.5 rounded-r-lg">Implementation Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">01</td><td className="p-2.5">BankAccount class with accountHolder, accountNumber, balance</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">02</td><td className="p-2.5">Master Constructor initializes all 3 fields using 'this'</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">03</td><td className="p-2.5">Validation clamps negative starting balances to 0.0</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">04</td><td className="p-2.5">2-arg constructor chains to Master via this(holder, number, 0.0)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">05</td><td className="p-2.5">No-arg constructor chains with default Guest User credentials</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">06</td><td className="p-2.5">All this(...) calls are strictly the FIRST statement</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">07</td><td className="p-2.5">deposit(amount) mutates balance cleanly without re-running constructor</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">08</td><td className="p-2.5">withdraw(amount) guards against overdrafts</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">09</td><td className="p-2.5">Independent heap state verified across 3 distinct customer accounts</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+                <tr className="hover:bg-slate-50/80"><td className="p-2.5 font-mono text-slate-500">10</td><td className="p-2.5">Zero premature Module 3 concepts (no private, getters, setters)</td><td className="p-2.5 text-emerald-600 font-bold">✓ Verified</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       {/* Lesson: java-and-jvm */}
       {(slug === 'java-and-jvm' || slug === 'what-is-java-and-the-jvm') && (
         <Card className="p-5 sm:p-6 border-slate-200/90 shadow-subtle space-y-4">

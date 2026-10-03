@@ -1,0 +1,583 @@
+{
+  "id": "les-ci-6-constructor-chaining-with-this",
+  "slug": "constructor-chaining-with-this",
+  "sectionSlug": "oop",
+  "moduleSlug": "constructors-and-initialization",
+  "languageSlug": "java",
+  "title": "Constructor Chaining with this()",
+  "summary": "Eliminate duplicated initialization logic across overloaded constructors by chaining one constructor to another using the this() call.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "prerequisites": [
+    "Constructor Overloading",
+    "The this Keyword"
+  ],
+  "learningObjectives": [
+    "Understand what constructor chaining means in Java",
+    "Use 'this(...)' to invoke a sibling constructor in the same class",
+    "Enforce the fundamental rule: 'this(...)' MUST be the very first statement in a constructor",
+    "Identify and prevent recursive/circular constructor calls"
+  ],
+  "expectedOutcomes": [
+    "Clean, DRY (Don't Repeat Yourself) constructor architectures",
+    "Confidence in routing default constructors to master parameterized constructors"
+  ],
+  "activities": [
+    {
+      "id": "act-ci6-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "The Clinic Triage Desk",
+      "analogy": {
+        "headline": "The receptionist doesn't perform surgery; they forward you to the specialist",
+        "story": "When you walk into a hospital clinic with a sprained ankle, the front-desk receptionist doesn't set up medical equipment and treat you themselves.\n\nInstead, they write down your name, attach standard default triage notes, and **forward you directly** to the Orthopedic Specialist who performs the real work!\n\nIn Java, when you have 4 overloaded constructors, you shouldn't duplicate 10 lines of field setup in all 4 of them.\n\nInstead, the smaller constructors act like the receptionist: they fill in default values and **forward the call** to the master constructor using `this(...)`!\nThis is called **Constructor Chaining**.",
+        "keyTakeaway": "Constructor chaining is the practice of having one constructor call another constructor within the same class using 'this(...)', centralizing all initialization logic into one place."
+      }
+    },
+    {
+      "id": "act-ci6-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Mastering the 'this()' Constructor Call",
+      "breakdown": {
+        "keyTakeaways": [
+          "'this(...)' with parentheses invokes another constructor within the same class",
+          "It eliminates code duplication by routing all constructors to one 'master' constructor",
+          "GOLDEN RULE: 'this(...)' MUST be the first statement inside a constructor body",
+          "Recursive constructor calls (Constructor A calling B, and B calling A) cause a compile-time error"
+        ]
+      },
+      "content": "Look at the duplicated code in this traditional overloaded class:\n\n```java\n// ❌ Code Duplication Smell:\nclass Student {\n    String name;\n    int age;\n    String course;\n\n    Student() {\n        this.name = \"Unknown\";\n        this.age = 18;\n        this.course = \"Undeclared\";\n    }\n\n    Student(String name) {\n        this.name = name;\n        this.age = 18;          // Duplicated!\n        this.course = \"Undeclared\"; // Duplicated!\n    }\n}\n```\nIf you ever need to change the default age to 19, you have to edit it in multiple places. That is brittle.\n\n### The Constructor Chaining Solution with `this(...)`:\nWe create ONE master constructor that does the real work, and have all other constructors chain into it!\n\n```java\nclass Student {\n    String name;\n    int age;\n    String course;\n\n    // 1. Master Constructor (does all actual field assignments)\n    Student(String name, int age, String course) {\n        this.name = name;\n        this.age = age;\n        this.course = course;\n    }\n\n    // 2. Chained Constructor: name only, delegates defaults for age & course\n    Student(String name) {\n        this(name, 18, \"Undeclared\"); // Calls Master Constructor!\n    }\n\n    // 3. Chained Constructor: no-arg, delegates defaults for everything\n    Student() {\n        this(\"Unknown\"); // Chains to constructor 2 (which chains to master!)\n    }\n}\n```\n\n### ⚠️ The #1 Strict Rule of Constructor Chaining:\n> **`this(...)` MUST be the FIRST line in the constructor!**\n\n```java\nStudent(String name) {\n    System.out.println(\"Setting up...\"); // ❌ COMPILE ERROR!\n    this(name, 18, \"Undeclared\");        // 'Constructor call must be first statement'\n}\n```\nJava requires the object to be constructed first before executing any custom logging or side-effect statements."
+    },
+    {
+      "id": "act-ci6-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Chaining in Action: Tracing the Flow",
+      "codeSnippet": "class Order {\n    String orderId;\n    String customer;\n    double amount;\n\n    // Master Constructor\n    Order(String orderId, String customer, double amount) {\n        this.orderId = orderId;\n        this.customer = customer;\n        this.amount = amount;\n        System.out.println(\"Master constructor initialized order: \" + this.orderId);\n    }\n\n    // Chained: Customer & Amount known, generate default order ID\n    Order(String customer, double amount) {\n        this(\"ORD-DEFAULT\", customer, amount); // First statement!\n    }\n\n    // Chained: Empty order with zero amount\n    Order() {\n        this(\"Guest\", 0.0); // Chains to (customer, amount)\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Creating order 1...\");\n        Order o1 = new Order();\n        \n        System.out.println(\"Customer: \" + o1.customer + \" | Amount: $\" + o1.amount);\n    }\n}",
+      "description": "Calling 'new Order()' flows through: Order() -> Order(String, double) -> Order(String, String, double). The master constructor executes and sets all fields in one single place."
+    },
+    {
+      "id": "act-ci6-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Constructor Chaining Quiz",
+      "mcq": {
+        "questions": [
+          {
+            "id": "q-ci6-1",
+            "type": "mcq",
+            "prompt": "What does 'this()' with parentheses do inside a constructor?",
+            "options": [
+              "It refers to the current object instance variable",
+              "It calls another constructor in the same class with matching parameters",
+              "It restarts the computer",
+              "It calls a constructor in the parent class"
+            ],
+            "correctAnswer": 1,
+            "explanation": "'this()' invokes another constructor belonging to the same class matching the argument signature.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Parentheses indicate a constructor or method call."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 35
+          },
+          {
+            "id": "q-ci6-2",
+            "type": "mcq",
+            "prompt": "Where must the 'this(...)' call be located inside a constructor?",
+            "options": [
+              "Anywhere inside the constructor body",
+              "At the very end of the constructor",
+              "It MUST be the very first statement inside the constructor body",
+              "Inside a finally block"
+            ],
+            "correctAnswer": 2,
+            "explanation": "Java strictly enforces that 'this(...)' or 'super(...)' must be the very first line of code in a constructor.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "First line rule!"
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 35
+          },
+          {
+            "id": "q-ci6-3",
+            "type": "mcq",
+            "prompt": "What happens if you write a print statement before 'this(...)'?",
+            "options": [
+              "It prints the text and then chains successfully",
+              "Compilation error: 'Constructor call must be the first statement in a constructor'",
+              "The print statement is silently ignored by Java",
+              "It causes an infinite loop at runtime"
+            ],
+            "correctAnswer": 1,
+            "explanation": "Java will refuse to compile if anything, including a print statement, appears before this(...).",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "The compiler rejects any code before this(...)."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ci6-4",
+            "type": "mcq",
+            "prompt": "What is the primary architectural benefit of constructor chaining?",
+            "options": [
+              "It avoids duplicating field assignment and validation logic across multiple constructors",
+              "It doubles the CPU speed of the computer",
+              "It allows fields to be private without getters",
+              "It compiles Java code into JavaScript"
+            ],
+            "correctAnswer": 0,
+            "explanation": "Constructor chaining keeps code DRY (Don't Repeat Yourself) by routing all setups to one master constructor.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Centralizing setup logic in one place."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ci6-5",
+            "type": "mcq",
+            "prompt": "What happens if Constructor A calls Constructor B using this(), and Constructor B calls Constructor A using this()?",
+            "options": [
+              "Java alternates between them 10 times and stops",
+              "Compilation error: 'Recursive constructor invocation'",
+              "The program runs without errors",
+              "It creates two objects simultaneously"
+            ],
+            "correctAnswer": 1,
+            "explanation": "Circular or recursive constructor chaining causes an immediate compile-time error to prevent infinite recursion.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "A calling B calling A is an infinite loop detected by the compiler."
+              }
+            ],
+            "difficulty": "medium",
+            "estimatedSeconds": 45
+          },
+          {
+            "id": "q-ci6-6",
+            "type": "mcq",
+            "prompt": "Can a constructor have two calls to 'this(...)', like this(1); this(\"test\");?",
+            "options": [
+              "Yes, it calls both in sequence",
+              "No, because only the first statement can be a constructor call; having a second violates the first statement rule",
+              "Yes, if they are wrapped in an if-else block",
+              "Only in abstract classes"
+            ],
+            "correctAnswer": 1,
+            "explanation": "You can only have at most ONE constructor delegation call, and it must be the first statement.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "An object can only be initialized once."
+              }
+            ],
+            "difficulty": "medium",
+            "estimatedSeconds": 45
+          },
+          {
+            "id": "q-ci6-7",
+            "type": "mcq",
+            "prompt": "Examine this code:\n\nclass Item {\n    int price;\n    Item() {\n        this(50);\n    }\n    Item(int price) {\n        this.price = price;\n    }\n}\npublic class Main {\n    public static void main(String[] args) {\n        Item item = new Item();\n        System.out.println(item.price);\n    }\n}\n\nWhat is output?",
+            "options": [
+              "0",
+              "50",
+              "null",
+              "Compile error"
+            ],
+            "correctAnswer": 1,
+            "explanation": "'new Item()' chains to 'Item(int)' with value 50, setting price = 50.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Item() calls this(50)."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 40
+          },
+          {
+            "id": "q-ci6-8",
+            "type": "mcq",
+            "prompt": "What is the difference between 'this.field' and 'this()'?",
+            "options": [
+              "'this.field' accesses an instance variable; 'this()' invokes another constructor in the same class",
+              "They are identical syntax for the same action",
+              "'this()' is for static variables, 'this.field' is for methods",
+              "'this()' deletes an object"
+            ],
+            "correctAnswer": 0,
+            "explanation": "'this.field' accesses instance fields/methods; 'this(...)' with parentheses invokes a sibling constructor.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Parentheses signify a constructor invocation."
+              }
+            ],
+            "difficulty": "easy",
+            "estimatedSeconds": 35
+          },
+          {
+            "id": "q-ci6-9",
+            "type": "mcq",
+            "prompt": "Can you pass an expression or calculation into 'this(...)', like 'this(x * 2)'?",
+            "options": [
+              "Yes, any valid expression that evaluates to the expected parameter type can be passed",
+              "No, you can only pass raw literal values like 5 or \"hello\"",
+              "Only if x is static",
+              "No, calculations are forbidden in constructors"
+            ],
+            "correctAnswer": 0,
+            "explanation": "Arguments to this(...) can be expressions or method calls, as long as they evaluate to the required type and do not reference 'this'.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Math expressions are completely legal as arguments."
+              }
+            ],
+            "difficulty": "medium",
+            "estimatedSeconds": 45
+          },
+          {
+            "id": "q-ci6-10",
+            "type": "mcq",
+            "prompt": "Can you call an instance method of the current class inside the arguments to 'this()', e.g. this(getInitialId())?",
+            "options": [
+              "Yes, at any time",
+              "No, instance methods cannot be invoked before the constructor delegation completes (static methods are allowed though)",
+              "Yes, but only if the method is void",
+              "Only in Java 8"
+            ],
+            "correctAnswer": 1,
+            "explanation": "Because the instance is not yet initialized, you cannot call instance methods in the argument list to this(). Only static methods can be called.",
+            "hints": [
+              {
+                "step": 1,
+                "hint": "Instance methods require an initialized instance."
+              }
+            ],
+            "difficulty": "intermediate",
+            "estimatedSeconds": 50
+          }
+        ]
+      }
+    },
+    {
+      "id": "act-ci6-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Interview Essentials: Constructor Chaining",
+      "interviewQA": [
+        {
+          "id": "qa-ci6-1",
+          "question": "What is constructor chaining in Java?",
+          "expectedAnswer": "Constructor chaining is the process of calling one constructor from another constructor relative to the current object (using 'this()') or relative to the parent class (using 'super()'). It promotes code reuse and prevents duplication of initialization logic.",
+          "keyPoints": [
+            "Calling one constructor from another",
+            "Uses 'this()' within the same class",
+            "Reduces code duplication across overloaded constructors"
+          ],
+          "companyTags": [
+            "Amazon",
+            "TCS",
+            "Infosys"
+          ],
+          "commonMistakes": [
+            "Assuming constructor chaining only works with parent classes (super)."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-ci6-2",
+          "question": "Why does Java require 'this()' to be the first statement in a constructor?",
+          "expectedAnswer": "Java requires 'this()' (or 'super()') to be the first statement to ensure the object's fundamental state is fully and predictably initialized before any subsequent operations, logging, or method calls are executed on it.",
+          "keyPoints": [
+            "Guarantees initialization happens first",
+            "Prevents operations on partially-constructed objects"
+          ],
+          "companyTags": [
+            "Oracle",
+            "Adobe"
+          ],
+          "commonMistakes": [
+            "Attempting to write logging or validation statements prior to this()."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-ci6-3",
+          "question": "Can you have both 'this()' and 'super()' in the same constructor?",
+          "expectedAnswer": "No! Both 'this()' and 'super()' must be the first statement in a constructor. Because there can only be one first statement, a constructor cannot contain both. When you call 'this()', the target constructor will eventually invoke 'super()' either explicitly or implicitly.",
+          "keyPoints": [
+            "Only one can be the first statement",
+            "The chained constructor will handle calling super()"
+          ],
+          "companyTags": [
+            "Amazon",
+            "Cognizant"
+          ],
+          "commonMistakes": [
+            "Believing you can write super() and then this() sequentially."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-ci6-4",
+          "question": "What happens if two constructors call each other using 'this()'?",
+          "expectedAnswer": "This results in a compile-time error: 'Recursive constructor invocation'. The Java compiler detects circular constructor dependencies and refuses to compile to prevent infinite stack overflow.",
+          "keyPoints": [
+            "Circular/recursive calls detected by compiler",
+            "Compile error: Recursive constructor invocation"
+          ],
+          "companyTags": [
+            "Infosys",
+            "Wipro"
+          ],
+          "commonMistakes": [
+            "Thinking it compiles and throws StackOverflowError at runtime. It fails at compile time."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-ci6-5",
+          "question": "How does constructor chaining support the DRY (Don't Repeat Yourself) principle?",
+          "expectedAnswer": "Without chaining, if you have 4 overloaded constructors that each validate arguments and assign fields, you repeat that logic 4 times. With chaining, 3 constructors simply forward default parameters to 1 master constructor, centralizing all assignment and validation.",
+          "keyPoints": [
+            "Centralizes validation and assignments",
+            "Changes only need to be made in one master constructor"
+          ],
+          "companyTags": [
+            "TCS",
+            "Adobe"
+          ],
+          "commonMistakes": [
+            "Copy-pasting identical field assignments across 5 constructors."
+          ],
+          "followUpQuestions": []
+        },
+        {
+          "id": "qa-ci6-6",
+          "question": "Can you call 'this()' inside an ordinary instance method?",
+          "expectedAnswer": "No! 'this()' can ONLY be called from inside another constructor. You cannot invoke 'this()' inside an ordinary method like 'void update()' because you cannot re-invoke construction on an already existing object.",
+          "keyPoints": [
+            "'this()' is strictly for constructor-to-constructor invocation",
+            "Cannot be used in regular instance methods"
+          ],
+          "companyTags": [
+            "Oracle",
+            "Amazon"
+          ],
+          "commonMistakes": [
+            "Trying to use this() in a reset() method."
+          ],
+          "followUpQuestions": []
+        }
+      ]
+    },
+    {
+      "id": "act-ci6-checklist",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Lesson 6 Checkpoint",
+      "checklist": [
+        "I understand that 'this(...)' calls another constructor in the same class.",
+        "I know the golden rule: 'this(...)' must be the very first statement in a constructor.",
+        "I can design a class with a master constructor and chained helper constructors.",
+        "I know that circular constructor calls cause a compile-time error."
+      ]
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "id": "qa-ci6-1",
+      "question": "What is constructor chaining in Java?",
+      "expectedAnswer": "Constructor chaining is the process of calling one constructor from another constructor relative to the current object (using 'this()') or relative to the parent class (using 'super()'). It promotes code reuse and prevents duplication of initialization logic.",
+      "keyPoints": [
+        "Calling one constructor from another",
+        "Uses 'this()' within the same class",
+        "Reduces code duplication across overloaded constructors"
+      ],
+      "companyTags": [
+        "Amazon",
+        "TCS",
+        "Infosys"
+      ],
+      "commonMistakes": [
+        "Assuming constructor chaining only works with parent classes (super)."
+      ],
+      "followUpQuestions": []
+    },
+    {
+      "id": "qa-ci6-2",
+      "question": "Why does Java require 'this()' to be the first statement in a constructor?",
+      "expectedAnswer": "Java requires 'this()' (or 'super()') to be the first statement to ensure the object's fundamental state is fully and predictably initialized before any subsequent operations, logging, or method calls are executed on it.",
+      "keyPoints": [
+        "Guarantees initialization happens first",
+        "Prevents operations on partially-constructed objects"
+      ],
+      "companyTags": [
+        "Oracle",
+        "Adobe"
+      ],
+      "commonMistakes": [
+        "Attempting to write logging or validation statements prior to this()."
+      ],
+      "followUpQuestions": []
+    },
+    {
+      "id": "qa-ci6-3",
+      "question": "Can you have both 'this()' and 'super()' in the same constructor?",
+      "expectedAnswer": "No! Both 'this()' and 'super()' must be the first statement in a constructor. Because there can only be one first statement, a constructor cannot contain both. When you call 'this()', the target constructor will eventually invoke 'super()' either explicitly or implicitly.",
+      "keyPoints": [
+        "Only one can be the first statement",
+        "The chained constructor will handle calling super()"
+      ],
+      "companyTags": [
+        "Amazon",
+        "Cognizant"
+      ],
+      "commonMistakes": [
+        "Believing you can write super() and then this() sequentially."
+      ],
+      "followUpQuestions": []
+    },
+    {
+      "id": "qa-ci6-4",
+      "question": "What happens if two constructors call each other using 'this()'?",
+      "expectedAnswer": "This results in a compile-time error: 'Recursive constructor invocation'. The Java compiler detects circular constructor dependencies and refuses to compile to prevent infinite stack overflow.",
+      "keyPoints": [
+        "Circular/recursive calls detected by compiler",
+        "Compile error: Recursive constructor invocation"
+      ],
+      "companyTags": [
+        "Infosys",
+        "Wipro"
+      ],
+      "commonMistakes": [
+        "Thinking it compiles and throws StackOverflowError at runtime. It fails at compile time."
+      ],
+      "followUpQuestions": []
+    },
+    {
+      "id": "qa-ci6-5",
+      "question": "How does constructor chaining support the DRY (Don't Repeat Yourself) principle?",
+      "expectedAnswer": "Without chaining, if you have 4 overloaded constructors that each validate arguments and assign fields, you repeat that logic 4 times. With chaining, 3 constructors simply forward default parameters to 1 master constructor, centralizing all assignment and validation.",
+      "keyPoints": [
+        "Centralizes validation and assignments",
+        "Changes only need to be made in one master constructor"
+      ],
+      "companyTags": [
+        "TCS",
+        "Adobe"
+      ],
+      "commonMistakes": [
+        "Copy-pasting identical field assignments across 5 constructors."
+      ],
+      "followUpQuestions": []
+    },
+    {
+      "id": "qa-ci6-6",
+      "question": "Can you call 'this()' inside an ordinary instance method?",
+      "expectedAnswer": "No! 'this()' can ONLY be called from inside another constructor. You cannot invoke 'this()' inside an ordinary method like 'void update()' because you cannot re-invoke construction on an already existing object.",
+      "keyPoints": [
+        "'this()' is strictly for constructor-to-constructor invocation",
+        "Cannot be used in regular instance methods"
+      ],
+      "companyTags": [
+        "Oracle",
+        "Amazon"
+      ],
+      "commonMistakes": [
+        "Trying to use this() in a reset() method."
+      ],
+      "followUpQuestions": []
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "p-ci6-1",
+      "title": "Chain No-Arg Constructor to Master",
+      "difficulty": "easy",
+      "description": "Create a `Student` class with fields `String name` and `int age`:\n\n• Master Constructor `Student(String name, int age)` initializes both fields.\n• No-arg Constructor `Student()` chains to the master constructor with defaults: `\"Unknown\"` and `18`.\n• In `Main`, create `Student s = new Student();` and print: `Student: Unknown, Age: 18`.",
+      "problemStatement": "Create a `Student` class with fields `String name` and `int age`:\n\n• Master Constructor `Student(String name, int age)` initializes both fields.\n• No-arg Constructor `Student()` chains to the master constructor with defaults: `\"Unknown\"` and `18`.\n• In `Main`, create `Student s = new Student();` and print: `Student: Unknown, Age: 18`.",
+      "initialCode": "class Student {\n    String name;\n    int age;\n\n    // Master constructor\n    Student(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n\n    // TODO: Write Student() constructor chaining to Student(\"Unknown\", 18)\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Student s = new Student();\n        System.out.println(\"Student: \" + s.name + \", Age: \" + s.age);\n    }\n}",
+      "expectedOutput": "Student: Unknown, Age: 18",
+      "hint": "Inside Student(), call this(\"Unknown\", 18);",
+      "hints": [
+        "this(\"Unknown\", 18) must be the first line."
+      ],
+      "solutionCode": "class Student {\n    String name;\n    int age;\n\n    Student(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n\n    Student() {\n        this(\"Unknown\", 18);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Student s = new Student();\n        System.out.println(\"Student: \" + s.name + \", Age: \" + s.age);\n    }\n}"
+    },
+    {
+      "id": "p-ci6-2",
+      "title": "Fix the 'First Statement' Compiler Error",
+      "difficulty": "easy",
+      "description": "A developer placed a print statement before `this(...)`, causing a compilation error:\n\n```java\nMember(String name) {\n    System.out.println(\"Creating member\"); // ❌ Error!\n    this(name, \"Standard\");\n}\n```\n\nFix the error by making `this(name, \"Standard\");` the very first statement.\nIn `Main`, create `Member m = new Member(\"Pooja\");` and verify it prints: `Creating member\nMember: Pooja (Standard)`.",
+      "problemStatement": "A developer placed a print statement before `this(...)`, causing a compilation error:\n\n```java\nMember(String name) {\n    System.out.println(\"Creating member\"); // ❌ Error!\n    this(name, \"Standard\");\n}\n```\n\nFix the error by making `this(name, \"Standard\");` the very first statement.\nIn `Main`, create `Member m = new Member(\"Pooja\");` and verify it prints: `Creating member\nMember: Pooja (Standard)`.",
+      "initialCode": "class Member {\n    String name;\n    String tier;\n\n    Member(String name, String tier) {\n        this.name = name;\n        this.tier = tier;\n        System.out.println(\"Creating member\");\n    }\n\n    // TODO: Fix the order so this(...) is the first statement\n    Member(String name) {\n        System.out.println(\"Creating member\");\n        this(name, \"Standard\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Member m = new Member(\"Pooja\");\n        System.out.println(\"Member: \" + m.name + \" (\" + m.tier + \")\");\n    }\n}",
+      "expectedOutput": "Creating member\nMember: Pooja (Standard)",
+      "hint": "In Member(String name), remove the print statement and just call this(name, \"Standard\");",
+      "hints": [
+        "The master constructor already handles the print statement."
+      ],
+      "solutionCode": "class Member {\n    String name;\n    String tier;\n\n    Member(String name, String tier) {\n        this.name = name;\n        this.tier = tier;\n        System.out.println(\"Creating member\");\n    }\n\n    Member(String name) {\n        this(name, \"Standard\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Member m = new Member(\"Pooja\");\n        System.out.println(\"Member: \" + m.name + \" (\" + m.tier + \")\");\n    }\n}"
+    },
+    {
+      "id": "p-ci6-3",
+      "title": "Build a 3-Tier Chained Laptop Class",
+      "difficulty": "medium",
+      "description": "Construct a 3-tier chained `Laptop` class (`brand`, `ramGB`, `price`):\n\n1. Master: `Laptop(String brand, int ramGB, double price)` assigns all fields.\n2. Tier 2: `Laptop(String brand)` chains to master with `ramGB = 8` and `price = 499.0`.\n3. Tier 3: `Laptop()` chains to Tier 2 with `\"Standard\"`.\n\nIn `Main`, instantiate with `new Laptop()` and print: `Laptop: Standard | 8GB RAM | $499.0`.",
+      "problemStatement": "Construct a 3-tier chained `Laptop` class (`brand`, `ramGB`, `price`):\n\n1. Master: `Laptop(String brand, int ramGB, double price)` assigns all fields.\n2. Tier 2: `Laptop(String brand)` chains to master with `ramGB = 8` and `price = 499.0`.\n3. Tier 3: `Laptop()` chains to Tier 2 with `\"Standard\"`.\n\nIn `Main`, instantiate with `new Laptop()` and print: `Laptop: Standard | 8GB RAM | $499.0`.",
+      "initialCode": "class Laptop {\n    String brand;\n    int ramGB;\n    double price;\n\n    // Master Constructor\n    Laptop(String brand, int ramGB, double price) {\n        this.brand = brand;\n        this.ramGB = ramGB;\n        this.price = price;\n    }\n\n    // TODO: Tier 2: Laptop(String brand) -> chains to master with (brand, 8, 499.0)\n    \n    // TODO: Tier 3: Laptop() -> chains to Tier 2 with (\"Standard\")\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Laptop lap = new Laptop();\n        System.out.println(\"Laptop: \" + lap.brand + \" | \" + lap.ramGB + \"GB RAM | $\" + lap.price);\n    }\n}",
+      "expectedOutput": "Laptop: Standard | 8GB RAM | $499.0",
+      "hint": "Tier 2 uses this(brand, 8, 499.0); Tier 3 uses this(\"Standard\");",
+      "hints": [
+        "Each constructor delegates to the one above it."
+      ],
+      "solutionCode": "class Laptop {\n    String brand;\n    int ramGB;\n    double price;\n\n    Laptop(String brand, int ramGB, double price) {\n        this.brand = brand;\n        this.ramGB = ramGB;\n        this.price = price;\n    }\n\n    Laptop(String brand) {\n        this(brand, 8, 499.0);\n    }\n\n    Laptop() {\n        this(\"Standard\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Laptop lap = new Laptop();\n        System.out.println(\"Laptop: \" + lap.brand + \" | \" + lap.ramGB + \"GB RAM | $\" + lap.price);\n    }\n}"
+    },
+    {
+      "id": "p-ci6-4",
+      "title": "Break the Circular Constructor Trap",
+      "difficulty": "medium",
+      "description": "Examine this circular constructor deadlock:\n\n```java\nclass Widget {\n    Widget() { this(10); }\n    Widget(int x) { this(); } // ❌ Recursive call deadlock!\n}\n```\n\nFix it by letting `Widget(int x)` be the master constructor that actually sets `this.x = x;`.\nIn `Main`, create `Widget w = new Widget();` and print: `Widget value: 10`.",
+      "problemStatement": "Examine this circular constructor deadlock:\n\n```java\nclass Widget {\n    Widget() { this(10); }\n    Widget(int x) { this(); } // ❌ Recursive call deadlock!\n}\n```\n\nFix it by letting `Widget(int x)` be the master constructor that actually sets `this.x = x;`.\nIn `Main`, create `Widget w = new Widget();` and print: `Widget value: 10`.",
+      "initialCode": "class Widget {\n    int x;\n\n    Widget() {\n        this(10);\n    }\n\n    // TODO: Break the circle! Make Widget(int x) assign this.x = x instead of calling this()\n    Widget(int x) {\n        this();\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Widget w = new Widget();\n        System.out.println(\"Widget value: \" + w.x);\n    }\n}",
+      "expectedOutput": "Widget value: 10",
+      "hint": "In Widget(int x), write this.x = x; instead of this();",
+      "hints": [
+        "A master constructor must perform the assignment, not call another constructor."
+      ],
+      "solutionCode": "class Widget {\n    int x;\n\n    Widget() {\n        this(10);\n    }\n\n    Widget(int x) {\n        this.x = x;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Widget w = new Widget();\n        System.out.println(\"Widget value: \" + w.x);\n    }\n}"
+    },
+    {
+      "id": "p-ci6-5",
+      "title": "Validate Order Timestamp in Chained Flow",
+      "difficulty": "medium",
+      "description": "Build an `Order` class where all creation paths enforce positive quantity:\n\n• Fields: `String item`, `int quantity`.\n• Master Constructor `Order(String item, int quantity)`: if `quantity <= 0`, sets `quantity = 1`.\n• Helper Constructor `Order(String item)`: chains to master with `quantity = 1`.\n• In `Main`, create `o1 = new Order(\"Headphones\")` and `o2 = new Order(\"Screen\", -5)`.\n• Print: `O1: Headphones (1) | O2: Screen (1)`.",
+      "problemStatement": "Build an `Order` class where all creation paths enforce positive quantity:\n\n• Fields: `String item`, `int quantity`.\n• Master Constructor `Order(String item, int quantity)`: if `quantity <= 0`, sets `quantity = 1`.\n• Helper Constructor `Order(String item)`: chains to master with `quantity = 1`.\n• In `Main`, create `o1 = new Order(\"Headphones\")` and `o2 = new Order(\"Screen\", -5)`.\n• Print: `O1: Headphones (1) | O2: Screen (1)`.",
+      "initialCode": "class Order {\n    String item;\n    int quantity;\n\n    // Master Constructor\n    Order(String item, int quantity) {\n        this.item = item;\n        if (quantity <= 0) {\n            this.quantity = 1;\n        } else {\n            this.quantity = quantity;\n        }\n    }\n\n    // TODO: Write Order(String item) chaining to master with quantity = 1\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Order o1 = new Order(\"Headphones\");\n        Order o2 = new Order(\"Screen\", -5);\n        System.out.println(\"O1: \" + o1.item + \" (\" + o1.quantity + \") | O2: \" + o2.item + \" (\" + o2.quantity + \")\");\n    }\n}",
+      "expectedOutput": "O1: Headphones (1) | O2: Screen (1)",
+      "hint": "Write Order(String item) { this(item, 1); }",
+      "hints": [
+        "Because it chains to master, validation automatically applies."
+      ],
+      "solutionCode": "class Order {\n    String item;\n    int quantity;\n\n    Order(String item, int quantity) {\n        this.item = item;\n        if (quantity <= 0) {\n            this.quantity = 1;\n        } else {\n            this.quantity = quantity;\n        }\n    }\n\n    Order(String item) {\n        this(item, 1);\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Order o1 = new Order(\"Headphones\");\n        Order o2 = new Order(\"Screen\", -5);\n        System.out.println(\"O1: \" + o1.item + \" (\" + o1.quantity + \") | O2: \" + o2.item + \" (\" + o2.quantity + \")\");\n    }\n}"
+    }
+  ]
+}
