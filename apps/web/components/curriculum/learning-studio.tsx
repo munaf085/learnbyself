@@ -315,7 +315,8 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
                         </div>
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(codeAct.codeSnippet || '');
+                            const snippet = codeAct.codeSnippet || (codeAct as any).code || '';
+                            navigator.clipboard.writeText(snippet);
                             setCopiedSnippetId(snippetId);
                             setTimeout(() => setCopiedSnippetId(null), 2000);
                           }}
@@ -336,7 +337,7 @@ export const LearningStudio: React.FC<LearningStudioProps> = ({
                       </div>
 
                       <div className="p-4 bg-slate-950 overflow-x-auto text-xs font-mono text-slate-100 leading-relaxed">
-                        <pre>{codeAct.codeSnippet}</pre>
+                        <pre>{codeAct.codeSnippet || (codeAct as any).code}</pre>
                       </div>
 
                       {conceptActivity?.outputSnippet && idx === 0 && (
