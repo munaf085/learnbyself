@@ -1,0 +1,284 @@
+{
+  "id": "les-col-hashset-internals",
+  "slug": "hashset-how-hash-buckets-guarantee-o1-lookups",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "HashSet: How Hash Buckets Guarantee O(1) Lookups",
+  "summary": "Demystify HashSet internals: how it delegates to an internal HashMap, computes hashCode(), distributes entries into buckets, and checks equals().",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 2,
+  "prerequisites": [
+    "The Set Contract & Mathematical Uniqueness",
+    "Object Identity vs Logical Equality",
+    "Understanding Big-O Time Complexity"
+  ],
+  "learningObjectives": [
+    "Understand how HashSet delegates internally to a java.util.HashMap",
+    "Analyze the PRESENT dummy object pattern used to represent Set element values",
+    "Trace hash code spreading and bucket index bitmask calculation",
+    "Explain hash collisions, separate chaining, and Java 8 treeification mechanics"
+  ],
+  "expectedOutcomes": [
+    "Complete technical understanding of why HashSet achieves amortized O(1) performance",
+    "Ability to explain bucket calculation and collision resolution in engineering interviews"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l2-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Direct-Mapped Memory Address Translation",
+      "analogy": {
+        "headline": "Practical Context: Direct-Mapped Memory Address Translation",
+        "story": "In computer systems hardware, a CPU does not sequentially scan every memory cell when retrieving data from an address. Instead, hardware address decoders compute the exact memory bank and wire line from the address bits in a fraction of a nanosecond.\n\nA hash table functions on the exact same computational philosophy: instead of scanning an entire collection element-by-element, a mathematical hash function maps the element's identity directly to a specific array index (a bucket), reducing lookups from linear O(N) scanning to instantaneous O(1) direct indexing.",
+        "keyTakeaway": "HashSet is an abstraction over a hash table. By calculating bucket addresses directly from object hash codes, it replaces costly sequential scans with O(1) direct memory indexing."
+      },
+      "content": "In computer systems hardware, a CPU does not sequentially scan every memory cell when retrieving data from an address. Instead, hardware address decoders compute the exact memory bank and wire line from the address bits in a fraction of a nanosecond.\n\nA hash table functions on the exact same computational philosophy: instead of scanning an entire collection element-by-element, a mathematical hash function maps the element's identity directly to a specific array index (a bucket), reducing lookups from linear O(N) scanning to instantaneous O(1) direct indexing."
+    },
+    {
+      "id": "act-col2-l2-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "HashSet Architecture: Internal HashMap Delegation & Hash Buckets",
+      "breakdown": {
+        "keyTakeaways": [
+          "HashSet is internally backed by a java.util.HashMap instance",
+          "Elements added to a HashSet are stored as KEYS in the internal map; the VALUE is a static dummy Object named PRESENT",
+          "Bucket index is calculated via bitwise AND: index = (capacity - 1) & hash(key)",
+          "Collisions are resolved via linked list chaining; in Java 8+, chains exceeding TREEIFY_THRESHOLD (8) convert to Red-Black Trees"
+        ]
+      },
+      "content": "### Definition of HashSet and Hash Table Architecture\n\nA **`HashSet`** is an open-hashing hash table implementation of the `Set` interface that delivers amortized constant-time $O(1)$ performance for basic operations (`add`, `remove`, `contains`). It makes no guarantees concerning the iteration order of elements and explicitly permits at most one `null` element.\n\nInternally, `HashSet` does not implement hash table storage from scratch. Instead, it delegates every operation to a private backing **`java.util.HashMap`** instance:\n```java\n// OpenJDK java.util.HashSet Source Code\npublic class HashSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, java.io.Serializable {\n    private transient HashMap<E,Object> map;\n\n    // Dummy value to associate with an Object in the backing Map\n    private static final Object PRESENT = new Object();\n\n    public HashSet() {\n        map = new HashMap<>();\n    }\n\n    public boolean add(E e) {\n        return map.put(e, PRESENT) == null;\n    }\n\n    public boolean contains(Object o) {\n        return map.containsKey(o);\n    }\n\n    public boolean remove(Object o) {\n        return map.remove(o) == PRESENT;\n    }\n}\n```\n\n---\n\n### Hash Bucket Calculation and The PRESENT Dummy Value\n\nWhen `set.add(element)` is called:\n1. **Hash Spreading**: The JVM evaluates `element.hashCode()` and applies a 16-bit shift XOR function (`h ^ (h >>> 16)`) to spread high-order bits into low-order bits, mitigating poor hash code distributions.\n2. **Bucket Indexing**: The bucket index in the backing array is computed using bitwise masking:\n   $$\\text{index} = (\\text{capacity} - 1) \\& \\text{hash}$$\n   Because default capacity is $16$ ($2^4$), the mask $15$ (`00001111` in binary) extracts the lowest 4 bits of the hash in 1 CPU cycle without expensive modulo division.\n3. **The `PRESENT` Dummy Object**: Since `HashMap` requires key-value pairs, `HashSet` associates every inserted key with a single, shared static `Object` constant named `PRESENT`. `map.put(key, PRESENT)` returns `null` if the key was newly added, or the previous value (`PRESENT`) if the key already existed!\n\n---\n\n### Collision Handling, Treeification, and Code Tracing\n\nWhen two distinct keys produce the exact same bucket index, a **hash collision** occurs:\n* **Chaining**: In Java, each bucket contains a singly-linked list of `Node<K,V>` entries. When a collision occurs, the new node is appended to the bucket chain.\n* **Treeification**: In Java 8+, if a single bucket chain grows to $\\ge 8$ elements (`TREEIFY_THRESHOLD`) and total table capacity is $\\ge 64$ (`MIN_TREEIFY_CAPACITY`), the linked list converts into a balanced **Red-Black Tree** (`TreeNode`). This upgrades worst-case search complexity from $O(N)$ down to $O(\\log N)$.\n\n```java\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class HashSetInternalsDemo {\n    public static void main(String[] args) {\n        Set<String> set = new HashSet<>();\n\n        // Elements are hashed and placed into buckets\n        set.add(\"Alfa\");\n        set.add(\"Bravo\");\n        set.add(\"Charlie\");\n        set.add(\"Delta\");\n\n        System.out.println(\"Set size: \" + set.size());\n        System.out.println(\"Contains Charlie? \" + set.contains(\"Charlie\"));\n\n        // Iteration order depends on bucket hashing, not insertion sequence!\n        System.out.println(\"HashSet iteration order: \" + set);\n    }\n}\n```\n\n**Console Output:**\n```text\nSet size: 4\nContains Charlie? true\nHashSet iteration order: [Alfa, Charlie, Delta, Bravo]\n```\n\n---\n\n### Performance Characteristics of HashSet\n\n| Operation | Average Case | Worst Case (Severe Collisions) |\n| :--- | :--- | :--- |\n| **`add(E e)`** | $O(1)$ | $O(\\log N)$ (Treeified) / $O(N)$ (Pre-Java 8) |\n| **`contains(Object o)`** | $O(1)$ | $O(\\log N)$ |\n| **`remove(Object o)`** | $O(1)$ | $O(\\log N)$ |\n| **Iteration** | $O(\\text{Capacity} + N)$ | $O(\\text{Capacity} + N)$ |"
+    },
+    {
+      "id": "act-col2-l2-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Simulating Hash Buckets and Collision Chains in Java",
+      "description": "Examine a clear mini-implementation of hash bucket calculation to inspect how objects map to slots and detect collisions.",
+      "code": "public class MiniBucketInspector {\n    private static final int CAPACITY = 16; // Standard initial capacity\n\n    public static int calculateBucket(String key) {\n        if (key == null) return 0;\n        int h = key.hashCode();\n        // Java HashMap spreading function: h ^ (h >>> 16)\n        int spreadHash = h ^ (h >>> 16);\n        // Bitmask indexing: (n - 1) & hash\n        return (CAPACITY - 1) & spreadHash;\n    }\n\n    public static void main(String[] args) {\n        String[] keys = {\"Java\", \"Python\", \"Rust\", \"Go\", \"Kotlin\", \"TypeScript\"};\n        \n        System.out.println(\"Bucket distribution for capacity = \" + CAPACITY + \":\");\n        for (String key : keys) {\n            int bucket = calculateBucket(key);\n            System.out.printf(\"Key: %-12s | HashCode: %-11d | Bucket Index: %d%n\", \n                              key, key.hashCode(), bucket);\n        }\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "2",
+          "description": "Establish standard capacity of 16 (always a power of 2 in Java HashMap/HashSet)."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "4-10",
+          "description": "Apply JDK hash spreading and bitwise AND masking ((CAPACITY - 1) & spreadHash) to constrain the hash to [0, 15] in a single instruction."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "13-19",
+          "description": "Iterate through keys and display how each string's hash code distributes into its respective bucket index."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l2-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "HashSet Internals Assessment",
+      "questions": [
+        {
+          "id": "col2-l2-q1",
+          "question": "How does java.util.HashSet store elements internally?",
+          "options": [
+            "In an internal Object[] array resized with System.arraycopy",
+            "As keys in a private backing HashMap instance, with a dummy Object as the value",
+            "In a doubly-linked list of Node pointers",
+            "In a native C++ hash register via JNI"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "HashSet delegates all storage to a private transient HashMap<E, Object> map. The inserted elements serve as keys, and a static dummy Object named PRESENT serves as the value."
+        },
+        {
+          "id": "col2-l2-q2",
+          "question": "Why is the internal capacity of a HashSet always a power of two (e.g., 16, 32, 64)?",
+          "options": [
+            "Because Java memory pages only support powers of two",
+            "To permit fast bitwise index calculation (n - 1) & hash instead of expensive modulo division",
+            "To prevent the garbage collector from compacting memory",
+            "Because 32-bit integers require binary alignment"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "When capacity n is a power of 2, (n - 1) produces all 1s in binary (e.g. 15 is 01111). The bitwise AND (n - 1) & hash acts as a blazing-fast modulo operation, completing in 1 CPU cycle."
+        },
+        {
+          "id": "col2-l2-q3",
+          "question": "What is the purpose of the private static final Object PRESENT in HashSet?",
+          "options": [
+            "It acts as a lock object for thread synchronization",
+            "It is a placeholder dummy value associated with every key in the internal HashMap",
+            "It marks deleted nodes for garbage collection",
+            "It stores the maximum capacity of the set"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "HashMap requires both a key and a value. Since HashSet only cares about the key, it reuses a single shared dummy Object reference named PRESENT across all map entries to avoid allocating new value objects."
+        },
+        {
+          "id": "col2-l2-q4",
+          "question": "What happens in Java 8+ when a single HashSet bucket accumulates 8 or more colliding elements?",
+          "options": [
+            "An OutOfMemoryError is thrown",
+            "The colliding linked list is converted into a balanced Red-Black Tree, improving lookup from O(N) to O(log N)",
+            "The entire set is immediately discarded and rehashed",
+            "New elements for that bucket are rejected"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Java 8 introduced treeification: when a bucket chain length reaches TREEIFY_THRESHOLD (8) and capacity is at least 64, the linked list transforms into a Red-Black Tree to guarantee O(log N) worst-case performance."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l2-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: HashSet Architecture",
+      "questions": [
+        {
+          "id": "col2-l2-int-1",
+          "question": "Explain the relationship between HashSet and HashMap in Java.",
+          "answer": "HashSet is an architectural wrapper around HashMap. A HashSet instance contains a private transient HashMap<E, Object> field. When set.add(element) is called, HashSet executes map.put(element, PRESENT) where PRESENT is a shared dummy Object. If put() returns null, it signifies the key was new and add() returns true; otherwise it returns false. Similarly, contains() delegates to map.containsKey(), and remove() delegates to map.remove()."
+        },
+        {
+          "id": "col2-l2-int-2",
+          "question": "What is the default initial capacity and load factor of HashSet, and what role do they play?",
+          "answer": "The default initial capacity is 16 and the default load factor is 0.75. Capacity represents the number of buckets in the underlying hash table. The load factor (0.75) represents the threshold ratio of elements to capacity before resizing occurs (threshold = 16 * 0.75 = 12). When the 13th element is added, the capacity doubles to 32 and all entries are rehashed into the expanded bucket array, maintaining low collision rates."
+        },
+        {
+          "id": "col2-l2-int-3",
+          "question": "Why is the iteration order of a HashSet non-deterministic?",
+          "answer": "HashSet iterates over the backing table array sequentially from bucket 0 to capacity - 1. Because an element's bucket index depends on its hashCode() spread against table capacity, objects are placed in pseudo-random bucket slots. When the table resizes, elements are redistributed across new bucket indices, causing iteration order to shift dynamically between resizes."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l2-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: HashSet Internals",
+      "checklist": [
+        "I can describe how HashSet delegates to HashMap and utilizes the PRESENT dummy object",
+        "I understand bucket calculation via (capacity - 1) & hash and why power-of-two capacity is critical",
+        "I can explain collision resolution mechanisms, including separate chaining and Java 8 treeification"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l2-1",
+      "title": "Simulate Bucket Index Calculation",
+      "difficulty": "beginner",
+      "problemStatement": "Implement a method computeBucketIndex(int hashCode, int capacity) that returns the bucket index for a given capacity (assumed power of 2) using bitwise masking.",
+      "starterCode": "public class BucketCalculator {\n    public static int computeBucketIndex(int hashCode, int capacity) {\n        // TODO: Return bucket index using bitwise AND\n        return 0;\n    }\n}",
+      "solutionCode": "public class BucketCalculator {\n    public static int computeBucketIndex(int hashCode, int capacity) {\n        int h = hashCode ^ (hashCode >>> 16);\n        return (capacity - 1) & h;\n    }\n}",
+      "expectedOutput": "7",
+      "testCases": [
+        {
+          "input": "hashCode = 100, capacity = 16",
+          "expected": "4"
+        },
+        {
+          "input": "hashCode = 31, capacity = 16",
+          "expected": "15"
+        }
+      ],
+      "hints": [
+        "Use bitwise AND: (capacity - 1) & hash.",
+        "Spread high bits with hash ^ (hash >>> 16) for authentic JDK behavior."
+      ]
+    },
+    {
+      "id": "prob-col2-l2-2",
+      "title": "Detect Hash Collisions Between Strings",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an array of strings and a bucket capacity of 16, count how many strings land in the exact same bucket index as at least one other string.",
+      "starterCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class CollisionDetector {\n    public static int countCollidingKeys(String[] keys, int capacity) {\n        // TODO: Count keys that share a bucket with another key\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.Map;\nimport java.util.HashMap;\n\npublic class CollisionDetector {\n    public static int countCollidingKeys(String[] keys, int capacity) {\n        if (keys == null || keys.length == 0) return 0;\n        Map<Integer, Integer> bucketCounts = new HashMap<>();\n        for (String k : keys) {\n            int h = (k == null) ? 0 : k.hashCode() ^ (k.hashCode() >>> 16);\n            int bucket = (capacity - 1) & h;\n            bucketCounts.put(bucket, bucketCounts.getOrDefault(bucket, 0) + 1);\n        }\n        int colliding = 0;\n        for (String k : keys) {\n            int h = (k == null) ? 0 : k.hashCode() ^ (k.hashCode() >>> 16);\n            int bucket = (capacity - 1) & h;\n            if (bucketCounts.get(bucket) > 1) {\n                colliding++;\n            }\n        }\n        return colliding;\n    }\n}",
+      "expectedOutput": "4",
+      "testCases": [
+        {
+          "input": "keys = [\"A\", \"B\", \"C\"], capacity = 16",
+          "expected": "0"
+        }
+      ],
+      "hints": [
+        "First pass: tally counts per bucket index.",
+        "Second pass: check if the string's bucket has count > 1."
+      ]
+    },
+    {
+      "id": "prob-col2-l2-3",
+      "title": "Calculate Threshold and Resize Trigger",
+      "difficulty": "beginner",
+      "problemStatement": "Implement isResizeNeeded(int currentSize, int capacity, float loadFactor) that returns true if currentSize >= (capacity * loadFactor).",
+      "starterCode": "public class ResizePredictor {\n    public static boolean isResizeNeeded(int currentSize, int capacity, float loadFactor) {\n        // TODO: Implement calculation\n        return false;\n    }\n}",
+      "solutionCode": "public class ResizePredictor {\n    public static boolean isResizeNeeded(int currentSize, int capacity, float loadFactor) {\n        int threshold = (int) (capacity * loadFactor);\n        return currentSize >= threshold;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "currentSize = 12, capacity = 16, loadFactor = 0.75f",
+          "expected": "true"
+        },
+        {
+          "input": "currentSize = 11, capacity = 16, loadFactor = 0.75f",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Threshold is computed as (int)(capacity * loadFactor).",
+        "Compare currentSize >= threshold."
+      ]
+    },
+    {
+      "id": "prob-col2-l2-4",
+      "title": "Build a Minimal HashSet Wrapper",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement a simple MiniSet<E> backed by an internal HashMap<E, Object> using the dummy PRESENT object pattern.",
+      "starterCode": "import java.util.HashMap;\n\npublic class MiniSet<E> {\n    private final HashMap<E, Object> map = new HashMap<>();\n    private static final Object DUMMY = new Object();\n\n    public boolean add(E element) {\n        return false;\n    }\n\n    public boolean contains(E element) {\n        return false;\n    }\n\n    public int size() {\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.HashMap;\n\npublic class MiniSet<E> {\n    private final HashMap<E, Object> map = new HashMap<>();\n    private static final Object DUMMY = new Object();\n\n    public boolean add(E element) {\n        return map.put(element, DUMMY) == null;\n    }\n\n    public boolean contains(E element) {\n        return map.containsKey(element);\n    }\n\n    public int size() {\n        return map.size();\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "add('Java'), contains('Java')",
+          "expected": "true"
+        },
+        {
+          "input": "add('Java'), add('Java')",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "map.put(key, value) returns null if the key was absent prior to the call.",
+        "map.containsKey(key) checks presence in O(1) time."
+      ]
+    },
+    {
+      "id": "prob-col2-l2-5",
+      "title": "Find Most Populated Bucket",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an array of integer values and a hash table capacity of 8, determine the highest number of collisions in any single bucket.",
+      "starterCode": "public class MaxBucketChainFinder {\n    public static int findMaxBucketChain(int[] values, int capacity) {\n        // TODO: Find max collision chain length\n        return 0;\n    }\n}",
+      "solutionCode": "public class MaxBucketChainFinder {\n    public static int findMaxBucketChain(int[] values, int capacity) {\n        if (values == null || values.length == 0) return 0;\n        int[] bucketCounts = new int[capacity];\n        int max = 0;\n        for (int v : values) {\n            int h = Integer.hashCode(v);\n            int spread = h ^ (h >>> 16);\n            int bucket = (capacity - 1) & spread;\n            bucketCounts[bucket]++;\n            if (bucketCounts[bucket] > max) {\n                max = bucketCounts[bucket];\n            }\n        }\n        return max;\n    }\n}",
+      "expectedOutput": "3",
+      "testCases": [
+        {
+          "input": "values = [0, 8, 16, 24], capacity = 8",
+          "expected": "4"
+        },
+        {
+          "input": "values = [1, 2, 3, 4], capacity = 8",
+          "expected": "1"
+        }
+      ],
+      "hints": [
+        "All multiples of 8 will map to bucket index 0 when capacity is 8.",
+        "Use an int[] array of size capacity to tally frequencies."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,276 @@
+{
+  "id": "les-col-treeset-internals",
+  "slug": "treeset-sorted-sets-and-red-black-trees",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "TreeSet: Sorted Sets & Red-Black Trees",
+  "summary": "Explore TreeSet, SortedSet, and NavigableSet: logarithmic O(log N) operations, self-balancing Red-Black trees, and natural vs custom sorting.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 4,
+  "prerequisites": [
+    "The Set Contract & Mathematical Uniqueness",
+    "Understanding Big-O Time Complexity",
+    "Object Identity vs Logical Equality"
+  ],
+  "learningObjectives": [
+    "Understand the NavigableSet contract and Red-Black tree underlying architecture of TreeSet",
+    "Master logarithmic O(log N) search, insertion, and deletion guarantees",
+    "Utilize navigation methods: ceiling(), floor(), higher(), lower(), first(), last()",
+    "Contrast natural ordering via Comparable against custom sorting via Comparator"
+  ],
+  "expectedOutcomes": [
+    "Ability to execute boundary and range queries (subSet, headSet, tailSet) with mathematical precision",
+    "Mastery of comparator-based sorting and avoiding compareTo() equality traps in TreeSet"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l4-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Self-Balancing Radar Range Scanning",
+      "analogy": {
+        "headline": "Practical Context: Self-Balancing Radar Range Scanning",
+        "story": "In aviation flight control systems, radar tracks hundreds of aircraft at varying altitudes. Air traffic controllers do not just ask 'Is plane X airborne?'; they ask range queries: 'What is the closest plane strictly above 10,000 feet?' and 'Give me all aircraft flying between 5,000 and 15,000 feet.'\n\nA hash table cannot answer range questions efficiently because hashes scatter data randomly across buckets. A self-balancing search tree arranges all targets in strict sorted order, allowing controllers to locate boundary limits and range slices in logarithmic O(log N) time.",
+        "keyTakeaway": "TreeSet trades O(1) hash speed for O(log N) sorted tree navigation. It excels at boundary queries, proximity lookups, and range slicing."
+      },
+      "content": "In aviation flight control systems, radar tracks hundreds of aircraft at varying altitudes. Air traffic controllers do not just ask 'Is plane X airborne?'; they ask range queries: 'What is the closest plane strictly above 10,000 feet?' and 'Give me all aircraft flying between 5,000 and 15,000 feet.'\n\nA hash table cannot answer range questions efficiently because hashes scatter data randomly across buckets. A self-balancing search tree arranges all targets in strict sorted order, allowing controllers to locate boundary limits and range slices in logarithmic O(log N) time."
+    },
+    {
+      "id": "act-col2-l4-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "TreeSet Architecture: Red-Black Trees & The NavigableSet Contract",
+      "breakdown": {
+        "keyTakeaways": [
+          "TreeSet implements NavigableSet and SortedSet, backed internally by a java.util.TreeMap",
+          "Elements are stored in a self-balancing Red-Black binary search tree with O(log N) guarantees",
+          "TreeSet requires elements to implement Comparable or requires a custom Comparator in its constructor",
+          "TreeSet does NOT use equals() or hashCode() to determine element uniqueness; it relies strictly on compareTo() or compare() == 0"
+        ]
+      },
+      "content": "### Definition of TreeSet & Red-Black Tree Architecture\n\nA **`TreeSet<E>`** is a sorted collection implementing the `NavigableSet<E>` and `SortedSet<E>` interfaces, backed internally by a **`java.util.TreeMap`**. Elements are maintained in total sorted order using either their natural ordering (`java.lang.Comparable`) or an explicit `java.util.Comparator` provided at instantiation.\n\nThe underlying data structure is a self-balancing **Red-Black Tree**, which guarantees $O(\\log N)$ time complexity for basic operations (`add`, `remove`, `contains`):\n* Every node is either red or black.\n* The root is always black.\n* No two consecutive red nodes are permitted (a red node cannot have a red child).\n* Every path from root to leaf contains the exact same number of black nodes (black height).\nThese invariants ensure the tree height never exceeds $2 \\log_2(N + 1)$, preventing degenerating into an $O(N)$ linked chain.\n\n---\n\n### The NavigableSet Boundary API & Range Operations\n\nUnlike `HashSet`, `TreeSet` exposes rich range navigation operations:\n* **`first()` / `last()`**: Returns the lowest / highest element in the set.\n* **`floor(e)` / `ceiling(e)`**: Returns the greatest element $\\le e$, or lowest element $\\ge e$ (inclusive).\n* **`lower(e)` / `higher(e)`**: Returns the greatest element $< e$, or lowest element $> e$ (strictly exclusive).\n* **`subSet(from, to)`**: Returns a dynamic view of elements between `from` and `to`.\n* **`descendingSet()`**: Returns a reverse-order view in $O(1)$ time.\n\n---\n\n### Executable Demonstration: Proximity Lookups with TreeSet\n\n```java\nimport java.util.NavigableSet;\nimport java.util.TreeSet;\n\npublic class TreeSetNavigationDemo {\n    public static void main(String[] args) {\n        NavigableSet<Integer> stockPrices = new TreeSet<>();\n        stockPrices.add(105);\n        stockPrices.add(120);\n        stockPrices.add(150);\n        stockPrices.add(180);\n        stockPrices.add(210);\n\n        System.out.println(\"Sorted Prices: \" + stockPrices);\n        System.out.println(\"First (Min):   \" + stockPrices.first());\n        System.out.println(\"Last (Max):    \" + stockPrices.last());\n\n        // Boundary queries\n        System.out.println(\"Ceiling >= 140: \" + stockPrices.ceiling(140)); // 150\n        System.out.println(\"Floor <= 140:   \" + stockPrices.floor(140));   // 120\n        System.out.println(\"Higher > 150:   \" + stockPrices.higher(150));  // 180\n        System.out.println(\"Lower < 150:    \" + stockPrices.lower(150));   // 120\n\n        // Range slice\n        System.out.println(\"Range [120..180]: \" + stockPrices.subSet(120, true, 180, true));\n    }\n}\n```\n\n**Console Output:**\n```text\nSorted Prices: [105, 120, 150, 180, 210]\nFirst (Min):   105\nLast (Max):    210\nCeiling >= 140: 150\nFloor <= 140:   120\nHigher > 150:   180\nLower < 150:    120\nRange [120..180]: [120, 150, 180]\n```\n\n---\n\n### Critical Difference: HashSet vs TreeSet Equality\n\n| Dimension | `HashSet<E>` | `TreeSet<E>` |\n| :--- | :--- | :--- |\n| **Ordering** | Unordered (random hash buckets) | Sorted (Natural or Comparator) |\n| **Uniqueness Mechanism** | `equals()` and `hashCode()` | `compareTo()` or `compare() == 0` |\n| **Add / Contains Cost** | Amortized $O(1)$ | Guaranteed $O(\\log N)$ |\n| **Null Elements** | Allows 1 null | Throws `NullPointerException` on insert |"
+    },
+    {
+      "id": "act-col2-l4-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Air Traffic Altitude Ceiling Proximity System",
+      "description": "Trace a navigation system that locates safe flight corridors for inbound flights using NavigableSet methods.",
+      "code": "import java.util.NavigableSet;\nimport java.util.TreeSet;\n\npublic class FlightCorridorController {\n    private final NavigableSet<Integer> occupiedAltitudes = new TreeSet<>();\n\n    public void registerAltitude(int altitude) {\n        occupiedAltitudes.add(altitude);\n    }\n\n    public Integer findClosestHigherAltitude(int target) {\n        return occupiedAltitudes.higher(target);\n    }\n\n    public Integer findClosestLowerAltitude(int target) {\n        return occupiedAltitudes.lower(target);\n    }\n\n    public static void main(String[] args) {\n        FlightCorridorController controller = new FlightCorridorController();\n        controller.registerAltitude(10000);\n        controller.registerAltitude(12000);\n        controller.registerAltitude(15000);\n        controller.registerAltitude(20000);\n\n        int emergencyAltitude = 13500;\n        System.out.println(\"Flight requesting clearance at: \" + emergencyAltitude + \" ft\");\n        System.out.println(\"Immediate higher traffic at:    \" + controller.findClosestHigherAltitude(emergencyAltitude) + \" ft\");\n        System.out.println(\"Immediate lower traffic at:     \" + controller.findClosestLowerAltitude(emergencyAltitude) + \" ft\");\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5",
+          "description": "Initialize a NavigableSet<Integer> backed by a TreeSet to maintain altitudes sorted in Red-Black tree nodes."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "11-17",
+          "description": "Invoke higher() and lower() to perform O(log N) proximity binary search without linear scanning."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "20-30",
+          "description": "Main registers occupied altitudes and executes proximity lookups for altitude 13,500 ft, resolving traffic at 12,000 ft and 15,000 ft."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l4-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "TreeSet & Red-Black Tree Assessment",
+      "questions": [
+        {
+          "id": "col2-l4-q1",
+          "question": "How does TreeSet evaluate whether two objects are duplicates?",
+          "options": [
+            "By checking if o1.hashCode() == o2.hashCode()",
+            "By checking if o1.equals(o2)",
+            "By checking if comparator.compare(o1, o2) == 0 (or o1.compareTo(o2) == 0)",
+            "By checking reference identity o1 == o2"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "TreeSet relies strictly on its sorting mechanism (Comparable.compareTo or Comparator.compare). If compare(a, b) == 0, the elements are treated as duplicates, even if a.equals(b) would return false!"
+        },
+        {
+          "id": "col2-l4-q2",
+          "question": "What is the time complexity of set.add(), set.contains(), and set.remove() in a TreeSet?",
+          "options": [
+            "O(1)",
+            "O(log N)",
+            "O(N)",
+            "O(N log N)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Because a Red-Black Tree guarantees that the tree height is balanced and never exceeds 2 * log2(N + 1), search, insertion, and deletion all run in strictly guaranteed O(log N) time."
+        },
+        {
+          "id": "col2-l4-q3",
+          "question": "What happens when set.add(null) is executed on a default TreeSet in Java?",
+          "options": [
+            "The null is placed at the root of the tree",
+            "A NullPointerException is thrown",
+            "The method returns false",
+            "The null is stored as a special EMPTY node"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "TreeSet must compare the inserted element with existing nodes. Since null.compareTo() cannot be called, a NullPointerException is thrown."
+        },
+        {
+          "id": "col2-l4-q4",
+          "question": "What is the difference between ceiling(e) and higher(e) in NavigableSet?",
+          "options": [
+            "ceiling(e) returns >= e (inclusive); higher(e) returns > e (strictly exclusive)",
+            "ceiling(e) returns <= e; higher(e) returns >= e",
+            "They are exact synonyms",
+            "ceiling(e) throws an exception if an exact match is missing"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "ceiling(e) returns the least element greater than OR EQUAL to e. higher(e) returns the least element STRICTLY GREATER than e."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l4-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: TreeSet & Sorting Internals",
+      "questions": [
+        {
+          "id": "col2-l4-int-1",
+          "question": "Explain the major bug that occurs if compareTo() is inconsistent with equals() in TreeSet.",
+          "answer": "If compareTo() is inconsistent with equals() (e.g., compareTo returns 0 for two objects where equals() returns false), TreeSet will reject the second object as a duplicate and fail to insert it. For example, if a Student class compares only by grade in compareTo(), two different students with the same grade cannot both exist in a TreeSet! In contrast, HashSet will insert both students because their equals() returns false. To avoid bugs, compareTo() must be strictly consistent with equals()."
+        },
+        {
+          "id": "col2-l4-int-2",
+          "question": "What happens if you insert an object that does not implement Comparable into a default new TreeSet()?",
+          "answer": "When the second element is inserted (or when the first element is checked against the root in modern Java), the JVM attempts to cast the object to java.lang.Comparable. Because the class does not implement Comparable and no custom Comparator was supplied, the JVM throws a java.lang.ClassCastException at runtime."
+        },
+        {
+          "id": "col2-l4-int-3",
+          "question": "How does TreeSet subSet() differ from creating a new filtered set?",
+          "answer": "TreeSet.subSet(from, to) returns a backed 'view' of the original tree, not a deep copy. Mutations to the original set within the range are immediately visible in the subSet view, and mutations made to the subSet write directly into the backing TreeSet. Attempting to insert an element into the subSet outside its bounded range throws an IllegalArgumentException."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l4-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: TreeSet & NavigableSet",
+      "checklist": [
+        "I understand how the Red-Black tree guarantees O(log N) operations in TreeSet",
+        "I know how to use first(), last(), ceiling(), floor(), higher(), and lower() for range queries",
+        "I understand why compareTo() must be consistent with equals() to avoid silent duplicate rejection"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l4-1",
+      "title": "Find Nearest Available Price",
+      "difficulty": "beginner",
+      "problemStatement": "Given a set of available hotel room prices, implement findClosestHigherOrEqual(int[] prices, int budget) that returns the lowest price >= budget, or -1 if budget exceeds all available rooms.",
+      "starterCode": "import java.util.TreeSet;\n\npublic class HotelBookingEngine {\n    public static int findClosestHigherOrEqual(int[] prices, int budget) {\n        // TODO: Return lowest price >= budget using TreeSet ceiling()\n        return -1;\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\n\npublic class HotelBookingEngine {\n    public static int findClosestHigherOrEqual(int[] prices, int budget) {\n        if (prices == null || prices.length == 0) return -1;\n        TreeSet<Integer> set = new TreeSet<>();\n        for (int p : prices) set.add(p);\n        Integer match = set.ceiling(budget);\n        return match != null ? match : -1;\n    }\n}",
+      "expectedOutput": "120",
+      "testCases": [
+        {
+          "input": "prices = [80, 100, 120, 150], budget = 110",
+          "expected": "120"
+        },
+        {
+          "input": "prices = [80, 100], budget = 110",
+          "expected": "-1"
+        }
+      ],
+      "hints": [
+        "Use set.ceiling(budget) to find the least element >= budget.",
+        "Handle null when no element satisfies the condition."
+      ]
+    },
+    {
+      "id": "prob-col2-l4-2",
+      "title": "Sorted Word Lexicography",
+      "difficulty": "beginner",
+      "problemStatement": "Given an array of strings, return a unique array of words sorted in natural alphabetical order using a TreeSet.",
+      "starterCode": "import java.util.TreeSet;\n\npublic class LexicalSorter {\n    public static String[] sortUniqueWords(String[] words) {\n        // TODO: Return sorted unique words\n        return new String[0];\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\n\npublic class LexicalSorter {\n    public static String[] sortUniqueWords(String[] words) {\n        if (words == null) return new String[0];\n        TreeSet<String> set = new TreeSet<>();\n        for (String w : words) {\n            if (w != null) set.add(w);\n        }\n        return set.toArray(new String[0]);\n    }\n}",
+      "expectedOutput": "[\"apple\", \"banana\", \"zebra\"]",
+      "testCases": [
+        {
+          "input": "[\"zebra\", \"apple\", \"banana\", \"apple\"]",
+          "expected": "[\"apple\", \"banana\", \"zebra\"]"
+        }
+      ],
+      "hints": [
+        "TreeSet automatically maintains natural sorting for String.",
+        "Filter null values since TreeSet disallows nulls."
+      ]
+    },
+    {
+      "id": "prob-col2-l4-3",
+      "title": "Extract Score Range Slice",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement getScoresInRange(int[] scores, int minInclusive, int maxInclusive) that returns all unique scores within [minInclusive, maxInclusive] in ascending order using subSet().",
+      "starterCode": "import java.util.TreeSet;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class ScoreFilter {\n    public static List<Integer> getScoresInRange(int[] scores, int min, int max) {\n        // TODO: Return scores in range using subSet()\n        return List.of();\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\nimport java.util.List;\nimport java.util.ArrayList;\n\npublic class ScoreFilter {\n    public static List<Integer> getScoresInRange(int[] scores, int min, int max) {\n        if (scores == null) return List.of();\n        TreeSet<Integer> set = new TreeSet<>();\n        for (int s : scores) set.add(s);\n        return new ArrayList<>(set.subSet(min, true, max, true));\n    }\n}",
+      "expectedOutput": "[50, 75, 80]",
+      "testCases": [
+        {
+          "input": "scores = [20, 50, 75, 80, 95], min = 50, max = 80",
+          "expected": "[50, 75, 80]"
+        }
+      ],
+      "hints": [
+        "Use set.subSet(min, true, max, true) for inclusive boundaries.",
+        "Wrap the resulting NavigableSet in new ArrayList<>()."
+      ]
+    },
+    {
+      "id": "prob-col2-l4-4",
+      "title": "Custom Sorting by String Length with Ties Broken Alphabetically",
+      "difficulty": "intermediate",
+      "problemStatement": "Create a method sortCustom(String[] words) using a TreeSet with a custom Comparator that sorts strings primarily by length ascending, and secondarily in alphabetical order.",
+      "starterCode": "import java.util.TreeSet;\nimport java.util.Comparator;\n\npublic class CustomWordSorter {\n    public static String[] sortCustom(String[] words) {\n        // TODO: Sort by length then alphabetically\n        return new String[0];\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\nimport java.util.Comparator;\n\npublic class CustomWordSorter {\n    public static String[] sortCustom(String[] words) {\n        if (words == null) return new String[0];\n        Comparator<String> comp = Comparator\n            .comparingInt(String::length)\n            .thenComparing(Comparator.naturalOrder());\n        \n        TreeSet<String> set = new TreeSet<>(comp);\n        for (String w : words) {\n            if (w != null) set.add(w);\n        }\n        return set.toArray(new String[0]);\n    }\n}",
+      "expectedOutput": "[\"cat\", \"dog\", \"bird\", \"elephant\"]",
+      "testCases": [
+        {
+          "input": "[\"elephant\", \"cat\", \"bird\", \"dog\"]",
+          "expected": "[\"cat\", \"dog\", \"bird\", \"elephant\"]"
+        }
+      ],
+      "hints": [
+        "Use Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder()).",
+        "If you only compare length, words with the same length will be discarded as duplicates!"
+      ]
+    },
+    {
+      "id": "prob-col2-l4-5",
+      "title": "Find Floor and Ceiling Bounds",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an array of timestamp numbers and a target query time, return an int array [floor, ceiling] representing the closest bounds <= target and >= target. If either bound is missing, use -1.",
+      "starterCode": "import java.util.TreeSet;\n\npublic class TimestampBoundSearch {\n    public static int[] findBounds(int[] timestamps, int target) {\n        // TODO: Return [floor, ceiling]\n        return new int[]{-1, -1};\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\n\npublic class TimestampBoundSearch {\n    public static int[] findBounds(int[] timestamps, int target) {\n        if (timestamps == null || timestamps.length == 0) return new int[]{-1, -1};\n        TreeSet<Integer> set = new TreeSet<>();\n        for (int t : timestamps) set.add(t);\n        \n        Integer f = set.floor(target);\n        Integer c = set.ceiling(target);\n        return new int[]{f != null ? f : -1, c != null ? c : -1};\n    }\n}",
+      "expectedOutput": "[100, 200]",
+      "testCases": [
+        {
+          "input": "timestamps = [100, 200, 300], target = 150",
+          "expected": "[100, 200]"
+        },
+        {
+          "input": "timestamps = [100, 200], target = 50",
+          "expected": "[-1, 100]"
+        }
+      ],
+      "hints": [
+        "Use set.floor(target) and set.ceiling(target).",
+        "Check for null and replace with -1."
+      ]
+    }
+  ]
+}

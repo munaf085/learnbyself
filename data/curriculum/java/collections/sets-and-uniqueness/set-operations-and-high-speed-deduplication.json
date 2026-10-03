@@ -1,0 +1,274 @@
+{
+  "id": "les-col-set-operations",
+  "slug": "set-operations-and-high-speed-deduplication",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "Set Operations & High-Speed Deduplication",
+  "summary": "Implement practical algorithms: set union (addAll), intersection (retainAll), difference (removeAll), and high-throughput deduplication.",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 6,
+  "prerequisites": [
+    "The Set Contract & Mathematical Uniqueness",
+    "HashSet: How Hash Buckets Guarantee O(1) Lookups",
+    "LinkedHashSet: Predictable Insertion-Order"
+  ],
+  "learningObjectives": [
+    "Master mathematical set algebra in Java: Union, Intersection, Difference, and Subset",
+    "Utilize bulk collection methods: addAll(), retainAll(), removeAll(), containsAll()",
+    "Apply defensive copying patterns to prevent unintended collection mutation",
+    "Implement high-speed stream deduplication and symmetrical difference algorithms"
+  ],
+  "expectedOutcomes": [
+    "Fluency in expressing relational database joins and group analytics using Java Set algebra",
+    "Mastery of high-performance deduplication pipelines across large datasets"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l6-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Venn Diagram Relational Filtering in Data Pipelines",
+      "analogy": {
+        "headline": "Practical Context: Venn Diagram Relational Filtering in Data Pipelines",
+        "story": "Imagine a corporate analytics engine evaluating marketing outreach. The database tracks two groups: List A (users who subscribed to the newsletter) and List B (users who made a purchase this month).\n\nThe marketing director needs three specific reports:\n1. Total Reach: Every customer who either subscribed OR purchased (Union).\n2. Engaged Buyers: Customers who BOTH subscribed AND purchased (Intersection).\n3. Inactive Subscribers: Customers who subscribed BUT NEVER purchased (Difference).\n\nRather than executing slow nested database loops, mathematical Set operations compute all three subsets directly in memory at blazing O(N) speeds.",
+        "keyTakeaway": "Java's addAll, retainAll, and removeAll methods directly correspond to Union, Intersection, and Set Difference in mathematical set algebra."
+      },
+      "content": "Imagine a corporate analytics engine evaluating marketing outreach. The database tracks two groups: List A (users who subscribed to the newsletter) and List B (users who made a purchase this month).\n\nThe marketing director needs three specific reports:\n1. Total Reach: Every customer who either subscribed OR purchased (Union).\n2. Engaged Buyers: Customers who BOTH subscribed AND purchased (Intersection).\n3. Inactive Subscribers: Customers who subscribed BUT NEVER purchased (Difference).\n\nRather than executing slow nested database loops, mathematical Set operations compute all three subsets directly in memory at blazing O(N) speeds."
+    },
+    {
+      "id": "act-col2-l6-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Mathematical Set Algebra: Union, Intersection, and Asymmetric Difference",
+      "breakdown": {
+        "keyTakeaways": [
+          "Set Union (A U B) is executed using setA.addAll(setB)",
+          "Set Intersection (A \u2229 B) is executed using setA.retainAll(setB)",
+          "Set Difference (A \\ B) is executed using setA.removeAll(setB)",
+          "Subset verification (A \u2286 B) is executed using setB.containsAll(setA)",
+          "Always perform defensive copying before applying mutating bulk operations"
+        ]
+      },
+      "content": "### Formal Definition of Set Algebra in Java Collections\n\nThe `java.util.Set` interface provides a comprehensive implementation of classical mathematical set theory through bulk collection mutating methods:\n\n1. **Union ($A \\cup B$)**: Combines all elements from both sets without duplicates.\n   ```java\n   Set<T> union = new HashSet<>(setA);\n   union.addAll(setB); // Result contains all elements in A or B\n   ```\n\n2. **Intersection ($A \\cap B$)**: Retains only elements present in **both** sets.\n   ```java\n   Set<T> intersection = new HashSet<>(setA);\n   intersection.retainAll(setB); // Result contains elements in A AND B\n   ```\n\n3. **Relative Complement / Difference ($A \\setminus B$)**: Removes all elements from $A$ that appear in $B$.\n   ```java\n   Set<T> difference = new HashSet<>(setA);\n   difference.removeAll(setB); // Result contains elements in A but NOT B\n   ```\n\n4. **Subset Verification ($A \\subseteq B$)**: Verifies whether all elements of $A$ exist in $B$.\n   ```java\n   boolean isSubset = setB.containsAll(setA);\n   ```\n\n---\n\n### Defensive Copying: Preventing In-Place State Destruction\n\nA critical architectural pitfall in Java is forgetting that `addAll()`, `retainAll()`, and `removeAll()` are **destructive mutating methods**:\n* Calling `setA.retainAll(setB)` directly alters `setA` permanently.\n* In clean code, always instantiate a new collection (e.g. `new HashSet<>(setA)`) to receive the results of set algebra, leaving the original collections intact.\n\n---\n\n### Executable Demonstration: Enterprise Customer Segmentation\n\n```java\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class SetAlgebraAnalyticsDemo {\n    public static void main(String[] args) {\n        Set<String> newsletterSubscribers = Set.of(\"alice@corp.com\", \"bob@corp.com\", \"carol@corp.com\");\n        Set<String> payingCustomers = Set.of(\"bob@corp.com\", \"carol@corp.com\", \"david@corp.com\");\n\n        // 1. Union (Total Unique Reach)\n        Set<String> totalReach = new HashSet<>(newsletterSubscribers);\n        totalReach.addAll(payingCustomers);\n        System.out.println(\"1. Union (Total Reach):         \" + totalReach);\n\n        // 2. Intersection (Subscribers Who Are Also Paying Customers)\n        Set<String> subscriberBuyers = new HashSet<>(newsletterSubscribers);\n        subscriberBuyers.retainAll(payingCustomers);\n        System.out.println(\"2. Intersection (Sub & Paid):    \" + subscriberBuyers);\n\n        // 3. Difference (Subscribers Who Have NOT Paid)\n        Set<String> prospectsOnly = new HashSet<>(newsletterSubscribers);\n        prospectsOnly.removeAll(payingCustomers);\n        System.out.println(\"3. Difference (Prospects Only):  \" + prospectsOnly);\n\n        // 4. Symmetric Difference (Exclusive to either A or B, but not both)\n        Set<String> symmetricDiff = new HashSet<>(totalReach);\n        symmetricDiff.removeAll(subscriberBuyers);\n        System.out.println(\"4. Symmetric Difference:         \" + symmetricDiff);\n    }\n}\n```\n\n**Console Output:**\n```text\n1. Union (Total Reach):         [david@corp.com, alice@corp.com, carol@corp.com, bob@corp.com]\n2. Intersection (Sub & Paid):    [carol@corp.com, bob@corp.com]\n3. Difference (Prospects Only):  [alice@corp.com]\n4. Symmetric Difference:         [david@corp.com, alice@corp.com]\n```\n\n---\n\n### Summary of Set Algebraic Methods\n\n| Mathematical Term | Notation | Java Set API | In-Place Mutation? |\n| :--- | :--- | :--- | :--- |\n| **Union** | $A \\cup B$ | `setA.addAll(setB)` | Modifies `setA` |\n| **Intersection** | $A \\cap B$ | `setA.retainAll(setB)` | Modifies `setA` |\n| **Difference** | $A \\setminus B$ | `setA.removeAll(setB)` | Modifies `setA` |\n| **Subset Test** | $A \\subseteq B$ | `setB.containsAll(setA)` | Read-only boolean |"
+    },
+    {
+      "id": "act-col2-l6-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Role-Based Access Control Privilege Verification",
+      "description": "Trace an enterprise security module evaluating whether a user possesses all permissions required to execute a secure action.",
+      "code": "import java.util.Set;\n\npublic class AccessControlValidator {\n    public static boolean hasSufficientPrivileges(Set<String> userPermissions, Set<String> requiredPermissions) {\n        if (requiredPermissions == null || requiredPermissions.isEmpty()) {\n            return true; // No permissions required\n        }\n        if (userPermissions == null || userPermissions.isEmpty()) {\n            return false;\n        }\n        // containsAll checks if userPermissions is a superset of requiredPermissions\n        return userPermissions.containsAll(requiredPermissions);\n    }\n\n    public static void main(String[] args) {\n        Set<String> adminRights = Set.of(\"READ\", \"WRITE\", \"DELETE\", \"AUDIT\");\n        Set<String> editorRights = Set.of(\"READ\", \"WRITE\");\n        Set<String> financialActionRequirements = Set.of(\"WRITE\", \"AUDIT\");\n\n        System.out.println(\"Admin authorized?  \" + \n            hasSufficientPrivileges(adminRights, financialActionRequirements)); // true\n        System.out.println(\"Editor authorized? \" + \n            hasSufficientPrivileges(editorRights, financialActionRequirements)); // false\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5-10",
+          "description": "Validate edge cases: if required permissions are empty, access is granted; if user has no rights, access is rejected."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "12",
+          "description": "Invoke userPermissions.containsAll(requiredPermissions). This checks every element in requiredPermissions against userPermissions in O(M) time."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "16-24",
+          "description": "Test with admin and editor roles. Admin contains both WRITE and AUDIT (true). Editor lacks AUDIT (false)."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l6-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Set Operations Assessment",
+      "questions": [
+        {
+          "id": "col2-l6-q1",
+          "question": "Which method computes the intersection of two sets in Java?",
+          "options": [
+            "setA.intersect(setB)",
+            "setA.retainAll(setB)",
+            "setA.addAll(setB)",
+            "setA.filter(setB)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "retainAll() retains only the elements in the invoking set that are contained in the specified collection, which is the definition of mathematical intersection."
+        },
+        {
+          "id": "col2-l6-q2",
+          "question": "Why is it dangerous to call setA.removeAll(setB) directly without creating a defensive copy?",
+          "options": [
+            "Because removeAll() throws an exception if elements are missing",
+            "Because removeAll() permanently mutates setA, destroying its original contents",
+            "Because removeAll() also deletes elements from setB",
+            "Because removeAll() runs in O(N^2) time"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Bulk methods on Collection mutate the receiver in place. If callers still need the original setA contents, modifying it directly causes severe side effects."
+        },
+        {
+          "id": "col2-l6-q3",
+          "question": "What does setB.containsAll(setA) return when setA is empty?",
+          "options": [
+            "false",
+            "true, because the empty set is a subset of every set",
+            "NullPointerException",
+            "IllegalArgumentException"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "In mathematical set theory and the Java contract, the empty set is a subset of all sets (including another empty set), so containsAll returns true."
+        },
+        {
+          "id": "col2-l6-q4",
+          "question": "What is the time complexity of setA.retainAll(setB) when setA and setB are HashSets of sizes N and M respectively?",
+          "options": [
+            "O(1)",
+            "O(N)",
+            "O(N * M)",
+            "O(N log M)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "retainAll iterates through all N elements of setA and checks if each is contained in setB via setB.contains() which takes O(1) time. The total complexity is O(N)."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l6-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Set Operations & Deduplication",
+      "questions": [
+        {
+          "id": "col2-l6-int-1",
+          "question": "How would you compute the Symmetric Difference of two sets in Java?",
+          "answer": "Symmetric difference represents all elements that belong to either set A or set B, but NOT to both. In Java, it can be computed using set algebra: 1) Union: `Set<T> union = new HashSet<>(setA); union.addAll(setB);`, 2) Intersection: `Set<T> intersection = new HashSet<>(setA); intersection.retainAll(setB);`, 3) Subtract intersection from union: `union.removeAll(intersection); return union;`. Alternatively: `Set<T> diff = new HashSet<>(setA); setB.forEach(e -> { if (!diff.add(e)) diff.remove(e); });`."
+        },
+        {
+          "id": "col2-l6-int-2",
+          "question": "What is the most memory-efficient way to deduplicate a 50,000,000-element list in Java?",
+          "answer": "If data fits in memory, instantiating `new HashSet<>(initialCapacity)` with capacity pre-sized to `(int)(count / 0.75f) + 1` prevents costly table resize passes during ingestion. For primitive numbers, specialized primitive libraries (like Eclipse Collections or Trove) or BitSets avoid object boxing overhead (saving ~24 bytes per integer). If data exceeds heap memory, an external merge sort or disk-backed Bloom Filter / partitioned hash buckets should be used."
+        },
+        {
+          "id": "col2-l6-int-3",
+          "question": "Why does ArrayList.removeAll(HashSet) perform faster than HashSet.removeAll(ArrayList)?",
+          "answer": "Because removeAll iterates over the calling collection and queries `contains()` on the argument collection. If you call `hashSet.removeAll(arrayList)`, for every element in the hash set it performs `arrayList.contains()`, which is an O(N) linear scan, resulting in O(N * M) overall time! In contrast, `arrayList.removeAll(hashSet)` performs `hashSet.contains()` for each item, which is O(1), running in linear O(N) total time."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l6-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Set Operations & Deduplication",
+      "checklist": [
+        "I know how to perform Union, Intersection, and Difference using addAll, retainAll, and removeAll",
+        "I understand why defensive copying is essential before running mutating bulk collection methods",
+        "I can reason about the performance asymmetry between Set and List during bulk membership queries"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l6-1",
+      "title": "Compute Set Intersection",
+      "difficulty": "beginner",
+      "problemStatement": "Implement findCommonElements(Set<String> setA, Set<String> setB) that returns a new Set containing only elements present in both sets without mutating the inputs.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SetIntersection {\n    public static Set<String> findCommonElements(Set<String> setA, Set<String> setB) {\n        // TODO: Return intersection without modifying setA or setB\n        return Set.of();\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SetIntersection {\n    public static Set<String> findCommonElements(Set<String> setA, Set<String> setB) {\n        if (setA == null || setB == null) return new HashSet<>();\n        Set<String> intersection = new HashSet<>(setA);\n        intersection.retainAll(setB);\n        return intersection;\n    }\n}",
+      "expectedOutput": "[\"b\"]",
+      "testCases": [
+        {
+          "input": "setA = [\"a\", \"b\"], setB = [\"b\", \"c\"]",
+          "expected": "[\"b\"]"
+        }
+      ],
+      "hints": [
+        "Create a defensive copy: new HashSet<>(setA).",
+        "Apply retainAll(setB) to the copy."
+      ]
+    },
+    {
+      "id": "prob-col2-l6-2",
+      "title": "Compute Set Union",
+      "difficulty": "beginner",
+      "problemStatement": "Implement mergeSets(Set<Integer> setA, Set<Integer> setB) that returns a new Set containing all unique elements from both sets.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SetUnion {\n    public static Set<Integer> mergeSets(Set<Integer> setA, Set<Integer> setB) {\n        // TODO: Return union of both sets\n        return Set.of();\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SetUnion {\n    public static Set<Integer> mergeSets(Set<Integer> setA, Set<Integer> setB) {\n        Set<Integer> union = new HashSet<>();\n        if (setA != null) union.addAll(setA);\n        if (setB != null) union.addAll(setB);\n        return union;\n    }\n}",
+      "expectedOutput": "[1, 2, 3]",
+      "testCases": [
+        {
+          "input": "setA = [1, 2], setB = [2, 3]",
+          "expected": "[1, 2, 3]"
+        }
+      ],
+      "hints": [
+        "Initialize union as new HashSet<>().",
+        "Call addAll on both sets."
+      ]
+    },
+    {
+      "id": "prob-col2-l6-3",
+      "title": "Compute Set Difference (A minus B)",
+      "difficulty": "beginner",
+      "problemStatement": "Implement findDifference(Set<String> setA, Set<String> setB) that returns a new Set containing elements that belong to setA but NOT setB.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SetDifference {\n    public static Set<String> findDifference(Set<String> setA, Set<String> setB) {\n        // TODO: Return setA \\ setB\n        return Set.of();\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SetDifference {\n    public static Set<String> findDifference(Set<String> setA, Set<String> setB) {\n        if (setA == null) return new HashSet<>();\n        Set<String> diff = new HashSet<>(setA);\n        if (setB != null) diff.removeAll(setB);\n        return diff;\n    }\n}",
+      "expectedOutput": "[\"a\"]",
+      "testCases": [
+        {
+          "input": "setA = [\"a\", \"b\"], setB = [\"b\", \"c\"]",
+          "expected": "[\"a\"]"
+        }
+      ],
+      "hints": [
+        "Create a copy of setA.",
+        "Invoke diff.removeAll(setB)."
+      ]
+    },
+    {
+      "id": "prob-col2-l6-4",
+      "title": "Verify Subset Membership",
+      "difficulty": "beginner",
+      "problemStatement": "Implement isSubsetOf(Set<String> subsetCandidate, Set<String> supersetCandidate) returning true if every element in subsetCandidate exists in supersetCandidate.",
+      "starterCode": "import java.util.Set;\n\npublic class SubsetVerifier {\n    public static boolean isSubsetOf(Set<String> sub, Set<String> superSet) {\n        // TODO: Check if sub is a subset of superSet\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.Set;\n\npublic class SubsetVerifier {\n    public static boolean isSubsetOf(Set<String> sub, Set<String> superSet) {\n        if (sub == null || sub.isEmpty()) return true;\n        if (superSet == null) return false;\n        return superSet.containsAll(sub);\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "sub = [\"read\"], superSet = [\"read\", \"write\"]",
+          "expected": "true"
+        },
+        {
+          "input": "sub = [\"delete\"], superSet = [\"read\", \"write\"]",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Use superSet.containsAll(sub).",
+        "An empty set is a subset of any set."
+      ]
+    },
+    {
+      "id": "prob-col2-l6-5",
+      "title": "Compute Symmetric Difference",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement symmetricDifference(Set<Integer> setA, Set<Integer> setB) returning elements that are in setA or setB, but not in both.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SymmetricDifferenceFinder {\n    public static Set<Integer> symmetricDifference(Set<Integer> setA, Set<Integer> setB) {\n        // TODO: Return symmetric difference (A U B) \\ (A \u2229 B)\n        return Set.of();\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class SymmetricDifferenceFinder {\n    public static Set<Integer> symmetricDifference(Set<Integer> setA, Set<Integer> setB) {\n        Set<Integer> union = new HashSet<>();\n        if (setA != null) union.addAll(setA);\n        if (setB != null) union.addAll(setB);\n\n        Set<Integer> intersection = new HashSet<>(setA != null ? setA : Set.of());\n        if (setB != null) intersection.retainAll(setB);\n\n        union.removeAll(intersection);\n        return union;\n    }\n}",
+      "expectedOutput": "[1, 3]",
+      "testCases": [
+        {
+          "input": "setA = [1, 2], setB = [2, 3]",
+          "expected": "[1, 3]"
+        }
+      ],
+      "hints": [
+        "Union contains all elements: union = new HashSet<>(setA); union.addAll(setB).",
+        "Intersection contains common elements: inter = new HashSet<>(setA); inter.retainAll(setB).",
+        "Subtract intersection from union: union.removeAll(inter)."
+      ]
+    }
+  ]
+}

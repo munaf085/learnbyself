@@ -1,0 +1,269 @@
+{
+  "id": "les-col-set-bug-hunt",
+  "slug": "practice-and-bug-hunt-set-pitfalls",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "Practice & Bug Hunt: Set Pitfalls",
+  "summary": "Debug tricky Set scenarios: mutating object fields after insertion into a HashSet, TreeSet ClassCastException without Comparable, and null in TreeSet.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 7,
+  "prerequisites": [
+    "The Set Contract & Mathematical Uniqueness",
+    "HashSet: How Hash Buckets Guarantee O(1) Lookups",
+    "TreeSet: Sorted Sets & Red-Black Trees",
+    "The equals() and hashCode() Contract in Sets"
+  ],
+  "learningObjectives": [
+    "Identify and remediate the 4 most catastrophic set bugs in production Java code",
+    "Prevent ClassCastException when instantiating custom objects in TreeSet",
+    "Resolve silent element disappearance caused by compareTo() / equals() inconsistencies",
+    "Handle null values defensively across heterogeneous Set implementations"
+  ],
+  "expectedOutcomes": [
+    "Intuitive ability to audit codebases for subtle Set mutation defects and comparison bugs",
+    "Mastery of defensive collection engineering across enterprise microservices"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l7-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Quality Assurance Diagnostics on High-Speed Sorting Machinery",
+      "analogy": {
+        "headline": "Practical Context: Quality Assurance Diagnostics on High-Speed Sorting Machinery",
+        "story": "Imagine an automated logistics center where high-speed robotic conveyor belts route millions of parcels every hour. If a parcel's weight sensor reports fluctuating numbers while on the belt, the sorter deposits it into a phantom bin where it can never be retrieved.\n\nSimilarly, if an unlabelled package arrives without a barcode format standard, the robotic scanner halts the entire line with a hard fault. In software engineering, production Sets are the automated conveyor belts of object storage: breaking their sorting or identity rules causes silent data corruption or critical runtime crashes.",
+        "keyTakeaway": "Sets maintain strict invariant contracts. Violating comparison rules, mutability boundaries, or null constraints results in silent data loss or hard runtime exceptions."
+      },
+      "content": "Imagine an automated logistics center where high-speed robotic conveyor belts route millions of parcels every hour. If a parcel's weight sensor reports fluctuating numbers while on the belt, the sorter deposits it into a phantom bin where it can never be retrieved.\n\nSimilarly, if an unlabelled package arrives without a barcode format standard, the robotic scanner halts the entire line with a hard fault. In software engineering, production Sets are the automated conveyor belts of object storage: breaking their sorting or identity rules causes silent data corruption or critical runtime crashes."
+    },
+    {
+      "id": "act-col2-l7-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Set Bug Hunt: The 4 Classic Production Set Traps & Architected Solutions",
+      "breakdown": {
+        "keyTakeaways": [
+          "Trap 1: Mutating elements after insertion into a HashSet breaks bucket lookups and creates permanent memory leaks",
+          "Trap 2: Adding elements that do not implement Comparable to a default TreeSet throws ClassCastException",
+          "Trap 3: compareTo() returning 0 when equals() is false causes TreeSet to silently drop distinct records as 'duplicates'",
+          "Trap 4: Inserting null into a TreeSet throws NullPointerException (unlike HashSet which permits 1 null)"
+        ]
+      },
+      "content": "### Overview of the 4 Classic Set Pitfalls\n\nSets are ubiquitous in enterprise Java systems, yet their subtle contract invariants cause frequent production defects:\n\n---\n\n### Trap 1: Mutating Elements After HashSet Insertion\n\n**Defect**: Storing mutable objects in a `HashSet` and altering a field used in `hashCode()`.\n* **Symptom**: `set.contains(item)` returns `false` even though the item is still in the set. `set.remove(item)` fails, creating a memory leak.\n* **Architectural Remedy**: Use immutable value objects (e.g. Java `record`), or base `equals()` and `hashCode()` strictly on an immutable `id` field.\n\n---\n\n### Trap 2: TreeSet ClassCastException Without Comparable\n\n**Defect**: Creating `new TreeSet<Customer>()` where `Customer` does not implement `Comparable<Customer>`.\n* **Symptom**: Runtime `ClassCastException: class Customer cannot be cast to class java.lang.Comparable`.\n* **Architectural Remedy**: Either have `Customer` implement `Comparable<Customer>` or pass an explicit `Comparator` to the `TreeSet` constructor:\n  ```java\n  Set<Customer> set = new TreeSet<>(Comparator.comparing(Customer::getId));\n  ```\n\n---\n\n### Trap 3: Silent Record Loss via compareTo() / equals() Inconsistency\n\n**Defect**: Implementing `compareTo()` using only a subset of fields compared in `equals()`:\n```java\n// Broken compareTo: Only compares score\npublic int compareTo(Student other) {\n    return Integer.compare(this.score, other.score);\n}\n```\n* **Symptom**: If two distinct students both have a score of 95, `compareTo()` returns `0`. `TreeSet` assumes they are identical duplicates and **silently discards the second student**!\n* **Architectural Remedy**: Chain comparisons to break ties using unique fields, guaranteeing consistency with `equals()`:\n  ```java\n  public int compareTo(Student other) {\n      int cmp = Integer.compare(this.score, other.score);\n      return cmp != 0 ? cmp : this.studentId.compareTo(other.studentId);\n  }\n  ```\n\n---\n\n### Trap 4: Null Handling Incompatibilities Across Sets\n\n**Defect**: Inserting `null` into a `TreeSet`.\n* **Symptom**: `TreeSet.add(null)` immediately throws `NullPointerException` because the tree must call `compareTo()` to locate the insertion node.\n* **Architectural Remedy**: Sanitize inputs with defensive null-checks, or use `HashSet` if null values are legitimate business representations.\n\n---\n\n### Executable Demonstration: Diagnosing and Fixing Set Pitfalls\n\n```java\nimport java.util.Comparator;\nimport java.util.TreeSet;\n\npublic class SetBugHuntDemo {\n    static class BrokenEmployee {\n        String name;\n        int salary;\n        BrokenEmployee(String name, int salary) { this.name = name; this.salary = salary; }\n    }\n\n    static class FixedEmployee implements Comparable<FixedEmployee> {\n        final String id;\n        final int salary;\n\n        FixedEmployee(String id, int salary) {\n            this.id = id;\n            this.salary = salary;\n        }\n\n        @Override\n        public int compareTo(FixedEmployee other) {\n            int cmp = Integer.compare(this.salary, other.salary);\n            return cmp != 0 ? cmp : this.id.compareTo(other.id);\n        }\n\n        @Override\n        public String toString() { return id + \"($\" + salary + \")\"; }\n    }\n\n    public static void main(String[] args) {\n        // Fix 1: Supplying explicit Comparator prevents ClassCastException\n        TreeSet<BrokenEmployee> customCompSet = new TreeSet<>(Comparator.comparingInt(e -> e.salary));\n        customCompSet.add(new BrokenEmployee(\"Alice\", 90000));\n        System.out.println(\"Custom comparator TreeSet succeeded! Size: \" + customCompSet.size());\n\n        // Fix 2: Consistent compareTo prevents silent element loss\n        TreeSet<FixedEmployee> robustTree = new TreeSet<>();\n        robustTree.add(new FixedEmployee(\"EMP-1\", 75000));\n        robustTree.add(new FixedEmployee(\"EMP-2\", 75000)); // Same salary, different ID!\n\n        // Both employees preserved because tie-breaker compares ID!\n        System.out.println(\"Robust TreeSet preserved both: \" + robustTree);\n    }\n}\n```\n\n**Console Output:**\n```text\nCustom comparator TreeSet succeeded! Size: 1\nRobust TreeSet preserved both: [EMP-1($75000), EMP-2($75000)]\n```"
+    },
+    {
+      "id": "act-col2-l7-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Auditing and Remedying Broken Set Implementations",
+      "description": "Step through a real-world enterprise service resolving ClassCastException and compareTo duplicate drop bugs.",
+      "code": "import java.util.Comparator;\nimport java.util.NavigableSet;\nimport java.util.TreeSet;\n\npublic class HighScoreLeaderboard {\n    public record PlayerScore(String playerId, int score) {}\n\n    private final NavigableSet<PlayerScore> leaderboard;\n\n    public HighScoreLeaderboard() {\n        // Solution: Sort descending by score; break ties using playerId to avoid dropping players\n        Comparator<PlayerScore> comparator = Comparator\n            .comparingInt(PlayerScore::score)\n            .reversed()\n            .thenComparing(PlayerScore::playerId);\n        \n        this.leaderboard = new TreeSet<>(comparator);\n    }\n\n    public boolean submitScore(String playerId, int score) {\n        if (playerId == null) return false;\n        return leaderboard.add(new PlayerScore(playerId, score));\n    }\n\n    public static void main(String[] args) {\n        HighScoreLeaderboard board = new HighScoreLeaderboard();\n        board.submitScore(\"Ninja\", 1000);\n        board.submitScore(\"Shadow\", 1000); // Identical score!\n        board.submitScore(\"Pixel\", 850);\n\n        System.out.println(\"Leaderboard size: \" + board.leaderboard.size()); // Exactly 3!\n        System.out.println(\"Top player: \" + board.leaderboard.first());\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5",
+          "description": "Define an immutable PlayerScore record with final fields, guaranteeing hash and comparison stability."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "10-15",
+          "description": "Construct a compound comparator: comparingInt(score).reversed().thenComparing(playerId). This prevents players with identical scores from being dropped."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "24-30",
+          "description": "Submit two players with score 1000. Verify both exist on the leaderboard without silent rejection."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l7-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Set Pitfalls & Bug Hunt Assessment",
+      "questions": [
+        {
+          "id": "col2-l7-q1",
+          "question": "What happens if two different objects in a TreeSet produce compareTo() == 0 while their equals() method returns false?",
+          "options": [
+            "The TreeSet adds both objects",
+            "The TreeSet throws an InconsistentComparisonException",
+            "The TreeSet treats the second object as a duplicate and silently rejects it",
+            "The TreeSet converts into a HashSet"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "TreeSet checks duplicates exclusively via compareTo() == 0. If compareTo returns 0, the second element is dropped, regardless of what equals() returns."
+        },
+        {
+          "id": "col2-l7-q2",
+          "question": "Which of the following will throw a ClassCastException at runtime?",
+          "options": [
+            "Set<String> set = new HashSet<>(); set.add(\"hello\");",
+            "Set<Object> set = new TreeSet<>(); set.add(new Object());",
+            "Set<Integer> set = new LinkedHashSet<>(); set.add(10);",
+            "Set<String> set = new TreeSet<>(); set.add(\"alpha\");"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "java.lang.Object does not implement java.lang.Comparable. When added to a default TreeSet, the JVM attempts to cast it to Comparable and throws ClassCastException."
+        },
+        {
+          "id": "col2-l7-q3",
+          "question": "How can you safely allow multiple items with identical primary sort attributes in a TreeSet?",
+          "options": [
+            "Set loadFactor to 1.0f",
+            "Use thenComparing() to chain a secondary unique attribute (like unique ID) in the comparator",
+            "Override hashCode() to return 0",
+            "Disable tree balancing"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Chaining a unique attribute (e.g. .thenComparing(Item::getId)) ensures that compare() only returns 0 when the items are truly identical, preventing silent drops."
+        },
+        {
+          "id": "col2-l7-q4",
+          "question": "Why does set.remove(mutatedObject) return false and leak memory in a HashSet?",
+          "options": [
+            "Because HashSet marks all mutated objects as read-only",
+            "Because the hash code change causes remove() to look in the wrong bucket, leaving the object stranded in its original bucket",
+            "Because Java sets do not support removing elements",
+            "Because remove() requires an explicit integer index"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "remove() hashes the object to locate its bucket. If the object was mutated, its new hash points to an empty or wrong bucket, failing to find the object in its original bucket."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l7-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Set Pitfalls & Defensive Coding",
+      "questions": [
+        {
+          "id": "col2-l7-int-1",
+          "question": "How do you explain the difference between 'equality according to equals()' and 'equality according to compareTo()' in the Java Collections Framework?",
+          "answer": "In Java Collections, HashSet and LinkedHashSet rely strictly on equals() and hashCode() to enforce uniqueness: two elements e1 and e2 are duplicates if e1.equals(e2). In contrast, TreeSet and TreeMap rely strictly on compareTo() or Comparator.compare(): two elements are duplicates if compare(e1, e2) == 0. While the Java language specification strongly recommends that natural ordering be 'consistent with equals' (meaning compareTo(x, y) == 0 iff x.equals(y) is true), it is not technically enforced by the compiler. Inconsistencies between the two contracts cause erratic behaviors where elements vanish or are rejected as duplicates."
+        },
+        {
+          "id": "col2-l7-int-2",
+          "question": "What happens if a Comparator passed to TreeSet violates the contract of transitivity?",
+          "answer": "If a Comparator violates mathematical transitivity (e.g., if compare(a, b) > 0 and compare(b, c) > 0, but compare(a, c) <= 0), the Red-Black tree's balance invariants are corrupted. Binary search traversal will branch down the wrong subtrees, causing `contains()` to return false for elements that exist, `add()` to insert duplicates, and `size()` to become inconsistent with the actual node count."
+        },
+        {
+          "id": "col2-l7-int-3",
+          "question": "Why does Collections.unmodifiableSet() not make the elements inside the set immutable?",
+          "answer": "Collections.unmodifiableSet(set) creates an unmodifiable wrapper around the set structure itself: invoking add(), remove(), or clear() on the wrapper throws an UnsupportedOperationException. However, it is a shallow wrapper. If the objects contained inside the set are mutable, external references can freely mutate their internal fields, potentially corrupting hash codes or state without throwing any exceptions from the wrapper."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l7-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Set Pitfalls & Bug Hunting",
+      "checklist": [
+        "I can audit code to ensure compareTo() is strictly consistent with equals()",
+        "I know how to prevent ClassCastException in TreeSet using explicit Comparators",
+        "I understand the memory leak and phantom element mechanics of mutable HashSet keys"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l7-1",
+      "title": "Resolve TreeSet ClassCastException",
+      "difficulty": "beginner",
+      "problemStatement": "Fix the createSortedSet(Task[] tasks) method so that an array of Task objects (which do not implement Comparable) can be sorted in a TreeSet by priority ascending without throwing ClassCastException.",
+      "starterCode": "import java.util.TreeSet;\n\npublic class TaskSorter {\n    public static class Task {\n        public int priority;\n        public String desc;\n        public Task(int priority, String desc) { this.priority = priority; this.desc = desc; }\n    }\n\n    public static TreeSet<Task> createSortedSet(Task[] tasks) {\n        // TODO: Construct TreeSet with Comparator and add tasks\n        return new TreeSet<>();\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\nimport java.util.Comparator;\n\npublic class TaskSorter {\n    public static class Task {\n        public int priority;\n        public String desc;\n        public Task(int priority, String desc) { this.priority = priority; this.desc = desc; }\n    }\n\n    public static TreeSet<Task> createSortedSet(Task[] tasks) {\n        Comparator<Task> comp = Comparator\n            .comparingInt((Task t) -> t.priority)\n            .thenComparing(t -> t.desc);\n        TreeSet<Task> set = new TreeSet<>(comp);\n        if (tasks != null) {\n            for (Task t : tasks) if (t != null) set.add(t);\n        }\n        return set;\n    }\n}",
+      "expectedOutput": "TreeSet without ClassCastException",
+      "testCases": [
+        {
+          "input": "Task[2, 'B'], Task[1, 'A']",
+          "expected": "Sorted tasks without error"
+        }
+      ],
+      "hints": [
+        "Provide a Comparator in the TreeSet constructor: new TreeSet<>(Comparator.comparingInt(...))",
+        "Chain thenComparing to break ties on desc."
+      ]
+    },
+    {
+      "id": "prob-col2-l7-2",
+      "title": "Prevent Dropping Duplicate Scores",
+      "difficulty": "intermediate",
+      "problemStatement": "Fix the Player leaderboard TreeSet so that multiple players with the exact same score are both preserved on the board instead of one being discarded.",
+      "starterCode": "import java.util.TreeSet;\nimport java.util.Comparator;\n\npublic class LeaderboardFixer {\n    public record Player(String id, int score) {}\n\n    public static TreeSet<Player> createLeaderboard() {\n        // Bug: Only compares score, so players with same score are dropped!\n        Comparator<Player> broken = Comparator.comparingInt(Player::score);\n        return new TreeSet<>(broken);\n    }\n}",
+      "solutionCode": "import java.util.TreeSet;\nimport java.util.Comparator;\n\npublic class LeaderboardFixer {\n    public record Player(String id, int score) {}\n\n    public static TreeSet<Player> createLeaderboard() {\n        Comparator<Player> robust = Comparator\n            .comparingInt(Player::score)\n            .thenComparing(Player::id);\n        return new TreeSet<>(robust);\n    }\n}",
+      "expectedOutput": "Preserved both players",
+      "testCases": [
+        {
+          "input": "add('p1', 100), add('p2', 100)",
+          "expected": "set size is 2"
+        }
+      ],
+      "hints": [
+        "Add .thenComparing(Player::id) to the comparator.",
+        "This ensures compare() only returns 0 when both score and id match."
+      ]
+    },
+    {
+      "id": "prob-col2-l7-3",
+      "title": "Sanitize Collection for TreeSet Ingestion",
+      "difficulty": "beginner",
+      "problemStatement": "Write a method sanitizeAndSort(List<String> rawTokens) that removes all null values from a list and returns a TreeSet containing the non-null tokens in natural order.",
+      "starterCode": "import java.util.List;\nimport java.util.TreeSet;\n\npublic class NullSanitizer {\n    public static TreeSet<String> sanitizeAndSort(List<String> tokens) {\n        // TODO: Filter nulls and return TreeSet\n        return new TreeSet<>();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.TreeSet;\n\npublic class NullSanitizer {\n    public static TreeSet<String> sanitizeAndSort(List<String> tokens) {\n        TreeSet<String> set = new TreeSet<>();\n        if (tokens != null) {\n            for (String t : tokens) {\n                if (t != null) set.add(t);\n            }\n        }\n        return set;\n    }\n}",
+      "expectedOutput": "[\"apple\", \"banana\"]",
+      "testCases": [
+        {
+          "input": "List.of(\"banana\", null, \"apple\")",
+          "expected": "[\"apple\", \"banana\"]"
+        }
+      ],
+      "hints": [
+        "Iterate and check if element != null before adding to TreeSet.",
+        "Adding null directly to a TreeSet causes NullPointerException."
+      ]
+    },
+    {
+      "id": "prob-col2-l7-4",
+      "title": "Defensive Copying Before RetainAll",
+      "difficulty": "beginner",
+      "problemStatement": "Implement safeIntersection(Set<String> original, Set<String> filter) that returns the intersection without mutating original.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class DefensiveSetOps {\n    public static Set<String> safeIntersection(Set<String> original, Set<String> filter) {\n        // TODO: Return intersection without modifying original\n        return Set.of();\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\n\npublic class DefensiveSetOps {\n    public static Set<String> safeIntersection(Set<String> original, Set<String> filter) {\n        if (original == null || filter == null) return new HashSet<>();\n        Set<String> copy = new HashSet<>(original);\n        copy.retainAll(filter);\n        return copy;\n    }\n}",
+      "expectedOutput": "Intersection without side effects",
+      "testCases": [
+        {
+          "input": "original = ['a', 'b'], filter = ['b']",
+          "expected": "copy has ['b'], original still has ['a', 'b']"
+        }
+      ],
+      "hints": [
+        "Create copy = new HashSet<>(original).",
+        "Apply copy.retainAll(filter)."
+      ]
+    },
+    {
+      "id": "prob-col2-l7-5",
+      "title": "Audit and Fix Mutable Set Element",
+      "difficulty": "intermediate",
+      "problemStatement": "Refactor the mutable CustomerProfile class into an immutable Java record with customerId and email to prevent hash corruption in HashSets.",
+      "starterCode": "public class ProfileMigration {\n    // TODO: Define record CustomerProfile(String customerId, String email)\n}",
+      "solutionCode": "public class ProfileMigration {\n    public record CustomerProfile(String customerId, String email) {\n        public CustomerProfile {\n            if (customerId == null || customerId.isBlank()) {\n                throw new IllegalArgumentException(\"customerId cannot be blank\");\n            }\n            if (email == null || email.isBlank()) {\n                throw new IllegalArgumentException(\"email cannot be blank\");\n            }\n        }\n    }\n}",
+      "expectedOutput": "CustomerProfile immutable record",
+      "testCases": [
+        {
+          "input": "new CustomerProfile('C-1', 'test@test.com')",
+          "expected": "CustomerProfile[customerId=C-1, email=test@test.com]"
+        }
+      ],
+      "hints": [
+        "Records automatically provide immutable final fields.",
+        "Add constructor validation for null or blank values."
+      ]
+    }
+  ]
+}

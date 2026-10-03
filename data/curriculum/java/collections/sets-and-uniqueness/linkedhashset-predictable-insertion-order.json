@@ -1,0 +1,272 @@
+{
+  "id": "les-col-linkedhashset",
+  "slug": "linkedhashset-predictable-insertion-order",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "LinkedHashSet: Predictable Insertion-Order",
+  "summary": "How LinkedHashSet blends hash table speed with a doubly-linked list to maintain predictable FIFO insertion order for iteration.",
+  "difficulty": "intermediate",
+  "estimatedMinutes": 20,
+  "orderIndex": 3,
+  "prerequisites": [
+    "HashSet: How Hash Buckets Guarantee O(1) Lookups",
+    "LinkedList: Doubly-Linked Nodes & Pointers",
+    "The Set Contract & Mathematical Uniqueness"
+  ],
+  "learningObjectives": [
+    "Understand the dual data structure architecture of java.util.LinkedHashSet",
+    "Analyze how doubly-linked node pointers maintain deterministic FIFO iteration order",
+    "Contrast memory consumption and cache locality between HashSet and LinkedHashSet",
+    "Identify enterprise use cases requiring predictable iteration and deduplication"
+  ],
+  "expectedOutcomes": [
+    "Ability to explain the internal pointer architecture of LinkedHashMap.Entry",
+    "Confident selection between HashSet and LinkedHashSet based on memory and order requirements"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l3-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Index Cards Threaded on a Timeline Ribbon",
+      "analogy": {
+        "headline": "Practical Context: Index Cards Threaded on a Timeline Ribbon",
+        "story": "Imagine an archive system where index cards are placed into numbered drawer bins by subject hash code for instant retrieval. However, whenever a card is inserted, an unbroken colored ribbon is also threaded through the card, linking it directly to the card added immediately before it and the card added after it.\n\nWhen a researcher queries an item, they open the hash drawer instantly in O(1) time. When they need to review the entire archive in chronological sequence, they simply follow the ribbon from start to end without searching empty drawers.",
+        "keyTakeaway": "LinkedHashSet blends a hash table with a doubly-linked list. It delivers O(1) hash lookups while guaranteeing deterministic, insertion-ordered iteration."
+      },
+      "content": "Imagine an archive system where index cards are placed into numbered drawer bins by subject hash code for instant retrieval. However, whenever a card is inserted, an unbroken colored ribbon is also threaded through the card, linking it directly to the card added immediately before it and the card added after it.\n\nWhen a researcher queries an item, they open the hash drawer instantly in O(1) time. When they need to review the entire archive in chronological sequence, they simply follow the ribbon from start to end without searching empty drawers."
+    },
+    {
+      "id": "act-col2-l3-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "LinkedHashSet Architecture: Blending Hash Tables with Doubly-Linked Lists",
+      "breakdown": {
+        "keyTakeaways": [
+          "LinkedHashSet extends HashSet and delegates to an internal LinkedHashMap",
+          "Every entry maintains two extra pointers: before and after, chaining all elements into a doubly-linked list",
+          "Iteration order is strictly deterministic, matching the exact sequence elements were first inserted (FIFO)",
+          "Re-inserting an existing element does NOT affect its position in the insertion order"
+        ]
+      },
+      "content": "### Definition of LinkedHashSet & The Dual Data Structure Hybrid\n\nA **`LinkedHashSet`** is a hash table and doubly-linked list implementation of the `Set` interface that delivers predictable iteration ordering. It extends `HashSet` and delegates internally to a backing **`java.util.LinkedHashMap`** instance.\n\nUnlike `HashSet` (whose iteration order is erratic and changes upon resizing), `LinkedHashSet` guarantees that iterating through the collection visits elements in the exact order in which they were originally inserted:\n```java\n// OpenJDK java.util.LinkedHashMap.Entry Node Structure\nstatic class Entry<K,V> extends HashMap.Node<K,V> {\n    Entry<K,V> before, after; // Pointers to maintain insertion sequence\n    Entry(int hash, K key, V value, Node<K,V> next) {\n        super(hash, key, value, next);\n    }\n}\n```\nEvery entry maintains four pointers in total:\n1. `hash`: The cached 32-bit hash code.\n2. `next`: Pointer to the next colliding node in the hash bucket chain.\n3. `before`: Pointer to the previously inserted entry across the entire set.\n4. `after`: Pointer to the next inserted entry across the entire set.\n\n---\n\n### Deterministic FIFO Iteration vs HashSet Randomness\n\nWhen iterating over a standard `HashSet`, the iterator must traverse every bucket in the table array from `0` to `capacity - 1`, skipping empty buckets and visiting elements in hash-scrambled order.\n\nIn `LinkedHashSet`, iteration does not scan table buckets. It begins at the `head` pointer of the doubly-linked list and follows `after` pointers directly to the `tail`. This provides two major advantages:\n1. **Predictability**: Iteration order is reproducible across JVM versions, architectures, and resizing events.\n2. **Iteration Performance**: Iteration time is proportional to $O(N)$ (the number of elements), rather than $O(\\text{Capacity} + N)$ as in `HashSet`.\n\n---\n\n### Comparative Code Walkthrough: HashSet vs LinkedHashSet\n\n```java\nimport java.util.HashSet;\nimport java.util.LinkedHashSet;\nimport java.util.List;\nimport java.util.Set;\n\npublic class SetOrderingComparison {\n    public static void main(String[] args) {\n        List<String> rawTokens = List.of(\"Zebra\", \"Apple\", \"Mango\", \"Banana\", \"Apple\");\n\n        // 1. HashSet: Non-deterministic iteration order\n        Set<String> hashSet = new HashSet<>(rawTokens);\n        System.out.println(\"HashSet (hash-scrambled):       \" + hashSet);\n\n        // 2. LinkedHashSet: Preserves arrival order perfectly\n        Set<String> linkedSet = new LinkedHashSet<>(rawTokens);\n        System.out.println(\"LinkedHashSet (insertion-order): \" + linkedSet);\n\n        // Note: Re-adding Apple does not shift its original position\n        linkedSet.add(\"Apple\");\n        System.out.println(\"After re-adding Apple:           \" + linkedSet);\n    }\n}\n```\n\n**Console Output:**\n```text\nHashSet (hash-scrambled):       [Banana, Zebra, Apple, Mango]\nLinkedHashSet (insertion-order): [Zebra, Apple, Mango, Banana]\nAfter re-adding Apple:           [Zebra, Apple, Mango, Banana]\n```\n\n---\n\n### Architectural Trade-Offs: HashSet vs LinkedHashSet\n\n| Metric | `HashSet<E>` | `LinkedHashSet<E>` |\n| :--- | :--- | :--- |\n| **Iteration Order** | Non-deterministic (hash bucket order) | Guaranteed FIFO Insertion Order |\n| **Memory Overhead** | 1 pointer (`next`) per entry node | 3 pointers (`next`, `before`, `after`) per node |\n| **Add / Contains Time** | $O(1)$ | $O(1)$ (slightly slower constant factor for pointer rewiring) |\n| **Iteration Cost** | $O(\\text{Capacity} + N)$ | $O(N)$ (follows linked pointers directly) |"
+    },
+    {
+      "id": "act-col2-l3-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Deterministic Deduplication Pipeline",
+      "description": "Trace a high-throughput transaction deduplicator that preserves original customer event ordering.",
+      "code": "import java.util.LinkedHashSet;\nimport java.util.List;\nimport java.util.Set;\n\npublic class TransactionPipelineDeduplicator {\n    public static <T> List<T> deduplicatePreservingOrder(List<T> stream) {\n        if (stream == null || stream.isEmpty()) {\n            return List.of();\n        }\n        // LinkedHashSet guarantees both O(1) deduplication and FIFO sequence preservation\n        Set<T> uniqueOrdered = new LinkedHashSet<>(stream);\n        return List.copyOf(uniqueOrdered);\n    }\n\n    public static void main(String[] args) {\n        List<String> userEvents = List.of(\n            \"LOGIN\", \"VIEW_ITEM\", \"ADD_TO_CART\", \"VIEW_ITEM\", \n            \"CHECKOUT\", \"LOGIN\", \"CONFIRM\"\n        );\n\n        List<String> cleanSequence = deduplicatePreservingOrder(userEvents);\n        System.out.println(\"Original events count: \" + userEvents.size());\n        System.out.println(\"Cleaned events count:  \" + cleanSequence.size());\n        System.out.println(\"Deterministic order:   \" + cleanSequence);\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "9",
+          "description": "Construct a LinkedHashSet initialized with incoming stream elements to filter duplicates while preserving original discovery order."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "10",
+          "description": "Convert to an unmodifiable List via List.copyOf() for thread-safe downstream consumer delivery."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "14-22",
+          "description": "Execute pipeline on raw user events containing repeat LOGIN and VIEW_ITEM events. Observe clean preserved event ordering."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l3-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "LinkedHashSet Assessment",
+      "questions": [
+        {
+          "id": "col2-l3-q1",
+          "question": "What happens to the insertion order in a LinkedHashSet when an existing element is added again via set.add(existing)?",
+          "options": [
+            "The element is moved to the tail (end) of the iteration order",
+            "The element is moved to the head (beginning) of the iteration order",
+            "The insertion order is unaffected; the element remains at its original position",
+            "An exception is thrown"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "According to the LinkedHashSet specification, re-inserting an element that is already present does NOT affect its insertion order."
+        },
+        {
+          "id": "col2-l3-q2",
+          "question": "How does LinkedHashSet achieve predictable iteration ordering?",
+          "options": [
+            "By sorting elements using Comparable.compareTo()",
+            "By maintaining a doubly-linked list running through all its entries",
+            "By using an array that shifts elements on insertion",
+            "By executing a quicksort pass before every iteration"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "LinkedHashSet inherits from HashSet and delegates to LinkedHashMap, which maintains before and after pointers connecting all entries into a doubly-linked list."
+        },
+        {
+          "id": "col2-l3-q3",
+          "question": "How does iteration performance compare between HashSet and LinkedHashSet?",
+          "options": [
+            "HashSet is faster because it uses less memory",
+            "LinkedHashSet is faster for iteration because it iterates in O(N) by following linked pointers, without traversing empty table buckets",
+            "Both have identical iteration performance of O(1)",
+            "LinkedHashSet takes O(N log N) to iterate"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Iterating over a HashSet requires visiting all table buckets O(Capacity + N). LinkedHashSet follows its linked list pointers directly, taking O(N) time regardless of table capacity."
+        },
+        {
+          "id": "col2-l3-q4",
+          "question": "What is the primary trade-off of LinkedHashSet compared to HashSet?",
+          "options": [
+            "LinkedHashSet cannot store null elements",
+            "LinkedHashSet consumes more memory per entry due to before/after pointers and has a slightly slower insertion constant factor",
+            "LinkedHashSet degrades lookups to O(N)",
+            "LinkedHashSet cannot be used in multithreaded environments"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Every LinkedHashMap.Entry node contains two additional reference fields (before and after), increasing heap footprint and requiring pointer updates upon insertion."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l3-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: LinkedHashSet Architecture",
+      "questions": [
+        {
+          "id": "col2-l3-int-1",
+          "question": "Why would an engineer prefer LinkedHashSet over HashSet in a REST API or serialized response?",
+          "answer": "In REST APIs, JSON serialization of sets can lead to flaky unit tests or client-side caching anomalies if the JSON array order fluctuates randomly across server instances or restarts. LinkedHashSet guarantees deterministic, reproducible serialization order matching the business insertion sequence, eliminating non-deterministic bugs in automated test suites and distributed caches."
+        },
+        {
+          "id": "col2-l3-int-2",
+          "question": "Can LinkedHashSet be configured for access-order rather than insertion-order?",
+          "answer": "Directly through the LinkedHashSet public API, no: LinkedHashSet constructors only support insertion-order. However, its underlying class LinkedHashMap has a constructor that accepts an `accessOrder` boolean parameter (which moves recently accessed elements to the tail). To build an LRU (Least Recently Used) Set, developers typically use Collections.newSetFromMap(new LinkedHashMap<>(16, 0.75f, true))."
+        },
+        {
+          "id": "col2-l3-int-3",
+          "question": "What is the space complexity difference between HashSet and LinkedHashSet for 1,000,000 entries?",
+          "answer": "Both have O(N) space complexity, but LinkedHashSet has a significantly higher constant factor. On a 64-bit JVM with compressed OOPs disabled (or large heaps), each LinkedHashMap.Entry holds 2 additional 8-byte reference pointers (before and after), totaling an extra 16 to 32 bytes per node. For 1,000,000 entries, LinkedHashSet will consume approximately 16\u201332 MB more heap memory than a standard HashSet."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l3-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: LinkedHashSet",
+      "checklist": [
+        "I understand the internal architecture of LinkedHashSet and how before/after pointers maintain FIFO order",
+        "I can articulate the performance and memory trade-offs between HashSet and LinkedHashSet",
+        "I know how to use LinkedHashSet for deterministic stream deduplication and predictable serialization"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l3-1",
+      "title": "Deduplicate Words Preserving First Appearance",
+      "difficulty": "beginner",
+      "problemStatement": "Given an array of words, return a new array with all duplicates removed, preserving the exact order in which each word first appeared.",
+      "starterCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\n\npublic class WordOrderDeduplicator {\n    public static String[] deduplicateInOrder(String[] words) {\n        // TODO: Return distinct words preserving order\n        return new String[0];\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\n\npublic class WordOrderDeduplicator {\n    public static String[] deduplicateInOrder(String[] words) {\n        if (words == null) return new String[0];\n        Set<String> set = new LinkedHashSet<>();\n        for (String w : words) set.add(w);\n        return set.toArray(new String[0]);\n    }\n}",
+      "expectedOutput": "[\"dog\", \"cat\", \"bird\"]",
+      "testCases": [
+        {
+          "input": "[\"dog\", \"cat\", \"dog\", \"bird\", \"cat\"]",
+          "expected": "[\"dog\", \"cat\", \"bird\"]"
+        }
+      ],
+      "hints": [
+        "LinkedHashSet retains the first insertion position of each unique element.",
+        "Use set.toArray(new String[0]) to convert back to an array."
+      ]
+    },
+    {
+      "id": "prob-col2-l3-2",
+      "title": "Track Unique Active User Sessions",
+      "difficulty": "beginner",
+      "problemStatement": "Implement a SessionTracker class that records user logins and outputs all uniquely active users in the order they logged in.",
+      "starterCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\nimport java.util.List;\n\npublic class SessionTracker {\n    private final Set<String> sessions = new LinkedHashSet<>();\n\n    public void logUser(String username) {\n    }\n\n    public List<String> getChronologicalUsers() {\n        return List.of();\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\nimport java.util.List;\n\npublic class SessionTracker {\n    private final Set<String> sessions = new LinkedHashSet<>();\n\n    public void logUser(String username) {\n        if (username != null) sessions.add(username);\n    }\n\n    public List<String> getChronologicalUsers() {\n        return List.copyOf(sessions);\n    }\n}",
+      "expectedOutput": "[\"u1\", \"u2\", \"u3\"]",
+      "testCases": [
+        {
+          "input": "logUser('u1'), logUser('u2'), logUser('u1'), logUser('u3')",
+          "expected": "[\"u1\", \"u2\", \"u3\"]"
+        }
+      ],
+      "hints": [
+        "LinkedHashSet guarantees FIFO order.",
+        "List.copyOf(sessions) creates a clean immutable snapshot of the ordered set."
+      ]
+    },
+    {
+      "id": "prob-col2-l3-3",
+      "title": "Verify Set Ordering Stability",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an array of strings, write a method isOrderPreserved(String[] input) that returns true if adding elements to a LinkedHashSet produces an iteration matching the distinct order of the input.",
+      "starterCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\nimport java.util.Iterator;\n\npublic class OrderValidator {\n    public static boolean isOrderPreserved(String[] input) {\n        // TODO: Verify LinkedHashSet iteration matches distinct input order\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\nimport java.util.Iterator;\n\npublic class OrderValidator {\n    public static boolean isOrderPreserved(String[] input) {\n        if (input == null) return true;\n        Set<String> set = new LinkedHashSet<>();\n        for (String s : input) set.add(s);\n        \n        Set<String> seen = new LinkedHashSet<>();\n        for (String s : input) seen.add(s);\n\n        Iterator<String> it1 = set.iterator();\n        Iterator<String> it2 = seen.iterator();\n        while (it1.hasNext() && it2.hasNext()) {\n            if (!it1.next().equals(it2.next())) return false;\n        }\n        return !it1.hasNext() && !it2.hasNext();\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "[\"A\", \"B\", \"C\", \"A\", \"D\"]",
+          "expected": "true"
+        }
+      ],
+      "hints": [
+        "Iterate and compare element by element.",
+        "LinkedHashSet always guarantees order stability."
+      ]
+    },
+    {
+      "id": "prob-col2-l3-4",
+      "title": "Filter Characters Keeping First Occurrence",
+      "difficulty": "beginner",
+      "problemStatement": "Given a string with repeated characters, return a new string containing each character only once, in the order of its first appearance.",
+      "starterCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\n\npublic class StringCharDeduplicator {\n    public static String deduplicateString(String text) {\n        // TODO: Return string with distinct characters in order\n        return \"\";\n    }\n}",
+      "solutionCode": "import java.util.LinkedHashSet;\nimport java.util.Set;\n\npublic class StringCharDeduplicator {\n    public static String deduplicateString(String text) {\n        if (text == null || text.isEmpty()) return \"\";\n        Set<Character> set = new LinkedHashSet<>();\n        for (char c : text.toCharArray()) set.add(c);\n        \n        StringBuilder sb = new StringBuilder();\n        for (char c : set) sb.append(c);\n        return sb.toString();\n    }\n}",
+      "expectedOutput": "\"ban\"",
+      "testCases": [
+        {
+          "input": "\"banana\"",
+          "expected": "\"ban\""
+        },
+        {
+          "input": "\"programming\"",
+          "expected": "\"progamin\""
+        }
+      ],
+      "hints": [
+        "Add every character to a LinkedHashSet<Character>.",
+        "Iterate over the set and append to a StringBuilder."
+      ]
+    },
+    {
+      "id": "prob-col2-l3-5",
+      "title": "Merge Two Lists Preserving Order and Uniqueness",
+      "difficulty": "intermediate",
+      "problemStatement": "Given two lists of strings listA and listB, return a combined list containing all distinct elements from listA followed by any new distinct elements from listB, with zero duplicates.",
+      "starterCode": "import java.util.List;\nimport java.util.LinkedHashSet;\nimport java.util.Set;\nimport java.util.ArrayList;\n\npublic class ListOrderMerger {\n    public static List<String> mergeDistinctInOrder(List<String> listA, List<String> listB) {\n        // TODO: Merge lists preserving order and uniqueness\n        return List.of();\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.LinkedHashSet;\nimport java.util.Set;\nimport java.util.ArrayList;\n\npublic class ListOrderMerger {\n    public static List<String> mergeDistinctInOrder(List<String> listA, List<String> listB) {\n        Set<String> merged = new LinkedHashSet<>();\n        if (listA != null) merged.addAll(listA);\n        if (listB != null) merged.addAll(listB);\n        return new ArrayList<>(merged);\n    }\n}",
+      "expectedOutput": "[\"a\", \"b\", \"c\", \"d\"]",
+      "testCases": [
+        {
+          "input": "listA = [\"a\", \"b\"], listB = [\"b\", \"c\", \"d\"]",
+          "expected": "[\"a\", \"b\", \"c\", \"d\"]"
+        }
+      ],
+      "hints": [
+        "Use merged.addAll(listA) followed by merged.addAll(listB).",
+        "The LinkedHashSet will preserve the original relative sequence without allowing duplicates."
+      ]
+    }
+  ]
+}

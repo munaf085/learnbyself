@@ -1,0 +1,293 @@
+{
+  "id": "les-col-set-contract",
+  "slug": "the-set-contract-and-mathematical-uniqueness",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "The Set Contract & Mathematical Uniqueness",
+  "summary": "Explore the Set interface: no duplicate elements, at most one null element (in HashSet), and mathematical set operations (union, intersection).",
+  "difficulty": "beginner",
+  "estimatedMinutes": 20,
+  "orderIndex": 1,
+  "prerequisites": [
+    "The Collection Hierarchy & Root Interfaces",
+    "The List Contract & ArrayList Internals",
+    "Object Identity vs Logical Equality"
+  ],
+  "learningObjectives": [
+    "Understand the formal mathematical contract of the java.util.Set interface",
+    "Master duplicate rejection mechanics and the boolean return value of add()",
+    "Contrast Set and List across indexing, uniqueness, and lookup performance",
+    "Analyze memory and time trade-offs between linear scanning and hashing"
+  ],
+  "expectedOutcomes": [
+    "Ability to determine precisely when business rules demand Set semantics over List",
+    "Mastery of conditional insertion patterns utilizing Set.add() return values"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l1-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Identity Rosters vs Sequential Activity Logs",
+      "analogy": {
+        "headline": "Practical Context: Identity Rosters vs Sequential Activity Logs",
+        "story": "In production architectures, datasets naturally divide into two distinct paradigms:\n\n1. Sequential transaction streams: Every user action, click event, and payment log matters in the exact order it occurred, with duplicates expected and valid.\n2. Identity registries: A registered user database, a system permission list, or an inventory of active IP addresses cannot tolerate duplicates. An identity either belongs to the system or it does not.\n\nWhile Lists represent the former, Sets represent the mathematical reality of distinct identity registries.",
+        "keyTakeaway": "A List preserves arrival order and tolerates duplicates. A Set models mathematical uniqueness: elements cannot duplicate, and membership lookups prioritize near-instant verification over sequential indexing."
+      },
+      "content": "In production architectures, datasets naturally divide into two distinct paradigms:\n\n1. Sequential transaction streams: Every user action, click event, and payment log matters in the exact order it occurred, with duplicates expected and valid.\n2. Identity registries: A registered user database, a system permission list, or an inventory of active IP addresses cannot tolerate duplicates. An identity either belongs to the system or it does not.\n\nWhile Lists represent the former, Sets represent the mathematical reality of distinct identity registries."
+    },
+    {
+      "id": "act-col2-l1-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "Understanding the Set Contract: Mathematical Sets in Java Collections",
+      "breakdown": {
+        "keyTakeaways": [
+          "The java.util.Set interface prohibits duplicate elements according to equals()",
+          "The add(E e) method returns false if the element is already present, rejecting duplicates silently without throwing exceptions",
+          "Sets do not have index-based positional access (no get(int index) method)",
+          "Membership verification with contains() operates in O(1) time in HashSet compared to O(N) in List"
+        ]
+      },
+      "content": "### Definition of the java.util.Set Interface\n\nThe **`java.util.Set<E>`** interface is a core member of the Java Collections Framework that models the mathematical set abstraction: an unordered collection that contains no duplicate elements. Formally, for any two elements `e1` and `e2` in a `Set`, `e1.equals(e2)` evaluates to `false`, and at most one `null` element is permitted in implementations that allow nulls (such as `HashSet`).\n\nUnlike `List`, the `Set` contract does not define an index-based ordering. There is no `get(int index)` method. Elements are accessed by membership query (`contains`), batch iteration, or functional filtering.\n\n---\n\n### Duplicate Rejection Mechanics and add() Return Value\n\nWhen inserting an element into a `Set`, the `add(E e)` method enforces uniqueness using the object's `equals()` and `hashCode()` methods:\n* If the element is **not** present, the set inserts it and returns **`true`**.\n* If the element is **already present** (`existing.equals(e)` is `true`), the set leaves its contents unchanged and returns **`false`**.\n\nThis boolean return value enables clean, idiomatically concise code that simultaneously checks for existence and adds an item in a single $O(1)$ operation without prior `contains()` calls.\n\n---\n\n### Set vs List: Architectural Trade-Offs in Code\n\n```java\nimport java.util.ArrayList;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\n\npublic class SetVsListDemo {\n    public static void main(String[] args) {\n        // 1. List permits duplicates and tracks indices\n        List<String> userList = new ArrayList<>();\n        userList.add(\"alice@corp.com\");\n        userList.add(\"bob@corp.com\");\n        userList.add(\"alice@corp.com\"); // Duplicate accepted\n        System.out.println(\"List count: \" + userList.size());\n        System.out.println(\"List element at index 0: \" + userList.get(0));\n\n        // 2. Set enforces strict uniqueness and rejects duplicates\n        Set<String> userSet = new HashSet<>();\n        boolean addedFirst = userSet.add(\"alice@corp.com\");\n        boolean addedSecond = userSet.add(\"bob@corp.com\");\n        boolean addedDuplicate = userSet.add(\"alice@corp.com\");\n\n        System.out.println(\"Added first Alice: \" + addedFirst);        // true\n        System.out.println(\"Added second Alice: \" + addedDuplicate);    // false\n        System.out.println(\"Unique Set size: \" + userSet.size());      // 2\n        System.out.println(\"Contains Bob? \" + userSet.contains(\"bob@corp.com\")); // O(1) lookup\n    }\n}\n```\n\n**Console Output:**\n```text\nList count: 3\nList element at index 0: alice@corp.com\nAdded first Alice: true\nAdded second Alice: false\nUnique Set size: 2\nContains Bob? true\n```\n\n---\n\n### Architectural Comparison: List vs Set\n\n| Dimension | `java.util.List<E>` | `java.util.Set<E>` |\n| :--- | :--- | :--- |\n| **Duplicates** | Permitted (multiple identical entries) | Strictly forbidden (`equals` check) |\n| **Positional Access** | Yes (`get(int index)`, `set(int, E)`) | No index access (no `get(index)`) |\n| **Membership (`contains`)** | Linear Scan $O(N)$ | Constant Time $O(1)$ (`HashSet`) |\n| **Null Support** | Multiple nulls allowed | At most 1 null (`HashSet`), 0 (`TreeSet`) |"
+    },
+    {
+      "id": "act-col2-l1-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "High-Speed Member De-Duplication and Ingestion",
+      "description": "Step through a realistic access control module verifying authorized user credentials while discarding duplicate logins.",
+      "code": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class SecurityAuditRegistry {\n    private final Set<String> activeSecurityBadges = new HashSet<>();\n\n    public boolean issueBadge(String badgeId) {\n        if (badgeId == null || badgeId.isBlank()) {\n            throw new IllegalArgumentException(\"Badge ID cannot be blank\");\n        }\n        // add() returns false if already present\n        return activeSecurityBadges.add(badgeId);\n    }\n\n    public boolean isBadgeActive(String badgeId) {\n        return activeSecurityBadges.contains(badgeId);\n    }\n\n    public int totalActiveBadges() {\n        return activeSecurityBadges.size();\n    }\n\n    public static void main(String[] args) {\n        SecurityAuditRegistry registry = new SecurityAuditRegistry();\n        System.out.println(\"Registering SEC-001: \" + registry.issueBadge(\"SEC-001\"));\n        System.out.println(\"Registering SEC-002: \" + registry.issueBadge(\"SEC-002\"));\n        System.out.println(\"Duplicate SEC-001: \" + registry.issueBadge(\"SEC-001\"));\n        \n        System.out.println(\"Total Active Badges: \" + registry.totalActiveBadges());\n        System.out.println(\"Is SEC-002 valid? \" + registry.isBadgeActive(\"SEC-002\"));\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "5",
+          "description": "Instantiate a private final HashSet to guarantee O(1) membership lookups and prevent duplicate badges."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "7-13",
+          "description": "Validate input and invoke activeSecurityBadges.add(badgeId). The boolean return value immediately signals if the badge was newly issued or already registered."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "15-17",
+          "description": "Execute isBadgeActive() via contains(). In a hash set, this executes in constant O(1) average time without scanning the collection."
+        },
+        {
+          "stepNumber": 4,
+          "focusLines": "23-28",
+          "description": "Main demonstrates attempting to issue SEC-001 twice. The second invocation cleanly evaluates to false, leaving set size at exactly 2."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l1-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "Set Contract & Uniqueness Assessment",
+      "questions": [
+        {
+          "id": "col2-l1-q1",
+          "question": "What occurs when set.add(\"Java\") is executed on a HashSet that already contains the string \"Java\"?",
+          "options": [
+            "An IllegalArgumentException is thrown at runtime",
+            "The method returns false and the existing element is retained without changes",
+            "The previous element is overwritten and the method returns true",
+            "A DuplicateKeyException is thrown"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "According to the java.util.Set contract, if an equal element already exists, the set leaves the collection unchanged and returns false."
+        },
+        {
+          "id": "col2-l1-q2",
+          "question": "Why does the Set interface not provide a get(int index) method like List?",
+          "options": [
+            "Because Java collections cannot store integers as indices",
+            "Because the Set contract models mathematical sets, which have no intrinsic positional or index-based ordering",
+            "Because Set extends Map which only uses keys",
+            "Because Java arrays cannot be converted into Sets"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Mathematical sets are defined strictly by membership, not sequential position. Since implementations like HashSet do not guarantee ordering, index-based access is intentionally excluded from the interface."
+        },
+        {
+          "id": "col2-l1-q3",
+          "question": "What is the time complexity of set.contains(element) in a well-distributed HashSet versus list.contains(element) in an ArrayList?",
+          "options": [
+            "HashSet: O(1); ArrayList: O(N)",
+            "HashSet: O(N); ArrayList: O(1)",
+            "Both are O(1)",
+            "Both are O(N)"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "ArrayList must linearly scan up to N elements (O(N)), while HashSet calculates the hash bucket directly, delivering O(1) average lookup time."
+        },
+        {
+          "id": "col2-l1-q4",
+          "question": "How many null elements can a java.util.HashSet hold?",
+          "options": [
+            "Zero; null always throws NullPointerException in all Sets",
+            "At most one null element",
+            "Unlimited null elements as long as memory permits",
+            "Up to 16 null elements matching DEFAULT_INITIAL_CAPACITY"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "HashSet permits null elements, but because Sets enforce uniqueness, at most one null reference can exist in the set."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l1-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Set Architecture & Trade-Offs",
+      "questions": [
+        {
+          "id": "col2-l1-int-1",
+          "question": "When should a software engineer choose a Set over a List in production systems?",
+          "answer": "Choose a Set when: 1) Business requirements strictly demand uniqueness (e.g., email registries, permission flags, foreign keys), 2) High-throughput membership checking via contains() is required (O(1) in HashSet vs O(N) in List), or 3) Mathematical set operations (union, intersection, difference) need to be evaluated across collections. Choose a List when arrival order must be preserved, duplicates are meaningful (e.g., financial ledger entries), or random positional access via index is necessary."
+        },
+        {
+          "id": "col2-l1-int-2",
+          "question": "How does Set.add() avoid race conditions or double-lookups in idiomatic Java?",
+          "answer": "Instead of writing defensive code like `if (!set.contains(item)) { set.add(item); }` (which performs two consecutive hash bucket traversals and is vulnerable to race conditions in concurrent contexts), idiomatic Java relies on the boolean return value of `set.add(item)`. The add() operation checks existence and inserts atomically in a single hash operation, returning true if added or false if already present."
+        },
+        {
+          "id": "col2-l1-int-3",
+          "question": "Can a custom object be stored in a Set if it only implements equals() but not hashCode()?",
+          "answer": "Technically Java allows it to compile, but it leads to critical runtime defects in HashSet and LinkedHashSet. If hashCode() is not overridden, the JVM uses default identity hash codes (derived from memory address). Two objects considered identical by equals() will produce different hash codes and land in different buckets, allowing duplicate objects into the set and breaking the fundamental Set contract."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l1-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: Set Contract & Uniqueness",
+      "checklist": [
+        "I can clearly define the Set contract and explain how duplicate rejection operates via equals() and hashCode()",
+        "I understand why Set omits index-based methods like get(int index) and how membership lookups achieve O(1) performance",
+        "I can leverage the boolean return value of Set.add() to streamline membership insertion logic"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l1-1",
+      "title": "Filter Duplicate IP Addresses",
+      "difficulty": "beginner",
+      "problemStatement": "Given a list of IP address strings containing duplicates, implement a method that returns the total count of unique IP addresses using a Set.",
+      "starterCode": "import java.util.List;\nimport java.util.Set;\nimport java.util.HashSet;\n\npublic class UniqueIps {\n    public static int countUnique(List<String> rawIps) {\n        // TODO: Return count of unique IPs\n        return 0;\n    }\n}",
+      "solutionCode": "import java.util.List;\nimport java.util.Set;\nimport java.util.HashSet;\n\npublic class UniqueIps {\n    public static int countUnique(List<String> rawIps) {\n        if (rawIps == null) return 0;\n        Set<String> uniqueSet = new HashSet<>(rawIps);\n        return uniqueSet.size();\n    }\n}",
+      "expectedOutput": "3",
+      "testCases": [
+        {
+          "input": "List.of(\"192.168.1.1\", \"10.0.0.1\", \"192.168.1.1\")",
+          "expected": "2"
+        },
+        {
+          "input": "List.of(\"a\", \"b\", \"c\", \"a\", \"b\")",
+          "expected": "3"
+        }
+      ],
+      "hints": [
+        "HashSet has a constructor that accepts any existing Collection: new HashSet<>(collection)",
+        "The size() method of the resulting set directly reflects the number of unique elements."
+      ]
+    },
+    {
+      "id": "prob-col2-l1-2",
+      "title": "Identify First Duplicate Element",
+      "difficulty": "beginner",
+      "problemStatement": "Implement a method that scans an array of numbers and returns the first number that appears more than once. If all numbers are distinct, return -1.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class FirstDuplicateFinder {\n    public static int findFirstDuplicate(int[] nums) {\n        // TODO: Return first duplicate number, or -1\n        return -1;\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class FirstDuplicateFinder {\n    public static int findFirstDuplicate(int[] nums) {\n        if (nums == null) return -1;\n        Set<Integer> seen = new HashSet<>();\n        for (int n : nums) {\n            if (!seen.add(n)) {\n                return n; // add() returning false means it was already present!\n            }\n        }\n        return -1;\n    }\n}",
+      "expectedOutput": "3",
+      "testCases": [
+        {
+          "input": "[2, 1, 3, 5, 3, 2]",
+          "expected": "3"
+        },
+        {
+          "input": "[1, 2, 3, 4]",
+          "expected": "-1"
+        }
+      ],
+      "hints": [
+        "Use seen.add(num). When add() returns false, you have encountered the first duplicate immediately.",
+        "This achieves O(N) time complexity and O(N) space, avoiding nested loops."
+      ]
+    },
+    {
+      "id": "prob-col2-l1-3",
+      "title": "Check If Array Has All Distinct Elements",
+      "difficulty": "beginner",
+      "problemStatement": "Write a method hasAllUnique(String[] tokens) that returns true if every token in the array is distinct, or false if any duplicate exists.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class UniqueChecker {\n    public static boolean hasAllUnique(String[] tokens) {\n        // TODO: Implement verification\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class UniqueChecker {\n    public static boolean hasAllUnique(String[] tokens) {\n        if (tokens == null) return true;\n        Set<String> set = new HashSet<>();\n        for (String token : tokens) {\n            if (!set.add(token)) return false;\n        }\n        return true;\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "[\"alpha\", \"beta\", \"gamma\"]",
+          "expected": "true"
+        },
+        {
+          "input": "[\"apple\", \"orange\", \"apple\"]",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Iterate through each item and check if set.add() succeeds.",
+        "Early return false as soon as any add() call returns false."
+      ]
+    },
+    {
+      "id": "prob-col2-l1-4",
+      "title": "Safe Bulk Registration Registry",
+      "difficulty": "intermediate",
+      "problemStatement": "Implement a RegistrationBook class with registerUser(String username) returning true if newly registered, and isRegistered(String username) checking existence in O(1) time.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class RegistrationBook {\n    private final Set<String> registeredUsers = new HashSet<>();\n\n    public boolean registerUser(String username) {\n        return false;\n    }\n\n    public boolean isRegistered(String username) {\n        return false;\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class RegistrationBook {\n    private final Set<String> registeredUsers = new HashSet<>();\n\n    public boolean registerUser(String username) {\n        if (username == null || username.trim().isEmpty()) return false;\n        return registeredUsers.add(username.trim().toLowerCase());\n    }\n\n    public boolean isRegistered(String username) {\n        if (username == null) return false;\n        return registeredUsers.contains(username.trim().toLowerCase());\n    }\n}",
+      "expectedOutput": "true",
+      "testCases": [
+        {
+          "input": "registerUser(\"Admin\"), isRegistered(\"admin\")",
+          "expected": "true"
+        },
+        {
+          "input": "registerUser(\"Admin\"), registerUser(\"admin\")",
+          "expected": "false"
+        }
+      ],
+      "hints": [
+        "Normalize usernames with trim().toLowerCase() before adding or checking.",
+        "Delegate directly to set.add() and set.contains()."
+      ]
+    },
+    {
+      "id": "prob-col2-l1-5",
+      "title": "Find Missing Numbers in Permutation",
+      "difficulty": "intermediate",
+      "problemStatement": "Given an integer array nums of length N containing numbers in the range [1, N+1], exactly one number is missing. Find and return the missing number using a Set.",
+      "starterCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class MissingNumberFinder {\n    public static int findMissing(int[] nums) {\n        // TODO: Find missing number using Set\n        return -1;\n    }\n}",
+      "solutionCode": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class MissingNumberFinder {\n    public static int findMissing(int[] nums) {\n        if (nums == null) return -1;\n        Set<Integer> present = new HashSet<>();\n        for (int n : nums) present.add(n);\n        for (int i = 1; i <= nums.length + 1; i++) {\n            if (!present.contains(i)) return i;\n        }\n        return -1;\n    }\n}",
+      "expectedOutput": "3",
+      "testCases": [
+        {
+          "input": "[1, 2, 4, 5]",
+          "expected": "3"
+        },
+        {
+          "input": "[2, 3, 4]",
+          "expected": "1"
+        }
+      ],
+      "hints": [
+        "Insert all numbers into a HashSet in O(N) time.",
+        "Check which integer from 1 to N+1 is absent via set.contains(i) in O(1) time."
+      ]
+    }
+  ]
+}

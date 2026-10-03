@@ -1,0 +1,268 @@
+{
+  "id": "les-col-set-equals-hashcode",
+  "slug": "the-critical-equals-and-hashcode-contract-in-sets",
+  "sectionSlug": "collections",
+  "moduleSlug": "sets-and-uniqueness",
+  "languageSlug": "java",
+  "title": "The equals() and hashCode() Contract in Sets",
+  "summary": "Why breaking the equals/hashCode contract causes elements to vanish inside HashSets, causing duplicate insertions and phantom data.",
+  "difficulty": "advanced",
+  "estimatedMinutes": 20,
+  "orderIndex": 5,
+  "prerequisites": [
+    "HashSet: How Hash Buckets Guarantee O(1) Lookups",
+    "Object Identity vs Logical Equality",
+    "Immutable Classes & Defensive Copying"
+  ],
+  "learningObjectives": [
+    "Deeply understand the mathematical invariants of the equals() and hashCode() contract",
+    "Diagnose the silent 'vanishing element' bug caused by mutating objects stored in a HashSet",
+    "Analyze bucket recalculation mismatch when object hash codes change dynamically",
+    "Design bulletproof, immutable domain value objects for safe Set storage"
+  ],
+  "expectedOutcomes": [
+    "Ability to prevent and debug subtle memory leaks and corrupted collections in production code",
+    "Mastery of equals() and hashCode() generation conforming strictly to Joshua Bloch's Effective Java rules"
+  ],
+  "activities": [
+    {
+      "id": "act-col2-l5-analogy",
+      "orderIndex": 1,
+      "type": "analogy",
+      "title": "Practical Context: Moving Locker Keys in a High-Security Facility",
+      "analogy": {
+        "headline": "Practical Context: Moving Locker Keys in a High-Security Facility",
+        "story": "Imagine a bank vault with 1,000 safety deposit boxes. A customer arrives with their passport ID, the teller computes a locker number from the passport number, and places their valuables in Box #42.\n\nLater, the customer legally alters their passport ID without telling the bank. When they return, the teller takes the new passport, computes a new locker number (Box #89), and opens it: Box #89 is completely empty! The customer panics and claims their valuables were stolen, but the items are still sitting undisturbed in Box #42, now permanently inaccessible.\n\nThis is precisely what happens when an object field is mutated after insertion into a HashSet.",
+        "keyTakeaway": "Mutating fields used in hashCode() after set insertion changes the object's bucket address. The set looks in the new bucket, fails to find it, and reports the object does not exist."
+      },
+      "content": "Imagine a bank vault with 1,000 safety deposit boxes. A customer arrives with their passport ID, the teller computes a locker number from the passport number, and places their valuables in Box #42.\n\nLater, the customer legally alters their passport ID without telling the bank. When they return, the teller takes the new passport, computes a new locker number (Box #89), and opens it: Box #89 is completely empty! The customer panics and claims their valuables were stolen, but the items are still sitting undisturbed in Box #42, now permanently inaccessible.\n\nThis is precisely what happens when an object field is mutated after insertion into a HashSet."
+    },
+    {
+      "id": "act-col2-l5-concept",
+      "orderIndex": 2,
+      "type": "concept",
+      "title": "The equals() and hashCode() Contract: The Vanishing Element Disaster",
+      "breakdown": {
+        "keyTakeaways": [
+          "If two objects are equal according to equals(), their hashCode() methods MUST return the same integer",
+          "If two objects have the same hashCode(), they are NOT necessarily equal (hash collision)",
+          "Mutating an object after inserting it into a HashSet changes its hash code, stranding it in the wrong bucket",
+          "Always make objects stored in Sets immutable (using final fields or Java records)"
+        ]
+      },
+      "content": "### Formal Definition of the equals() and hashCode() Contract\n\nIn Java, `java.lang.Object` establishes a fundamental contract that every hash-based data structure (`HashSet`, `LinkedHashSet`, `HashMap`) relies upon:\n1. **Consistency**: Multiple invocations of `o.hashCode()` must consistently return the same integer, provided no information used in `equals` comparisons is modified.\n2. **Equality Implies Identical Hash Codes**: If `a.equals(b)` evaluates to `true`, then `a.hashCode()` **MUST** strictly equal `b.hashCode()`.\n3. **Unequal Objects May Collide**: If `!a.equals(b)`, it is **not** required that `a.hashCode() != b.hashCode()`, though distinct hash codes improve hash table performance.\n\nViolating Rule 2 causes duplicate objects to enter a `HashSet`. Violating Rule 1 causes existing objects to vanish.\n\n---\n\n### The Vanishing Element Disaster: Bucket Recalculation Mismatch\n\nWhen an object is placed in a `HashSet`, its bucket index is computed:\n$$\\text{bucket}_1 = (\\text{capacity} - 1) \\& \\text{hash}(o)$$\nIf the object is mutable and one of its fields changes:\n1. Its hash code dynamically alters to a new value: $h_2$.\n2. When you later call `set.contains(o)` or `set.remove(o)`, the set recalculates the target bucket:\n   $$\\text{bucket}_2 = (\\text{capacity} - 1) \\& h_2$$\n3. Because $\\text{bucket}_1 \\ne \\text{bucket}_2$, the JVM navigates to $\\text{bucket}_2$, finds nothing, and returns **`false`**!\n4. The object remains trapped in $\\text{bucket}_1$, cannot be removed, cannot be found, and leaks memory indefinitely.\n\n---\n\n### Reproducing the Vanishing Element Defect in Code\n\n```java\nimport java.util.HashSet;\nimport java.util.Objects;\nimport java.util.Set;\n\npublic class VanishingElementDemo {\n    static class MutableAccount {\n        private String accountId;\n        private double balance;\n\n        public MutableAccount(String accountId, double balance) {\n            this.accountId = accountId;\n            this.balance = balance;\n        }\n\n        public void setBalance(double balance) {\n            this.balance = balance; // Mutates hash code!\n        }\n\n        @Override\n        public boolean equals(Object o) {\n            if (this == o) return true;\n            if (!(o instanceof MutableAccount that)) return false;\n            return Double.compare(that.balance, balance) == 0 && \n                   Objects.equals(accountId, that.accountId);\n        }\n\n        @Override\n        public int hashCode() {\n            return Objects.hash(accountId, balance);\n        }\n    }\n\n    public static void main(String[] args) {\n        Set<MutableAccount> bankVault = new HashSet<>();\n        MutableAccount acc = new MutableAccount(\"ACC-99\", 500.0);\n\n        bankVault.add(acc);\n        System.out.println(\"1. Added account. Contains? \" + bankVault.contains(acc)); // true\n\n        // DISASTER: Mutate object field after set insertion!\n        acc.setBalance(9999.0);\n\n        System.out.println(\"2. After balance change. Contains? \" + bankVault.contains(acc)); // FALSE!\n        System.out.println(\"3. Actual set size: \" + bankVault.size()); // 1! It still exists!\n\n        // Attempting to remove it also fails!\n        boolean removed = bankVault.remove(acc);\n        System.out.println(\"4. Successfully removed? \" + removed); // false\n        System.out.println(\"5. Leaked set size: \" + bankVault.size()); // Still 1!\n    }\n}\n```\n\n**Console Output:**\n```text\n1. Added account. Contains? true\n2. After balance change. Contains? false\n3. Actual set size: 1\n4. Successfully removed? false\n5. Leaked set size: 1\n```\n\n---\n\n### Architectural Solution: Use Immutable Types\n\nTo prevent this catastrophic class of bugs, follow the **Immutable Key Rule**:\n* Store only immutable value objects (`record`, `final` classes with `final` fields) in Sets.\n* If mutable entities must be stored, base `equals()` and `hashCode()` strictly on an immutable primary key (like a `UUID` or `String id`), never on mutable state (like `balance` or `status`)."
+    },
+    {
+      "id": "act-col2-l5-code",
+      "orderIndex": 3,
+      "type": "code_walkthrough",
+      "title": "Fixing Corrupted Sets with Immutable Records",
+      "description": "Transform a broken mutable set design into a resilient, production-ready architecture using Java records.",
+      "code": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class ImmutableSetPattern {\n    // Solution: Immutable Java record guarantees hash stability forever\n    public record AccountKey(String accountId, String branchCode) {\n        public AccountKey {\n            if (accountId == null || branchCode == null) {\n                throw new IllegalArgumentException(\"Fields cannot be null\");\n            }\n        }\n    }\n\n    public static void main(String[] args) {\n        Set<AccountKey> verifiedAccounts = new HashSet<>();\n        AccountKey key = new AccountKey(\"ACC-101\", \"NYC-01\");\n\n        verifiedAccounts.add(key);\n        System.out.println(\"Account registered: \" + verifiedAccounts.contains(key));\n\n        // Records cannot be mutated! No setters exist.\n        // verifiedAccounts invariants are permanently guaranteed.\n        System.out.println(\"Vault integrity secure. Active accounts: \" + verifiedAccounts.size());\n    }\n}",
+      "steps": [
+        {
+          "stepNumber": 1,
+          "focusLines": "6-12",
+          "description": "Declare an immutable Java record. The compiler automatically generates consistent, final equals() and hashCode() methods."
+        },
+        {
+          "stepNumber": 2,
+          "focusLines": "15-18",
+          "description": "Insert the immutable key into a HashSet. The hash code is mathematically invariant across the lifetime of the application."
+        },
+        {
+          "stepNumber": 3,
+          "focusLines": "20-24",
+          "description": "Verify set contains the key reliably, eliminating any possibility of hash corruption or vanishing elements."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l5-mcq",
+      "orderIndex": 4,
+      "type": "mcq",
+      "title": "equals() & hashCode() Contract Assessment",
+      "questions": [
+        {
+          "id": "col2-l5-q1",
+          "question": "What happens if a class overrides equals() but fails to override hashCode() when used in a HashSet?",
+          "options": [
+            "A compilation error occurs",
+            "Identical objects will produce different memory-address hash codes, causing duplicate entries in the HashSet",
+            "The HashSet automatically synthesizes a hashCode()",
+            "An UnsupportedOperationException is thrown at runtime"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "If hashCode() is omitted, Object.hashCode() uses identity hashing. Two logically equal objects will produce different hash codes, land in different buckets, and both be added, violating Set uniqueness."
+        },
+        {
+          "id": "col2-l5-q2",
+          "question": "Why does set.contains(obj) return false after obj has a field mutated, even though obj is still inside the set?",
+          "options": [
+            "Because HashSet clears all elements whenever any object is modified",
+            "Because the set recalculates the bucket index using the mutated hash code, searching a bucket different from where the object was originally stored",
+            "Because the Garbage Collector automatically deletes mutated objects",
+            "Because Java detects mutations and marks the object as invalid"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "HashSet finds elements by computing (capacity - 1) & hash(key). If key.hashCode() changed, the set searches the wrong bucket and fails to locate the object."
+        },
+        {
+          "id": "col2-l5-q3",
+          "question": "Which fields should be included in an object's hashCode() calculation?",
+          "options": [
+            "All fields declared in the class, including transient and static variables",
+            "Only the exact same fields that are compared in the equals() method",
+            "Only integer fields",
+            "A random integer generated in the constructor"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "To maintain the equals/hashCode contract, hashCode() must use the exact same fields as equals(). If equals() uses id and name, hashCode() must use id and name."
+        },
+        {
+          "id": "col2-l5-q4",
+          "question": "What is the best architectural practice when storing domain objects in a Set?",
+          "options": [
+            "Use reflection to update hash codes before querying",
+            "Design Set elements as immutable objects (e.g. Java records) or base equals/hashCode solely on an immutable unique identifier",
+            "Call set.clear() and re-add all elements before any contains() check",
+            "Avoid Sets and use primitive arrays exclusively"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Immutability guarantees that hash codes never drift, completely preventing vanishing element bugs and memory leaks."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l5-interview",
+      "orderIndex": 5,
+      "type": "interview_qa",
+      "title": "Technical Interview: Hash Invariants & Bug Post-Mortems",
+      "questions": [
+        {
+          "id": "col2-l5-int-1",
+          "question": "Walk me through how you would debug a production bug where a HashSet contains 10,000 elements, but set.contains(myObject) returns false despite myObject being in the set.",
+          "answer": "This is the classic mutable hash corruption bug. First, I would inspect the class definition of myObject to see if equals() and hashCode() depend on mutable fields (e.g. status, timestamp, balance). Next, I would check if any thread modified those fields after insertion. If the field changed, its hashCode() changed, stranding the object in an orphaned bucket. To confirm, I would iterate over the set manually with a for-each loop: `for (var item : set) if (item.equals(myObject)) found = true;`. If the linear loop finds it but set.contains() returns false, hash code drift is 100% verified. The fix is to make the key immutable or base hashing strictly on an immutable ID."
+        },
+        {
+          "id": "col2-l5-int-2",
+          "question": "Why does HashMap / HashSet use prime multiplier 31 in hashCode generation?",
+          "answer": "Joshua Bloch explains in Effective Java that 31 has two key properties: 1) It is an odd prime. If an even number like 2 or 4 were used, multiplication would equate to bit shifting, discarding high-order information and increasing collisions. 2) Modern JVM JIT compilers automatically optimize `31 * i` into `(i << 5) - i` (a single shift and subtract instruction), executing much faster than a standard multiplication."
+        },
+        {
+          "id": "col2-l5-int-3",
+          "question": "Can you have a memory leak in Java caused by a HashSet?",
+          "answer": "Yes, and it is common. If mutable objects are added to a HashSet and their fields mutate, calling `set.remove(object)` will fail because the set checks the wrong bucket. As a result, the object can NEVER be removed through normal set operations. Furthermore, the internal HashMap retains strong references to the object indefinitely, preventing the Garbage Collector from freeing it, resulting in a persistent heap memory leak."
+        }
+      ]
+    },
+    {
+      "id": "act-col2-l5-self-eval",
+      "orderIndex": 6,
+      "type": "self_evaluation",
+      "title": "Self-Evaluation: equals() and hashCode() Contract",
+      "checklist": [
+        "I can state the 3 rules of the equals() and hashCode() contract from memory",
+        "I understand why mutating an object after set insertion causes it to become unfindable and unremovable",
+        "I know how to design immutable value objects and Java records to guarantee collection integrity"
+      ]
+    }
+  ],
+  "practiceProblems": [
+    {
+      "id": "prob-col2-l5-1",
+      "title": "Diagnose Vanishing Element",
+      "difficulty": "intermediate",
+      "problemStatement": "Given a set containing an account whose balance was mutated, implement recoverVanishingElement(Set<Account> set, String targetId) that finds and returns the account by linear scan since set.contains() fails.",
+      "starterCode": "import java.util.Set;\n\npublic class VanishingRecovery {\n    public static class Account {\n        public String id;\n        public double balance;\n        public Account(String id, double balance) { this.id = id; this.balance = balance; }\n        public boolean equals(Object o) {\n            if (!(o instanceof Account a)) return false;\n            return id.equals(a.id) && balance == a.balance;\n        }\n        public int hashCode() { return id.hashCode() + (int)balance; }\n    }\n\n    public static Account recover(Set<Account> set, String targetId) {\n        // TODO: Linear scan to find account by ID\n        return null;\n    }\n}",
+      "solutionCode": "import java.util.Set;\n\npublic class VanishingRecovery {\n    public static class Account {\n        public String id;\n        public double balance;\n        public Account(String id, double balance) { this.id = id; this.balance = balance; }\n        public boolean equals(Object o) {\n            if (!(o instanceof Account a)) return false;\n            return id.equals(a.id) && balance == a.balance;\n        }\n        public int hashCode() { return id.hashCode() + (int)balance; }\n    }\n\n    public static Account recover(Set<Account> set, String targetId) {\n        if (set == null || targetId == null) return null;\n        for (Account a : set) {\n            if (targetId.equals(a.id)) return a;\n        }\n        return null;\n    }\n}",
+      "expectedOutput": "Account found",
+      "testCases": [
+        {
+          "input": "set containing mutated account with targetId = 'ACC-1'",
+          "expected": "Account with id 'ACC-1'"
+        }
+      ],
+      "hints": [
+        "A for-each loop iterates through all buckets directly without recalculating hashes.",
+        "Compare using a.id.equals(targetId)."
+      ]
+    },
+    {
+      "id": "prob-col2-l5-2",
+      "title": "Implement Bulletproof Immutable Set Element",
+      "difficulty": "beginner",
+      "problemStatement": "Define an immutable record UserCredential(String username, String domain) with validation that throws IllegalArgumentException if either field is null or blank.",
+      "starterCode": "public class CredentialDefinition {\n    // TODO: Define record UserCredential\n}",
+      "solutionCode": "public class CredentialDefinition {\n    public record UserCredential(String username, String domain) {\n        public UserCredential {\n            if (username == null || username.isBlank() || domain == null || domain.isBlank()) {\n                throw new IllegalArgumentException(\"Fields must not be blank\");\n            }\n        }\n    }\n}",
+      "expectedOutput": "UserCredential created",
+      "testCases": [
+        {
+          "input": "new UserCredential('alice', 'example.com')",
+          "expected": "UserCredential[username=alice, domain=example.com]"
+        }
+      ],
+      "hints": [
+        "Use compact constructor syntax for records: public UserCredential { ... }.",
+        "Check username == null || username.isBlank()."
+      ]
+    },
+    {
+      "id": "prob-col2-l5-3",
+      "title": "Fix Broken equals() Without hashCode()",
+      "difficulty": "intermediate",
+      "problemStatement": "Fix the Product class so that two products with identical sku codes are recognized as equal and produce identical hash codes.",
+      "starterCode": "import java.util.Objects;\n\npublic class Product {\n    private final String sku;\n    private final String name;\n\n    public Product(String sku, String name) {\n        this.sku = sku;\n        this.name = name;\n    }\n\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof Product p)) return false;\n        return Objects.equals(sku, p.sku);\n    }\n    // TODO: Implement hashCode() consistent with equals()\n}",
+      "solutionCode": "import java.util.Objects;\n\npublic class Product {\n    private final String sku;\n    private final String name;\n\n    public Product(String sku, String name) {\n        this.sku = sku;\n        this.name = name;\n    }\n\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof Product p)) return false;\n        return Objects.equals(sku, p.sku);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(sku);\n    }\n}",
+      "expectedOutput": "Hash code matches equals",
+      "testCases": [
+        {
+          "input": "Product p1 = new Product('A', 'Name1'); Product p2 = new Product('A', 'Name2');",
+          "expected": "p1.hashCode() == p2.hashCode()"
+        }
+      ],
+      "hints": [
+        "Because equals() compares only 'sku', hashCode() must also hash only 'sku'.",
+        "Use Objects.hash(sku)."
+      ]
+    },
+    {
+      "id": "prob-col2-l5-4",
+      "title": "Calculate Stable Hash Code",
+      "difficulty": "beginner",
+      "problemStatement": "Implement a method computeHash(String id, int version) that uses the formula: 31 * id.hashCode() + version.",
+      "starterCode": "public class StableHasher {\n    public static int computeHash(String id, int version) {\n        // TODO: Compute 31-multiplier hash\n        return 0;\n    }\n}",
+      "solutionCode": "public class StableHasher {\n    public static int computeHash(String id, int version) {\n        int hash = id == null ? 0 : id.hashCode();\n        return 31 * hash + version;\n    }\n}",
+      "expectedOutput": "Computed hash",
+      "testCases": [
+        {
+          "input": "id = 'test', version = 1",
+          "expected": "31 * 'test'.hashCode() + 1"
+        }
+      ],
+      "hints": [
+        "Handle id == null safely by treating its hash as 0.",
+        "Multiply by 31 and add version."
+      ]
+    },
+    {
+      "id": "prob-col2-l5-5",
+      "title": "Clean Corrupted Set Entries",
+      "difficulty": "advanced",
+      "problemStatement": "Given a HashSet that may contain duplicate elements due to broken hash codes, reconstruct a clean HashSet<Product> where every element is verified distinct using its sku.",
+      "starterCode": "import java.util.Set;\nimport java.util.HashSet;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class SetSanitizer {\n    public static Set<Product> sanitize(Set<Product> dirtySet) {\n        // TODO: Return clean set with distinct SKUs\n        return new HashSet<>();\n    }\n}",
+      "solutionCode": "import java.util.Set;\nimport java.util.HashSet;\nimport java.util.Map;\nimport java.util.HashMap;\n\npublic class SetSanitizer {\n    public static Set<Product> sanitize(Set<Product> dirtySet) {\n        if (dirtySet == null) return new HashSet<>();\n        Map<String, Product> uniqueSkuMap = new HashMap<>();\n        for (Product p : dirtySet) {\n            if (p != null) {\n                // Keep the first product seen for this SKU\n                uniqueSkuMap.putIfAbsent(p.getSku(), p);\n            }\n        }\n        return new HashSet<>(uniqueSkuMap.values());\n    }\n}",
+      "expectedOutput": "Sanitized set",
+      "testCases": [
+        {
+          "input": "Set with 3 items where 2 share the same SKU",
+          "expected": "Set of size 2"
+        }
+      ],
+      "hints": [
+        "Iterate over the dirty set linearly.",
+        "Index products into a Map<String, Product> by SKU using putIfAbsent."
+      ]
+    }
+  ]
+}
