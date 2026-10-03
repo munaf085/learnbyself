@@ -25,19 +25,20 @@
     {
       "id": "act-les2-analogy",
       "type": "analogy",
-      "title": "Everyday Analogy: The Unlabeled Warehouse Crate vs The Shipping Label",
+      "title": "Practical Context: Meaningful String Representation for Debugging",
       "concept": "Informative toString() Representation",
       "realWorldMetaphor": {
         "scenario": "Imagine walking into a warehouse filled with 10,000 plain brown cardboard boxes. Each box only has an obscure factory serial number printed in tiny font: `Crate#7f3d4a2`. You have no idea whether it contains fragile champagne glasses, motor oil, or fresh strawberries. You have to open the box to find out. Now imagine a warehouse where every box has a clear shipping label: `Crate{item='Champagne Glasses', qty=24, fragile=true}`.",
         "mapping": "The plain box with serial number `Crate#7f3d4a2` is the default `Object.toString()`. The clear label with item details is a well-overridden `toString()` method.",
         "takeaway": "Overriding `toString()` turns an obscure memory pointer into an instantly readable summary of the object's state."
-      }
+      },
+      "content": "When software engineers log entity state or inspect objects during debugging, seeing cryptic memory hashes makes troubleshooting difficult.\n\nBy default, printing an object prints its class name followed by an unsigned hexadecimal hash code.\n\nOverriding `toString()` converts an internal object state into a clear, readable text representation."
     },
     {
       "id": "act-les2-concept",
       "type": "concept",
-      "title": "When and How toString() is Executed",
-      "content": "### Implicit toString() Invocations\n\nIn Java, `toString()` is invoked automatically in several ubiquitous contexts:\n1. **Print Streams**: `System.out.println(myObject);` internally invokes `String.valueOf(myObject)`, which calls `myObject.toString()`.\n2. **String Concatenation**: `\"User profile: \" + user;` triggers `user.toString()`.\n3. **Logging Frameworks**: Loggers (SLF4J, Log4j) call `toString()` when formatting log entries.\n4. **Debugger Tooltips**: Modern IDEs display `toString()` in debug variables inspection windows.\n\n### Recommended Format\nStandard Java conventions recommend formatting `toString()` like a record:\n`ClassName{field1=value1, field2=value2, ...}`\n\n### Security Caution: PII and Secrets\n> **Critical Rule**: Never include plaintext passwords, credit card CVVs, or unmasked social security numbers in `toString()`! Those logs will end up in centralized logging servers (Splunk, Datadog), causing catastrophic compliance breaches."
+      "title": "The toString() Method: Definition, Mechanics, and System.out.println Integration",
+      "content": "### Definition and Default Behavior of toString()\n\nThe **`toString()`** method is defined in `java.lang.Object` and returns a string representation of the object:\n```java\npublic String toString() {\n    return getClass().getName() + \"@\" + Integer.toHexString(hashCode());\n}\n```\n\n**Integration with System.out.println:**\nWhenever an object reference is passed to **`System.out.println`**(obj), or concatenated with a string (`\"User: \" + obj`), the Java runtime automatically executes `obj.toString()`.\n\nIf `toString()` is not overridden, printing an object outputs a meaningless default string like `User@5f184fc6`.\n\n---\n\n### Overriding toString() in Code\n\n```java\nclass Customer {\n    private final long id;\n    private final String name;\n    private final String email;\n\n    public Customer(long id, String name, String email) {\n        this.id = id;\n        this.name = name;\n        this.email = email;\n    }\n\n    // Overriding toString() for clear production logging\n    @Override\n    public String toString() {\n        return \"Customer{id=\" + id + \", name='\" + name + \"', email='\" + email + \"'}\";\n    }\n}\n\npublic class ToStringDemo {\n    public static void main(String[] args) {\n        Customer customer = new Customer(402L, \"Marcus Vance\", \"marcus@enterprise.com\");\n\n        // System.out.println automatically invokes customer.toString()\n        System.out.println(customer);\n    }\n}\n```\n\n**Console Output:**\n```text\nCustomer{id=402, name='Marcus Vance', email='marcus@enterprise.com'}\n```\n\n---\n\n### Best Practices for Enterprise toString()\n\n1. Always include key identity fields (`id`, `status`).\n2. Omit sensitive data such as passwords, API keys, or full credit card numbers to maintain security compliance."
     },
     {
       "id": "act-les2-cw1",

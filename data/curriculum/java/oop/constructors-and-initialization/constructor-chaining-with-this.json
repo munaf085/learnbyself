@@ -27,18 +27,19 @@
       "id": "act-ci6-analogy",
       "orderIndex": 1,
       "type": "analogy",
-      "title": "The Clinic Triage Desk",
+      "title": "Practical Context: Centralizing Initialization and Eliminating Code Duplication",
       "analogy": {
         "headline": "The receptionist doesn't perform surgery; they forward you to the specialist",
         "story": "When you walk into a hospital clinic with a sprained ankle, the front-desk receptionist doesn't set up medical equipment and treat you themselves.\n\nInstead, they write down your name, attach standard default triage notes, and **forward you directly** to the Orthopedic Specialist who performs the real work!\n\nIn Java, when you have 4 overloaded constructors, you shouldn't duplicate 10 lines of field setup in all 4 of them.\n\nInstead, the smaller constructors act like the receptionist: they fill in default values and **forward the call** to the master constructor using `this(...)`!\nThis is called **Constructor Chaining**.",
         "keyTakeaway": "Constructor chaining is the practice of having one constructor call another constructor within the same class using 'this(...)', centralizing all initialization logic into one place."
-      }
+      },
+      "content": "When a class offers multiple overloaded constructors, copying and pasting validation checks across every constructor creates maintenance hazards.\n\nIf common initialization logic changes, every duplicate constructor must be updated.\n\nConstructor chaining using `this(...)` allows overloaded constructors to delegate to a single master constructor cleanly."
     },
     {
       "id": "act-ci6-concept",
       "orderIndex": 2,
       "type": "concept",
-      "title": "Mastering the 'this()' Constructor Call",
+      "title": "Constructor Chaining with this(): Definition, Syntax, and Rules",
       "breakdown": {
         "keyTakeaways": [
           "'this(...)' with parentheses invokes another constructor within the same class",
@@ -47,7 +48,7 @@
           "Recursive constructor calls (Constructor A calling B, and B calling A) cause a compile-time error"
         ]
       },
-      "content": "Look at the duplicated code in this traditional overloaded class:\n\n```java\n// ❌ Code Duplication Smell:\nclass Student {\n    String name;\n    int age;\n    String course;\n\n    Student() {\n        this.name = \"Unknown\";\n        this.age = 18;\n        this.course = \"Undeclared\";\n    }\n\n    Student(String name) {\n        this.name = name;\n        this.age = 18;          // Duplicated!\n        this.course = \"Undeclared\"; // Duplicated!\n    }\n}\n```\nIf you ever need to change the default age to 19, you have to edit it in multiple places. That is brittle.\n\n### The Constructor Chaining Solution with `this(...)`:\nWe create ONE master constructor that does the real work, and have all other constructors chain into it!\n\n```java\nclass Student {\n    String name;\n    int age;\n    String course;\n\n    // 1. Master Constructor (does all actual field assignments)\n    Student(String name, int age, String course) {\n        this.name = name;\n        this.age = age;\n        this.course = course;\n    }\n\n    // 2. Chained Constructor: name only, delegates defaults for age & course\n    Student(String name) {\n        this(name, 18, \"Undeclared\"); // Calls Master Constructor!\n    }\n\n    // 3. Chained Constructor: no-arg, delegates defaults for everything\n    Student() {\n        this(\"Unknown\"); // Chains to constructor 2 (which chains to master!)\n    }\n}\n```\n\n### ⚠️ The #1 Strict Rule of Constructor Chaining:\n> **`this(...)` MUST be the FIRST line in the constructor!**\n\n```java\nStudent(String name) {\n    System.out.println(\"Setting up...\"); // ❌ COMPILE ERROR!\n    this(name, 18, \"Undeclared\");        // 'Constructor call must be first statement'\n}\n```\nJava requires the object to be constructed first before executing any custom logging or side-effect statements."
+      "content": "### Definition of Constructor Chaining with this()\n\n**Constructor Chaining** is the technique of having one constructor call another constructor within the same class using the **`this(...)`** syntax.\n\nIt allows convenient overloaded constructors with fewer parameters to forward default values to a central, fully parameterized master constructor.\n\n**The Strict Rules of Constructor Chaining:**\n1. **Must Be the FIRST Line**: The call to `this(...)` must be the **FIRST line** of executable code inside the constructor body. Calling it on line 2 or inside an `if` block triggers an immediate compilation error.\n2. **No Recursive Chaining**: Constructor chaining must not form circular loops (Constructor A calling B, and B calling A). Circular chaining causes a compilation error.\n\n---\n\n### Constructor Chaining in Code\n\n```java\nclass Order {\n    String orderId;\n    String currency;\n    double amount;\n\n    // 1. Convenience Constructor: Defaults currency to USD\n    Order(String orderId, double amount) {\n        this(orderId, \"USD\", amount); // Must be FIRST line!\n        System.out.println(\"Convenience constructor finished\");\n    }\n\n    // 2. Master Constructor: All fields initialized here\n    Order(String orderId, String currency, double amount) {\n        this.orderId = orderId;\n        this.currency = currency;\n        this.amount = amount;\n        System.out.println(\"Master constructor executed for order: \" + orderId);\n    }\n}\n\npublic class ChainingDemo {\n    public static void main(String[] args) {\n        Order order = new Order(\"ORD-881\", 149.99);\n    }\n}\n```\n\n**Console Output:**\n```text\nMaster constructor executed for order: ORD-881\nConvenience constructor finished\n```\n\n---\n\n### Clean Engineering Value\n\nConstructor chaining enforces the DRY principle (Don't Repeat Yourself). Validation checks happen in one place, reducing bugs across overloaded constructors."
     },
     {
       "id": "act-ci6-code",
